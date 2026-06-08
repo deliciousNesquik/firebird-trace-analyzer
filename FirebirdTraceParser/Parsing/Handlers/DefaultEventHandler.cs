@@ -11,10 +11,10 @@ using NLog;
 namespace FirebirdTraceParser.Parsing.Handlers;
 
 /// <summary> Обработчик событий по умолчанию. </summary>
-public sealed class DefaultEventHandler : IEventHandler
+public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = null) : IEventHandler
 {
-    private readonly ILogger _logger;
-    private readonly ParseOptions _options;
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ParseOptions _options = options ?? ParseOptions.Default;
 
     private static readonly Dictionary<string, EventType> EventTypeMapping = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -34,62 +34,39 @@ public sealed class DefaultEventHandler : IEventHandler
         ["FAILED EXECUTE_TRIGGER_FINISH"] = EventType.FailedExecuteTriggerFinish
     };
 
-    private readonly
-        Dictionary<EventType, Func<Match, IReadOnlyList<string>, IReadOnlyDictionary<string, Regex>, EventBase?>>
-        _handlers;
-
-    public DefaultEventHandler(ILogger logger, ParseOptions? options = null)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? ParseOptions.Default;
-
-        _handlers =
-            new Dictionary<EventType,
-                Func<Match, IReadOnlyList<string>, IReadOnlyDictionary<string, Regex>, EventBase?>>
-            {
-                [EventType.TraceInit] = HandleTraceInit,
-                [EventType.TraceFinish] = HandleTraceFinish,
-                [EventType.AttachDatabase] = HandleAttach,
-                [EventType.DetachDatabase] = HandleDetach,
-                [EventType.ExecuteStatementStart] = HandleStatementStart,
-                [EventType.ExecuteStatementRestart] = HandleStatementRestart,
-                [EventType.ExecuteStatementFinish] = HandleStatementFinish,
-                [EventType.ExecuteProcedureStart] = HandleProcedureStart,
-                [EventType.ExecuteProcedureFinish] = HandleProcedureFinish,
-                [EventType.ExecuteTriggerStart] = HandleTriggerStart,
-                [EventType.ExecuteTriggerFinish] = HandleTriggerFinish,
-                [EventType.FailedExecuteProcedureFinish] = HandleFailedProcedureFinish,
-                [EventType.FailedExecuteStatementFinish] = HandleFailedStatementFinish,
-                [EventType.FailedExecuteTriggerFinish] = HandleFailedTriggerFinish
-            };
-    }
 
     public EventBase? Handle(Match blockHeader, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules)
     {
-        // Парсим заголовок события и получаем строковое представление
         var eventTypeStr = blockHeader.Groups["event_type"].Value;
 
-        // Исключение для обработки ошибок.
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
             return HandleError(blockHeader, bodyLines, rules);
 
-        // Получаем enum значение через словарь
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
         {
             _logger.Warn("Unknown event type for parser: '{EventType}'", eventTypeStr);
             return null;
         }
-
-        // Получаем обработчик для определенного события
-        if (!_handlers.TryGetValue(eventType, out var handler))
+        
+        EventBase? result = eventType switch
         {
-            _logger.Debug("No handler for event type: {EventType}", eventType);
-            return null;
-        }
-
-        // После обработки одного события получаем данные
-        var result = handler(blockHeader, bodyLines, rules);
+            EventType.TraceInit => HandleTraceInit(blockHeader, bodyLines, rules),
+            EventType.TraceFinish => HandleTraceFinish(blockHeader, bodyLines, rules),
+            EventType.AttachDatabase => HandleAttach(blockHeader, bodyLines, rules),
+            EventType.DetachDatabase => HandleDetach(blockHeader, bodyLines, rules),
+            EventType.ExecuteStatementStart => HandleStatementStart(blockHeader, bodyLines, rules),
+            EventType.ExecuteStatementRestart => HandleStatementRestart(blockHeader, bodyLines, rules),
+            EventType.ExecuteStatementFinish => HandleStatementFinish(blockHeader, bodyLines, rules),
+            EventType.ExecuteProcedureStart => HandleProcedureStart(blockHeader, bodyLines, rules),
+            EventType.ExecuteProcedureFinish => HandleProcedureFinish(blockHeader, bodyLines, rules),
+            EventType.ExecuteTriggerStart => HandleTriggerStart(blockHeader, bodyLines, rules),
+            EventType.ExecuteTriggerFinish => HandleTriggerFinish(blockHeader, bodyLines, rules),
+            EventType.FailedExecuteStatementFinish => HandleFailedStatementFinish(blockHeader, bodyLines, rules),
+            EventType.FailedExecuteProcedureFinish => HandleFailedProcedureFinish(blockHeader, bodyLines, rules),
+            EventType.FailedExecuteTriggerFinish => HandleFailedTriggerFinish(blockHeader, bodyLines, rules),
+            _ => null
+        };
 
         if (result == null)
             _logger.Warn("Handler returned null for {EventType}", eventType);
