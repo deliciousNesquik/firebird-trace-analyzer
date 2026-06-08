@@ -1,4 +1,5 @@
 ﻿using FirebirdTraceParser.Attributes;
+using FirebirdTraceParser.Enums;
 using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceParser.Models.Events;

@@ -28,6 +28,5 @@
 
     <ItemGroup>
       <Folder Include="Infrastructure\Caching\" />
-      <Folder Include="Infrastructure\Logging\" />
     </ItemGroup>
 </Project>

@@ -1,14 +1,12 @@
 ﻿namespace FirebirdTraceParser.Attributes;
 
-/// <summary>
-/// Маркирует свойство как доступное для сортировки.
-/// </summary>
+/// <summary> Маркирует свойство как доступное для сортировки. </summary>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public sealed class SortableFieldAttribute : Attribute
+public sealed class SortableFieldAttribute(string displayName) : Attribute
 {
-    /// <summary>Отображаемое имя поля в UI</summary>
-    public string DisplayName { get; }
-    
+    /// <summary>Отображаемое имя поля</summary>
+    public string DisplayName { get; } = displayName ?? throw new ArgumentNullException(nameof(displayName));
+
     /// <summary>Приоритет отображения (меньше = выше)</summary>
     public int Priority { get; init; } = 100;
     
@@ -17,9 +15,4 @@ public sealed class SortableFieldAttribute : Attribute
 
     /// <summary>Является ли сортировкой по умолчанию</summary>
     public bool IsDefault { get; init; } = false;
-
-    public SortableFieldAttribute(string displayName)
-    {
-        DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
-    }
 }
