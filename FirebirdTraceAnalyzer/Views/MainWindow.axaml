@@ -21,7 +21,6 @@
 
     <Window.Resources>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
-        <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter" />
     </Window.Resources>
 
     <Grid Background="{DynamicResource Background}" RowDefinitions="30 Auto Auto * Auto, Auto">

@@ -377,61 +377,20 @@
             </ResourceDictionary.ThemeDictionaries>
 
             <!-- Icons -->
-            <x:String x:Key="AppIcon">
-                avares://FirebirdTraceAnalyzer/Assets/app.ico
-            </x:String>
-
-            <x:String x:Key="SearchIcon">
-                avares://FirebirdTraceAnalyzer/Assets/search.svg
-            </x:String>
-
-            <x:String x:Key="SortIcon">
-                avares://FirebirdTraceAnalyzer/Assets/sort.svg
-            </x:String>
-
-            <x:String x:Key="FilterIcon">
-                avares://FirebirdTraceAnalyzer/Assets/filter.svg
-            </x:String>
-            
-            <x:String x:Key="CopyIcon">
-                avares://FirebirdTraceAnalyzer/Assets/copy.svg
-            </x:String>
-            
-            <x:String x:Key="ClearIcon">
-                avares://FirebirdTraceAnalyzer/Assets/clear.svg
-            </x:String>
-            
-            <x:String x:Key="ReloadIcon">
-                avares://FirebirdTraceAnalyzer/Assets/reload.svg
-            </x:String>
-            
-            <x:String x:Key="WarningIcon">
-                avares://FirebirdTraceAnalyzer/Assets/warning.svg
-            </x:String>
-            
-            <x:String x:Key="FileSearchIcon">
-                avares://FirebirdTraceAnalyzer/Assets/file-search.svg
-            </x:String>
-            
-            <x:String x:Key="FolderIcon">
-                avares://FirebirdTraceAnalyzer/Assets/folder.svg
-            </x:String>
-            
-            <x:String x:Key="TrashIcon">
-                avares://FirebirdTraceAnalyzer/Assets/trash.svg
-            </x:String>
-            
-            <x:String x:Key="ExportIcon">
-                avares://FirebirdTraceAnalyzer/Assets/export.svg
-            </x:String>
-            
-            <x:String x:Key="PreviewIcon">
-                avares://FirebirdTraceAnalyzer/Assets/preview.svg
-            </x:String>
-            
-            <x:String x:Key="SaveIcon">
-                avares://FirebirdTraceAnalyzer/Assets/save.svg
-            </x:String>
+            <x:String x:Key="AppIcon">avares://FirebirdTraceAnalyzer/Assets/app.ico</x:String>
+            <x:String x:Key="SearchIcon">avares://FirebirdTraceAnalyzer/Assets/search.svg</x:String>
+            <x:String x:Key="SortIcon">avares://FirebirdTraceAnalyzer/Assets/sort.svg</x:String>
+            <x:String x:Key="FilterIcon">avares://FirebirdTraceAnalyzer/Assets/filter.svg</x:String>
+            <x:String x:Key="CopyIcon">avares://FirebirdTraceAnalyzer/Assets/copy.svg</x:String>
+            <x:String x:Key="ClearIcon">avares://FirebirdTraceAnalyzer/Assets/clear.svg</x:String>
+            <x:String x:Key="ReloadIcon">avares://FirebirdTraceAnalyzer/Assets/reload.svg</x:String>
+            <x:String x:Key="WarningIcon">avares://FirebirdTraceAnalyzer/Assets/warning.svg</x:String>
+            <x:String x:Key="FileSearchIcon">avares://FirebirdTraceAnalyzer/Assets/file-search.svg</x:String>
+            <x:String x:Key="FolderIcon">avares://FirebirdTraceAnalyzer/Assets/folder.svg</x:String>
+            <x:String x:Key="TrashIcon">avares://FirebirdTraceAnalyzer/Assets/trash.svg</x:String>
+            <x:String x:Key="ExportIcon">avares://FirebirdTraceAnalyzer/Assets/export.svg</x:String>
+            <x:String x:Key="PreviewIcon">avares://FirebirdTraceAnalyzer/Assets/preview.svg</x:String>
+            <x:String x:Key="SaveIcon">avares://FirebirdTraceAnalyzer/Assets/save.svg</x:String>
 
         </ResourceDictionary>
     </Application.Resources>         
