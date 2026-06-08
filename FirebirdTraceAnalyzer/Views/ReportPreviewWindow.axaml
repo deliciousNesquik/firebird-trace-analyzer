@@ -3,7 +3,6 @@
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:enums="using:FirebirdTraceAnalyzer.Enums.Reports"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
         x:Class="FirebirdTraceAnalyzer.Views.ReportPreviewWindow"
         x:DataType="vm:ReportPreviewViewModel"
@@ -44,10 +43,10 @@
                               Width="150" Height="40" />
 
                     <Button Width="40" Height="40"
-                            Command="{Binding ExportReportCommand}"
-                            Foreground="White">
+                            Classes="focused"
+                            Command="{Binding ExportReportCommand}">
                         <Button.Content>
-                            <Svg Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                            <Svg Width="40" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                         </Button.Content>
                     </Button>
                 </StackPanel>
@@ -265,8 +264,8 @@
 
                 <Button Grid.Column="1"
                         Content="Close"
-                        Click="CloseButton_OnClick"
-                        Padding="20,8" />
+                        Classes="danger"
+                        Click="CloseButton_OnClick"/>
             </Grid>
         </Border>
 

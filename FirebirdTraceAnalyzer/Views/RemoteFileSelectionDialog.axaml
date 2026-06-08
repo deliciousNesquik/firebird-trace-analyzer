@@ -71,20 +71,21 @@
 
                 <!-- Clear Search -->
                 <Button Grid.Column="1"
+                        Classes="danger"
                         Command="{Binding ClearSearchCommand}"
                         IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                         Height="40" Width="40"
                         ToolTip.Tip="Clear search" >
                     <Button.Content>
-                        <Svg Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        <Svg Width="40" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                     </Button.Content>
                     
                 </Button>
 
                 <!-- Date Filter -->
-                <Button Grid.Column="2" Height="40" Width="40">
+                <Button Grid.Column="2" Height="40" Width="40" Classes="normal">
                     <Button.Content>
-                        <Svg Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                        <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
                     </Button.Content>
                     <Button.Flyout>
                         <MenuFlyout Placement="Bottom">
@@ -101,11 +102,12 @@
 
                 <!-- Refresh -->
                 <Button Grid.Column="3"
+                        Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding RefreshCommand}"
                         ToolTip.Tip="Refresh file list" >
                     <Button.Content>
-                        <Svg Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        <Svg Width="40" Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFill}" />
                     </Button.Content>
                 </Button>
             </Grid>
@@ -119,16 +121,16 @@
             <Grid RowDefinitions="Auto,*">
                 
                 <!-- Selection Controls -->
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12" Margin="0,0,0,12">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5" Margin="0,0,0,12">
                     <Button Grid.Column="0"
                             Content="Select All"
-                            Command="{Binding SelectAllCommand}"
-                            Padding="12,6" />
+                            Classes="focused"
+                            Command="{Binding SelectAllCommand}"/>
                     
                     <Button Grid.Column="1"
                             Content="Deselect All"
-                            Command="{Binding DeselectAllCommand}"
-                            Padding="12,6" />
+                            Classes="danger"
+                            Command="{Binding DeselectAllCommand}"/>
                 </Grid>
 
                 <!-- Files -->
@@ -269,16 +271,13 @@
 
                     <Button Grid.Column="1"
                             Content="Download and Process"
-                            Command="{Binding ConfirmCommand}"
-                            Background="{DynamicResource Primary}"
-                            Foreground="White"
-                            FontWeight="SemiBold"
-                            Padding="20,8" />
+                            Classes="focused"
+                            Command="{Binding ConfirmCommand}"/>
                     
                     <Button Grid.Column="2"
                             Content="Cancel"
-                            Click="CancelButton_OnClick"
-                            Padding="20,8" />
+                            Classes="danger"
+                            Click="CancelButton_OnClick"/>
                 </Grid>
             </Grid>
         </Border>

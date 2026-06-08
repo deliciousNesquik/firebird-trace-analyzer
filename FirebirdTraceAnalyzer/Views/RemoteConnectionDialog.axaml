@@ -160,6 +160,7 @@
                                 
                                 <Button Grid.Column="1"
                                         Content="Browse..."
+                                        Classes="focused"
                                         Command="{Binding BrowsePrivateKeyCommand}"
                                         IsEnabled="{Binding !IsConnecting}"
                                         Margin="8,0,0,0" />
@@ -234,6 +235,7 @@
                     
                     <Button Grid.Column="1"
                             Content="Save"
+                            Classes="focused"
                             Command="{Binding SaveProfileCommand}"
                             IsEnabled="{Binding !IsConnecting}" />
                 </Grid>
@@ -282,28 +284,20 @@
                     
                     <Button Grid.Column="0"
                             Content="Test Connection"
-                            Background="{DynamicResource Primary}"
-                            Foreground="White"
-                            FontWeight="SemiBold"
+                            Classes="normal"
                             Command="{Binding TestConnectionCommand}"
-                            IsEnabled="{Binding !IsConnecting}" 
-                            Padding="20,8" />
+                            IsEnabled="{Binding !IsConnecting}"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
                         <Button Content="Connect"
+                                Classes="focused"
                                 Command="{Binding ConnectCommand}"
-                                IsEnabled="{Binding !IsConnecting}"
-                                Background="{DynamicResource Primary}"
-                                Foreground="White"
-                                FontWeight="SemiBold"
-                                Padding="20,8" />
+                                IsEnabled="{Binding !IsConnecting}" />
                         
                         <Button Content="Cancel"
+                                Classes="danger"
                                 Command="{Binding CancelCommand}"
-                                IsEnabled="{Binding !IsConnecting}"
-                                Foreground="White"
-                                FontWeight="SemiBold"
-                                Padding="20,8" />
+                                IsEnabled="{Binding !IsConnecting}"/>
                     </StackPanel>
                 </Grid>
             </Grid>

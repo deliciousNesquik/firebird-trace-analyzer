@@ -39,28 +39,20 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <Button Height="40" Command="{Binding SaveTemplateCommand}"
-                            Background="{DynamicResource Primary}"
-                            Foreground="White"
-                            Padding="10,0">
+                    <Button Height="40" Width="40" Command="{Binding SaveTemplateCommand}"
+                            Classes="focused" ToolTip.Tip="Save custom report">
                         <Button.Content>
-                            <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10">
-                                <Svg Grid.Column="0" VerticalAlignment="Center" Height="30"
-                                     Path="{DynamicResource SaveIcon}"
-                                     Css="{DynamicResource ThemeIconStroke}" />
-                                <TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Grid.Column="1" Text="Save Template"/>
-                            </Grid>
+                            <Svg Width="40"
+                                 Path="{DynamicResource SaveIcon}"
+                                 Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                         </Button.Content>
                     </Button>
                     
-                    <Button Height="40" Command="{Binding GeneratePreviewCommand}" Padding="10 0">
+                    <Button Height="40" Width="40" Classes="normal" Command="{Binding GeneratePreviewCommand}" ToolTip.Tip="Open preview window with current data">
                         <Button.Content>
-                            <Grid ColumnDefinitions="Auto, *" ColumnSpacing="10">
-                                <Svg Grid.Column="0" VerticalAlignment="Center" Height="30"
-                                     Path="{DynamicResource PreviewIcon}"
-                                     Css="{DynamicResource ThemeIconFill}" />
-                                <TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Grid.Column="1" Text="Preview"/>
-                            </Grid>
+                            <Svg Width="40"
+                                 Path="{DynamicResource PreviewIcon}"
+                                 Css="{DynamicResource ThemeIconFill}" />
                         </Button.Content>
                     </Button>
                 </StackPanel>
@@ -389,18 +381,16 @@
                                IsVisible="{Binding HasUnsavedChanges}" />
                 </StackPanel>
 
-                <Button Grid.Column="1"
-                        Content="Save And Close"
-                        Command="{Binding SaveTemplateCommand}"
-                        Background="{DynamicResource Primary}"
-                        Foreground="White"
-                        Padding="20,8"
-                        Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                    <Button Content="Save And Close"
+                            Classes="focused"
+                            Command="{Binding SaveTemplateCommand}"/>
                 
-                <Button Grid.Column="2"
-                        Content="Cancel"
-                        Click="CancelButton_OnClick"
-                        Padding="20,8" />
+                    <Button Content="Cancel"
+                            Classes="danger"
+                            Click="CancelButton_OnClick"/>    
+                </StackPanel>
+                
             </Grid>
         </Border>
 

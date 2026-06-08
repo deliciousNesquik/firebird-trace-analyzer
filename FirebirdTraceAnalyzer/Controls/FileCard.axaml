@@ -43,10 +43,11 @@
 
                         <Button Grid.Row="0" Grid.Column="1" 
                                 Width="30" Height="30" Padding="5"
+                                Classes="danger"
                                 Command="{TemplateBinding RemoveFileCommand}"
                                 ToolTip.Tip="Deletes the trace log and its associated events">
                             <Button.Content>
-                                <Svg Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                <Svg Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                             </Button.Content>
                         </Button>
                         

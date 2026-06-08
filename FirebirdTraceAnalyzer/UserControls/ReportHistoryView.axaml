@@ -36,9 +36,10 @@
                 <Button Grid.Column="1"
                         Command="{Binding LoadReportsCommand}"
                         Margin="12,0,0,0"
+                        Classes="focused"
                         Height="40" Width="40">
                     <Button.Content>
-                        <Svg Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        <Svg Width="40" Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                     </Button.Content>
                 </Button>
             </Grid>
@@ -86,26 +87,29 @@
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <Button Width="40" Height="40"
+                                            Classes="normal"
                                             Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).OpenReportCommand}"
                                             CommandParameter="{Binding}">
                                         <Button.Content>
-                                            <Svg Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                            <Svg Width="40" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                         </Button.Content>
                                     </Button>
                                     
                                     <Button Width="40" Height="40"
+                                            Classes="normal"
                                             Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).OpenReportFolderCommand}"
                                             CommandParameter="{Binding}">
                                         <Button.Content>
-                                            <Svg Path="{DynamicResource FolderIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                            <Svg Width="40" Path="{DynamicResource FolderIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                         </Button.Content>
                                     </Button>
                                     
                                     <Button Width="40" Height="40"
+                                            Classes="danger"
                                             Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).DeleteReportCommand}"
                                             CommandParameter="{Binding}">
                                         <Button.Content>
-                                            <Svg Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                            <Svg Width="40" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                                         </Button.Content>
                                     </Button>
                                 </StackPanel>

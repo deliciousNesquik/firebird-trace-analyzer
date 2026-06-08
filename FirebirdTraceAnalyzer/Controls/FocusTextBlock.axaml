@@ -16,7 +16,7 @@
             <ControlTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <TextBlock Text="{TemplateBinding Header}" FontWeight="400" VerticalAlignment="Center"/>
-                    <Border CornerRadius="10" Background="{DynamicResource Primary}" Padding="6 2 6 2" VerticalAlignment="Center">
+                    <Border CornerRadius="5" Background="{DynamicResource AccentColor}" Padding="6 2 6 2" VerticalAlignment="Center">
                         <TextBlock Text="{TemplateBinding Value}" Foreground="White" FontWeight="Bold" VerticalAlignment="Center"/>    
                     </Border>
                     

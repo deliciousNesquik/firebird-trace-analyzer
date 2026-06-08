@@ -197,18 +197,16 @@
                 <!-- Cancel Button (только если идёт загрузка) -->
                 <Button Grid.Column="1"
                         Content="Cancel"
+                        Classes="danger"
                         Command="{Binding CancelCommand}"
-                        IsVisible="{Binding IsDownloading}"
-                        Padding="20,8" />
+                        IsVisible="{Binding IsDownloading}"/>
 
                 <!-- Close Button (только после завершения) -->
                 <Button Grid.Column="1"
                         Content="Close"
+                        Classes="danger"
                         Click="CloseButton_OnClick"
-                        IsVisible="{Binding IsCompleted}"
-                        Background="{DynamicResource Primary}"
-                        Foreground="White"
-                        Padding="20,8" />
+                        IsVisible="{Binding IsCompleted}"/>
             </Grid>
         </Border>
 

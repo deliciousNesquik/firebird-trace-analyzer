@@ -286,54 +286,43 @@
                         <KeyBinding Gesture="Enter" Command="{Binding ExecuteSearchCommand}" />
                     </TextBox.KeyBindings>
                 </TextBox>
-
-                <!-- ✅ Кнопка поиска -->
+                
                 <Button Grid.Row="0" Grid.Column="1"
-                        Background="Transparent"
-                        VerticalContentAlignment="Center"
+                        Classes="normal"
                         Height="40" Width="40"
-                        BorderThickness="1"
                         Command="{Binding ExecuteSearchCommand}"
                         ToolTip.Tip="Выполнить поиск (Enter)">
-
-                    <!-- ✅ Badge активного поиска -->
-                    <Grid>
-                        <Svg Path="{DynamicResource SearchIcon}"
-                             Css="{DynamicResource ThemeIconFill}" />
-
-                        <!-- Badge "активен поиск" -->
-                        <Border Background="{DynamicResource Primary}"
-                                CornerRadius="8"
-                                Padding="4,2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,-6,-6,0"
-                                IsVisible="{Binding IsSearchActive}">
-                            <TextBlock Text="🔍"
-                                       Foreground="White"
-                                       FontSize="9"
-                                       FontWeight="Bold" />
-                        </Border>
-                    </Grid>
+                    
+                    <Button.Content>
+                        <Grid>
+                            <Svg Width="40" Path="{DynamicResource SearchIcon}"
+                                 Css="{DynamicResource ThemeIconFill}" />
+                            
+                            <Border Background="{DynamicResource Primary}"
+                                    CornerRadius="8"
+                                    Padding="4,2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="0,-6,-6,0"
+                                    IsVisible="{Binding IsSearchActive}">
+                            </Border>
+                        </Grid>
+                    </Button.Content>
                 </Button>
-
-                <!-- ✅ Кнопка сброса поиска -->
+                
                 <Button Grid.Row="0" Grid.Column="2"
-                        Background="Transparent"
                         Height="40" Width="40"
-                        BorderThickness="1"
                         Command="{Binding ClearSearchCommand}"
                         IsVisible="{Binding IsSearchActive}"
                         ToolTip.Tip="Очистить поиск">
-                    <Svg Path="{DynamicResource CloseIcon}"
+                    <Svg Source="{DynamicResource ClearIcon}"
                          Css="{DynamicResource ThemeIconStroke}" />
                 </Button>
 
                 <Button Grid.Row="0"
                         Grid.Column="2"
-                        Background="Transparent"
-                        Height="40" Width="40"
-                        BorderThickness="1">
+                        Classes="normal"
+                        Height="40" Width="40">
 
                     <Button.Flyout>
                         <Flyout Placement="BottomEdgeAlignedRight" ShowMode="Standard">
@@ -392,56 +381,55 @@
                             </Border>
                         </Flyout>
                     </Button.Flyout>
-                    <!-- Иконка с badge -->
-                    <Grid>
-                        <Svg Path="{DynamicResource SortIcon}" Css="{DynamicResource ThemeIconStroke}" />
 
-                        <!-- Badge с направлением сортировки -->
-                        <Border Background="{DynamicResource Primary}"
-                                CornerRadius="8"
-                                Padding="5,2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,-6,-6,0"
-                                IsVisible="{Binding IsSortDescending}">
-                            <TextBlock
-                                Text="🠇"
-                                Foreground="White"
-                                FontSize="9"
-                                FontWeight="Bold" />
-                        </Border>
-
-                        <!-- Badge с направлением сортировки -->
-                        <Border Background="{DynamicResource Primary}"
-                                CornerRadius="8"
-                                Padding="5,2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,-6,-6,0"
-                                IsVisible="{Binding IsSortDescending, Converter={x:Static BoolConverters.Not}}">
-                            <TextBlock
-                                Text="🠅"
-                                Foreground="White"
-                                FontSize="9"
-                                FontWeight="Bold" />
-                        </Border>
-                    </Grid>
+                    <Button.Content>
+                        <Grid>
+                            <Svg Width="40" Path="{DynamicResource SortIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                        
+                            <Border Background="{DynamicResource Primary}"
+                                    CornerRadius="8"
+                                    Padding="4,1"
+                                    Width="15" Height="15"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,-30,-30,0"
+                                    IsVisible="{Binding IsSortDescending}">
+                                <TextBlock
+                                    Text="🠇"
+                                    Foreground="White"
+                                    FontSize="9"
+                                    FontWeight="Bold" />
+                            </Border>
+                            
+                            <Border Background="{DynamicResource AccentColor}"
+                                    CornerRadius="8"
+                                    Padding="4,1"
+                                    Width="15" Height="15"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,-30,-30,0"
+                                    IsVisible="{Binding IsSortDescending, Converter={x:Static BoolConverters.Not}}">
+                                <TextBlock
+                                    Text="🠅"
+                                    Foreground="White"
+                                    FontSize="9"
+                                    FontWeight="Bold" />
+                            </Border>
+                        </Grid>
+                    </Button.Content>
+                    
                 </Button>
 
                 <Button Grid.Row="0" Grid.Column="3"
-                        Background="Transparent"
-                        Height="40" Width="40"
-                        BorderThickness="1">
+                        Classes="normal"
+                        Height="40" Width="40">
 
                     <Button.Flyout>
                         <Flyout Placement="BottomEdgeAlignedRight"
-                                ShowMode="Standard">  <!-- ← Не закрывается при клике -->
+                                ShowMode="Standard">
 
                             <Border Padding="12" MinWidth="400" MaxWidth="600">
-
-                                <!-- ✅ ОДИН ScrollViewer для ВСЕГО содержимого -->
                                 <ScrollViewer MaxHeight="500">
-
                                     <StackPanel Spacing="12" VerticalAlignment="Top">
 
                                         <!-- Заголовок с кнопками -->
@@ -454,26 +442,10 @@
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center"
                                                         Orientation="Horizontal" Spacing="8">
 
-                                                <!-- Badge активных фильтров -->
-                                                <Border Background="{DynamicResource Secondary}"
-                                                        CornerRadius="10"
-                                                        Padding="8,2"
-                                                        IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                                    <TextBlock
-                                                        Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount}"
-                                                        VerticalAlignment="Center"
-                                                        Foreground="White"
-                                                        FontSize="11"
-                                                        FontWeight="Bold" />
-                                                </Border>
-
                                                 <!-- Кнопка сброса -->
                                                 <Button Content="Reset All"
-                                                        Background="{DynamicResource Secondary}"
-                                                        Foreground="White"
-                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ResetAllFiltersCommand}"
-                                                        FontSize="14"
-                                                        Padding="8,4" />
+                                                        Classes="focused"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ResetAllFiltersCommand}"/>
                                             </StackPanel>
                                         </Grid>
 
@@ -482,13 +454,10 @@
                                         <!-- Кнопка применения -->
                                         <Button
                                             Content="Apply Filter"
+                                            Classes="focused"
                                             HorizontalContentAlignment="Center"
                                             Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ApplyFiltersCommand}"
                                             HorizontalAlignment="Stretch"
-                                            Background="{DynamicResource Secondary}"
-                                            Foreground="White"
-                                            FontWeight="SemiBold"
-                                            Padding="12,8"
                                             IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.HasUnappliedChanges}" />
 
                                         <!-- ✅ Список фильтров БЕЗ внутреннего ScrollViewer -->
@@ -635,30 +604,28 @@
                         </Flyout>
                     </Button.Flyout>
 
-                    <!-- Иконка фильтра с badge -->
-                    <Grid>
-                        <Svg Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                    <Button.Content>
+                        <Grid>
+                            <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
 
-                        <!-- Badge с количеством активных фильтров -->
-                        <Border Background="{DynamicResource Primary}"
-                                CornerRadius="8"
-                                Padding="4,2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,-6,-6,0"
-                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <TextBlock
-                                Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount}"
-                                Foreground="White"
-                                FontSize="9"
-                                FontWeight="Bold" />
-                        </Border>
-                    </Grid>
+                            <Border Background="{DynamicResource AccentColor}"
+                                    CornerRadius="8"
+                                    Padding="4,2"
+                                    Width="15" Height="15"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,-30,-30,0"
+                                    IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TextBlock
+                                    Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount}"
+                                    Foreground="White"
+                                    FontSize="9"
+                                    FontWeight="Bold" />
+                            </Border>
+                        </Grid>
+                    </Button.Content>
                 </Button>
-
-
             </Grid>
-
         </Border>
 
         
