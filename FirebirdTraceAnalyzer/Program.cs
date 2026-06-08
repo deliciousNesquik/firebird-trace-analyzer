@@ -5,6 +5,7 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceAnalyzer.Services.Searching;
@@ -83,6 +84,7 @@ internal sealed class Program
         services.AddSingleton<ISortingService, SortingService>();
         services.AddSingleton<IFilteringService, FilteringService>();
         services.AddSingleton<ISearchService, SearchService>();
+        services.AddSingleton<PluginManagerService>();
         
         services.AddSingleton<IFieldDiscoveryService, FieldDiscoveryService>();
         

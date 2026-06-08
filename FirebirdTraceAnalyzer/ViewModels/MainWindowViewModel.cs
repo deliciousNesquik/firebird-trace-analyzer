@@ -15,6 +15,7 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Searching;
 using FirebirdTraceAnalyzer.Services.Sorting;
@@ -38,6 +39,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly UiSectionSettings _uiSettings;
     private readonly IFileDialogService _fileDialogService;
     private readonly ITraceLogParser _parser;
+    private readonly PluginManagerService _pluginManager;
     private readonly ISortingService _sortingService;
     private readonly IFilteringService _filteringService;
     private readonly ISearchService _searchService;
@@ -126,6 +128,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _appSettings = new AppSettingsMock();
         _uiSettings = new UiSectionSettingsMock();
         _parser = null!;
+        _pluginManager = null!;
         _fileDialogService = null!;
         _sortingService = null!;
         _filteringService = null!;
@@ -164,7 +167,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IOptions<UiSectionSettings> uiSettings,
         ISshConnectionService sshConnectionService,
         IRemoteFileService remoteFileService,
-        IEventPropertyAccessor propertyAccessor)
+        IEventPropertyAccessor propertyAccessor,
+        PluginManagerService pluginManager)
     {
         Logger.Info("Object(s) pool have been reset(s).");
         StringPool.Reset();
@@ -181,6 +185,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Dependency Injection
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _pluginManager = pluginManager?? throw new ArgumentNullException(nameof(pluginManager));
         _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _filteringService = filteringService ?? throw new ArgumentNullException(nameof(filteringService));
         _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
@@ -231,26 +236,29 @@ public partial class MainWindowViewModel : ViewModelBase
         StatusMessage = "Application settings loaded.";
     }
 
-    /// <summary>Регистрирует пользовательские сортировки</summary>
+    /// <summary>Регистрирует сортировки из загруженных плагинов</summary>
     private void RegisterCustomSorts()
     {
-        _sortingService.RegisterCustomSort(new SortDescriptor(
-            "custom_user_activity",
-            "User Activity",
-            CustomUserActivityComparer,
-            false,
-            "Analytics",
-            50));
+        // 1. Загружаем все плагины с диска
+        _pluginManager.LoadAllPlugins();
 
-        _sortingService.RegisterCustomSort(new SortDescriptor(
-            "heavy_queries",
-            "Heavy Queries",
-            HeavyQueriesComparer,
-            false,
-            "Analytics",
-            2));
+        // 2. Получаем только те плагины, которые поддерживают сортировку
+        var sortPlugins = _pluginManager.GetSortPlugins();
 
-        Logger.Info("Custom sorts registered.");
+        int loadedSortsCount = 0;
+
+        foreach (var plugin in sortPlugins)
+        {
+            foreach (var sortDescriptor in plugin.GetSorts())
+            {
+                _sortingService.RegisterCustomSort(sortDescriptor);
+                loadedSortsCount++;
+            }
+            
+            Logger.Info($"Loaded sorts from plugin: {plugin.Name} (v{plugin.Version})");
+        }
+
+        Logger.Info($"Total custom sorts registered from plugins: {loadedSortsCount}");
     }
 
     #endregion
@@ -362,29 +370,7 @@ public partial class MainWindowViewModel : ViewModelBase
         return descending ? -result : result;
     }
 
-    private int HeavyQueriesComparer(EventBase a, EventBase b, bool descending)
-    {
-        var msA = GetExecuteMs(a);
-        var msB = GetExecuteMs(b);
-
-        var result = msB.CompareTo(msA); // По умолчанию тяжёлые первыми
-
-        if (result == 0)
-            result = a.Timestamp.CompareTo(b.Timestamp);
-
-        return descending ? -result : result;
-    }
-
-    private static int GetExecuteMs(EventBase evt)
-    {
-        return evt switch
-        {
-            StatementFinishEvent e => e.Performance.ExecuteMs,
-            ProcedureFinishEvent e => e.Performance.ExecuteMs,
-            TriggerFinishEvent e => e.Performance.ExecuteMs,
-            _ => 0
-        };
-    }
+    
 
     private static string? GetUserFromEvent(EventBase evt)
     {
