@@ -662,22 +662,23 @@
 
         </Border>
 
+        
+        
         <Grid Grid.Row="3">
-            <ListBox Padding="10"
-                     ItemsSource="{Binding VisibleEvents}"
-                     IsVisible="{Binding IsEventsSectionVisible}"
-                     Background="{DynamicResource SurfaceElevated }"
-                     SelectionMode="Multiple"
-                     HorizontalAlignment="Stretch">
-
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <VirtualizingStackPanel />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-
-            </ListBox>
-            
+            <ScrollViewer Background="{DynamicResource SurfaceElevated}"
+                          IsVisible="{Binding IsEventsSectionVisible}">
+        
+                <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
+                               Margin="10">
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate>
+                            <ContentPresenter Content="{Binding}" />
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+        
+            </ScrollViewer>
+    
             <Border
                 Padding="40"
                 IsVisible="{Binding !VisibleEvents.Count}">
@@ -688,7 +689,6 @@
                     Spacing="16"
                     MaxWidth="400">
 
-                    <!-- Заголовок -->
                     <TextBlock
                         Text="No data"
                         FontSize="16"
@@ -696,7 +696,6 @@
                         HorizontalAlignment="Center"
                         Foreground="{DynamicResource PrimaryText}" />
 
-                    <!-- Описание -->
                     <TextBlock
                         Text="After processing the file(s), the data will appear here."
                         FontSize="12"
