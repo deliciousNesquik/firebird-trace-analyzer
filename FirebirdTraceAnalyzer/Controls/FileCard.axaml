@@ -41,31 +41,14 @@
 
                         </StackPanel>
 
-                        <!-- MENU -->
-                        <DropDownButton Grid.Row="0"
-                                        Grid.Column="1"
-                                        Width="34"
-                                        Height="28"
-                                        HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center">
-
-                            <DropDownButton.Flyout>
-                                <MenuFlyout>
-                                    <MenuItem Header="_Reprocess [R]"
-                                              InputGesture="Shift+R"
-                                              HotKey="Shift+R"
-                                              IsEnabled="False"
-                                              Padding="5"/>
-
-                                    <MenuItem Header="_Close [C]"
-                                              InputGesture="Ctrl+X"
-                                              HotKey="Ctrl+X"
-                                              Command="{TemplateBinding RemoveFileCommand}" Padding="5" />
-
-                                </MenuFlyout>
-                            </DropDownButton.Flyout>
-
-                        </DropDownButton>
+                        <Button Grid.Row="0" Grid.Column="1" 
+                                Width="30" Height="30" Padding="5"
+                                Command="{TemplateBinding RemoveFileCommand}"
+                                ToolTip.Tip="Deletes the trace log and its associated events">
+                            <Button.Content>
+                                <Svg Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFill}" />
+                            </Button.Content>
+                        </Button>
                         
                         <Grid Grid.Column="0" Grid.Row="1"
                               Grid.ColumnSpan="2"
