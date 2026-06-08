@@ -4,16 +4,20 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
 
-public partial class FiltersPanelViewModel(Action onFiltersApplied) : ObservableObject
+public partial class FiltersPanelViewModel(
+    Action onFiltersApplied,
+    IEventPropertyAccessor propertyAccessor) : ObservableObject
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private readonly Action _onFiltersApplied = onFiltersApplied ?? throw new ArgumentNullException(nameof(onFiltersApplied));
+    private readonly IEventPropertyAccessor _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
     private readonly Dictionary<string, FilterState> _filterStates = new();
 
     /// <summary>Все доступные фильтры</summary>
@@ -153,7 +157,7 @@ public partial class FiltersPanelViewModel(Action onFiltersApplied) : Observable
 
         foreach (var evt in events)
         {
-            var value = GetPropertyValue(evt, filter.PropertyPath);
+            var value = _propertyAccessor.GetValue(evt, filter.PropertyPath);
             if (value != null)
             {
                 valueCounts.TryGetValue(value, out var count);
@@ -164,24 +168,6 @@ public partial class FiltersPanelViewModel(Action onFiltersApplied) : Observable
         // Обновляем счётчики в UI
         foreach (var item in filter.AvailableValues)
             item.Count = valueCounts.TryGetValue(item.Value, out var count) ? count : 0;
-    }
-
-    private object? GetPropertyValue(object obj, string propertyPath)
-    {
-        var parts = propertyPath.Split('.');
-        var current = obj;
-
-        foreach (var part in parts)
-        {
-            if (current == null) return null;
-
-            var prop = current.GetType().GetProperty(part);
-            if (prop == null) return null;
-
-            current = prop.GetValue(current);
-        }
-
-        return current;
     }
 
     private void OnFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)

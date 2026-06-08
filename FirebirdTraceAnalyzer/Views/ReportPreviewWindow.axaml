@@ -1,0 +1,274 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:enums="using:FirebirdTraceAnalyzer.Enums.Reports"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+        x:Class="FirebirdTraceAnalyzer.Views.ReportPreviewWindow"
+        x:DataType="vm:ReportPreviewViewModel"
+        Title="Report Preview"
+        Width="900"
+        Height="700"
+        MinWidth="700"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:ReportPreviewViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Surface}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="0,0,0,1">
+            
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="Report Preview"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+                    
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               Foreground="{DynamicResource SecondaryText}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <ComboBox ItemsSource="{Binding AvailableFormats}"
+                              SelectedItem="{Binding SelectedFormat}"
+                              Width="150" Height="40" />
+
+                    <Button Width="40" Height="40"
+                            Command="{Binding ExportReportCommand}"
+                            Foreground="White">
+                        <Button.Content>
+                            <Svg Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Preview Content -->
+        <ScrollViewer Grid.Row="1" Padding="40">
+            <Border Background="White"
+                    Padding="40"
+                    CornerRadius="4"
+                    BoxShadow="0 2 8 0 #20000000">
+                
+                <StackPanel Spacing="20">
+
+                    <!-- Report Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding PreviewTitle}"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   TextAlignment="Center"
+                                   Foreground="#1976D2" />
+
+                        <TextBlock Text="{Binding PreviewSubtitle}"
+                                   FontSize="14"
+                                   FontStyle="Italic"
+                                   TextAlignment="Center"
+                                   Foreground="#666"
+                                   IsVisible="{Binding PreviewSubtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <Border Height="2"
+                                Background="#E0E0E0"
+                                Margin="0,8" />
+                    </StackPanel>
+
+                    <!-- Header Variables -->
+                    <ItemsControl ItemsSource="{Binding HeaderVariables}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="200,Auto,*" Margin="0,4">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Label}"
+                                               FontWeight="SemiBold"
+                                               Foreground="#333" />
+                                    
+                                    <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="#333"/>
+                                    
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding Value}"
+                                               Foreground="#666"
+                                               TextWrapping="Wrap" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Height="1"
+                            Background="#E0E0E0"
+                            Margin="0,12" />
+
+                    <!-- Events Section -->
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Events"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1976D2" />
+
+                        <!-- Events Table -->
+                        <Border BorderBrush="#E0E0E0"
+                                BorderThickness="1"
+                                CornerRadius="4">
+                            
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                          MaxHeight="400">
+                                
+                                <Grid RowDefinitions="Auto,*">
+
+                                    <!-- Table Header -->
+                                    <Border Grid.Row="0"
+                                            Background="#F5F5F5"
+                                            BorderBrush="#E0E0E0"
+                                            BorderThickness="0,0,0,1">
+                                        
+                                        <ItemsControl ItemsSource="{Binding EventColumns}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="12,8"
+                                                            MinWidth="100"
+                                                            BorderBrush="#E0E0E0"
+                                                            BorderThickness="0,0,1,0">
+                                                        
+                                                        <TextBlock Text="{Binding Header}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="12"
+                                                                   Foreground="#333" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+
+                                    <!-- Table Body -->
+                                    <ItemsControl Grid.Row="1"
+                                                  ItemsSource="{Binding PreviewEventRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#E0E0E0"
+                                                        BorderThickness="0,0,0,1">
+                                                    <ItemsControl ItemsSource="{Binding Cells}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal" />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Padding="12,8"
+                                                                        MinWidth="100"
+                                                                        BorderBrush="#E0E0E0"
+                                                                        BorderThickness="0,0,1,0">
+                                                                    <TextBlock Text="{Binding}"
+                                                                               FontSize="11"
+                                                                               Foreground="#333"
+                                                                               TextWrapping="Wrap" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </ScrollViewer>
+                        </Border>
+
+                        <TextBlock Text="{Binding PreviewEventRows.Count, StringFormat='Total events: {0}'}"
+                                   FontSize="11"
+                                   FontStyle="Italic"
+                                   Foreground="#999" />
+                    </StackPanel>
+
+                    <!-- Statistics Section -->
+                    <StackPanel Spacing="12"
+                                IsVisible="{Binding Statistics.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        
+                        <Border Height="1"
+                                Background="#E0E0E0"
+                                Margin="0,12" />
+
+                        <TextBlock Text="Summary Statistics"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1976D2" />
+
+                        <ItemsControl ItemsSource="{Binding Statistics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="250,Auto,*" Margin="0,4">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Label}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#333" />
+                                    
+                                        <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="#333"/>
+                                    
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Value}"
+                                                   Foreground="#666"
+                                                   TextWrapping="Wrap" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Footer -->
+                    <StackPanel Spacing="8"
+                                IsVisible="{Binding FooterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        
+                        <Border Height="1"
+                                Background="#E0E0E0"
+                                Margin="0,20,0,12" />
+
+                        <TextBlock Text="{Binding FooterText}"
+                                   FontSize="10"
+                                   FontStyle="Italic"
+                                   TextAlignment="Center"
+                                   Foreground="#999" />
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource Surface}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="0,1,0,0">
+            
+            <Grid ColumnDefinitions="*,Auto">
+                <ProgressBar Grid.Column="0"
+                             IsIndeterminate="True"
+                             IsVisible="{Binding IsLoading}"
+                             Height="4"
+                             VerticalAlignment="Center" />
+
+                <Button Grid.Column="1"
+                        Content="Close"
+                        Click="CloseButton_OnClick"
+                        Padding="20,8" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

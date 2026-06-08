@@ -3,7 +3,10 @@ using Avalonia;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Reports;
+using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceAnalyzer.Services.Searching;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.ViewModels;
@@ -74,16 +77,40 @@ internal sealed class Program
         );
 
         // добавляем сервисы для ui приложения
+        services.AddSingleton<IEventPropertyAccessor, EventPropertyAccessor>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IWindowProvider, WindowProvider>();
         services.AddSingleton<ISortingService, SortingService>();
         services.AddSingleton<IFilteringService, FilteringService>();
         services.AddSingleton<ISearchService, SearchService>();
         
+        services.AddSingleton<IFieldDiscoveryService, FieldDiscoveryService>();
+        
         // SSH сервисы
         services.AddSingleton<ISshConnectionService, SshConnectionService>();
         services.AddSingleton<IRemoteFileService, RemoteFileService>();
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
+        
+        // сервисы отчетов
+        services.AddSingleton<IReportTemplateService, ReportTemplateService>();
+        services.AddSingleton<IReportGenerationService, ReportGenerationService>();
+        
+        services.AddTransient<ReportDesignerViewModel>();
+        services.AddTransient<ReportPreviewViewModel>();
+        services.AddTransient<ReportHistoryViewModel>();
+
+        
+        services.AddSingleton<PdfReportExporter>();
+        services.AddSingleton<IReportExporter>(provider => provider.GetRequiredService<PdfReportExporter>());
+
+        services.AddSingleton<CsvReportExporter>();
+        services.AddSingleton<IReportExporter>(provider => provider.GetRequiredService<CsvReportExporter>());
+
+        services.AddSingleton<DocxReportExporter>();
+        services.AddSingleton<IReportExporter>(provider => provider.GetRequiredService<DocxReportExporter>());
+
+        services.AddSingleton<XlsxReportExporter>();
+        services.AddSingleton<IReportExporter>(provider => provider.GetRequiredService<XlsxReportExporter>());
 
         // добавляем ViewModels главного окна
         services.AddTransient<MainWindowViewModel>();

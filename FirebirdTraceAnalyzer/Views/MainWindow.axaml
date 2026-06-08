@@ -6,11 +6,12 @@
         xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls"
         xmlns:usercontrols="clr-namespace:FirebirdTraceAnalyzer.UserControls"
         xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
+        xmlns:reports="clr-namespace:FirebirdTraceAnalyzer.Models.Reports"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
         x:Class="FirebirdTraceAnalyzer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/app-logo.ico"
-        Title="Flytic"
+        Title="Firebird Trace Analyzer"
         MinWidth="1000"
         MinHeight="500">
 
@@ -76,6 +77,70 @@
                         HotKey="Ctrl+Alt+W"
                         Command="{Binding CloseSelectedFilesCommand}" />
                 </MenuItem>
+
+            </MenuItem>
+            
+            <MenuItem Header="_Reports [E]">
+    
+                <!-- Динамические встроенные отчеты (Quick Reports) -->
+                <MenuItem Header="_Quick Reports" ItemsSource="{Binding BuiltInReports}">
+                    <MenuItem.Styles>
+                        <!-- Этот стиль применяется ко всем сгенерированным дочерним элементам -->
+                        <Style Selector="MenuItem" x:DataType="reports:ReportTemplate">
+                            <Setter Property="Header" Value="{Binding Name}" />
+                            <!-- Биндимся к команде в главной ViewModel, передавая Id шаблона -->
+                            <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GenerateQuickReportCommand}" />
+                            <Setter Property="CommandParameter" Value="{Binding Id}" />
+                            <!-- Бонус: показываем описание при наведении -->
+                            <Setter Property="ToolTip.Tip" Value="{Binding Description}" />
+                        </Style>
+                    </MenuItem.Styles>
+                </MenuItem>
+                
+                <!-- Динамические пользовательские отчеты (Custom Reports) -->
+                <MenuItem Header="_Custom Reports" 
+                          ItemsSource="{Binding CustomReports}"
+                          IsVisible="{Binding CustomReports.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <!-- Показываем это меню только если есть хотя бы один кастомный отчет -->
+                    <MenuItem.Styles>
+                        <Style Selector="MenuItem" x:DataType="reports:ReportTemplate">
+                            <Setter Property="Header" Value="{Binding Name}" />
+                            <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GenerateQuickReportCommand}" />
+                            <Setter Property="CommandParameter" Value="{Binding Id}" />
+                            <Setter Property="ToolTip.Tip" Value="{Binding Description}" />
+                        </Style>
+                    </MenuItem.Styles>
+                </MenuItem>
+                
+                <Separator />
+
+                <!-- Manage Templates -->
+                <MenuItem Header="_Manage Templates">
+                    <MenuItem 
+                        Header="Create New Template..."
+                        Command="{Binding CreateReportTemplateCommand}" />
+        
+                    <MenuItem 
+                        Header="Edit Template..."
+                        IsEnabled="True"
+                        Command="{Binding EditReportTemplateCommand}" />
+        
+                    <MenuItem 
+                        Header="Import Template..."
+                        Command="{Binding ImportReportTemplateCommand}" />
+        
+                    <MenuItem 
+                        Header="Export Template..."
+                        IsEnabled="False"
+                        Command="{Binding ExportReportTemplateCommand}" />
+                </MenuItem>
+
+                <Separator />
+
+                <!-- History -->
+                <MenuItem 
+                    Header="_Recent Reports..."
+                    Command="{Binding OpenRecentReportsCommand}" />
 
             </MenuItem>
 
@@ -174,8 +239,7 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-
-            <!-- ✅ ПУСТОЕ СОСТОЯНИЕ (когда нет файлов) -->
+            
             <Border
                 Padding="40"
                 IsVisible="{Binding !FileCards.Count}">
@@ -598,21 +662,53 @@
 
         </Border>
 
-        <ListBox Grid.Row="3"
-                 Padding="10"
-                 ItemsSource="{Binding VisibleEvents}"
-                 IsVisible="{Binding IsEventsSectionVisible}"
-                 Background="{DynamicResource SurfaceElevated }"
-                 SelectionMode="Multiple"
-                 HorizontalAlignment="Stretch">
+        <Grid Grid.Row="3">
+            <ListBox Padding="10"
+                     ItemsSource="{Binding VisibleEvents}"
+                     IsVisible="{Binding IsEventsSectionVisible}"
+                     Background="{DynamicResource SurfaceElevated }"
+                     SelectionMode="Multiple"
+                     HorizontalAlignment="Stretch">
 
-            <ListBox.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <VirtualizingStackPanel />
-                </ItemsPanelTemplate>
-            </ListBox.ItemsPanel>
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
 
-        </ListBox>
+            </ListBox>
+            
+            <Border
+                Padding="40"
+                IsVisible="{Binding !VisibleEvents.Count}">
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="16"
+                    MaxWidth="400">
+
+                    <!-- Заголовок -->
+                    <TextBlock
+                        Text="No data"
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        HorizontalAlignment="Center"
+                        Foreground="{DynamicResource PrimaryText}" />
+
+                    <!-- Описание -->
+                    <TextBlock
+                        Text="After processing the file(s), the data will appear here."
+                        FontSize="12"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        Foreground="{DynamicResource SecondaryText}" />
+
+                </StackPanel>
+            </Border>
+        </Grid>
+        
+        
 
         <usercontrols:StatisticInfoSection
             Grid.Row="4"

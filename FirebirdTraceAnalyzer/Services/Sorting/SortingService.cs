@@ -1,5 +1,5 @@
-﻿using System.Reflection;
-using FirebirdTraceParser.Attributes;
+﻿using FirebirdTraceAnalyzer.Models;
+using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -9,12 +9,21 @@ public sealed class SortingService : ISortingService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private readonly Dictionary<Type, List<SortFieldInfo>> _fieldCache = new();
+    private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IFieldDiscoveryService _fieldDiscovery;
+
     private readonly Dictionary<string, SortDescriptor> _customSorts = new();
 
-    // Кэш последних сортировок
     private List<SortDescriptor>? _lastGeneratedSorts;
     private HashSet<Type>? _lastEventTypes;
+
+    public SortingService(
+        IEventPropertyAccessor propertyAccessor,
+        IFieldDiscoveryService fieldDiscovery)
+    {
+        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _fieldDiscovery = fieldDiscovery ?? throw new ArgumentNullException(nameof(fieldDiscovery));
+    }
 
     public void RegisterCustomSort(SortDescriptor descriptor)
     {
@@ -33,7 +42,6 @@ public sealed class SortingService : ISortingService
                 .ToList();
         }
 
-        // Проверяем, изменились ли типы событий
         var currentEventTypes = eventList
             .Select(e => e.GetType())
             .ToHashSet();
@@ -50,12 +58,12 @@ public sealed class SortingService : ISortingService
 
         var availableSorts = new List<SortDescriptor>(_customSorts.Values);
 
-        // Собираем только ОБЩИЕ поля для пересеченных полей
-        var commonFields = AnalyzeCommonFields(eventList);
+        // Используем новый сервис для получения сортируемых полей
+        var sortableFields = _fieldDiscovery.GetSortableFields(eventList);
 
-        foreach (var field in commonFields)
+        foreach (var field in sortableFields)
         {
-            var sortId = $"field_{field.PropertyPath.Replace(".", "_").ToLower()}";
+            var sortId = _propertyAccessor.ToSortId(field.PropertyPath);
 
             if (_customSorts.ContainsKey(sortId))
                 continue;
@@ -76,153 +84,27 @@ public sealed class SortingService : ISortingService
         return result;
     }
 
-    /// <summary>
-    /// Собирает ОБЩИЕ поля (пересечение всех типов)
-    /// </summary>
-    private List<SortFieldInfo> AnalyzeCommonFields(List<EventBase> events)
-    {
-        var eventTypes = events
-            .Select(e => e.GetType())
-            .Distinct()
-            .ToList();
-
-        if (eventTypes.Count == 0)
-            return [];
-
-        var fieldsByType = eventTypes
-            .Select(GetSortableFields)
-            .ToList();
-
-        if (fieldsByType.Count == 0)
-            return [];
-
-        // Находим пересечение
-        var commonPaths = fieldsByType
-            .Skip(1)
-            .Aggregate(
-                new HashSet<string>(fieldsByType[0].Select(f => f.PropertyPath)),
-                (common, typeFields) =>
-                {
-                    common.IntersectWith(typeFields.Select(f => f.PropertyPath));
-                    return common;
-                });
-
-        var commonFields = fieldsByType[0]
-            .Where(f => commonPaths.Contains(f.PropertyPath))
-            .OrderBy(f => f.Priority)
-            .ToList();
-
-        Logger.Info("Find {Count} common field(s) for filtering from {TypeCount} type(s)",
-            commonFields.Count, eventTypes.Count);
-
-        return commonFields;
-    }
-
-    private List<SortFieldInfo> GetSortableFields(Type eventType)
-    {
-        if (_fieldCache.TryGetValue(eventType, out var cached))
-            return cached;
-
-        var fields = new List<SortFieldInfo>();
-        ScanProperties(eventType, string.Empty, fields, depth: 0);
-
-        _fieldCache[eventType] = fields;
-        return fields;
-    }
-
-    private void ScanProperties(Type type, string pathPrefix, List<SortFieldInfo> results, int depth = 0)
-    {
-        if (depth > 3) return;
-
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        foreach (var prop in properties)
-        {
-            var attr = prop.GetCustomAttribute<SortableFieldAttribute>();
-
-            var path = string.IsNullOrEmpty(pathPrefix)
-                ? prop.Name
-                : $"{pathPrefix}.{prop.Name}";
-
-            if (attr != null)
-            {
-                results.Add(new SortFieldInfo(
-                    path,
-                    attr.DisplayName,
-                    prop.PropertyType,
-                    attr.Category,
-                    attr.Priority));
-            }
-
-            if (ShouldScanNestedType(prop.PropertyType))
-                ScanProperties(prop.PropertyType, path, results, depth + 1);
-        }
-    }
-
-    private static bool ShouldScanNestedType(Type type)
-    {
-        if (type.IsPrimitive || type == typeof(string) || type.IsEnum)
-            return false;
-
-        if (type.IsGenericType)
-            return false;
-
-        if (type.Namespace?.StartsWith("System") == true)
-            return false;
-        
-        return type.IsClass &&
-               type.Namespace?.StartsWith("FirebirdTraceParser") == true;
-    }
-
-    private SortDescriptor CreateFieldSort(SortFieldInfo field)
+    private SortDescriptor CreateFieldSort(DiscoveredField field)
     {
         return new SortDescriptor(
-            $"field_{field.PropertyPath.Replace(".", "_").ToLower()}",
+            _propertyAccessor.ToSortId(field.PropertyPath),
             field.DisplayName,
             CreatePropertyComparer(field.PropertyPath),
-            field.IsDefault,
+            false, // isDefault
             field.Category,
-            field.Priority + 100);
+            field.Priority);
     }
 
     private Func<EventBase, EventBase, bool, int> CreatePropertyComparer(string propertyPath)
     {
         return (a, b, descending) =>
         {
-            var valueA = GetPropertyValue(a, propertyPath);
-            var valueB = GetPropertyValue(b, propertyPath);
-
-            if (valueA == null && valueB == null) return 0;
-            if (valueA == null) return 1;
-            if (valueB == null) return -1;
-
-            int result;
-
-            if (valueA is IComparable comparableA)
-                result = comparableA.CompareTo(valueB);
-            else
-                result = string.Compare(valueA.ToString(), valueB.ToString(), StringComparison.Ordinal);
+            var valueA = _propertyAccessor.GetValue(a, propertyPath);
+            var valueB = _propertyAccessor.GetValue(b, propertyPath);
+            var result = _propertyAccessor.Compare(valueA, valueB);
 
             return descending ? -result : result;
         };
-    }
-
-    private object? GetPropertyValue(object obj, string propertyPath)
-    {
-        var parts = propertyPath.Split('.');
-        var current = obj;
-
-        foreach (var part in parts)
-        {
-            if (current == null) return null;
-
-            var prop = current.GetType().GetProperty(part);
-            if (prop == null) return null;
-
-            current = prop.GetValue(current);
-        }
-
-        return current;
     }
 
     public IEnumerable<EventBase> ApplySort(

@@ -47,8 +47,8 @@
         </Border>
 
         <!-- Content -->
-        <ScrollViewer Grid.Row="1" Padding="20">
-            <StackPanel Spacing="20">
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="20" Margin="20">
 
                 <!-- Current File Progress -->
                 <StackPanel Spacing="8">

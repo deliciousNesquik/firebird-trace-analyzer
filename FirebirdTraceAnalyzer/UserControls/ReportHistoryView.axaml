@@ -1,0 +1,120 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="FirebirdTraceAnalyzer.UserControls.ReportHistoryView"
+             x:DataType="vm:ReportHistoryViewModel">
+
+    <Design.DataContext>
+        <vm:ReportHistoryViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource Background}">
+
+        <!-- Search Bar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Surface}"
+                Padding="16"
+                BorderBrush="{DynamicResource BorderColor}"
+                BorderThickness="0,0,0,1">
+            
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0"
+                         Text="{Binding SearchText}"
+                         PlaceholderText="Search reports..."
+                         VerticalContentAlignment="Center">
+                    <TextBox.InnerLeftContent>
+                        <Svg Path="{DynamicResource SearchIcon}"
+                             Width="16" Height="16"
+                             Margin="8,0,0,0"
+                             Css="{DynamicResource ThemeIconStroke}" />
+                    </TextBox.InnerLeftContent>
+                </TextBox>
+
+                <Button Grid.Column="1"
+                        Command="{Binding LoadReportsCommand}"
+                        Margin="12,0,0,0"
+                        Height="40" Width="40">
+                    <Button.Content>
+                        <Svg Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFill}" />
+                    </Button.Content>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Reports List -->
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalAlignment="Stretch" >
+            
+            <ItemsControl Padding="16" ItemsSource="{Binding FilteredReports}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Surface}"
+                                BorderBrush="{DynamicResource BorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="16"
+                                Margin="0,0,0,12">
+                            
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="8">
+                                    <TextBlock Text="{Binding FileName}"
+                                               FontWeight="SemiBold"
+                                               FontSize="14" />
+                                    
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                                            <Run Text="Format:" />
+                                            <Run Text="{Binding Format}" FontWeight="Medium" />
+                                        </TextBlock>
+
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                                            <Run Text="Size:" />
+                                            <Run Text="{Binding FormattedSize}" FontWeight="Medium" />
+                                        </TextBlock>
+
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                                            <Run Text="Created:" />
+                                            <Run Text="{Binding FormattedDate}" FontWeight="Medium" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Button Width="40" Height="40"
+                                            Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).OpenReportCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Content>
+                                            <Svg Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                        </Button.Content>
+                                    </Button>
+                                    
+                                    <Button Width="40" Height="40"
+                                            Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).OpenReportFolderCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Content>
+                                            <Svg Path="{DynamicResource FolderIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                        </Button.Content>
+                                    </Button>
+                                    
+                                    <Button Width="40" Height="40"
+                                            Command="{Binding $parent[UserControl].((vm:ReportHistoryViewModel)DataContext).DeleteReportCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Content>
+                                            <Svg Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                        </Button.Content>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>
