@@ -3,6 +3,7 @@ using System.Reflection;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Attributes;
+using FirebirdTraceParser.Enums;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -239,8 +240,7 @@ public sealed class FilteringService : IFilteringService
             FilterType.EnumMultiSelect,
             field.PropertyPath,
             evt => CheckEnumFilter(evt, field.PropertyPath, availableValues),
-            field.Category,
-            field.Priority);
+            field.Category);
 
         foreach (var item in availableValues)
             descriptor.AvailableValues.Add(item);
@@ -276,8 +276,7 @@ public sealed class FilteringService : IFilteringService
             FilterType.StringMultiSelect,
             field.PropertyPath,
             evt => CheckStringFilter(evt, field.PropertyPath, availableValues),
-            field.Category,
-            field.Priority);
+            field.Category);
 
         foreach (var item in availableValues)
             descriptor.AvailableValues.Add(item);
@@ -307,8 +306,7 @@ public sealed class FilteringService : IFilteringService
             FilterType.NumericRange,
             field.PropertyPath,
             evt => true,
-            field.Category,
-            field.Priority)
+            field.Category)
         {
             MinValue = min,
             MaxValue = max,
@@ -357,8 +355,7 @@ public sealed class FilteringService : IFilteringService
             FilterType.DateTimeRange,
             field.PropertyPath,
             evt => false,
-            field.Category,
-            field.Priority)
+            field.Category)
         {
             MinValue = min,
             MaxValue = max,

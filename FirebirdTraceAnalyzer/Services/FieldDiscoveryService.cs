@@ -64,7 +64,6 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
         var commonFields = fieldsByType[0]
             .Where(f => commonPaths.Contains(f.PropertyPath))
             .OrderBy(f => f.Category)
-            .ThenBy(f => f.Priority)
             .ThenBy(f => f.DisplayName)
             .ToList();
 
@@ -86,7 +85,6 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
 
         var sortedFields = fields
             .OrderBy(f => f.Category)
-            .ThenBy(f => f.Priority)
             .ThenBy(f => f.DisplayName)
             .ToList();
 
@@ -141,7 +139,6 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
 
         var result = allFields.Values
             .OrderBy(f => f.Category)
-            .ThenBy(f => f.Priority)
             .ThenBy(f => f.DisplayName)
             .ToList();
 
@@ -174,8 +171,7 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
                 ? prop.Name
                 : $"{pathPrefix}.{prop.Name}";
 
-            // Определяем приоритет и категорию
-            var priority = sortableAttr?.Priority ?? filterableAttr?.Priority ?? 100;
+            // Определяем  категорию
             var category = sortableAttr?.Category ?? filterableAttr?.Category ?? "General";
             var displayName = sortableAttr?.DisplayName ?? filterableAttr?.DisplayName ?? FormatPropertyName(prop.Name);
 
@@ -185,7 +181,6 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
                 DisplayName = displayName,
                 PropertyType = prop.PropertyType,
                 Category = category,
-                Priority = priority,
                 IsSortable = sortableAttr != null,
                 IsFilterable = filterableAttr != null,
                 FilterType = filterableAttr?.FilterType,

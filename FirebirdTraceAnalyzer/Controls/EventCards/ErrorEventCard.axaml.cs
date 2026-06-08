@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
@@ -71,10 +72,10 @@ public class ErrorEventCard : TemplatedControl
             nameof(Component),
             "<not set>");
 
-    public static readonly StyledProperty<IReadOnlyList<ErrorInfo>> ErrorsProperty =
-        AvaloniaProperty.Register<ErrorEventCard, IReadOnlyList<ErrorInfo>>(
+    public static readonly StyledProperty<IReadOnlyList<ErrorLines>> ErrorsProperty =
+        AvaloniaProperty.Register<ErrorEventCard, IReadOnlyList<ErrorLines>>(
             nameof(Errors),
-            Array.Empty<ErrorInfo>());
+            Array.Empty<ErrorLines>());
 
     public DateTime Timestamp
     {
@@ -106,7 +107,7 @@ public class ErrorEventCard : TemplatedControl
         set => SetValue(ComponentProperty, value);
     }
 
-    public IReadOnlyList<ErrorInfo> Errors
+    public IReadOnlyList<ErrorLines> Errors
     {
         get => GetValue(ErrorsProperty);
         set => SetValue(ErrorsProperty, value);

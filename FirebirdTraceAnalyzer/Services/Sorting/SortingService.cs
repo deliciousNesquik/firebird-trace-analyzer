@@ -91,8 +91,7 @@ public sealed class SortingService : ISortingService
             field.DisplayName,
             CreatePropertyComparer(field.PropertyPath),
             false, // isDefault
-            field.Category,
-            field.Priority);
+            field.Category);
     }
 
     private Func<EventBase, EventBase, bool, int> CreatePropertyComparer(string propertyPath)

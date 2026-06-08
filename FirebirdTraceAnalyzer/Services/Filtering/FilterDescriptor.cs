@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.ViewModels;
+using FirebirdTraceParser.Enums;
 
 namespace FirebirdTraceAnalyzer.Services.Filtering;
 

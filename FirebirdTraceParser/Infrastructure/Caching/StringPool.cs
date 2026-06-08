@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace FirebirdTraceParser.Parsing.Utils;
+namespace FirebirdTraceParser.Infrastructure.Caching;
 
 public static class StringPool
 {

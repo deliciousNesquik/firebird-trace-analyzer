@@ -6,6 +6,7 @@ using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceParser.Enums;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using FirebirdTraceParser.Attributes;
+using FirebirdTraceParser.Enums;
 
 namespace FirebirdTraceAnalyzer.Models;
 
@@ -12,7 +13,6 @@ public sealed record DiscoveredField
     public required string DisplayName { get; init; }
     public required Type PropertyType { get; init; }
     public required string Category { get; init; }
-    public required int Priority { get; init; }
     
     // Атрибуты поля
     public bool IsSortable { get; init; }

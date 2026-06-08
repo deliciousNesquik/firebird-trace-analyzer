@@ -1,23 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
+
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
-using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Sorting;
-using Microsoft.Extensions.DependencyInjection;
-using FirebirdTraceParser.Attributes;
+using FirebirdTraceParser.Enums;
 using FirebirdTraceParser.Models.Events;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;

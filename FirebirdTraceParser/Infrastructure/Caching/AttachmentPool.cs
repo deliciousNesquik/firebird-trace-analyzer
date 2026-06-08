@@ -1,9 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using FirebirdTraceParser.Models.ValueObjects;
 
-namespace FirebirdTraceParser.Parsing.Utils;
+namespace FirebirdTraceParser.Infrastructure.Caching;
 
-public static class AttachmentInfoPool
+public static class AttachmentPool
 {
     private static readonly ConcurrentDictionary<int, AttachmentInfo> Pool = new();
 

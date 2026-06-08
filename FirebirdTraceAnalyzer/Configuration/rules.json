@@ -57,6 +57,13 @@
       "requiredGroups": ["name", "dtype", "value", "value_null"],
       "sample": "param0 = bigint, \"195\""
     },
+    "error_line": {
+      "pattern": "^(\\d+)\\s*:\\s*(.*)$",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения строк ошибок",
+      "requiredGroups": [],
+      "sample": "335544364 : request synchronization error"
+    },
     "performance": {
       "pattern": "^\\s*(?<execute_ms>\\d+)\\s+ms,\\s*(?:(?<read>\\d+)\\s+read\\(s\\),\\s*)?(?:(?<write>\\d+)\\s+write\\(s\\),\\s*)?(?:(?<fetch>\\d+)\\s+fetch\\(es\\),\\s*)?(?:(?<mark>\\d+)\\s+mark\\(s\\))?",
       "flags": ["IgnorePatternWhitespace"],

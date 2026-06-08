@@ -20,6 +20,7 @@ using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Searching;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
+using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Parsing.Engine;
 using FirebirdTraceParser.Parsing.Utils;
@@ -172,8 +173,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Logger.Info("Object(s) pool have been reset(s).");
         StringPool.Reset();
-        TraceSessionInfoPool.Reset();
-        AttachmentInfoPool.Reset();
+        TraceSessionPool.Reset();
+        AttachmentPool.Reset();
 
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
@@ -1058,6 +1059,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _eventsByFileHash[fileHash] = events;
         AllEvents.AddRange(events);
+        
+        // Очистка пулов объектов для избежания коллизии данных
+        Logger.Info("Object(s) pool have been reset(s).");
+        StringPool.Reset();
+        TraceSessionPool.Reset();
+        AttachmentPool.Reset();
 
         Logger.Info(
             "Streaming parse completed: {FileName}, events: {Count}",

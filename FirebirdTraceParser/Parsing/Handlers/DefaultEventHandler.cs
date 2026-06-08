@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
+using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.ValueObjects;
@@ -9,9 +10,7 @@ using NLog;
 
 namespace FirebirdTraceParser.Parsing.Handlers;
 
-/// <summary>
-///     Обработчик событий по умолчанию.
-/// </summary>
+/// <summary> Обработчик событий по умолчанию. </summary>
 public sealed class DefaultEventHandler : IEventHandler
 {
     private readonly ILogger _logger;
@@ -68,23 +67,28 @@ public sealed class DefaultEventHandler : IEventHandler
     public EventBase? Handle(Match blockHeader, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules)
     {
+        // Парсим заголовок события и получаем строковое представление
         var eventTypeStr = blockHeader.Groups["event_type"].Value;
 
+        // Исключение для обработки ошибок.
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
             return HandleError(blockHeader, bodyLines, rules);
         
+        // Получаем enum значение через словарь
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
         {
             _logger.Warn("Unknown event type for parser: '{EventType}'", eventTypeStr);
             return null;
         }
 
+        // Получаем обработчик для определенного события
         if (!_handlers.TryGetValue(eventType, out var handler))
         {
             _logger.Debug("No handler for event type: {EventType}", eventType);
             return null;
         }
 
+        // После обработки одного события получаем данные
         var result = handler(blockHeader, bodyLines, rules);
 
         if (result == null)
@@ -452,7 +456,7 @@ public sealed class DefaultEventHandler : IEventHandler
         var component = eventTypeStr["ERROR AT ".Length..].Trim();
 
         // Парсим цепочку ошибок
-        var errors = ParseErrorChain(bodyLines);
+        var errors = ParseErrorChain(bodyLines, rules);
 
         var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header);
 
@@ -479,7 +483,7 @@ public sealed class DefaultEventHandler : IEventHandler
             if (m.Success)
             {
                 var sessionId = int.Parse(m.Groups["session_id"].ValueSpan);
-                return TraceSessionInfoPool.Intern(sessionId);
+                return TraceSessionPool.Intern(sessionId);
             }
         }
 
@@ -513,7 +517,7 @@ public sealed class DefaultEventHandler : IEventHandler
 
         var attachmentId = int.Parse(am.Groups["attachment_id"].ValueSpan);
 
-        if (AttachmentInfoPool.TryGet(attachmentId, out var cachedInfo))
+        if (AttachmentPool.TryGet(attachmentId, out var cachedInfo))
             return cachedInfo;
 
         var newInfo = new AttachmentInfo
@@ -532,7 +536,7 @@ public sealed class DefaultEventHandler : IEventHandler
             ProcessId = pm is not null ? int.Parse(pm.Groups["process_id"].ValueSpan) : null
         };
 
-        return AttachmentInfoPool.Add(newInfo);
+        return AttachmentPool.Add(newInfo);
     }
 
     private static TransactionInfo? ParseTransactionInfo(IReadOnlyList<string> lines,
@@ -567,14 +571,13 @@ public sealed class DefaultEventHandler : IEventHandler
         return null;
     }
     
-    private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines)
+    private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines, IReadOnlyDictionary<string, Regex> rules)
     {
         var errors = new List<ErrorLines>();
-        var errorRegex = new Regex(@"^(\d+)\s*:\s*(.*)$", RegexOptions.Compiled);
 
         foreach (var line in lines)
         {
-            var match = errorRegex.Match(line.Trim());
+            var match = rules["error_line"].Match(line.Trim());
             if (match.Success)
             {
                 errors.Add(new ErrorLines
