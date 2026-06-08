@@ -6,9 +6,6 @@ public sealed class SortableFieldAttribute(string displayName) : Attribute
 {
     /// <summary>Отображаемое имя поля</summary>
     public string DisplayName { get; } = displayName ?? throw new ArgumentNullException(nameof(displayName));
-
-    /// <summary>Приоритет отображения (меньше = выше)</summary>
-    public int Priority { get; init; } = 100;
     
     /// <summary>Категория сортировки (например, "Общие", "Производительность")</summary>
     public string Category { get; init; } = "General";

@@ -13,7 +13,7 @@ public class StatementEventBase : EventBase
     public required AttachmentInfo Attachment { get; init; }
     public required TransactionInfo? Transaction { get; init; }
     
-    [SortableField("Statement ID", Priority = 2, Category = "Statements")]
+    [SortableField("Statement ID", Category = "Statements")]
     [FilterableField("Statement ID", Category = "Statements", FilterType =  FilterType.StringMultiSelect)]
     public long? StatementId { get; init; }
     public required string Sql { get; init; }

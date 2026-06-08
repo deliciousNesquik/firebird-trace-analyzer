@@ -12,7 +12,7 @@ public class ProcedureEventBase : EventBase
     public required AttachmentInfo Attachment { get; init; }
     public required TransactionInfo Transaction { get; init; }
     
-    [SortableField("Procedure name", Priority = 2, Category = "Procedures")]
+    [SortableField("Procedure name", Category = "Procedures")]
     [FilterableField("Procedure name", Category = "Procedures", FilterType =  FilterType.StringMultiSelect)]
     public required string ProcedureName { get; init; }
     public required IReadOnlyList<SqlParameters> Parameters { get; init; }

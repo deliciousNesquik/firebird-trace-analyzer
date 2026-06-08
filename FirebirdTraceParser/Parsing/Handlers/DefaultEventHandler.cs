@@ -567,9 +567,9 @@ public sealed class DefaultEventHandler : IEventHandler
         return null;
     }
     
-    private static IReadOnlyList<ErrorInfo> ParseErrorChain(IReadOnlyList<string> lines)
+    private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines)
     {
-        var errors = new List<ErrorInfo>();
+        var errors = new List<ErrorLines>();
         var errorRegex = new Regex(@"^(\d+)\s*:\s*(.*)$", RegexOptions.Compiled);
 
         foreach (var line in lines)
@@ -577,7 +577,7 @@ public sealed class DefaultEventHandler : IEventHandler
             var match = errorRegex.Match(line.Trim());
             if (match.Success)
             {
-                errors.Add(new ErrorInfo
+                errors.Add(new ErrorLines
                 {
                     ErrorCode = int.Parse(match.Groups[1].Value),
                     Message = StringPool.Intern(match.Groups[2].Value.Trim())

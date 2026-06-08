@@ -9,7 +9,7 @@ namespace FirebirdTraceParser.Models.ValueObjects;
 public sealed record TraceSessionInfo
 {
     /// <summary>Идентификатор глобальной trace‑сессии</summary>
-    [SortableField("Session ID", Priority = 2, Category = "Global")]
+    [SortableField("Session ID", Category = "Global")]
     [FilterableField("Session ID", Category = "Global", FilterType =  FilterType.StringMultiSelect)]
     public required int SessionId { get; init; }
 }

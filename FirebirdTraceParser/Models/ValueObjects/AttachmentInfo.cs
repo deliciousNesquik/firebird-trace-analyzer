@@ -12,31 +12,31 @@ public sealed class AttachmentInfo
     [FilterableField("Database path", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string DatabasePath { get; init; }
 
-    [SortableField("Attachment ID", Priority = 9, Category = "Attachment")]
+    [SortableField("Attachment ID", Category = "Attachment")]
     [FilterableField("Attachment ID", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required int AttachmentId { get; init; }
     
-    [SortableField("User", Priority = 10, Category = "Attachment")]
+    [SortableField("User", Category = "Attachment")]
     [FilterableField("User", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string User { get; init; }
 
-    [SortableField("Role", Priority = 11, Category = "Attachment")]
+    [SortableField("Role", Category = "Attachment")]
     [FilterableField("Role", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string Role { get; init; }
 
-    [SortableField("Charset", Priority = 12, Category = "Attachment")]
+    [SortableField("Charset", Category = "Attachment")]
     [FilterableField("Charset", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string Charset { get; init; }
 
-    [SortableField("Protocol", Priority = 13, Category = "Attachment")]
+    [SortableField("Protocol", Category = "Attachment")]
     [FilterableField("Protocol", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string Protocol { get; init; }
 
-    [SortableField("Address", Priority = 14, Category = "Attachment")]
+    [SortableField("Address", Category = "Attachment")]
     [FilterableField("Address", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string Address { get; init; }
     
-    [SortableField("Port", Priority = 14, Category = "Attachment")]
+    [SortableField("Port", Category = "Attachment")]
     [FilterableField("Port", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required int Port { get; init; }
 

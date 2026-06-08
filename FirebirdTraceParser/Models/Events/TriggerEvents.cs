@@ -12,19 +12,19 @@ public class TriggerEventBase : EventBase
     public required AttachmentInfo Attachment { get; init; }
     public required TransactionInfo Transaction { get; init; }
     
-    [SortableField("Trigger name", Priority = 2, Category = "Triggers")]
+    [SortableField("Trigger name", Category = "Triggers")]
     [FilterableField("Trigger name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public required string TriggerName { get; init; }
     
-    [SortableField("Table name", Priority = 2, Category = "Triggers")]
+    [SortableField("Table name", Category = "Triggers")]
     [FilterableField("Table name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public string? Table { get; init; } // ← убрали 'required'
     
-    [SortableField("Timing", Priority = 2, Category = "Triggers")]
+    [SortableField("Timing", Category = "Triggers")]
     [FilterableField("Timing", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public string? Timing { get; init; } // ← убрали 'required'
     
-    [SortableField("Event", Priority = 2, Category = "Triggers")]
+    [SortableField("Event", Category = "Triggers")]
     [FilterableField("Event", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public required string Event { get; init; } // ← оставляем required, но изменим логику
 }
