@@ -517,85 +517,81 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         return AttachmentPool.Add(newInfo);
     }
 
-    private static TransactionInfo? ParseTransactionInfo(IReadOnlyList<string> lines,
+    private static TransactionInfo? ParseTransactionInfo(string line,
         IReadOnlyDictionary<string, Regex> rules)
     {
-        foreach (var line in lines)
+        if (!line.Contains("(TRA_")) return null;
+
+        var m = rules["transaction"].Match(line);
+        if (!m.Success) return null;
+
+        var tid = int.Parse(m.Groups["transaction_id"].ValueSpan);
+
+        // Получаем ValueSpan вместо Value (нет аллокации строки для группы)
+        var paramsSpan = m.Groups["params"].ValueSpan;
+
+        // Дефолтные значения (строковые литералы уже интернированы самой CLR)
+        var isolationLevel = "NONE";
+        var consistencyMode = "NONE";
+        var lockMode = "NONE";
+        var accessMode = "NONE";
+
+        // Безалокационный проход по токенам через Срезы (Slices)
+        var start = 0;
+        while (start < paramsSpan.Length)
         {
-            if (!line.Contains("(TRA_")) continue;
+            var currentSlice = paramsSpan[start..];
+            var nextPipe = currentSlice.IndexOf('|');
 
-            var m = rules["transaction"].Match(line);
-            if (!m.Success) continue;
+            var token = nextPipe == -1 ? currentSlice : currentSlice[..nextPipe];
+            token = token.Trim(); // Сдвигает указатели span, выделения памяти нет
 
-            var tid = int.Parse(m.Groups["transaction_id"].ValueSpan);
-
-            // Оптимизация 1: Получаем ValueSpan вместо Value (нет аллокации строки для группы)
-            var paramsSpan = m.Groups["params"].ValueSpan;
-
-            // Дефолтные значения (строковые литералы уже интернированы самой CLR)
-            var isolationLevel = "NONE";
-            var consistencyMode = "NONE";
-            var lockMode = "NONE";
-            var accessMode = "NONE";
-
-            // Оптимизация 2: Безалокационный проход по токенам через Срезы (Slices)
-            var start = 0;
-            while (start < paramsSpan.Length)
+            if (!token.IsEmpty &&
+                !token.Equals("NONE", StringComparison.OrdinalIgnoreCase) &&
+                !token.Equals("(NONE)", StringComparison.OrdinalIgnoreCase))
             {
-                var currentSlice = paramsSpan[start..];
-                var nextPipe = currentSlice.IndexOf('|');
+                // Сравнение span без ToUpperInvariant()
+                // Проверяем уровни изоляции
+                if (token.Equals("READ_COMMITTED", StringComparison.OrdinalIgnoreCase))
+                    isolationLevel = "READ_COMMITTED";
+                else if (token.Equals("CONCURRENCY", StringComparison.OrdinalIgnoreCase))
+                    isolationLevel = "CONCURRENCY";
+                else if (token.Equals("SNAPSHOT", StringComparison.OrdinalIgnoreCase)) isolationLevel = "SNAPSHOT";
+                else if (token.Equals("SNAPSHOT_TABLE_STABILITY", StringComparison.OrdinalIgnoreCase))
+                    isolationLevel = "SNAPSHOT_TABLE_STABILITY";
 
-                var token = nextPipe == -1 ? currentSlice : currentSlice[..nextPipe];
-                token = token.Trim(); // Сдвигает указатели спана, выделения памяти НЕТ
+                // Проверяем режимы консистентности
+                else if (token.Equals("READ_CONSISTENCY", StringComparison.OrdinalIgnoreCase))
+                    consistencyMode = "READ_CONSISTENCY";
+                else if (token.Equals("NO_RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
+                    consistencyMode = "NO_RECORD_VERSION";
+                else if (token.Equals("RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
+                    consistencyMode = "RECORD_VERSION";
 
-                if (!token.IsEmpty &&
-                    !token.Equals("NONE", StringComparison.OrdinalIgnoreCase) &&
-                    !token.Equals("(NONE)", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Оптимизация 3: Сравнение спанов без ToUpperInvariant()
-                    // Проверяем уровни изоляции
-                    if (token.Equals("READ_COMMITTED", StringComparison.OrdinalIgnoreCase))
-                        isolationLevel = "READ_COMMITTED";
-                    else if (token.Equals("CONCURRENCY", StringComparison.OrdinalIgnoreCase))
-                        isolationLevel = "CONCURRENCY";
-                    else if (token.Equals("SNAPSHOT", StringComparison.OrdinalIgnoreCase)) isolationLevel = "SNAPSHOT";
-                    else if (token.Equals("SNAPSHOT_TABLE_STABILITY", StringComparison.OrdinalIgnoreCase))
-                        isolationLevel = "SNAPSHOT_TABLE_STABILITY";
+                // Проверяем режимы блокировки
+                else if (token.Equals("NOWAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "NOWAIT";
+                else if (token.Equals("WAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "WAIT";
+                else if (token.Equals("LOCK_TIMEOUT", StringComparison.OrdinalIgnoreCase))
+                    lockMode = "LOCK_TIMEOUT";
 
-                    // Проверяем режимы консистентности
-                    else if (token.Equals("READ_CONSISTENCY", StringComparison.OrdinalIgnoreCase))
-                        consistencyMode = "READ_CONSISTENCY";
-                    else if (token.Equals("NO_RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
-                        consistencyMode = "NO_RECORD_VERSION";
-                    else if (token.Equals("RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
-                        consistencyMode = "RECORD_VERSION";
-
-                    // Проверяем режимы блокировки
-                    else if (token.Equals("NOWAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "NOWAIT";
-                    else if (token.Equals("WAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "WAIT";
-                    else if (token.Equals("LOCK_TIMEOUT", StringComparison.OrdinalIgnoreCase))
-                        lockMode = "LOCK_TIMEOUT";
-
-                    // Проверяем режимы доступа
-                    else if (token.Equals("READ_WRITE", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_WRITE";
-                    else if (token.Equals("READ_ONLY", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_ONLY";
-                }
-
-                if (nextPipe == -1) break;
-                start += nextPipe + 1;
+                // Проверяем режимы доступа
+                else if (token.Equals("READ_WRITE", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_WRITE";
+                else if (token.Equals("READ_ONLY", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_ONLY";
             }
 
-            return new TransactionInfo
-            {
-                TransactionId = tid,
-                IsolationLevel = isolationLevel,
-                ConsistencyMode = consistencyMode,
-                LockMode = lockMode,
-                AccessMode = accessMode
-            };
+            if (nextPipe == -1) break;
+            start += nextPipe + 1;
         }
 
-        return null;
+        return new TransactionInfo
+        {
+            TransactionId = tid,
+            IsolationLevel = isolationLevel,
+            ConsistencyMode = consistencyMode,
+            LockMode = lockMode,
+            AccessMode = accessMode
+        };
+        
     }
 
     private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines,
@@ -690,7 +686,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
             if (transaction is null)
             {
-                transaction = ParseTransactionInfo(new[] { line }, rules);
+                transaction = ParseTransactionInfo(line, rules);
                 if (transaction is not null) continue;
             }
 
@@ -749,7 +745,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
             if (includePerformance && performance is null)
             {
-                performance = ParsePerformance(new[] { line }, rules);
+                performance = ParsePerformance(line, rules);
                 if (performance is not null) continue;
             }
 
@@ -767,20 +763,18 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static ProcedureData ParseProcedureData(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, bool includePerformance)
     {
-        var attachment = ParseAttachmentInfo(lines, rules); // ← ИСПРАВЛЕНО: добавлен парсинг
+        var attachment = ParseAttachmentInfo(lines, rules);
         TransactionInfo? transaction = null;
         string? procedureName = null;
         var paramsList = new List<SqlParameters>();
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
 
-        for (var i = 0; i < lines.Count; i++)
+        foreach (var line in lines)
         {
-            var line = lines[i];
-
             if (transaction is null)
             {
-                transaction = ParseTransactionInfo(new[] { line }, rules);
+                transaction = ParseTransactionInfo(line, rules);
                 if (transaction is not null) continue;
             }
 
@@ -799,7 +793,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             }
 
             if (includePerformance && performance is null)
-                performance = ParsePerformance(new[] { line }, rules);
+                performance = ParsePerformance(line, rules);
         }
 
         return new ProcedureData(attachment, transaction, procedureName, paramsList, performance, performanceTable);
@@ -817,13 +811,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
 
-        for (var i = 0; i < lines.Count; i++)
+        foreach (var line in lines)
         {
-            var line = lines[i];
-
             if (transaction is null)
             {
-                transaction = ParseTransactionInfo(new[] { line }, rules);
+                transaction = ParseTransactionInfo(line, rules);
                 if (transaction is not null) continue;
             }
 
@@ -850,35 +842,32 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             }
 
             if (includePerformance && performance is null)
-                performance = ParsePerformance(new[] { line }, rules);
+                performance = ParsePerformance(line, rules);
         }
 
         return new TriggerData(attachment, transaction, triggerName, table, timing, eventType, performance,
             performanceTable);
     }
 
-    private static PerformanceInfo? ParsePerformance(IReadOnlyList<string> lines,
+    private static PerformanceInfo? ParsePerformance(string line,
         IReadOnlyDictionary<string, Regex> rules)
     {
         var fetchCount = 0;
+        
+        var mFetched = rules["fetched"].Match(line);
+        if (mFetched.Success)
+            fetchCount = int.Parse(mFetched.Groups["fetch_count"].ValueSpan);
 
-        foreach (var line in lines)
-        {
-            var mFetched = rules["fetched"].Match(line);
-            if (mFetched.Success)
-                fetchCount = int.Parse(mFetched.Groups["fetch_count"].ValueSpan);
-
-            var mPerf = rules["performance"].Match(line);
-            if (mPerf.Success)
-                return new PerformanceInfo
-                {
-                    ExecuteMs = int.Parse(mPerf.Groups["execute_ms"].ValueSpan),
-                    FetchCount = fetchCount,
-                    ReadCount = mPerf.Groups["read"].Success ? int.Parse(mPerf.Groups["read"].ValueSpan) : 0,
-                    WriteCount = mPerf.Groups["write"].Success ? int.Parse(mPerf.Groups["write"].ValueSpan) : 0,
-                    MarkCount = mPerf.Groups["mark"].Success ? int.Parse(mPerf.Groups["mark"].ValueSpan) : 0
-                };
-        }
+        var mPerf = rules["performance"].Match(line);
+        if (mPerf.Success)
+            return new PerformanceInfo
+            {
+                ExecuteMs = int.Parse(mPerf.Groups["execute_ms"].ValueSpan),
+                FetchCount = fetchCount,
+                ReadCount = mPerf.Groups["read"].Success ? int.Parse(mPerf.Groups["read"].ValueSpan) : 0,
+                WriteCount = mPerf.Groups["write"].Success ? int.Parse(mPerf.Groups["write"].ValueSpan) : 0,
+                MarkCount = mPerf.Groups["mark"].Success ? int.Parse(mPerf.Groups["mark"].ValueSpan) : 0
+            };
 
         return null;
     }
