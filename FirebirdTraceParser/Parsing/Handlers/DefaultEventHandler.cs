@@ -73,7 +73,7 @@ public sealed class DefaultEventHandler : IEventHandler
         // Исключение для обработки ошибок.
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
             return HandleError(blockHeader, bodyLines, rules);
-        
+
         // Получаем enum значение через словарь
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
         {
@@ -445,8 +445,9 @@ public sealed class DefaultEventHandler : IEventHandler
             PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
         };
     }
-    
-    private ErrorEvent? HandleError(Match header, IReadOnlyList<string> bodyLines, IReadOnlyDictionary<string, Regex> rules)
+
+    private ErrorEvent? HandleError(Match header, IReadOnlyList<string> bodyLines,
+        IReadOnlyDictionary<string, Regex> rules)
     {
         var attachment = ParseAttachmentInfo(bodyLines, rules);
         if (attachment is null) return null;
@@ -550,28 +551,78 @@ public sealed class DefaultEventHandler : IEventHandler
             if (!m.Success) continue;
 
             var tid = int.Parse(m.Groups["transaction_id"].ValueSpan);
-            var rawParams = m.Groups["params"].Value;
 
-            // Разбиваем параметры и очищаем
-            var parts = rawParams.Split('|')
-                .Select(p => p.Trim().ToUpperInvariant())
-                .Where(p => !string.IsNullOrEmpty(p) && p != "NONE" && p != "(NONE)")
-                .ToHashSet(); // ← Используем HashSet для быстрого поиска
+            // Оптимизация 1: Получаем ValueSpan вместо Value (нет аллокации строки для группы)
+            var paramsSpan = m.Groups["params"].ValueSpan;
+
+            // Дефолтные значения (строковые литералы уже интернированы самой CLR)
+            var isolationLevel = "NONE";
+            var consistencyMode = "NONE";
+            var lockMode = "NONE";
+            var accessMode = "NONE";
+
+            // Оптимизация 2: Безалокационный проход по токенам через Срезы (Slices)
+            var start = 0;
+            while (start < paramsSpan.Length)
+            {
+                var currentSlice = paramsSpan[start..];
+                var nextPipe = currentSlice.IndexOf('|');
+
+                var token = nextPipe == -1 ? currentSlice : currentSlice[..nextPipe];
+                token = token.Trim(); // Сдвигает указатели спана, выделения памяти НЕТ
+
+                if (!token.IsEmpty &&
+                    !token.Equals("NONE", StringComparison.OrdinalIgnoreCase) &&
+                    !token.Equals("(NONE)", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Оптимизация 3: Сравнение спанов без ToUpperInvariant()
+                    // Проверяем уровни изоляции
+                    if (token.Equals("READ_COMMITTED", StringComparison.OrdinalIgnoreCase))
+                        isolationLevel = "READ_COMMITTED";
+                    else if (token.Equals("CONCURRENCY", StringComparison.OrdinalIgnoreCase))
+                        isolationLevel = "CONCURRENCY";
+                    else if (token.Equals("SNAPSHOT", StringComparison.OrdinalIgnoreCase)) isolationLevel = "SNAPSHOT";
+                    else if (token.Equals("SNAPSHOT_TABLE_STABILITY", StringComparison.OrdinalIgnoreCase))
+                        isolationLevel = "SNAPSHOT_TABLE_STABILITY";
+
+                    // Проверяем режимы консистентности
+                    else if (token.Equals("READ_CONSISTENCY", StringComparison.OrdinalIgnoreCase))
+                        consistencyMode = "READ_CONSISTENCY";
+                    else if (token.Equals("NO_RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
+                        consistencyMode = "NO_RECORD_VERSION";
+                    else if (token.Equals("RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
+                        consistencyMode = "RECORD_VERSION";
+
+                    // Проверяем режимы блокировки
+                    else if (token.Equals("NOWAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "NOWAIT";
+                    else if (token.Equals("WAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "WAIT";
+                    else if (token.Equals("LOCK_TIMEOUT", StringComparison.OrdinalIgnoreCase))
+                        lockMode = "LOCK_TIMEOUT";
+
+                    // Проверяем режимы доступа
+                    else if (token.Equals("READ_WRITE", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_WRITE";
+                    else if (token.Equals("READ_ONLY", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_ONLY";
+                }
+
+                if (nextPipe == -1) break;
+                start += nextPipe + 1;
+            }
 
             return new TransactionInfo
             {
                 TransactionId = tid,
-                IsolationLevel = ExtractIsolationLevel(parts),
-                ConsistencyMode = ExtractConsistencyMode(parts),
-                LockMode = ExtractLockMode(parts),
-                AccessMode = ExtractAccessMode(parts)
+                IsolationLevel = isolationLevel,
+                ConsistencyMode = consistencyMode,
+                LockMode = lockMode,
+                AccessMode = accessMode
             };
         }
 
         return null;
     }
-    
-    private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines, IReadOnlyDictionary<string, Regex> rules)
+
+    private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines,
+        IReadOnlyDictionary<string, Regex> rules)
     {
         var errors = new List<ErrorLines>();
 
@@ -579,59 +630,17 @@ public sealed class DefaultEventHandler : IEventHandler
         {
             var match = rules["error_line"].Match(line.Trim());
             if (match.Success)
-            {
                 errors.Add(new ErrorLines
                 {
                     ErrorCode = int.Parse(match.Groups[1].Value),
                     Message = StringPool.Intern(match.Groups[2].Value.Trim())
                 });
-            }
         }
 
         return errors;
     }
 
-// ==================== Вспомогательные методы для классификации ====================
-
-    private static string ExtractIsolationLevel(HashSet<string> parts)
-    {
-        // Уровни изоляции в Firebird (только один может быть активным)
-        if (parts.Contains("READ_COMMITTED")) return StringPool.Intern("READ_COMMITTED");
-        if (parts.Contains("CONCURRENCY")) return StringPool.Intern("CONCURRENCY");
-        if (parts.Contains("SNAPSHOT")) return StringPool.Intern("SNAPSHOT");
-        if (parts.Contains("SNAPSHOT_TABLE_STABILITY")) return StringPool.Intern("SNAPSHOT_TABLE_STABILITY");
-
-        return StringPool.Intern("NONE");
-    }
-
-    private static string ExtractConsistencyMode(HashSet<string> parts)
-    {
-        // Режимы консистентности (только для READ_COMMITTED в FB 4.0+)
-        if (parts.Contains("READ_CONSISTENCY")) return StringPool.Intern("READ_CONSISTENCY");
-        if (parts.Contains("NO_RECORD_VERSION")) return StringPool.Intern("NO_RECORD_VERSION");
-        if (parts.Contains("RECORD_VERSION")) return StringPool.Intern("RECORD_VERSION");
-
-        return StringPool.Intern("NONE");
-    }
-
-    private static string ExtractLockMode(HashSet<string> parts)
-    {
-        // Режимы блокировки
-        if (parts.Contains("NOWAIT")) return StringPool.Intern("NOWAIT");
-        if (parts.Contains("WAIT")) return StringPool.Intern("WAIT");
-        if (parts.Contains("LOCK_TIMEOUT")) return StringPool.Intern("LOCK_TIMEOUT");
-
-        return StringPool.Intern("NONE");
-    }
-
-    private static string ExtractAccessMode(HashSet<string> parts)
-    {
-        // Режимы доступа
-        if (parts.Contains("READ_WRITE")) return StringPool.Intern("READ_WRITE");
-        if (parts.Contains("READ_ONLY")) return StringPool.Intern("READ_ONLY");
-
-        return StringPool.Intern("NONE");
-    }
+    // ==================== Вспомогательные методы для классификации ====================
 
     /// <summary>
     ///     Парсит одну строку SQL-параметра и возвращает объект SqlParameters или null.
