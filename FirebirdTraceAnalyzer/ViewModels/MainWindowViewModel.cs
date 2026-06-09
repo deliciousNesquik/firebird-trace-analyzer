@@ -352,6 +352,42 @@ public partial class MainWindowViewModel : ViewModelBase
             ApplyCurrentSort();
     }
 
+    #region Custom Sort Comparers
+
+    private int CustomUserActivityComparer(EventBase a, EventBase b, bool descending)
+    {
+        var userA = GetUserFromEvent(a);
+        var userB = GetUserFromEvent(b);
+
+        if (userA == null && userB == null) return 0;
+        if (userA == null) return 1;
+        if (userB == null) return -1;
+
+        var result = string.Compare(userA, userB, StringComparison.OrdinalIgnoreCase);
+
+        if (result == 0)
+            result = a.Timestamp.CompareTo(b.Timestamp);
+
+        return descending ? -result : result;
+    }
+
+    
+
+    private static string? GetUserFromEvent(EventBase evt)
+    {
+        return evt switch
+        {
+            AttachDatabaseEvent e => e.Attachment.User,
+            DetachDatabaseEvent e => e.Attachment.User,
+            StatementEventBase e => e.Attachment.User,
+            ProcedureEventBase e => e.Attachment.User,
+            TriggerEventBase e => e.Attachment.User,
+            _ => null
+        };
+    }
+
+    #endregion
+
     #endregion
 
     #region Filtering
