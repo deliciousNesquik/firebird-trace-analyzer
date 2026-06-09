@@ -274,7 +274,7 @@
         <Border Grid.Row="2" Padding="10" Background="{DynamicResource Surface}"
                 IsVisible="{Binding IsSearchSectionVisible}">
 
-            <Grid ColumnDefinitions="* Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
+            <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
                          Background="{DynamicResource Surface}"
                          PlaceholderText="Search by SQL text or procedure and trigger name..."
@@ -288,6 +288,16 @@
                 </TextBox>
                 
                 <Button Grid.Row="0" Grid.Column="1"
+                        Height="40" Width="40"
+                        Classes="normal"
+                        Command="{Binding ClearSearchCommand}"
+                        IsVisible="{Binding IsSearchActive}"
+                        ToolTip.Tip="Очистить поиск">
+                    <Svg Width="40" Path="{DynamicResource ClearIcon}"
+                         Css="{DynamicResource ThemeIconFill}" />
+                </Button>
+                
+                <Button Grid.Row="0" Grid.Column="2"
                         Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding ExecuteSearchCommand}"
@@ -309,18 +319,9 @@
                         </Grid>
                     </Button.Content>
                 </Button>
-                
-                <Button Grid.Row="0" Grid.Column="2"
-                        Height="40" Width="40"
-                        Command="{Binding ClearSearchCommand}"
-                        IsVisible="{Binding IsSearchActive}"
-                        ToolTip.Tip="Очистить поиск">
-                    <Svg Source="{DynamicResource ClearIcon}"
-                         Css="{DynamicResource ThemeIconStroke}" />
-                </Button>
 
                 <Button Grid.Row="0"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Classes="normal"
                         Height="40" Width="40">
 
@@ -420,7 +421,7 @@
                     
                 </Button>
 
-                <Button Grid.Row="0" Grid.Column="3"
+                <Button Grid.Row="0" Grid.Column="4"
                         Classes="normal"
                         Height="40" Width="40">
 
@@ -627,8 +628,6 @@
                 </Button>
             </Grid>
         </Border>
-
-        
         
         <Grid Grid.Row="3">
             <ScrollViewer Background="{DynamicResource SurfaceElevated}"
