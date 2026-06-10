@@ -23,6 +23,17 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Configuration\*.json" />
-        <EmbeddedResource Include="Configuration\nlog.config" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Configuration\nlog.config">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Configuration\rules.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Configuration\rules.schema.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 </Project>
