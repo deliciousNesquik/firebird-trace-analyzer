@@ -27,22 +27,6 @@ public sealed class RuleValidationException : FirebirdParseException
 }
 
 /// <summary>
-/// Ошибка парсинга блока событий.
-/// </summary>
-public sealed class ParseException : FirebirdParseException
-{
-    public string? BlockContent { get; init; }
-    public int LineNumber { get; init; }
-    
-    public ParseException(string message, int lineNumber, string? blockContent = null) 
-        : base(message)
-    {
-        LineNumber = lineNumber;
-        BlockContent = blockContent;
-    }
-}
-
-/// <summary>
 /// Несовпадение версии схемы правил.
 /// </summary>
 public sealed class SchemaVersionException : FirebirdParseException
