@@ -62,7 +62,6 @@ public sealed class TraceLogParser(
 
         var fileInfo = new FileInfo(filePath);
         var fileSize = fileInfo.Length;
-        long bytesRead = 0;
 
         var events = new List<EventBase>();
         var warnings = new List<ParsingWarning>();
@@ -78,14 +77,14 @@ public sealed class TraceLogParser(
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
             lineNumber++;
-            bytesRead += options.Encoding.GetByteCount(line) + 2;
 
             cancellationToken.ThrowIfCancellationRequested();
 
             ProcessLine(line, lineNumber, currentBlock, events, warnings, options);
 
-            if (progress != null && lineNumber % 1000 == 0)
-                progress.Report((double)bytesRead / fileSize);
+            // Прогресс по позиции потока — дёшево и без повторного кодирования строки
+            if (progress != null && lineNumber % 1000 == 0 && fileSize > 0)
+                progress.Report((double)stream.Position / fileSize);
         }
 
         if (currentBlock.HasData)
