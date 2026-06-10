@@ -503,7 +503,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
         if (am is null) return null;
 
-        var attachmentId = int.Parse(am.Groups["attachment_id"].ValueSpan);
+        var attachmentId = ParseLongOrDefault(am.Groups["attachment_id"].ValueSpan);
 
         if (AttachmentPool.TryGet(attachmentId, out var cachedInfo))
             return cachedInfo;

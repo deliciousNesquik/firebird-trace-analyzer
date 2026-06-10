@@ -29,8 +29,8 @@ public class FailedProcedureFinishEventCard : TemplatedControl
     public static readonly StyledProperty<string> RoleProperty =
         AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(Role), "<not set>");
     
-    public static readonly StyledProperty<int> AttachmentIdProperty =
-        AvaloniaProperty.Register<FailedProcedureFinishEventCard, int>(nameof(AttachmentId), 0);
+    public static readonly StyledProperty<long> AttachmentIdProperty =
+        AvaloniaProperty.Register<FailedProcedureFinishEventCard, long>(nameof(AttachmentId), 0);
     
     public static readonly StyledProperty<string> ProtocolProperty =
         AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(Protocol), "<not set>");
@@ -125,7 +125,7 @@ public class FailedProcedureFinishEventCard : TemplatedControl
         set => SetValue(RoleProperty, value);
     }
     
-    public int AttachmentId
+    public long AttachmentId
     {
         get => GetValue(AttachmentIdProperty);
         set => SetValue(AttachmentIdProperty, value);

@@ -5,10 +5,10 @@ namespace FirebirdTraceParser.Infrastructure.Caching;
 
 public static class AttachmentPool
 {
-    private static readonly ConcurrentDictionary<int, AttachmentInfo> Pool = new();
+    private static readonly ConcurrentDictionary<long, AttachmentInfo> Pool = new();
 
     // Пытаемся получить готовый объект по ID
-    public static bool TryGet(int attachmentId, out AttachmentInfo? info)
+    public static bool TryGet(long attachmentId, out AttachmentInfo? info)
     {
         return Pool.TryGetValue(attachmentId, out info);
     }
