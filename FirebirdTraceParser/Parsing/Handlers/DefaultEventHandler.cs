@@ -678,6 +678,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var paramsList = new List<SqlParameters>();
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
+        var performanceTableSearched = false;
         int? restartCount = null;
 
         for (var i = 0; i < lines.Count; i++)
@@ -749,10 +750,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 if (performance is not null) continue;
             }
 
-            if (includePerformance && performanceTable is null)
+            if (includePerformance && !performanceTableSearched)
             {
-                var slice = lines.Skip(i).ToArray();
-                performanceTable = PerformanceTableParser.ParsePerformanceTable(slice, rules);
+                // Сканируем хвост на таблицу производительности один раз, без копии массива
+                performanceTableSearched = true;
+                performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, i, rules);
             }
         }
 

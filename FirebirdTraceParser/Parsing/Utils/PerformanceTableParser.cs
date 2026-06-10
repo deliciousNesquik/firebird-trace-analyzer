@@ -24,14 +24,16 @@ public static class PerformanceTableParser
         int ExpungeStart, int ExpungeEnd
     );
     
-    public static PerformanceTable? ParsePerformanceTable(string[] lines, IReadOnlyDictionary<string, Regex> rules)
+    public static PerformanceTable? ParsePerformanceTable(IReadOnlyList<string> lines, int startIndex,
+        IReadOnlyDictionary<string, Regex> rules)
     {
         var items = new List<PerformanceTableItem>();
         ColumnPositions? positions = null;
         bool inTable = false;
-        
-        foreach (var line in lines)
+
+        for (var idx = startIndex; idx < lines.Count; idx++)
         {
+            var line = lines[idx];
             // Заголовок
             if (rules["performance_table_header"].IsMatch(line))
             {
