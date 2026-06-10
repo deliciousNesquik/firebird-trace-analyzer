@@ -11,70 +11,6 @@ namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
 public class ProcedureStartEventCard : TemplatedControl
 {
-    private Button? _copyButton;
-    private Button? _copyButtonWithParams;
-
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-    {
-        base.OnApplyTemplate(e);
-
-        // Отписываемся если шаблон переинициализировался
-        if (_copyButton != null)
-            _copyButton.Click -= CopyButtonOnClick;
-
-        _copyButton = e.NameScope.Find<Button>("PART_CopyProcedureButton");
-        _copyButtonWithParams = e.NameScope.Find<Button>("PART_CopyProcedureWithParamsButton");
-
-        if (_copyButton != null)
-            _copyButton.Click += CopyButtonOnClick;
-        
-        if (_copyButtonWithParams != null)
-            _copyButtonWithParams.Click += CopyButtonWithParamsOnClick;
-    }
-
-    private async void CopyButtonOnClick(object? sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel?.Clipboard == null)
-            return;
-
-        await topLevel.Clipboard.SetTextAsync(ProcedureName);
-    }
-    
-    private async void CopyButtonWithParamsOnClick(object? sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel?.Clipboard == null)
-            return;
-
-        var execute = new StringBuilder();
-
-        execute.Append($"EXECUTE PROCEDURE {ProcedureName}(");
-
-        execute.Append(string.Join(", ", Params.Select(param =>
-        {
-            var value = param.Value?.ToString();
-
-            if (value == "<NULL>")
-                return "NULL";
-
-            if (int.TryParse(value, out _) ||
-                decimal.TryParse(value, out _) ||
-                bool.TryParse(value, out _))
-            {
-                return value;
-            }
-
-            return $"'{value?.Replace("'", "''")}'";
-        })));
-
-        execute.Append(')');
-        
-        await topLevel.Clipboard.SetTextAsync(execute.ToString());
-    }
-    
     public static readonly StyledProperty<DateTime> TimestampProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
     
@@ -131,6 +67,9 @@ public class ProcedureStartEventCard : TemplatedControl
     
     public static readonly StyledProperty<string> ProcedureNameProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, string>(nameof(ProcedureName), "<not set>");
+    
+    public static readonly StyledProperty<string> ExecuteProcedureProperty =
+        AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(ExecuteProcedure), "<not set>");
     
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
@@ -247,6 +186,37 @@ public class ProcedureStartEventCard : TemplatedControl
     {
         get => GetValue(ProcedureNameProperty);
         set => SetValue(ProcedureNameProperty, value);
+    }
+    
+    public string ExecuteProcedure
+    {
+        get
+        {
+            var execute = new StringBuilder();
+
+            execute.Append($"EXECUTE PROCEDURE {ProcedureName}(");
+
+            execute.Append(string.Join(", ", Params.Select(param =>
+            {
+                var value = param.Value?.ToString();
+
+                if (value == "<NULL>")
+                    return "NULL";
+
+                if (int.TryParse(value, out _) ||
+                    decimal.TryParse(value, out _) ||
+                    bool.TryParse(value, out _))
+                {
+                    return value;
+                }
+
+                return $"'{value?.Replace("'", "''")}'";
+            })));
+
+            execute.Append(')');
+        
+            return execute.ToString();
+        }
     }
     
     public IReadOnlyList<SqlParameters> Params

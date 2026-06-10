@@ -156,21 +156,14 @@
 
                         <Border BorderBrush="Gray" BorderThickness="1" Padding="10">
                             <Grid RowDefinitions="Auto" ColumnDefinitions="*,Auto">
-                                <TextBlock Text="{Binding TriggerDescription,
+                                <TextBlock Grid.Column="0" Text="{Binding TriggerDescription,
                                     RelativeSource={RelativeSource TemplatedParent}}"
                                            FontFamily="Consolas"
                                            FontWeight="SemiBold"/>
                                 
-                                <Button x:Name="PART_CopyTriggerButton"
-                                        Background="Transparent"
-                                        VerticalContentAlignment="Top"
-                                        Height="24" Width="24"
-                                        Padding="0"
-                                        Grid.Column="1">
-    
-                                    <Svg Path="{DynamicResource CopyIcon}"
-                                         Css="{DynamicResource ThemeIconFill}" />
-                                </Button>
+                                <controls:CopyButton Grid.Column="1" Text="{TemplateBinding TriggerName}"
+                                                     VerticalAlignment="Top"
+                                                     Height="30" Width="30" />
                             </Grid>
                         </Border>
 

@@ -10,33 +10,6 @@ namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
 public class TriggerFinishEventCard : TemplatedControl
 {
-    
-    private Button? _copyButton;
-
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-    {
-        base.OnApplyTemplate(e);
-
-        // Отписываемся если шаблон переинициализировался
-        if (_copyButton != null)
-            _copyButton.Click -= CopyButtonOnClick;
-
-        _copyButton = e.NameScope.Find<Button>("PART_CopyTriggerButton");
-
-        if (_copyButton != null)
-            _copyButton.Click += CopyButtonOnClick;
-    }
-
-    private async void CopyButtonOnClick(object? sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel?.Clipboard == null)
-            return;
-
-        await topLevel.Clipboard.SetTextAsync(TriggerName);
-    }
-    
     public static readonly StyledProperty<DateTime> TimestampProperty =
         AvaloniaProperty.Register<TriggerFinishEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
     

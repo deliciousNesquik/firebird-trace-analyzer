@@ -11,54 +11,6 @@ namespace FirebirdTraceAnalyzer.Controls.EventCards;
 public class StatementRestartEventCard : TemplatedControl
 {
     
-    private Button? _copyButton;
-
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-    {
-        base.OnApplyTemplate(e);
-
-        // Отписываемся если шаблон переинициализировался
-        if (_copyButton != null)
-            _copyButton.Click -= CopyButtonOnClick;
-
-        _copyButton = e.NameScope.Find<Button>("PART_CopySqlButton");
-
-        if (_copyButton != null)
-            _copyButton.Click += CopyButtonOnClick;
-    }
-
-    private async void CopyButtonOnClick(object? sender, RoutedEventArgs e)
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel?.Clipboard == null)
-            return;
-
-        if (Params == null || Params.Count == 0)
-        {
-            await topLevel.Clipboard.SetTextAsync(Sql);
-            return;
-        }
-
-        var sql = new StringBuilder();
-        int index = 0;
-
-        foreach (var ch in Sql)
-        {
-            if (ch == '?' && index < Params.Count)
-            {
-                sql.Append(FormatParam(Params[index]));
-                index++;
-            }
-            else
-            {
-                sql.Append(ch);
-            }
-        }
-
-        await topLevel.Clipboard.SetTextAsync(sql.ToString());
-    }
-    
     private static string FormatParam(SqlParameters parameters)
     {
         var value = parameters.Value?.ToString();
@@ -150,6 +102,9 @@ public class StatementRestartEventCard : TemplatedControl
     
     public static readonly StyledProperty<string> SqlProperty =
         AvaloniaProperty.Register<StatementStartEventCard, string>(nameof(Sql), "<not set>");
+    
+    public static readonly StyledProperty<string> ExecuteSqlProperty =
+        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(ExecuteSql), "<not set>");
     
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<StatementStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
@@ -278,6 +233,34 @@ public class StatementRestartEventCard : TemplatedControl
     {
         get => GetValue(SqlProperty);
         set => SetValue(SqlProperty, value);
+    }
+    
+    
+    public string ExecuteSql
+    {
+        get
+        {
+            if (Params == null || Params.Count == 0)
+                return Sql;
+
+            var sql = new StringBuilder();
+            int index = 0;
+
+            foreach (var ch in Sql)
+            {
+                if (ch == '?' && index < Params.Count)
+                {
+                    sql.Append(FormatParam(Params[index]));
+                    index++;
+                }
+                else
+                {
+                    sql.Append(ch);
+                }
+            }
+
+            return sql.ToString();
+        }
     }
     
     public IReadOnlyList<SqlParameters> Params
