@@ -75,7 +75,7 @@ public sealed class TraceLogParser(
         var lineNumber = 0;
         var currentBlock = new BlockBuffer();
 
-        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
             lineNumber++;
             bytesRead += options.Encoding.GetByteCount(line) + 2;
@@ -116,7 +116,7 @@ public sealed class TraceLogParser(
         
         var lineNumber = 0;
 
-        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
             lineNumber++;
             cancellationToken.ThrowIfCancellationRequested();
