@@ -1,0 +1,83 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:FirebirdTraceAnalyzer.Controls">
+    <Design.PreviewWith>
+        <StackPanel Margin="100" Spacing="10" Orientation="Horizontal">
+            <controls:CopyButton />    
+            <controls:CopyButton Classes="parameters"/>    
+        </StackPanel>
+    </Design.PreviewWith>
+
+    <Style Selector="controls|CopyButton">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut" />
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Button Name="PART_InnerButton"
+                        Classes="focused"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Padding="5">
+                    <Grid>
+                        <Panel Name="PART_IconContainer" Opacity="1">
+                            <Panel.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                                </Transitions>
+                            </Panel.Transitions>
+                            
+                            <Svg Name="PART_Icon" 
+                                 Path="{DynamicResource CopyIcon}"
+                                 Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                            
+                            <Path Name="PART_PlusIcon"
+                                  Data="M 3,0 L 3,6 M 0,3 L 6,3"
+                                  Stroke="Red"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  Width="6" Height="6"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Top"
+                                  Margin="0,1,1,0"
+                                  IsVisible="False" />
+                        </Panel>
+                        
+                        <TextBlock Name="PART_Text" 
+                                   Text="Copied!" 
+                                   Opacity="0"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Medium">
+                            <TextBlock.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                                </Transitions>
+                            </TextBlock.Transitions>
+                        </TextBlock>
+                    </Grid>
+                </Button>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="controls|CopyButton.parameters /template/ Path#PART_PlusIcon">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="controls|CopyButton:copied">
+        <Setter Property="Width" Value="100" />
+    </Style>
+    
+    <Style Selector="controls|CopyButton:copied /template/ Panel#PART_IconContainer">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+    
+    <Style Selector="controls|CopyButton:copied /template/ TextBlock#PART_Text">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+</Styles>

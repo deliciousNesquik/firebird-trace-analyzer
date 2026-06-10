@@ -417,7 +417,10 @@
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/FailedTriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/ErrorEventCard.axaml"/>
+        
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/InfoTip.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/CopyButton.axaml"/>
+        
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Styles/Menu.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Styles/Buttons.axaml"/>
         

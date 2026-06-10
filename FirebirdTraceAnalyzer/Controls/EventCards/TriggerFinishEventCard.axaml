@@ -161,16 +161,9 @@
                                            FontFamily="Consolas"
                                            FontWeight="SemiBold"/>
                                 
-                                <Button x:Name="PART_CopyTriggerButton"
-                                        Background="Transparent"
-                                        VerticalContentAlignment="Top"
-                                        Height="24" Width="24"
-                                        Padding="0"
-                                        Grid.Column="1">
-    
-                                    <Svg Path="{DynamicResource CopyIcon}"
-                                         Css="{DynamicResource ThemeIconFill}" />
-                                </Button>
+                                <controls:CopyButton Grid.Column="1" Text="{TemplateBinding TriggerName}"
+                                                     VerticalAlignment="Top"
+                                                     Height="30" Width="30" />
                             </Grid>
                         </Border>
 
