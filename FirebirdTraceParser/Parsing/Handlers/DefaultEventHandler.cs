@@ -81,12 +81,22 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     /// </summary>
     private static (DateTime Timestamp, int TraceId, string HexTraceId) ParseEventMetadata(Match header)
     {
+        var timestamp = DateTime.TryParse(header.Groups["ts"].Value, CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var ts) ? ts : default;
+
         return (
-            Timestamp: DateTime.Parse(header.Groups["ts"].Value, CultureInfo.InvariantCulture),
-            TraceId: int.Parse(header.Groups["trace_id"].ValueSpan),
+            Timestamp: timestamp,
+            TraceId: ParseIntOrDefault(header.Groups["trace_id"].ValueSpan),
             HexTraceId: StringPool.Intern(header.Groups["hex_trace_id"].Value)
         );
     }
+
+    // Безопасный разбор числовых групп: один битый/переполненный field не теряет всё событие
+    private static int ParseIntOrDefault(ReadOnlySpan<char> span, int defaultValue = 0)
+        => int.TryParse(span, out var value) ? value : defaultValue;
+
+    private static long ParseLongOrDefault(ReadOnlySpan<char> span, long defaultValue = 0)
+        => long.TryParse(span, out var value) ? value : defaultValue;
 
     /// <summary>
     ///     Создает PerformanceInfo по умолчанию (все нули).
@@ -460,7 +470,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var m = rules["session"].Match(line);
             if (m.Success)
             {
-                var sessionId = int.Parse(m.Groups["session_id"].ValueSpan);
+                var sessionId = ParseIntOrDefault(m.Groups["session_id"].ValueSpan);
                 return TraceSessionPool.Intern(sessionId);
             }
         }
@@ -509,9 +519,9 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             Address = am.Groups["address"].Success
                 ? StringPool.Intern(am.Groups["address"].Value)
                 : StringPool.Intern("<internal>"),
-            Port = am.Groups["port"].Success ? int.Parse(am.Groups["port"].ValueSpan) : 0,
+            Port = am.Groups["port"].Success ? ParseIntOrDefault(am.Groups["port"].ValueSpan) : 0,
             ProcessPath = pm is not null ? StringPool.Intern(pm.Groups["process_path"].Value) : null,
-            ProcessId = pm is not null ? int.Parse(pm.Groups["process_id"].ValueSpan) : null
+            ProcessId = pm is not null ? ParseIntOrDefault(pm.Groups["process_id"].ValueSpan) : null
         };
 
         return AttachmentPool.Add(newInfo);
@@ -605,7 +615,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             if (match.Success)
                 (errors ??= new()).Add(new ErrorLines
                 {
-                    ErrorCode = int.Parse(match.Groups[1].Value),
+                    ErrorCode = ParseIntOrDefault(match.Groups[1].ValueSpan),
                     Message = StringPool.Intern(match.Groups[2].Value.Trim())
                 });
         }
@@ -694,7 +704,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var sm = rules["statement"].Match(line);
             if (sm.Success)
             {
-                statementId = long.Parse(sm.Groups["statement_id"].ValueSpan);
+                statementId = ParseLongOrDefault(sm.Groups["statement_id"].ValueSpan);
                 continue;
             }
 
@@ -703,7 +713,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 var rm = rules["restarted"].Match(line);
                 if (rm.Success)
                 {
-                    restartCount = int.Parse(rm.Groups["count"].ValueSpan);
+                    restartCount = ParseIntOrDefault(rm.Groups["count"].ValueSpan);
                     continue;
                 }
             }
@@ -861,17 +871,17 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         
         var mFetched = rules["fetched"].Match(line);
         if (mFetched.Success)
-            fetchCount = int.Parse(mFetched.Groups["fetch_count"].ValueSpan);
+            fetchCount = ParseIntOrDefault(mFetched.Groups["fetch_count"].ValueSpan);
 
         var mPerf = rules["performance"].Match(line);
         if (mPerf.Success)
             return new PerformanceInfo
             {
-                ExecuteMs = int.Parse(mPerf.Groups["execute_ms"].ValueSpan),
+                ExecuteMs = ParseIntOrDefault(mPerf.Groups["execute_ms"].ValueSpan),
                 FetchCount = fetchCount,
-                ReadCount = mPerf.Groups["read"].Success ? int.Parse(mPerf.Groups["read"].ValueSpan) : 0,
-                WriteCount = mPerf.Groups["write"].Success ? int.Parse(mPerf.Groups["write"].ValueSpan) : 0,
-                MarkCount = mPerf.Groups["mark"].Success ? int.Parse(mPerf.Groups["mark"].ValueSpan) : 0
+                ReadCount = mPerf.Groups["read"].Success ? ParseIntOrDefault(mPerf.Groups["read"].ValueSpan) : 0,
+                WriteCount = mPerf.Groups["write"].Success ? ParseIntOrDefault(mPerf.Groups["write"].ValueSpan) : 0,
+                MarkCount = mPerf.Groups["mark"].Success ? ParseIntOrDefault(mPerf.Groups["mark"].ValueSpan) : 0
             };
 
         return null;
