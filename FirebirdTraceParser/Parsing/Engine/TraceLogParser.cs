@@ -136,12 +136,23 @@ public sealed class TraceLogParser(
         if (currentBlock.HasData)
             FlushBlock(currentBlock, buffer, warnings, options);
 
+        // Логируем накопленные предупреждения через ILogger (это библиотека — Console здесь недопустим)
         foreach (var warning in warnings)
         {
-            Console.WriteLine(warning.Message);
-            Console.WriteLine(warning.LineNumber);
+            switch (warning.Severity)
+            {
+                case WarningSeverity.Error:
+                    _logger.Error("Parse warning at line {LineNumber}: {Message}", warning.LineNumber, warning.Message);
+                    break;
+                case WarningSeverity.Warning:
+                    _logger.Warn("Parse warning at line {LineNumber}: {Message}", warning.LineNumber, warning.Message);
+                    break;
+                default:
+                    _logger.Info("Parse info at line {LineNumber}: {Message}", warning.LineNumber, warning.Message);
+                    break;
+            }
         }
-        
+
         // Остаток батча
         foreach (var evt in buffer)
             yield return evt;
