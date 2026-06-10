@@ -2,6 +2,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.ValueObjects;
 using NLog;
 
@@ -90,20 +91,22 @@ public static class PerformanceTableParser
     {
         try
         {
-            var tableName = Extract(line, 0, pos.TableNameEnd).Trim();
-            if (string.IsNullOrEmpty(tableName)) return null;
-            
+            var span = line.AsSpan();
+
+            var tableName = Slice(span, 0, pos.TableNameEnd).Trim();
+            if (tableName.IsEmpty) return null;
+
             return new PerformanceTableItem
             {
-                TableName = tableName,
-                NaturalCount = ParseIntSafe(Extract(line, pos.NaturalStart, pos.NaturalEnd)),
-                IndexCount = ParseIntSafe(Extract(line, pos.IndexStart, pos.IndexEnd)),
-                UpdateCount = ParseIntSafe(Extract(line, pos.UpdateStart, pos.UpdateEnd)),
-                InsertCount = ParseIntSafe(Extract(line, pos.InsertStart, pos.InsertEnd)),
-                DeleteCount = ParseIntSafe(Extract(line, pos.DeleteStart, pos.DeleteEnd)),
-                BackoutCount = ParseIntSafe(Extract(line, pos.BackoutStart, pos.BackoutEnd)),
-                PurgeCount = ParseIntSafe(Extract(line, pos.PurgeStart, pos.PurgeEnd)),
-                ExpungeCount = ParseIntSafe(Extract(line, pos.ExpungeStart, pos.ExpungeEnd))
+                TableName = StringPool.Intern(tableName.ToString()),
+                NaturalCount = ParseIntSafe(Slice(span, pos.NaturalStart, pos.NaturalEnd)),
+                IndexCount = ParseIntSafe(Slice(span, pos.IndexStart, pos.IndexEnd)),
+                UpdateCount = ParseIntSafe(Slice(span, pos.UpdateStart, pos.UpdateEnd)),
+                InsertCount = ParseIntSafe(Slice(span, pos.InsertStart, pos.InsertEnd)),
+                DeleteCount = ParseIntSafe(Slice(span, pos.DeleteStart, pos.DeleteEnd)),
+                BackoutCount = ParseIntSafe(Slice(span, pos.BackoutStart, pos.BackoutEnd)),
+                PurgeCount = ParseIntSafe(Slice(span, pos.PurgeStart, pos.PurgeEnd)),
+                ExpungeCount = ParseIntSafe(Slice(span, pos.ExpungeStart, pos.ExpungeEnd))
             };
         }
         catch (Exception ex)
@@ -112,10 +115,14 @@ public static class PerformanceTableParser
             return null;
         }
     }
-    
-    private static string Extract(string line, int start, int end) =>
-        start >= line.Length ? string.Empty : line.Substring(start, Math.Min(end, line.Length) - start);
-    
-    private static int ParseIntSafe(string value) =>
-        string.IsNullOrWhiteSpace(value) ? 0 : int.Parse(value.Trim(), CultureInfo.InvariantCulture);
+
+    // Срез фиксированной колонки без аллокации (семантика идентична прежнему Substring)
+    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> line, int start, int end) =>
+        start >= line.Length ? ReadOnlySpan<char>.Empty : line.Slice(start, Math.Min(end, line.Length) - start);
+
+    private static int ParseIntSafe(ReadOnlySpan<char> value)
+    {
+        value = value.Trim();
+        return value.IsEmpty ? 0 : int.Parse(value, CultureInfo.InvariantCulture);
+    }
 }
