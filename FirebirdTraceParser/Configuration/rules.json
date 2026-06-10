@@ -1,0 +1,103 @@
+﻿{
+  "schemaVersion": 1,
+  "rules": {
+    "block_header": {
+      "pattern": "^(?<ts>\\d{4}-\\d{2}-\\d{2}T[\\d:.]+)\\s+\\((?<trace_id>\\d+):(?<hex_trace_id>0x[0-9a-f]+)\\)\\s+(?<event_type>[A-Z_ ]+)$",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для парсинга заголовка блока события трассировки.",
+      "requiredGroups": ["ts", "trace_id", "hex_trace_id", "event_type"],
+      "sample": "2026-04-14T10:20:01.1620 (437236:0x7f3133ba1dc0) TRACE_INIT"
+    },
+    "session": {
+      "pattern": "^\\s+SESSION_(?<session_id>\\d+)\\s*$",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для извлечения идентификатора сессии трассировки.",
+      "requiredGroups": ["session_id"],
+      "sample": "  SESSION_994"
+    },
+    "attachment": {
+      "pattern": "^\\s+(?<database_path>.+?)\\s+\\((ATT_(?<attachment_id>\\d+)),\\s*(?<user>[^:]+):(?<role>\\S+),\\s*(?<charset>\\S+),\\s*(?<protocol>[^:)]+)(?::(?<address>[^/]+)/(?<port>\\d+))?\\)",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для извлечения детализированной информации о подключении к БД.",
+      "requiredGroups": ["database_path", "attachment_id", "user", "role", "charset", "protocol", "address", "port"],
+      "sample": "\t/interbas/reid_2022.gdb (ATT_11335646, REPL:NONE, WIN1251, TCPv4:192.168.3.218/52931)"
+    },
+    "process": {
+      "pattern": "^\\s+(?<process_path>.+):(?<process_id>\\d+)\\s*$",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для извлечения информации о процессе клиентского приложения.",
+      "requiredGroups": ["process_path", "process_id"],
+      "sample": "\tC:\\Python310-32\\python.exe:2540"
+    },
+    "statement": {
+      "pattern": "^Statement\\s+(?<statement_id>\\d+):\\s*$",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения идентификатора SQL-оператора.",
+      "requiredGroups": ["statement_id"],
+      "sample": "Statement 556761380:"
+    },
+    "transaction": {
+      "pattern": "^\\s*\\(TRA_(\\d+),\\s*(.*?)\\)",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения информации о транзакции.",
+      "requiredGroups": [],
+      "sample": "(TRA_123, READ_COMMITTED | READ_CONSISTENCY | NOWAIT | READ_WRITE)"
+    },
+    "parameters": {
+      "pattern": "^\\s*(?<name>param\\d+)\\s*=\\s*(?<dtype>[^,]+?),\\s*(?:\"(?<value>.*?)\"|(?<value_null>NULL))\\s*$",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения параметров SQL.",
+      "requiredGroups": ["name", "dtype", "value", "value_null"],
+      "sample": "param0 = bigint, \"195\""
+    },
+    "restarted": {
+      "pattern": "Restarted\\s+(?<count>\\d+)\\s+time\\(s\\)",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения количества перезапусков",
+      "requiredGroups": ["count"],
+      "sample": "Restarted 1 time(s)"
+    },
+    "performance": {
+      "pattern": "^\\s*(?<execute_ms>\\d+)\\s+ms,\\s*(?:(?<read>\\d+)\\s+read\\(s\\),\\s*)?(?:(?<write>\\d+)\\s+write\\(s\\),\\s*)?(?:(?<fetch>\\d+)\\s+fetch\\(es\\),\\s*)?(?:(?<mark>\\d+)\\s+mark\\(s\\))?",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для извлечения метрик выполнения.",
+      "requiredGroups": ["execute_ms", "read", "write", "fetch", "mark"],
+      "sample": "377 ms, 6 read(s), 469 write(s), 1446 fetch(es), 1440 mark(s)"
+    },
+    "fetched": {
+      "pattern": "^\\s*(?<fetch_count>\\d+)\\s+records\\s+fetched\\s*$",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения количества полученных записей.",
+      "requiredGroups": ["fetch_count"],
+      "sample": "6 records fetched"
+    },
+    "procedure": {
+      "pattern": "^Procedure\\s+(?<procedure_name>[^\\s:]+)\\s*:\\s*$",
+      "flags": [],
+      "description": "Регулярное выражение для извлечения имени хранимой процедуры.",
+      "requiredGroups": ["procedure_name"],
+      "sample": "Procedure SP_GET_USER:"
+    },
+    "trigger": {
+      "pattern": "^Trigger\\s+(?<trigger_name>[^\\s]+)\\s+FOR\\s+(?<table>[^\\s]+)\\s+\\((?<timing>BEFORE|AFTER)\\s+(?<event>INSERT|UPDATE|DELETE)\\)\\s*:\\s*$",
+      "flags": ["IgnorePatternWhitespace"],
+      "description": "Регулярное выражение для извлечения информации о триггере.",
+      "requiredGroups": ["trigger_name", "table", "timing", "event"],
+      "sample": "Trigger KPK$SERVCHAINSHED_BU0 FOR KPK$SERVCHAINSHED (BEFORE UPDATE):"
+    },
+    "performance_table_header": {
+      "pattern": "^Table\\s+Natural\\s+Index\\s+Update\\s+Insert\\s+Delete\\s+Backout\\s+Purge\\s+Expunge\\s*$",
+      "flags": [],
+      "description": "Заголовок таблицы статистики",
+      "requiredGroups": [],
+      "sample": "Table                              Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge"
+    },
+    "performance_table_row": {
+      "pattern": "^(?<table_name>\\S+)\\s+(?<natural>\\d*)\\s+(?<index>\\d*)\\s+(?<update>\\d*)\\s+(?<insert>\\d*)\\s+(?<delete>\\d*)\\s+(?<backout>\\d*)\\s+(?<purge>\\d*)\\s+(?<expunge>\\d*)\\s*$",
+      "flags": [],
+      "description": "Строка таблицы статистики производительности",
+      "requiredGroups": ["table_name"],
+      "sample": "RDB$DATABASE                             1"
+    }
+  }
+}
