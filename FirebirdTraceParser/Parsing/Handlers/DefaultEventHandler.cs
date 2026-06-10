@@ -597,20 +597,20 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules)
     {
-        var errors = new List<ErrorLines>();
+        List<ErrorLines>? errors = null;
 
         foreach (var line in lines)
         {
             var match = rules["error_line"].Match(line.Trim());
             if (match.Success)
-                errors.Add(new ErrorLines
+                (errors ??= new()).Add(new ErrorLines
                 {
                     ErrorCode = int.Parse(match.Groups[1].Value),
                     Message = StringPool.Intern(match.Groups[2].Value.Trim())
                 });
         }
 
-        return errors;
+        return errors ?? (IReadOnlyList<ErrorLines>)Array.Empty<ErrorLines>();
     }
 
     // ==================== Вспомогательные методы для классификации ====================
@@ -675,7 +675,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         TransactionInfo? transaction = null;
         long? statementId = null;
         string? sql = null;
-        var paramsList = new List<SqlParameters>();
+        List<SqlParameters>? paramsList = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
         var performanceTableSearched = false;
@@ -740,7 +740,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var param = ParseSqlParameter(line, rules);
             if (param is not null)
             {
-                paramsList.Add(param);
+                (paramsList ??= new()).Add(param);
                 continue;
             }
 
@@ -758,8 +758,9 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             }
         }
 
-        return new StatementData(attachment, transaction, statementId, sql, paramsList, performance, performanceTable,
-            restartCount);
+        return new StatementData(attachment, transaction, statementId, sql,
+            paramsList ?? (IReadOnlyList<SqlParameters>)Array.Empty<SqlParameters>(),
+            performance, performanceTable, restartCount);
     }
 
     private static ProcedureData ParseProcedureData(IReadOnlyList<string> lines,
@@ -768,7 +769,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var attachment = ParseAttachmentInfo(lines, rules);
         TransactionInfo? transaction = null;
         string? procedureName = null;
-        var paramsList = new List<SqlParameters>();
+        List<SqlParameters>? paramsList = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
 
@@ -790,7 +791,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var param = ParseSqlParameter(line, rules);
             if (param is not null)
             {
-                paramsList.Add(param);
+                (paramsList ??= new()).Add(param);
                 continue;
             }
 
@@ -798,7 +799,9 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 performance = ParsePerformance(line, rules);
         }
 
-        return new ProcedureData(attachment, transaction, procedureName, paramsList, performance, performanceTable);
+        return new ProcedureData(attachment, transaction, procedureName,
+            paramsList ?? (IReadOnlyList<SqlParameters>)Array.Empty<SqlParameters>(),
+            performance, performanceTable);
     }
 
     private static TriggerData ParseTriggerData(IReadOnlyList<string> lines, IReadOnlyDictionary<string, Regex> rules,
