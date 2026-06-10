@@ -62,8 +62,8 @@ public class ErrorEventCard : TemplatedControl
             nameof(HexTraceId),
             "0");
 
-    public static readonly StyledProperty<int> AttachmentIdProperty =
-        AvaloniaProperty.Register<ErrorEventCard, int>(
+    public static readonly StyledProperty<long> AttachmentIdProperty =
+        AvaloniaProperty.Register<ErrorEventCard, long>(
             nameof(AttachmentId),
             0);
 
@@ -95,7 +95,7 @@ public class ErrorEventCard : TemplatedControl
         set => SetValue(HexTraceIdProperty, value);
     }
 
-    public int AttachmentId
+    public long AttachmentId
     {
         get => GetValue(AttachmentIdProperty);
         set => SetValue(AttachmentIdProperty, value);
