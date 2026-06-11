@@ -80,6 +80,10 @@ public partial class DownloadProgressViewModel : ViewModelBase
     private readonly List<string> _completedFiles = new();
     private readonly List<string> _pendingFiles = new();
 
+    // Фактический объём завершённых файлов и карта размеров — для точного общего прогресса
+    private long _completedBytes;
+    private readonly Dictionary<string, long> _fileSizes = new();
+
     public event EventHandler? CancelRequested;
     public event EventHandler? Completed;
 
@@ -94,10 +98,17 @@ public partial class DownloadProgressViewModel : ViewModelBase
         TotalBytesOverall = filesToDownload.Sum(f => f.Size);
         
         _startTime = DateTime.Now;
-        
+
+        _completedFiles.Clear();
+        _completedBytes = 0;
+
+        _fileSizes.Clear();
+        foreach (var f in filesToDownload)
+            _fileSizes[f.FileName] = f.Size;
+
         _pendingFiles.Clear();
         _pendingFiles.AddRange(filesToDownload.Select(f => f.FileName));
-        
+
         UpdatePendingFilesList();
         
         StatusMessage = $"Ready to download {TotalFiles} file(s)";
@@ -113,18 +124,14 @@ public partial class DownloadProgressViewModel : ViewModelBase
         CurrentFileTotalBytes = totalBytes;
 
         // Прогресс текущего файла
-        CurrentFileProgress = totalBytes > 0 
-            ? (double)bytesTransferred / totalBytes * 100 
+        CurrentFileProgress = totalBytes > 0
+            ? Math.Min(100, (double)bytesTransferred / totalBytes * 100)
             : 0;
 
-        // Общий прогресс
-        var previousFilesBytes = _completedFiles.Count > 0
-            ? _completedFiles.Count * (TotalBytesOverall / TotalFiles) // приблизительно
-            : 0;
-
-        TotalBytesTransferred = previousFilesBytes + bytesTransferred;
-        OverallProgress = TotalBytesOverall > 0 
-            ? (double)TotalBytesTransferred / TotalBytesOverall * 100 
+        // Общий прогресс: фактически скачанные байты завершённых файлов + прогресс текущего
+        TotalBytesTransferred = _completedBytes + bytesTransferred;
+        OverallProgress = TotalBytesOverall > 0
+            ? Math.Min(100, (double)TotalBytesTransferred / TotalBytesOverall * 100)
             : 0;
 
         // Скорость и оставшееся время
@@ -146,10 +153,13 @@ public partial class DownloadProgressViewModel : ViewModelBase
     {
         _completedFiles.Add(fileName);
         _pendingFiles.Remove(fileName);
-        
+
+        if (_fileSizes.TryGetValue(fileName, out var size))
+            _completedBytes += size;
+
         UpdateCompletedFilesList();
         UpdatePendingFilesList();
-        
+
         Logger.Debug("File completed: {FileName}", fileName);
     }
 

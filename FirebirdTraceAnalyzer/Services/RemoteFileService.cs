@@ -34,33 +34,50 @@ public class RemoteFileService : IRemoteFileService
             {
                 Logger.Info("Fetching files from directory: {Directory}", remoteDirectory);
 
-                var files = sftpClient.ListDirectory(remoteDirectory)
-                    .Where(f => !f.IsDirectory && IsTraceFile(f.Name))
-                    .Select(f => new RemoteFileInfo
+                var files = new List<RemoteFileInfo>();
+
+                foreach (var f in sftpClient.ListDirectory(remoteDirectory))
+                {
+                    try
                     {
-                        FileName = f.Name,
-                        FullPath = f.FullName,
-                        Size = f.Length,
-                        LastModified = f.LastWriteTime,
-                        Permissions = new Permissions(
-                            f.Attributes.OwnerCanRead,
-                            f.Attributes.OwnerCanWrite,
-                            f.Attributes.OwnerCanExecute,
-                            f.Attributes.GroupCanRead,
-                            f.Attributes.GroupCanWrite,
-                            f.Attributes.GroupCanExecute,
-                            f.Attributes.OthersCanRead,
-                            f.Attributes.OthersCanWrite,
-                            f.Attributes.OthersCanExecute
-                        ),
-                        Owner = f.OwnerCanRead ? f.Name : "unknown"
-                    })
+                        if (f.IsDirectory || !IsTraceFile(f.Name))
+                            continue;
+
+                        files.Add(new RemoteFileInfo
+                        {
+                            FileName = f.Name,
+                            FullPath = f.FullName,
+                            Size = f.Length,
+                            LastModified = f.LastWriteTime,
+                            Permissions = new Permissions(
+                                f.Attributes.OwnerCanRead,
+                                f.Attributes.OwnerCanWrite,
+                                f.Attributes.OwnerCanExecute,
+                                f.Attributes.GroupCanRead,
+                                f.Attributes.GroupCanWrite,
+                                f.Attributes.GroupCanExecute,
+                                f.Attributes.OthersCanRead,
+                                f.Attributes.OthersCanWrite,
+                                f.Attributes.OthersCanExecute
+                            ),
+                            // SFTP (v3) отдаёт числовой UID владельца, не имя
+                            Owner = f.Attributes.UserId.ToString()
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Изолируем сбой по одной записи, чтобы не потерять весь листинг
+                        Logger.Warn(ex, "Skipping file with unreadable attributes: {Name}", f.Name);
+                    }
+                }
+
+                var ordered = files
                     .OrderByDescending(f => f.LastModified)
                     .ToList();
 
-                Logger.Info("Found {Count} trace files", files.Count);
+                Logger.Info("Found {Count} trace files", ordered.Count);
 
-                return (IReadOnlyList<RemoteFileInfo>)files;
+                return (IReadOnlyList<RemoteFileInfo>)ordered;
             }
             catch (Exception ex)
             {
@@ -83,17 +100,26 @@ public class RemoteFileService : IRemoteFileService
 
         return Task.Run(() =>
         {
+            var localPath = Path.Combine(localDirectory, fileInfo.FileName);
+            FileStream? fileStream = null;
+
+            // Отмену реализуем через закрытие выходного потока: DownloadFile прервётся
+            // исключением, которое мы поймаем ниже. НЕ бросаем исключение внутри колбэка
+            // прогресса — SSH.NET вызывает его на внутреннем потоке, и throw там роняет процесс.
+            using var registration = cancellationToken.Register(() =>
+            {
+                try { fileStream?.Dispose(); }
+                catch { /* ignore */ }
+            });
+
             try
             {
-                var localPath = Path.Combine(localDirectory, fileInfo.FileName);
-                
                 Logger.Info("Downloading {FileName} to {LocalPath}", fileInfo.FileName, localPath);
 
-                using var fileStream = File.Create(localPath);
+                fileStream = File.Create(localPath);
 
                 sftpClient.DownloadFile(fileInfo.FullPath, fileStream, bytesTransferred =>
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(((long)bytesTransferred, fileInfo.Size));
                 });
 
@@ -101,15 +127,24 @@ public class RemoteFileService : IRemoteFileService
 
                 return localPath;
             }
-            catch (OperationCanceledException)
-            {
-                Logger.Info("Download cancelled: {FileName}", fileInfo.FileName);
-                throw;
-            }
             catch (Exception ex)
             {
+                // Закрываем поток, затем удаляем частично скачанный файл
+                fileStream?.Dispose();
+                TryDeletePartialFile(localPath);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger.Info("Download cancelled: {FileName}", fileInfo.FileName);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
                 Logger.Error(ex, "Error downloading file: {FileName}", fileInfo.FileName);
                 throw new InvalidOperationException($"Failed to download {fileInfo.FileName}: {ex.Message}", ex);
+            }
+            finally
+            {
+                fileStream?.Dispose();
             }
         }, cancellationToken);
     }
@@ -171,6 +206,19 @@ public class RemoteFileService : IRemoteFileService
         {
             cancellationToken.ThrowIfCancellationRequested();
             await DeleteFileAsync(path, cancellationToken);
+        }
+    }
+
+    private static void TryDeletePartialFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to delete partial file: {Path}", path);
         }
     }
 
