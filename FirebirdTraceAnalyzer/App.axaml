@@ -11,6 +11,12 @@
         <local:ViewLocator/>
     </Application.DataTemplates>
   
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <!-- Текущий вариант позволяет сделать списко меню пустым --> 
+        </NativeMenu>
+    </NativeMenu.Menu>
+    
     <Application.DataTemplates>
         <DataTemplate DataType="core:TraceInitEvent">
             <events:TraceInitEventCard
