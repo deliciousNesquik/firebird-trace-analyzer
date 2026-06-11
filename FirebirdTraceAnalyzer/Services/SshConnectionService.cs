@@ -14,12 +14,16 @@ namespace FirebirdTraceAnalyzer.Services;
 public class SshConnectionService : ISshConnectionService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    
-    private SshClient? _sshClient;
+
+    /// <summary>Таймаут отдельной SFTP-операции: «зависший» (без данных) трансфер прервётся, а не повиснет навсегда.</summary>
+    private static readonly TimeSpan SftpOperationTimeout = TimeSpan.FromSeconds(60);
+
+    private readonly object _syncLock = new();
     private SftpClient? _sftpClient;
+    private PrivateKeyFile? _privateKeyFile;
     private bool _disposed;
 
-    public bool IsConnected => _sshClient?.IsConnected == true && _sftpClient?.IsConnected == true;
+    public bool IsConnected => _sftpClient?.IsConnected == true;
     public SshConnectionSettings? CurrentSettings { get; private set; }
 
     /// <summary>Получить SFTP клиента (для использования в RemoteFileService)</summary>
@@ -48,20 +52,14 @@ public class SshConnectionService : ISshConnectionService
 
             connectionInfo.Timeout = TimeSpan.FromSeconds(settings.ConnectionTimeout);
 
-            // Создаём SSH клиента
-            _sshClient = new SshClient(connectionInfo);
-            
+            // Для листинга/скачивания/удаления достаточно одного SFTP-клиента
+            _sftpClient = new SftpClient(connectionInfo)
+            {
+                // Чтобы зависший трансфер не блокировал процесс навсегда
+                OperationTimeout = SftpOperationTimeout
+            };
+
             // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)
-            await Task.Run(() => _sshClient.Connect(), cancellationToken);
-
-            if (!_sshClient.IsConnected)
-                throw new SshConnectionException("Failed to establish SSH connection");
-
-            Logger.Info("SSH connection established");
-
-            // Создаём SFTP клиента
-            _sftpClient = new SftpClient(connectionInfo);
-            
             await Task.Run(() => _sftpClient.Connect(), cancellationToken);
 
             if (!_sftpClient.IsConnected)
@@ -99,23 +97,31 @@ public class SshConnectionService : ISshConnectionService
 
     public void Disconnect()
     {
-        try
+        // Сериализуем: метод зовётся из нескольких мест (catch в ConnectAsync, VM, finally в UI).
+        // lock делает его идемпотентным и защищает от двойного dispose/гонок.
+        lock (_syncLock)
         {
-            _sftpClient?.Disconnect();
-            _sftpClient?.Dispose();
-            _sftpClient = null;
+            if (_sftpClient is null && _privateKeyFile is null)
+                return;
 
-            _sshClient?.Disconnect();
-            _sshClient?.Dispose();
-            _sshClient = null;
+            try
+            {
+                _sftpClient?.Disconnect();
+                _sftpClient?.Dispose();
+                _sftpClient = null;
 
-            CurrentSettings = null;
+                // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
+                _privateKeyFile?.Dispose();
+                _privateKeyFile = null;
 
-            Logger.Info("Disconnected from server");
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn(ex, "Error during disconnect");
+                CurrentSettings = null;
+
+                Logger.Info("Disconnected from server");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Error during disconnect");
+            }
         }
     }
 
@@ -190,21 +196,17 @@ public class SshConnectionService : ISshConnectionService
             new PasswordAuthenticationMethod(settings.Username, settings.Password!));
     }
 
-    private static ConnectionInfo CreatePrivateKeyConnection(SshConnectionSettings settings)
+    private ConnectionInfo CreatePrivateKeyConnection(SshConnectionSettings settings)
     {
         if (!File.Exists(settings.PrivateKeyPath))
             throw new FileNotFoundException($"Private key not found: {settings.PrivateKeyPath}");
 
-        PrivateKeyFile keyFile;
+        var keyFile = string.IsNullOrWhiteSpace(settings.KeyPassphrase)
+            ? new PrivateKeyFile(settings.PrivateKeyPath)
+            : new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
 
-        if (string.IsNullOrWhiteSpace(settings.KeyPassphrase))
-        {
-            keyFile = new PrivateKeyFile(settings.PrivateKeyPath);
-        }
-        else
-        {
-            keyFile = new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
-        }
+        // Сохраняем ссылку: ключ нужен на время аутентификации, освобождаем в Disconnect().
+        _privateKeyFile = keyFile;
 
         return new ConnectionInfo(
             settings.Hostname,

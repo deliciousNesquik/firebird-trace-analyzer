@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums;
@@ -107,13 +108,16 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
         LoadSavedProfiles();
     }
     
+    /// <summary>
+    /// Конструктор только для XAML-дизайнера. В рантайме ViewModel создаётся через DI
+    /// (см. <c>App.Services.GetRequiredService</c>), поэтому здесь не делаем файловый ввод-вывод
+    /// и не используем зависимости.
+    /// </summary>
     public RemoteConnectionDialogViewModel()
     {
         _windowProvider = null!;
         _sshService = null!;
-        _credentialStorage = null!;
-
-        LoadSavedProfiles();
+        _credentialStorage = null;
     }
 
     #region Commands
@@ -405,18 +409,34 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
         RemoteDirectory = settings.RemoteDirectory;
         DeleteAfterProcessing = settings.DeleteAfterProcessing;
 
-        // Пытаемся загрузить сохранённый пароль
+        // Пытаемся загрузить сохранённый пароль (асинхронно, с маршалингом записи свойств на UI-поток)
         if (_credentialStorage != null && settings.AuthMethod == AuthenticationMethod.Password)
         {
-            Task.Run(async () =>
+            _ = LoadSavedPasswordAsync(settings.Hostname, settings.Username);
+        }
+    }
+
+    private async Task LoadSavedPasswordAsync(string hostname, string username)
+    {
+        if (_credentialStorage == null)
+            return;
+
+        try
+        {
+            var savedPassword = await _credentialStorage.GetPasswordAsync(hostname, username);
+
+            if (string.IsNullOrEmpty(savedPassword))
+                return;
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                var savedPassword = await _credentialStorage.GetPasswordAsync(settings.Hostname, settings.Username);
-                if (!string.IsNullOrEmpty(savedPassword))
-                {
-                    Password = savedPassword;
-                    RememberPassword = true;
-                }
+                Password = savedPassword;
+                RememberPassword = true;
             });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error loading saved password for {Username}@{Hostname}", username, hostname);
         }
     }
 

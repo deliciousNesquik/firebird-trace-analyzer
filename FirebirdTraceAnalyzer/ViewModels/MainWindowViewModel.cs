@@ -1236,6 +1236,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OpenLocalFileCommand.NotifyCanExecuteChanged();
 
         CancellationTokenSource? cts = null;
+        string? tempDirectory = null;
 
         try
         {
@@ -1289,9 +1290,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
+            // Каталог для временных файлов; удаляется в finally независимо от исхода
+            tempDirectory = Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDirectory);
+
             // Загружаем файлы с прогрессом
             var downloadedPaths = await DownloadFilesWithProgressAsync(
                 selectedFiles,
+                tempDirectory,
                 settings.DeleteAfterProcessing,
                 cts.Token);
 
@@ -1321,6 +1327,20 @@ public partial class MainWindowViewModel : ViewModelBase
                 cts.Dispose();
             }
 
+            // Удаляем временный каталог при любом исходе (в т.ч. при ранней ошибке загрузки)
+            if (!string.IsNullOrEmpty(tempDirectory))
+            {
+                try
+                {
+                    if (Directory.Exists(tempDirectory))
+                        Directory.Delete(tempDirectory, true);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to delete temp directory: {Path}", tempDirectory);
+                }
+            }
+
             IsFileLoading = false;
             LoadProgress = 0;
             OpenRemoteFileCommand.NotifyCanExecuteChanged();
@@ -1330,10 +1350,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private RemoteConnectionDialog CreateRemoteConnectionDialog()
     {
-        var viewModel = new RemoteConnectionDialogViewModel(
-            App.Services!.GetRequiredService<IWindowProvider>(),
-            _sshConnectionService,
-            App.Services.GetService<ICredentialStorageService>());
+        // Резолвим через DI (все зависимости зарегистрированы) — без ручного new и null-зависимостей
+        var viewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
 
         return new RemoteConnectionDialog(viewModel);
     }
@@ -1351,45 +1369,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
         viewModel.DeleteAfterProcessing = settings.DeleteAfterProcessing;
 
-        // Обработчик события на запрос обновления списка файлов
-        viewModel.RefreshRequested += async (_, _) =>
-        {
-            try
-            {
-                Logger.Info("Refreshing file list from server...");
-                viewModel.StatusMessage = "Fetching updated file list...";
-
-                // Получаем новый список файлов с сервера
-                var updatedFiles = await _remoteFileService.GetFilesAsync(
-                    settings.RemoteDirectory,
-                    CancellationToken.None);
-
-                // Обновляем список в ViewModel
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    viewModel.UpdateFileList(updatedFiles);
-                    viewModel.IsLoading = false;
-                });
-
-                Logger.Info("File list refreshed successfully: {Count} files", updatedFiles.Count);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error refreshing file list");
-
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    viewModel.StatusMessage = $"Refresh failed: {ex.Message}";
-                    viewModel.IsLoading = false;
-                });
-            }
-        };
+        // Источник обновления списка: команда RefreshAsync во ViewModel сама асинхронна,
+        // отменяема и сама маршалит обновление списка (выполняется на UI-потоке).
+        viewModel.SetRefreshCallback(token =>
+            _remoteFileService.GetFilesAsync(settings.RemoteDirectory, token));
 
         return new RemoteFileSelectionDialog(viewModel);
     }
 
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(
         IReadOnlyList<RemoteFileInfo> files,
+        string tempDirectory,
         bool deleteAfterDownload,
         CancellationToken cancellationToken)
     {
@@ -1399,8 +1389,6 @@ public partial class MainWindowViewModel : ViewModelBase
         var progressWindow = new DownloadProgressWindow(progressViewModel);
 
         var downloadedPaths = new List<string>();
-        var tempDirectory = Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDirectory);
 
         // Показываем окно прогресса (неблокирующее)
         progressWindow.Show();
@@ -1455,9 +1443,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadCompleted(); });
 
-            // Ждём 2 секунды перед закрытием окна прогресса
+            // Ждём 2 секунды, чтобы пользователь увидел завершение
             await Task.Delay(2000, cancellationToken);
-            progressWindow.Close();
 
             return downloadedPaths;
         }
@@ -1466,6 +1453,16 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadFailed(ex.Message); });
 
             throw;
+        }
+        finally
+        {
+            // Гарантированно закрываем окно прогресса при любом исходе.
+            // Снимаем IsDownloading, иначе обработчик Closing заблокирует закрытие (например, при отмене).
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                progressViewModel.IsDownloading = false;
+                progressWindow.Close();
+            });
         }
     }
 
@@ -1533,17 +1530,7 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             _isBatchUpdate = false;
-
-            // Очищаем временную директорию
-            try
-            {
-                var tempDir = Path.GetDirectoryName(downloadedPaths.FirstOrDefault());
-                if (!string.IsNullOrEmpty(tempDir) && Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, "Failed to delete temp directory");
-            }
+            // Временный каталог удаляется в OpenRemoteFileAsync (finally) при любом исходе.
         }
 
         if (addedCount > 0) ApplyAllFilters();
