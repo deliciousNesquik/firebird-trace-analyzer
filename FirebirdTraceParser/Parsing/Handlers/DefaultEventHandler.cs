@@ -535,7 +535,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var m = rules["transaction"].Match(line);
         if (!m.Success) return null;
 
-        var tid = int.Parse(m.Groups["transaction_id"].ValueSpan);
+        var tid = ParseLongOrDefault(m.Groups["transaction_id"].ValueSpan);
 
         // Получаем ValueSpan вместо Value (нет аллокации строки для группы)
         var paramsSpan = m.Groups["params"].ValueSpan;
