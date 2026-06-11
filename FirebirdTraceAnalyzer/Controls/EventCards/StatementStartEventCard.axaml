@@ -179,7 +179,8 @@
                                 <controls:CopyButton Grid.Column="1" Classes="parameters" 
                                                      VerticalAlignment="Top"
                                                      Height="30" Width="30"
-                                                     Text="{TemplateBinding ExecuteSql}" />
+                                                     Text="{Binding ExecuteSql, RelativeSource={RelativeSource TemplatedParent}}" />
+
                             </Grid>
                         </Border>
                         

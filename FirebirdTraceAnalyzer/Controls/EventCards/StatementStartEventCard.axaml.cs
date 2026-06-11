@@ -99,9 +99,6 @@ public class StatementStartEventCard : TemplatedControl
     public static readonly StyledProperty<string> SqlProperty =
         AvaloniaProperty.Register<StatementStartEventCard, string>(nameof(Sql), "<not set>");
     
-    public static readonly StyledProperty<string> ExecuteSqlProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(ExecuteSql), "<not set>");
-    
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<StatementStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
     
