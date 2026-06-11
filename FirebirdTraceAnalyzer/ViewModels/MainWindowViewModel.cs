@@ -1236,6 +1236,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OpenLocalFileCommand.NotifyCanExecuteChanged();
 
         CancellationTokenSource? cts = null;
+        string? tempDirectory = null;
 
         try
         {
@@ -1289,9 +1290,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
+            // Каталог для временных файлов; удаляется в finally независимо от исхода
+            tempDirectory = Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempDirectory);
+
             // Загружаем файлы с прогрессом
             var downloadedPaths = await DownloadFilesWithProgressAsync(
                 selectedFiles,
+                tempDirectory,
                 settings.DeleteAfterProcessing,
                 cts.Token);
 
@@ -1319,6 +1325,20 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 _loadingCts = null;
                 cts.Dispose();
+            }
+
+            // Удаляем временный каталог при любом исходе (в т.ч. при ранней ошибке загрузки)
+            if (!string.IsNullOrEmpty(tempDirectory))
+            {
+                try
+                {
+                    if (Directory.Exists(tempDirectory))
+                        Directory.Delete(tempDirectory, true);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to delete temp directory: {Path}", tempDirectory);
+                }
             }
 
             IsFileLoading = false;
@@ -1390,6 +1410,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(
         IReadOnlyList<RemoteFileInfo> files,
+        string tempDirectory,
         bool deleteAfterDownload,
         CancellationToken cancellationToken)
     {
@@ -1399,8 +1420,6 @@ public partial class MainWindowViewModel : ViewModelBase
         var progressWindow = new DownloadProgressWindow(progressViewModel);
 
         var downloadedPaths = new List<string>();
-        var tempDirectory = Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDirectory);
 
         // Показываем окно прогресса (неблокирующее)
         progressWindow.Show();
@@ -1542,17 +1561,7 @@ public partial class MainWindowViewModel : ViewModelBase
         finally
         {
             _isBatchUpdate = false;
-
-            // Очищаем временную директорию
-            try
-            {
-                var tempDir = Path.GetDirectoryName(downloadedPaths.FirstOrDefault());
-                if (!string.IsNullOrEmpty(tempDir) && Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, "Failed to delete temp directory");
-            }
+            // Временный каталог удаляется в OpenRemoteFileAsync (finally) при любом исходе.
         }
 
         if (addedCount > 0) ApplyAllFilters();
