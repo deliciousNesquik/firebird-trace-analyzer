@@ -83,17 +83,26 @@ public class RemoteFileService : IRemoteFileService
 
         return Task.Run(() =>
         {
+            var localPath = Path.Combine(localDirectory, fileInfo.FileName);
+            FileStream? fileStream = null;
+
+            // Отмену реализуем через закрытие выходного потока: DownloadFile прервётся
+            // исключением, которое мы поймаем ниже. НЕ бросаем исключение внутри колбэка
+            // прогресса — SSH.NET вызывает его на внутреннем потоке, и throw там роняет процесс.
+            using var registration = cancellationToken.Register(() =>
+            {
+                try { fileStream?.Dispose(); }
+                catch { /* ignore */ }
+            });
+
             try
             {
-                var localPath = Path.Combine(localDirectory, fileInfo.FileName);
-                
                 Logger.Info("Downloading {FileName} to {LocalPath}", fileInfo.FileName, localPath);
 
-                using var fileStream = File.Create(localPath);
+                fileStream = File.Create(localPath);
 
                 sftpClient.DownloadFile(fileInfo.FullPath, fileStream, bytesTransferred =>
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(((long)bytesTransferred, fileInfo.Size));
                 });
 
@@ -101,15 +110,24 @@ public class RemoteFileService : IRemoteFileService
 
                 return localPath;
             }
-            catch (OperationCanceledException)
-            {
-                Logger.Info("Download cancelled: {FileName}", fileInfo.FileName);
-                throw;
-            }
             catch (Exception ex)
             {
+                // Закрываем поток, затем удаляем частично скачанный файл
+                fileStream?.Dispose();
+                TryDeletePartialFile(localPath);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger.Info("Download cancelled: {FileName}", fileInfo.FileName);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
                 Logger.Error(ex, "Error downloading file: {FileName}", fileInfo.FileName);
                 throw new InvalidOperationException($"Failed to download {fileInfo.FileName}: {ex.Message}", ex);
+            }
+            finally
+            {
+                fileStream?.Dispose();
             }
         }, cancellationToken);
     }
@@ -171,6 +189,19 @@ public class RemoteFileService : IRemoteFileService
         {
             cancellationToken.ThrowIfCancellationRequested();
             await DeleteFileAsync(path, cancellationToken);
+        }
+    }
+
+    private static void TryDeletePartialFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to delete partial file: {Path}", path);
         }
     }
 
