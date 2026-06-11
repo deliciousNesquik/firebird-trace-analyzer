@@ -12,7 +12,7 @@ public sealed record TransactionInfo
 {
     [SortableField("Transaction ID", Category = "Transaction")]
     [FilterableField("Transaction ID", Category = "Transaction", FilterType =  FilterType.StringMultiSelect)]
-    public int? TransactionId { get; init; }
+    public long? TransactionId { get; init; }
     
     /// <summary>Уровень изоляции (READ_COMMITTED, SNAPSHOT, etc.)</summary>
     [SortableField("Isolation level", Category = "Transaction")]

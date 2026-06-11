@@ -63,8 +63,8 @@ public class StatementFinishEventCard : TemplatedControl
     public static readonly StyledProperty<string> RoleProperty =
         AvaloniaProperty.Register<StatementFinishEventCard, string>(nameof(Role), "<not set>");
     
-    public static readonly StyledProperty<int> AttachmentIdProperty =
-        AvaloniaProperty.Register<StatementFinishEventCard, int>(nameof(AttachmentId), 0);
+    public static readonly StyledProperty<long> AttachmentIdProperty =
+        AvaloniaProperty.Register<StatementFinishEventCard, long>(nameof(AttachmentId), 0);
     
     public static readonly StyledProperty<string> ProtocolProperty =
         AvaloniaProperty.Register<StatementFinishEventCard, string>(nameof(Protocol), "<not set>");
@@ -84,8 +84,8 @@ public class StatementFinishEventCard : TemplatedControl
     public static readonly StyledProperty<int> ProcessIdProperty =
         AvaloniaProperty.Register<StatementFinishEventCard, int>(nameof(ProcessId), 0);
     
-    public static readonly StyledProperty<int> TransactionIdProperty =
-        AvaloniaProperty.Register<StatementFinishEventCard, int>(nameof(TransactionId), 0);
+    public static readonly StyledProperty<long> TransactionIdProperty =
+        AvaloniaProperty.Register<StatementFinishEventCard, long>(nameof(TransactionId), 0);
     
     public static readonly StyledProperty<string> IsolationLevelProperty =
         AvaloniaProperty.Register<StatementFinishEventCard, string>(nameof(IsolationLevel), "<not set>");
@@ -165,7 +165,7 @@ public class StatementFinishEventCard : TemplatedControl
         set => SetValue(RoleProperty, value);
     }
     
-    public int AttachmentId
+    public long AttachmentId
     {
         get => GetValue(AttachmentIdProperty);
         set => SetValue(AttachmentIdProperty, value);
@@ -207,7 +207,7 @@ public class StatementFinishEventCard : TemplatedControl
         set => SetValue(ProcessIdProperty, value);
     }
     
-    public int TransactionId
+    public long TransactionId
     {
         get => GetValue(TransactionIdProperty);
         set => SetValue(TransactionIdProperty, value);
