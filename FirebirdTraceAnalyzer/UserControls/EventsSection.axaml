@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="450"
+             x:Class="FirebirdTraceAnalyzer.UserControls.EventsSection"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- Секция отображения событий трассировки. Карточки событий рендерятся через
+         неявные DataTemplate из App.axaml (по типу события). DataContext наследуется
+         от хост-окна (MainWindowViewModel). -->
+    <Grid>
+        <ScrollViewer Background="{DynamicResource SurfaceElevated}"
+                      IsVisible="{Binding IsEventsSectionVisible}">
+
+            <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
+                           Margin="10">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                        <ContentPresenter Content="{Binding}" />
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+        </ScrollViewer>
+
+        <Border
+            Padding="40"
+            IsVisible="{Binding !VisibleEvents.Count}">
+
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="16"
+                MaxWidth="400">
+
+                <TextBlock
+                    Text="No data"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    HorizontalAlignment="Center"
+                    Foreground="{DynamicResource PrimaryText}" />
+
+                <TextBlock
+                    Text="After processing the file(s), the data will appear here."
+                    FontSize="12"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
+                    Foreground="{DynamicResource SecondaryText}" />
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
