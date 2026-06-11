@@ -1,6 +1,7 @@
 ﻿namespace FirebirdTraceParser.Parsing.Handlers;
 
 using System.Text.RegularExpressions;
+using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
 
 /// <summary>
@@ -11,5 +12,6 @@ public interface IEventHandler
     EventBase? Handle(
         Match blockHeader,
         IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules);
+        IReadOnlyDictionary<string, Regex> rules,
+        ParsingContext context);
 }
