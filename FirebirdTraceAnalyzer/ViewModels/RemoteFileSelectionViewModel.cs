@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
@@ -58,6 +59,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
         ServerInfo = $"{hostname}:{port}";
         RemoteDirectory = directory;
         
+        UnsubscribeFromFiles();
         AllFiles.Clear();
         FilteredFiles.Clear();
 
@@ -65,15 +67,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
         {
             AllFiles.Add(file);
             FilteredFiles.Add(file);
-            
-            // Подписываемся на изменение IsSelected
-            file.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(RemoteFileInfo.IsSelected))
-                {
-                    UpdateStatistics();
-                }
-            };
+            file.PropertyChanged += OnFilePropertyChanged;
         }
 
         UpdateStatistics();
@@ -93,6 +87,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
             .Select(f => f.FileName)
             .ToHashSet();
 
+        UnsubscribeFromFiles();
         AllFiles.Clear();
         FilteredFiles.Clear();
 
@@ -103,17 +98,9 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
             {
                 file.IsSelected = true;
             }
-            
+
             AllFiles.Add(file);
-            
-            // Подписываемся на изменение IsSelected
-            file.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(RemoteFileInfo.IsSelected))
-                {
-                    UpdateStatistics();
-                }
-            };
+            file.PropertyChanged += OnFilePropertyChanged;
         }
         
         // Применяем текущий поиск/фильтр
@@ -245,6 +232,19 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
     #endregion
 
     #region Helper Methods
+
+    private void OnFilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RemoteFileInfo.IsSelected))
+            UpdateStatistics();
+    }
+
+    /// <summary>Снимает подписки со всех текущих файлов (вызывать перед очисткой AllFiles).</summary>
+    private void UnsubscribeFromFiles()
+    {
+        foreach (var file in AllFiles)
+            file.PropertyChanged -= OnFilePropertyChanged;
+    }
 
     private void UpdateStatistics()
     {
