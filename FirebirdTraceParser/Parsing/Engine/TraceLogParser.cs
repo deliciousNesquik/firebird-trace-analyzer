@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.Results;
 using FirebirdTraceParser.Parsing.Handlers;
@@ -31,16 +32,17 @@ public sealed class TraceLogParser(
         string? line;
         var lineNumber = 0;
         var currentBlock = new BlockBuffer();
+        var context = new ParsingContext();
 
         while ((line = reader.ReadLine()) != null)
         {
             lineNumber++;
-            ProcessLine(line, lineNumber, currentBlock, events, warnings, options);
+            ProcessLine(line, lineNumber, currentBlock, events, warnings, options, context);
         }
 
         // Последний блок
         if (currentBlock.HasData)
-            FlushBlock(currentBlock, events, warnings, options);
+            FlushBlock(currentBlock, events, warnings, options, context);
 
         _logger.Info("Parsing completed: {EventCount} events, {WarningCount} warnings",
             events.Count, warnings.Count);
@@ -73,6 +75,7 @@ public sealed class TraceLogParser(
         
         var lineNumber = 0;
         var currentBlock = new BlockBuffer();
+        var context = new ParsingContext();
 
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
@@ -80,7 +83,7 @@ public sealed class TraceLogParser(
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            ProcessLine(line, lineNumber, currentBlock, events, warnings, options);
+            ProcessLine(line, lineNumber, currentBlock, events, warnings, options, context);
 
             // Прогресс по позиции потока — дёшево и без повторного кодирования строки
             if (progress != null && lineNumber % 1000 == 0 && fileSize > 0)
@@ -88,7 +91,7 @@ public sealed class TraceLogParser(
         }
 
         if (currentBlock.HasData)
-            FlushBlock(currentBlock, events, warnings, options);
+            FlushBlock(currentBlock, events, warnings, options, context);
 
         progress?.Report(1.0);
 
@@ -112,6 +115,7 @@ public sealed class TraceLogParser(
         var buffer = new List<EventBase>(options.BatchSize);
         var currentBlock = new BlockBuffer();
         var warnings = new List<ParsingWarning>();
+        var context = new ParsingContext();
         
         var lineNumber = 0;
 
@@ -120,7 +124,7 @@ public sealed class TraceLogParser(
             lineNumber++;
             cancellationToken.ThrowIfCancellationRequested();
 
-            ProcessLine(line, lineNumber, currentBlock, buffer, warnings, options);
+            ProcessLine(line, lineNumber, currentBlock, buffer, warnings, options, context);
 
             // Yield батчами
             if (buffer.Count < options.BatchSize) continue;
@@ -133,7 +137,7 @@ public sealed class TraceLogParser(
 
         // Последний блок
         if (currentBlock.HasData)
-            FlushBlock(currentBlock, buffer, warnings, options);
+            FlushBlock(currentBlock, buffer, warnings, options, context);
 
         // Логируем накопленные предупреждения через ILogger (это библиотека — Console здесь недопустим)
         foreach (var warning in warnings)
@@ -163,14 +167,15 @@ public sealed class TraceLogParser(
         BlockBuffer currentBlock,
         List<EventBase> events,
         List<ParsingWarning> warnings,
-        ParseOptions options)
+        ParseOptions options,
+        ParsingContext context)
     {
         var blockMatch = _rules["block_header"].Match(line);
 
         if (blockMatch.Success)
         {
             // Новый блок - обработать предыдущий
-            if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options);
+            if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options, context);
 
             currentBlock.Reset();
             currentBlock.Header = blockMatch;
@@ -186,11 +191,12 @@ public sealed class TraceLogParser(
         BlockBuffer block,
         List<EventBase> events,
         List<ParsingWarning> warnings,
-        ParseOptions options)
+        ParseOptions options,
+        ParsingContext context)
     {
         try
         {
-            var evt = _handler.Handle(block.Header!, block.BodyLines, _rules);
+            var evt = _handler.Handle(block.Header!, block.BodyLines, _rules, context);
 
             if (evt != null)
                 events.Add(evt);

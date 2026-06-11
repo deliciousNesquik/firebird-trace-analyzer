@@ -26,7 +26,7 @@ public static class PerformanceTableParser
     );
     
     public static PerformanceTable? ParsePerformanceTable(IReadOnlyList<string> lines, int startIndex,
-        IReadOnlyDictionary<string, Regex> rules)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
         var items = new List<PerformanceTableItem>();
         ColumnPositions? positions = null;
@@ -53,7 +53,7 @@ public static class PerformanceTableParser
                 if (!char.IsWhiteSpace(line[0]) && line.TrimStart() == line)
                     break;
                 
-                var item = ParseRow(line, positions);
+                var item = ParseRow(line, positions, context);
                 if (item is not null)
                     items.Add(item);
             }
@@ -87,7 +87,7 @@ public static class PerformanceTableParser
         );
     }
     
-    private static PerformanceTableItem? ParseRow(string line, ColumnPositions pos)
+    private static PerformanceTableItem? ParseRow(string line, ColumnPositions pos, ParsingContext context)
     {
         try
         {
@@ -98,7 +98,7 @@ public static class PerformanceTableParser
 
             return new PerformanceTableItem
             {
-                TableName = StringPool.Intern(tableName.ToString()),
+                TableName = context.Intern(tableName.ToString()),
                 NaturalCount = ParseIntSafe(Slice(span, pos.NaturalStart, pos.NaturalEnd)),
                 IndexCount = ParseIntSafe(Slice(span, pos.IndexStart, pos.IndexEnd)),
                 UpdateCount = ParseIntSafe(Slice(span, pos.UpdateStart, pos.UpdateEnd)),
