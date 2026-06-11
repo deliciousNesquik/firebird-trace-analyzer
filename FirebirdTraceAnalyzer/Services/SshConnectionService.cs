@@ -14,7 +14,10 @@ namespace FirebirdTraceAnalyzer.Services;
 public class SshConnectionService : ISshConnectionService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    
+
+    /// <summary>Таймаут отдельной SFTP-операции: «зависший» (без данных) трансфер прервётся, а не повиснет навсегда.</summary>
+    private static readonly TimeSpan SftpOperationTimeout = TimeSpan.FromSeconds(60);
+
     private readonly object _syncLock = new();
     private SshClient? _sshClient;
     private SftpClient? _sftpClient;
@@ -62,8 +65,12 @@ public class SshConnectionService : ISshConnectionService
             Logger.Info("SSH connection established");
 
             // Создаём SFTP клиента
-            _sftpClient = new SftpClient(connectionInfo);
-            
+            _sftpClient = new SftpClient(connectionInfo)
+            {
+                // Чтобы зависший трансфер не блокировал процесс навсегда
+                OperationTimeout = SftpOperationTimeout
+            };
+
             await Task.Run(() => _sftpClient.Connect(), cancellationToken);
 
             if (!_sftpClient.IsConnected)
