@@ -466,9 +466,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static TraceSessionInfo? ParseSessionInfo(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
+        var sessionRx = rules["session"];
+
         foreach (var line in lines)
         {
-            var m = rules["session"].Match(line);
+            var m = sessionRx.Match(line);
             if (m.Success)
             {
                 var sessionId = ParseIntOrDefault(m.Groups["session_id"].ValueSpan);
@@ -482,6 +484,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static AttachmentInfo? ParseAttachmentInfo(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
+        var attachmentRx = rules["attachment"];
+        var processRx = rules["process"];
         Match? am = null;
         Match? pm = null;
 
@@ -489,13 +493,13 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         {
             if (am is null)
             {
-                var match = rules["attachment"].Match(line);
+                var match = attachmentRx.Match(line);
                 if (match.Success) am = match;
             }
 
             if (pm is null)
             {
-                var match = rules["process"].Match(line);
+                var match = processRx.Match(line);
                 if (match.Success) pm = match;
             }
 
@@ -609,10 +613,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
         List<ErrorLines>? errors = null;
+        var errorLineRx = rules["error_line"];
 
         foreach (var line in lines)
         {
-            var match = rules["error_line"].Match(line.Trim());
+            var match = errorLineRx.Match(line.Trim());
             if (match.Success)
                 (errors ??= new()).Add(new ErrorLines
                 {
@@ -693,6 +698,13 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var performanceTableSearched = false;
         int? restartCount = null;
 
+        // Кэшируем Regex в локали — убираем словарные лукапы из горячего цикла
+        var statementRx = rules["statement"];
+        var restartedRx = rules["restarted"];
+        var parametersRx = rules["parameters"];
+        var fetchedRx = rules["fetched"];
+        var performanceRx = rules["performance"];
+
         for (var i = 0; i < lines.Count; i++)
         {
             var line = lines[i];
@@ -703,7 +715,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 if (transaction is not null) continue;
             }
 
-            var sm = rules["statement"].Match(line);
+            var sm = statementRx.Match(line);
             if (sm.Success)
             {
                 statementId = ParseLongOrDefault(sm.Groups["statement_id"].ValueSpan);
@@ -712,7 +724,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
             if (isRestarted && restartCount is null)
             {
-                var rm = rules["restarted"].Match(line);
+                var rm = restartedRx.Match(line);
                 if (rm.Success)
                 {
                     restartCount = ParseIntOrDefault(rm.Groups["count"].ValueSpan);
@@ -729,7 +741,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 {
                     var l = lines[i];
 
-                    if (isRestarted && rules["restarted"].IsMatch(l))
+                    if (isRestarted && restartedRx.IsMatch(l))
                     {
                         // Не добавляем эту строку в SQL, она будет обработана на следующей итерации основного цикла
                         i--; // Откатываем индекс, чтобы основной цикл обработал эту строку
@@ -737,8 +749,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                     }
 
                     // break if param or performance/fetched
-                    if (rules["parameters"].IsMatch(l) ||
-                        (includePerformance && (rules["fetched"].IsMatch(l) || rules["performance"].IsMatch(l))))
+                    if (parametersRx.IsMatch(l) ||
+                        (includePerformance && (fetchedRx.IsMatch(l) || performanceRx.IsMatch(l))))
                         break;
 
                     sqlLines.Add(l);
@@ -781,6 +793,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var attachment = ParseAttachmentInfo(lines, rules, context);
         TransactionInfo? transaction = null;
         string? procedureName = null;
+        var procedureRx = rules["procedure"];
         List<SqlParameters>? paramsList = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
@@ -793,7 +806,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 if (transaction is not null) continue;
             }
 
-            var pmProc = rules["procedure"].Match(line);
+            var pmProc = procedureRx.Match(line);
             if (pmProc.Success)
             {
                 procedureName = context.Intern(pmProc.Groups["procedure_name"].Value);
@@ -822,6 +835,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var attachment = ParseAttachmentInfo(lines, rules, context);
         TransactionInfo? transaction = null;
         string? triggerName = null;
+        var triggerRx = rules["trigger"];
         string? table = null;
         string? timing = null;
         string? eventType = null;
@@ -836,7 +850,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 if (transaction is not null) continue;
             }
 
-            var tm = rules["trigger"].Match(line);
+            var tm = triggerRx.Match(line);
             if (tm.Success)
             {
                 triggerName = context.Intern(tm.Groups["trigger_name"].Value);
