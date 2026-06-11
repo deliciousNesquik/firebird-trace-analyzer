@@ -15,6 +15,7 @@ public class SshConnectionService : ISshConnectionService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
+    private readonly object _syncLock = new();
     private SshClient? _sshClient;
     private SftpClient? _sftpClient;
     private PrivateKeyFile? _privateKeyFile;
@@ -100,27 +101,35 @@ public class SshConnectionService : ISshConnectionService
 
     public void Disconnect()
     {
-        try
+        // Сериализуем: метод зовётся из нескольких мест (catch в ConnectAsync, VM, finally в UI).
+        // lock делает его идемпотентным и защищает от двойного dispose/гонок.
+        lock (_syncLock)
         {
-            _sftpClient?.Disconnect();
-            _sftpClient?.Dispose();
-            _sftpClient = null;
+            if (_sftpClient is null && _sshClient is null && _privateKeyFile is null)
+                return;
 
-            _sshClient?.Disconnect();
-            _sshClient?.Dispose();
-            _sshClient = null;
+            try
+            {
+                _sftpClient?.Disconnect();
+                _sftpClient?.Dispose();
+                _sftpClient = null;
 
-            // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
-            _privateKeyFile?.Dispose();
-            _privateKeyFile = null;
+                _sshClient?.Disconnect();
+                _sshClient?.Dispose();
+                _sshClient = null;
 
-            CurrentSettings = null;
+                // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
+                _privateKeyFile?.Dispose();
+                _privateKeyFile = null;
 
-            Logger.Info("Disconnected from server");
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn(ex, "Error during disconnect");
+                CurrentSettings = null;
+
+                Logger.Info("Disconnected from server");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Error during disconnect");
+            }
         }
     }
 
