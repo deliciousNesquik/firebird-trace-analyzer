@@ -20,7 +20,7 @@
     <Window.Resources>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
     </Window.Resources>
-    
+
     <!-- Нативное меню для macOS и некоторых Linux-DE (зеркало статических пунктов window Menu)-->
     <NativeMenu.Menu>
         <NativeMenu>
@@ -145,7 +145,7 @@
 
         </NativeMenu>
     </NativeMenu.Menu>
-    
+
 
     <Grid Background="{DynamicResource Background}" RowDefinitions="30 Auto Auto * Auto, Auto">
         <usercontrols:MainMenuView Grid.Row="0" />
@@ -171,7 +171,7 @@
                         <KeyBinding Gesture="Enter" Command="{Binding ExecuteSearchCommand}" />
                     </TextBox.KeyBindings>
                 </TextBox>
-                
+
                 <Button Grid.Row="0" Grid.Column="1"
                         Height="40" Width="40"
                         Classes="normal"
@@ -181,26 +181,25 @@
                     <Svg Width="40" Path="{DynamicResource ClearIcon}"
                          Css="{DynamicResource ThemeIconFill}" />
                 </Button>
-                
+
                 <Button Grid.Row="0" Grid.Column="2"
                         Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding ExecuteSearchCommand}"
                         ToolTip.Tip="Выполнить поиск (Enter)">
-                    
+
                     <Button.Content>
                         <Grid>
                             <Svg Width="40" Path="{DynamicResource SearchIcon}"
                                  Css="{DynamicResource ThemeIconFill}" />
-                            
+
                             <Border Background="{DynamicResource Primary}"
                                     CornerRadius="8"
                                     Padding="4,2"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
                                     Margin="0,-6,-6,0"
-                                    IsVisible="{Binding IsSearchActive}">
-                            </Border>
+                                    IsVisible="{Binding IsSearchActive}" />
                         </Grid>
                     </Button.Content>
                 </Button>
@@ -271,7 +270,7 @@
                     <Button.Content>
                         <Grid>
                             <Svg Width="40" Path="{DynamicResource SortIcon}" Css="{DynamicResource ThemeIconStroke}" />
-                        
+
                             <Border Background="{DynamicResource Primary}"
                                     CornerRadius="8"
                                     Padding="4,1"
@@ -286,7 +285,7 @@
                                     FontSize="9"
                                     FontWeight="Bold" />
                             </Border>
-                            
+
                             <Border Background="{DynamicResource AccentColor}"
                                     CornerRadius="8"
                                     Padding="4,1"
@@ -303,7 +302,7 @@
                             </Border>
                         </Grid>
                     </Button.Content>
-                    
+
                 </Button>
 
                 <Button Grid.Row="0" Grid.Column="4"
@@ -331,7 +330,7 @@
                                                 <!-- Кнопка сброса -->
                                                 <Button Content="Reset All"
                                                         Classes="focused"
-                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ResetAllFiltersCommand}"/>
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ResetAllFiltersCommand}" />
                                             </StackPanel>
                                         </Grid>
 
@@ -390,7 +389,7 @@
                                                                                     PlaceholderText="Type to filter..."
                                                                                     Text="{Binding ValueSearchText, Mode=TwoWay}"
                                                                                     IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"
-                                                                                    Margin="0,4,0,8"/>
+                                                                                    Margin="0,4,0,8" />
 
                                                                                 <!-- ✅ Список значений БЕЗ ScrollViewer -->
                                                                                 <ItemsControl
@@ -513,51 +512,9 @@
                 </Button>
             </Grid>
         </Border>
-        
-        <Grid Grid.Row="3">
-            <ScrollViewer Background="{DynamicResource SurfaceElevated}"
-                          IsVisible="{Binding IsEventsSectionVisible}">
-        
-                <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
-                               Margin="10">
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate>
-                            <ContentPresenter Content="{Binding}" />
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                </ItemsRepeater>
-        
-            </ScrollViewer>
-    
-            <Border
-                Padding="40"
-                IsVisible="{Binding !VisibleEvents.Count}">
 
-                <StackPanel
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="16"
-                    MaxWidth="400">
+        <usercontrols:EventsSection Grid.Row="3" />
 
-                    <TextBlock
-                        Text="No data"
-                        FontSize="16"
-                        FontWeight="SemiBold"
-                        HorizontalAlignment="Center"
-                        Foreground="{DynamicResource PrimaryText}" />
-
-                    <TextBlock
-                        Text="After processing the file(s), the data will appear here."
-                        FontSize="12"
-                        TextAlignment="Center"
-                        TextWrapping="Wrap"
-                        Foreground="{DynamicResource SecondaryText}" />
-
-                </StackPanel>
-            </Border>
-        </Grid>
-        
-        
 
         <usercontrols:StatisticInfoSection
             Grid.Row="4"
@@ -566,7 +523,9 @@
             IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatisticsSectionVisible}"
             DataContext="{Binding StatisticInfoModels}" />
 
-        <TextBlock Grid.Row="5" Background="{DynamicResource Surface}" IsVisible="{Binding IsLogsSectionVisible}"
+        <TextBlock Grid.Row="5"
+                   Background="{DynamicResource Surface}"
+                   IsVisible="{Binding IsLogsSectionVisible}"
                    Text="{Binding StatusMessage}"
                    Padding="10" />
     </Grid>
