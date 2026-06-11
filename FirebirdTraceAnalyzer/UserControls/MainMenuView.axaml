@@ -1,0 +1,196 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:reports="clr-namespace:FirebirdTraceAnalyzer.Models.Reports"
+             mc:Ignorable="d" d:DesignWidth="1100"
+             x:Class="FirebirdTraceAnalyzer.UserControls.MainMenuView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- In-window меню (используется на платформах без нативного меню; здесь же — динамические
+         списки отчётов). DataContext наследуется от хост-окна (MainWindowViewModel). -->
+    <Menu>
+
+        <MenuItem Header="_Open [O]">
+            <MenuItem
+                Header="_Local File [L]"
+                InputGesture="Ctrl+O"
+                HotKey="Ctrl+O"
+                Command="{Binding OpenLocalFileCommand}" />
+
+            <MenuItem
+                Header="_Remote File [R]"
+                InputGesture="Ctrl+Alt+O"
+                HotKey="Ctrl+Alt+O"
+                Command="{Binding OpenRemoteFileCommand}" />
+
+            <MenuItem
+                Header="_Cancel Loading [C]"
+                InputGesture="Ctrl+C"
+                HotKey="Ctrl+C"
+                Command="{Binding CancelLoadingCommand}" />
+
+        </MenuItem>
+
+        <MenuItem Header="_Edit [E]">
+
+            <MenuItem Header="_Reparse [R]">
+                <MenuItem
+                    Header="_All Files [A]"
+                    InputGesture="Ctrl+R"
+                    HotKey="Ctrl+R"
+                    Command="{Binding ReparseAllFilesCommand}" />
+
+                <MenuItem
+                    Header="_Selected Files [S]"
+                    InputGesture="Ctrl+Alt+R"
+                    HotKey="Ctrl+Alt+R"
+                    Command="{Binding ReparseSelectedFilesCommand}" />
+            </MenuItem>
+
+            <MenuItem Header="_Close [C]">
+                <MenuItem
+                    Header="_All Files [A]"
+                    InputGesture="Ctrl+W"
+                    HotKey="Ctrl+W"
+                    Command="{Binding CloseAllFilesCommand}" />
+
+                <MenuItem
+                    Header="_Selected Files [S]"
+                    InputGesture="Ctrl+Alt+W"
+                    HotKey="Ctrl+Alt+W"
+                    Command="{Binding CloseSelectedFilesCommand}" />
+            </MenuItem>
+
+        </MenuItem>
+
+        <MenuItem Header="_Reports [E]">
+
+            <!-- Динамические встроенные отчеты (Quick Reports) -->
+            <MenuItem Header="_Quick Reports" ItemsSource="{Binding BuiltInReports}">
+                <MenuItem.Styles>
+                    <!-- Этот стиль применяется ко всем сгенерированным дочерним элементам -->
+                    <Style Selector="MenuItem" x:DataType="reports:ReportTemplate">
+                        <Setter Property="Header" Value="{Binding Name}" />
+                        <!-- Биндимся к команде в главной ViewModel, передавая Id шаблона -->
+                        <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GenerateQuickReportCommand}" />
+                        <Setter Property="CommandParameter" Value="{Binding Id}" />
+                        <!-- Бонус: показываем описание при наведении -->
+                        <Setter Property="ToolTip.Tip" Value="{Binding Description}" />
+                    </Style>
+                </MenuItem.Styles>
+            </MenuItem>
+
+            <!-- Динамические пользовательские отчеты (Custom Reports) -->
+            <MenuItem Header="_Custom Reports"
+                      ItemsSource="{Binding CustomReports}"
+                      IsVisible="{Binding CustomReports.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <!-- Показываем это меню только если есть хотя бы один кастомный отчет -->
+                <MenuItem.Styles>
+                    <Style Selector="MenuItem" x:DataType="reports:ReportTemplate">
+                        <Setter Property="Header" Value="{Binding Name}" />
+                        <Setter Property="Command" Value="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GenerateQuickReportCommand}" />
+                        <Setter Property="CommandParameter" Value="{Binding Id}" />
+                        <Setter Property="ToolTip.Tip" Value="{Binding Description}" />
+                    </Style>
+                </MenuItem.Styles>
+            </MenuItem>
+
+            <Separator />
+
+            <!-- Manage Templates -->
+            <MenuItem Header="_Manage Templates">
+                <MenuItem
+                    Header="Create New Template..."
+                    Command="{Binding CreateReportTemplateCommand}" />
+
+                <MenuItem
+                    Header="Edit Template..."
+                    IsEnabled="True"
+                    Command="{Binding EditReportTemplateCommand}" />
+
+                <MenuItem
+                    Header="Import Template..."
+                    Command="{Binding ImportReportTemplateCommand}" />
+
+                <MenuItem
+                    Header="Export Template..."
+                    IsEnabled="False"
+                    Command="{Binding ExportReportTemplateCommand}" />
+            </MenuItem>
+
+            <Separator />
+
+            <!-- History -->
+            <MenuItem
+                Header="_Recent Reports..."
+                Command="{Binding OpenRecentReportsCommand}" />
+
+        </MenuItem>
+
+        <MenuItem Header="_Window [W]">
+            <MenuItem
+                Header="_Files [F]"
+                InputGesture="Ctrl+Shift+F1"
+                HotKey="Ctrl+Shift+F1"
+                Command="{Binding SwitchVisibleTraceFilesSectionCommand}"
+                ToggleType="CheckBox"
+                IsChecked="{Binding IsTraceFilesSectionVisible}"
+                StaysOpenOnClick="True" />
+
+            <MenuItem
+                Header="_Search, Sort and Filters [S]"
+                InputGesture="Ctrl+Shift+F2"
+                HotKey="Ctrl+Shift+F2"
+                Command="{Binding SwitchVisibleSearchSectionCommand}"
+                ToggleType="CheckBox"
+                IsChecked="{Binding IsSearchSectionVisible}"
+                StaysOpenOnClick="True" />
+
+            <MenuItem
+                Header="_Events [E]"
+                InputGesture="Ctrl+Shift+F3"
+                HotKey="Ctrl+Shift+F3"
+                IsChecked="{Binding IsEventsSectionVisible}"
+                Command="{Binding SwitchEventsSectionVisibleCommand}"
+                ToggleType="CheckBox"
+                StaysOpenOnClick="True" />
+
+            <MenuItem
+                Header="_Statistics [S]"
+                InputGesture="Ctrl+Shift+F4"
+                HotKey="Ctrl+Shift+F4"
+                IsChecked="{Binding IsStatisticsSectionVisible}"
+                Command="{Binding SwitchStatisticsSectionVisibleCommand}"
+                ToggleType="CheckBox"
+                StaysOpenOnClick="True" />
+
+            <MenuItem
+                Header="_Logs [L]"
+                InputGesture="Ctrl+Shift+F5"
+                HotKey="Ctrl+Shift+F5"
+                IsChecked="{Binding IsLogsSectionVisible}"
+                Command="{Binding SwitchLogsSectionVisibleCommand}"
+                ToggleType="CheckBox"
+                StaysOpenOnClick="True" />
+
+            <Separator />
+            <MenuItem
+                Header="_Reset [R]"
+                InputGesture="Ctrl+Shift+F12"
+                HotKey="Ctrl+Shift+F12"
+                Command="{Binding GoToFactorySettingsSectionCommand}" />
+
+        </MenuItem>
+
+        <MenuItem Header="_Settings [S]">
+            <MenuItem
+                Header="Set up remote access" />
+
+            <MenuItem
+                Header="Configure open file update" />
+
+        </MenuItem>
+    </Menu>
+</UserControl>
