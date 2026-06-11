@@ -68,9 +68,6 @@ public class ProcedureStartEventCard : TemplatedControl
     public static readonly StyledProperty<string> ProcedureNameProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, string>(nameof(ProcedureName), "<not set>");
     
-    public static readonly StyledProperty<string> ExecuteProcedureProperty =
-        AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(ExecuteProcedure), "<not set>");
-    
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
     

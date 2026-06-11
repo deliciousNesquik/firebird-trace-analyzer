@@ -169,7 +169,7 @@
                                     <controls:CopyButton Classes="parameters" 
                                                          VerticalAlignment="Top"
                                                          Height="30" Width="30"
-                                                         Text="{TemplateBinding ExecuteProcedure}" />
+                                                         Text="{Binding ExecuteProcedure, RelativeSource={RelativeSource TemplatedParent}}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
