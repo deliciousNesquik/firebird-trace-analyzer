@@ -34,33 +34,50 @@ public class RemoteFileService : IRemoteFileService
             {
                 Logger.Info("Fetching files from directory: {Directory}", remoteDirectory);
 
-                var files = sftpClient.ListDirectory(remoteDirectory)
-                    .Where(f => !f.IsDirectory && IsTraceFile(f.Name))
-                    .Select(f => new RemoteFileInfo
+                var files = new List<RemoteFileInfo>();
+
+                foreach (var f in sftpClient.ListDirectory(remoteDirectory))
+                {
+                    try
                     {
-                        FileName = f.Name,
-                        FullPath = f.FullName,
-                        Size = f.Length,
-                        LastModified = f.LastWriteTime,
-                        Permissions = new Permissions(
-                            f.Attributes.OwnerCanRead,
-                            f.Attributes.OwnerCanWrite,
-                            f.Attributes.OwnerCanExecute,
-                            f.Attributes.GroupCanRead,
-                            f.Attributes.GroupCanWrite,
-                            f.Attributes.GroupCanExecute,
-                            f.Attributes.OthersCanRead,
-                            f.Attributes.OthersCanWrite,
-                            f.Attributes.OthersCanExecute
-                        ),
-                        Owner = f.OwnerCanRead ? f.Name : "unknown"
-                    })
+                        if (f.IsDirectory || !IsTraceFile(f.Name))
+                            continue;
+
+                        files.Add(new RemoteFileInfo
+                        {
+                            FileName = f.Name,
+                            FullPath = f.FullName,
+                            Size = f.Length,
+                            LastModified = f.LastWriteTime,
+                            Permissions = new Permissions(
+                                f.Attributes.OwnerCanRead,
+                                f.Attributes.OwnerCanWrite,
+                                f.Attributes.OwnerCanExecute,
+                                f.Attributes.GroupCanRead,
+                                f.Attributes.GroupCanWrite,
+                                f.Attributes.GroupCanExecute,
+                                f.Attributes.OthersCanRead,
+                                f.Attributes.OthersCanWrite,
+                                f.Attributes.OthersCanExecute
+                            ),
+                            // SFTP (v3) отдаёт числовой UID владельца, не имя
+                            Owner = f.Attributes.UserId.ToString()
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Изолируем сбой по одной записи, чтобы не потерять весь листинг
+                        Logger.Warn(ex, "Skipping file with unreadable attributes: {Name}", f.Name);
+                    }
+                }
+
+                var ordered = files
                     .OrderByDescending(f => f.LastModified)
                     .ToList();
 
-                Logger.Info("Found {Count} trace files", files.Count);
+                Logger.Info("Found {Count} trace files", ordered.Count);
 
-                return (IReadOnlyList<RemoteFileInfo>)files;
+                return (IReadOnlyList<RemoteFileInfo>)ordered;
             }
             catch (Exception ex)
             {
