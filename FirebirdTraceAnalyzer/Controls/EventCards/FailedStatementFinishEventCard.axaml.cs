@@ -101,9 +101,6 @@ public class FailedStatementFinishEventCard : TemplatedControl
     public static readonly StyledProperty<string> SqlProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Sql), "<not set>");
     
-    public static readonly StyledProperty<string> ExecuteSqlProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(ExecuteSql), "<not set>");
-    
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
     
