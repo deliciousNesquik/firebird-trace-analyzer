@@ -1455,9 +1455,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadCompleted(); });
 
-            // Ждём 2 секунды перед закрытием окна прогресса
+            // Ждём 2 секунды, чтобы пользователь увидел завершение
             await Task.Delay(2000, cancellationToken);
-            progressWindow.Close();
 
             return downloadedPaths;
         }
@@ -1466,6 +1465,16 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadFailed(ex.Message); });
 
             throw;
+        }
+        finally
+        {
+            // Гарантированно закрываем окно прогресса при любом исходе.
+            // Снимаем IsDownloading, иначе обработчик Closing заблокирует закрытие (например, при отмене).
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                progressViewModel.IsDownloading = false;
+                progressWindow.Close();
+            });
         }
     }
 
