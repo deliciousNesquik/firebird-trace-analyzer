@@ -50,9 +50,13 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
 
     /// <summary>Событие подтверждения выбора файлов</summary>
     public event EventHandler<IReadOnlyList<RemoteFileInfo>>? FilesSelected;
-    
-    /// <summary>Событие запроса обновления списка файлов</summary>
-    public event EventHandler? RefreshRequested;
+
+    /// <summary>Колбэк получения свежего списка файлов с сервера (задаётся владельцем).</summary>
+    private Func<CancellationToken, Task<IReadOnlyList<RemoteFileInfo>>>? _refreshCallback;
+
+    /// <summary>Назначает источник обновления списка файлов.</summary>
+    public void SetRefreshCallback(Func<CancellationToken, Task<IReadOnlyList<RemoteFileInfo>>> callback)
+        => _refreshCallback = callback;
 
     public void Initialize(string hostname, int port, string directory, IEnumerable<RemoteFileInfo> files)
     {
@@ -188,16 +192,34 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Refresh()
+    private async Task RefreshAsync(CancellationToken cancellationToken)
     {
-        // ✅ ИСПРАВЛЕНО: Вызываем событие для обновления
+        if (_refreshCallback is null)
+            return;
+
         IsLoading = true;
         StatusMessage = "Refreshing file list...";
-        
         Logger.Info("Refresh requested");
-        
-        // Уведомляем подписчиков (MainWindowViewModel)
-        RefreshRequested?.Invoke(this, EventArgs.Empty);
+
+        try
+        {
+            var updatedFiles = await _refreshCallback(cancellationToken);
+            UpdateFileList(updatedFiles);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Refresh cancelled";
+            Logger.Info("Refresh cancelled");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error refreshing file list");
+            StatusMessage = $"Refresh failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanConfirm))]

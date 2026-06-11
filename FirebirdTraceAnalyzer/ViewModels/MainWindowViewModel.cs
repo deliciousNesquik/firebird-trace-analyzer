@@ -1371,39 +1371,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         viewModel.DeleteAfterProcessing = settings.DeleteAfterProcessing;
 
-        // Обработчик события на запрос обновления списка файлов
-        viewModel.RefreshRequested += async (_, _) =>
-        {
-            try
-            {
-                Logger.Info("Refreshing file list from server...");
-                viewModel.StatusMessage = "Fetching updated file list...";
-
-                // Получаем новый список файлов с сервера
-                var updatedFiles = await _remoteFileService.GetFilesAsync(
-                    settings.RemoteDirectory,
-                    CancellationToken.None);
-
-                // Обновляем список в ViewModel
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    viewModel.UpdateFileList(updatedFiles);
-                    viewModel.IsLoading = false;
-                });
-
-                Logger.Info("File list refreshed successfully: {Count} files", updatedFiles.Count);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error refreshing file list");
-
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    viewModel.StatusMessage = $"Refresh failed: {ex.Message}";
-                    viewModel.IsLoading = false;
-                });
-            }
-        };
+        // Источник обновления списка: команда RefreshAsync во ViewModel сама асинхронна,
+        // отменяема и сама маршалит обновление списка (выполняется на UI-потоке).
+        viewModel.SetRefreshCallback(token =>
+            _remoteFileService.GetFilesAsync(settings.RemoteDirectory, token));
 
         return new RemoteFileSelectionDialog(viewModel);
     }
