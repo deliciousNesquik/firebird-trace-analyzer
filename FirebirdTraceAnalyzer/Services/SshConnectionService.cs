@@ -17,6 +17,7 @@ public class SshConnectionService : ISshConnectionService
     
     private SshClient? _sshClient;
     private SftpClient? _sftpClient;
+    private PrivateKeyFile? _privateKeyFile;
     private bool _disposed;
 
     public bool IsConnected => _sshClient?.IsConnected == true && _sftpClient?.IsConnected == true;
@@ -109,6 +110,10 @@ public class SshConnectionService : ISshConnectionService
             _sshClient?.Dispose();
             _sshClient = null;
 
+            // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
+            _privateKeyFile?.Dispose();
+            _privateKeyFile = null;
+
             CurrentSettings = null;
 
             Logger.Info("Disconnected from server");
@@ -190,21 +195,17 @@ public class SshConnectionService : ISshConnectionService
             new PasswordAuthenticationMethod(settings.Username, settings.Password!));
     }
 
-    private static ConnectionInfo CreatePrivateKeyConnection(SshConnectionSettings settings)
+    private ConnectionInfo CreatePrivateKeyConnection(SshConnectionSettings settings)
     {
         if (!File.Exists(settings.PrivateKeyPath))
             throw new FileNotFoundException($"Private key not found: {settings.PrivateKeyPath}");
 
-        PrivateKeyFile keyFile;
+        var keyFile = string.IsNullOrWhiteSpace(settings.KeyPassphrase)
+            ? new PrivateKeyFile(settings.PrivateKeyPath)
+            : new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
 
-        if (string.IsNullOrWhiteSpace(settings.KeyPassphrase))
-        {
-            keyFile = new PrivateKeyFile(settings.PrivateKeyPath);
-        }
-        else
-        {
-            keyFile = new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
-        }
+        // Сохраняем ссылку: ключ нужен на время аутентификации, освобождаем в Disconnect().
+        _privateKeyFile = keyFile;
 
         return new ConnectionInfo(
             settings.Hostname,
