@@ -19,12 +19,11 @@ public class SshConnectionService : ISshConnectionService
     private static readonly TimeSpan SftpOperationTimeout = TimeSpan.FromSeconds(60);
 
     private readonly object _syncLock = new();
-    private SshClient? _sshClient;
     private SftpClient? _sftpClient;
     private PrivateKeyFile? _privateKeyFile;
     private bool _disposed;
 
-    public bool IsConnected => _sshClient?.IsConnected == true && _sftpClient?.IsConnected == true;
+    public bool IsConnected => _sftpClient?.IsConnected == true;
     public SshConnectionSettings? CurrentSettings { get; private set; }
 
     /// <summary>Получить SFTP клиента (для использования в RemoteFileService)</summary>
@@ -53,24 +52,14 @@ public class SshConnectionService : ISshConnectionService
 
             connectionInfo.Timeout = TimeSpan.FromSeconds(settings.ConnectionTimeout);
 
-            // Создаём SSH клиента
-            _sshClient = new SshClient(connectionInfo);
-            
-            // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)
-            await Task.Run(() => _sshClient.Connect(), cancellationToken);
-
-            if (!_sshClient.IsConnected)
-                throw new SshConnectionException("Failed to establish SSH connection");
-
-            Logger.Info("SSH connection established");
-
-            // Создаём SFTP клиента
+            // Для листинга/скачивания/удаления достаточно одного SFTP-клиента
             _sftpClient = new SftpClient(connectionInfo)
             {
                 // Чтобы зависший трансфер не блокировал процесс навсегда
                 OperationTimeout = SftpOperationTimeout
             };
 
+            // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)
             await Task.Run(() => _sftpClient.Connect(), cancellationToken);
 
             if (!_sftpClient.IsConnected)
@@ -112,7 +101,7 @@ public class SshConnectionService : ISshConnectionService
         // lock делает его идемпотентным и защищает от двойного dispose/гонок.
         lock (_syncLock)
         {
-            if (_sftpClient is null && _sshClient is null && _privateKeyFile is null)
+            if (_sftpClient is null && _privateKeyFile is null)
                 return;
 
             try
@@ -120,10 +109,6 @@ public class SshConnectionService : ISshConnectionService
                 _sftpClient?.Disconnect();
                 _sftpClient?.Dispose();
                 _sftpClient = null;
-
-                _sshClient?.Disconnect();
-                _sshClient?.Dispose();
-                _sshClient = null;
 
                 // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
                 _privateKeyFile?.Dispose();
