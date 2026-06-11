@@ -171,11 +171,6 @@ public partial class MainWindowViewModel : ViewModelBase
         IEventPropertyAccessor propertyAccessor,
         PluginManagerService pluginManager)
     {
-        Logger.Info("Object(s) pool have been reset(s).");
-        StringPool.Reset();
-        TraceSessionPool.Reset();
-        AttachmentPool.Reset();
-
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
         AllEvents.Clear();
@@ -1096,12 +1091,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _eventsByFileHash[fileHash] = events;
         AllEvents.AddRange(events);
         
-        // Очистка пулов объектов для избежания коллизии данных
-        Logger.Info("Object(s) pool have been reset(s).");
-        StringPool.Reset();
-        TraceSessionPool.Reset();
-        AttachmentPool.Reset();
-
         Logger.Info(
             "Streaming parse completed: {FileName}, events: {Count}",
             fileInfo.Name,

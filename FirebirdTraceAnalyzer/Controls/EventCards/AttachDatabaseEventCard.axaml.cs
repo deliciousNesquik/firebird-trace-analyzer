@@ -24,8 +24,8 @@ public class AttachDatabaseEventCard : TemplatedControl
     public static readonly StyledProperty<string> RoleProperty =
         AvaloniaProperty.Register<AttachDatabaseEventCard, string>(nameof(Role), "<not set>");
     
-    public static readonly StyledProperty<int> AttachmentIdProperty =
-        AvaloniaProperty.Register<AttachDatabaseEventCard, int>(nameof(AttachmentId), 0);
+    public static readonly StyledProperty<long> AttachmentIdProperty =
+        AvaloniaProperty.Register<AttachDatabaseEventCard, long>(nameof(AttachmentId), 0);
     
     public static readonly StyledProperty<string> ProtocolProperty =
         AvaloniaProperty.Register<AttachDatabaseEventCard, string>(nameof(Protocol), "<not set>");
@@ -82,7 +82,7 @@ public class AttachDatabaseEventCard : TemplatedControl
         set => SetValue(RoleProperty, value);
     }
     
-    public int AttachmentId
+    public long AttachmentId
     {
         get => GetValue(AttachmentIdProperty);
         set => SetValue(AttachmentIdProperty, value);

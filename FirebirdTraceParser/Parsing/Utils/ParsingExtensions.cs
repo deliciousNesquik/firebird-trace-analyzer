@@ -25,17 +25,8 @@ public static class ParsingExtensions
         if (!match.Groups[groupName].Success) 
             return defaultValue;
         
-        return int.TryParse(match.Groups[groupName].Value, out var result) 
-            ? result 
+        return int.TryParse(match.Groups[groupName].Value, out var result)
+            ? result
             : defaultValue;
-    }
-    
-    /// <summary>
-    /// Проверка наличия обязательных групп в regex.
-    /// </summary>
-    public static bool HasRequiredGroups(this Regex regex, params string[] requiredGroups)
-    {
-        var groupNames = new HashSet<string>(regex.GetGroupNames());
-        return requiredGroups.All(g => groupNames.Contains(g));
     }
 }

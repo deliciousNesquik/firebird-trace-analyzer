@@ -14,7 +14,7 @@ public sealed class AttachmentInfo
 
     [SortableField("Attachment ID", Category = "Attachment")]
     [FilterableField("Attachment ID", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
-    public required int AttachmentId { get; init; }
+    public required long AttachmentId { get; init; }
     
     [SortableField("User", Category = "Attachment")]
     [FilterableField("User", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
