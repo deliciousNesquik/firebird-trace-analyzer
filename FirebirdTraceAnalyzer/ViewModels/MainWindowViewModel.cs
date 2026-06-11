@@ -1350,10 +1350,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private RemoteConnectionDialog CreateRemoteConnectionDialog()
     {
-        var viewModel = new RemoteConnectionDialogViewModel(
-            App.Services!.GetRequiredService<IWindowProvider>(),
-            _sshConnectionService,
-            App.Services.GetService<ICredentialStorageService>());
+        // Резолвим через DI (все зависимости зарегистрированы) — без ручного new и null-зависимостей
+        var viewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
 
         return new RemoteConnectionDialog(viewModel);
     }

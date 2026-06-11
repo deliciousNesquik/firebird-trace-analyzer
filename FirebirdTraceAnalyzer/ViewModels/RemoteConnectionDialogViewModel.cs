@@ -108,13 +108,16 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
         LoadSavedProfiles();
     }
     
+    /// <summary>
+    /// Конструктор только для XAML-дизайнера. В рантайме ViewModel создаётся через DI
+    /// (см. <c>App.Services.GetRequiredService</c>), поэтому здесь не делаем файловый ввод-вывод
+    /// и не используем зависимости.
+    /// </summary>
     public RemoteConnectionDialogViewModel()
     {
         _windowProvider = null!;
         _sshService = null!;
-        _credentialStorage = null!;
-
-        LoadSavedProfiles();
+        _credentialStorage = null;
     }
 
     #region Commands
