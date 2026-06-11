@@ -22,6 +22,132 @@
     <Window.Resources>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
     </Window.Resources>
+    
+    <!-- Нативное меню для macOS и некоторых Linux-DE (зеркало статических пунктов window Menu)-->
+    <NativeMenu.Menu>
+        <NativeMenu>
+
+            <NativeMenuItem Header="Open">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Local File"
+                                        Gesture="Cmd+O"
+                                        Command="{Binding OpenLocalFileCommand}" />
+                        <NativeMenuItem Header="Remote File"
+                                        Gesture="Cmd+Alt+O"
+                                        Command="{Binding OpenRemoteFileCommand}" />
+                        <NativeMenuItem Header="Cancel Loading"
+                                        Command="{Binding CancelLoadingCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+
+            <NativeMenuItem Header="Edit">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Reparse">
+                            <NativeMenuItem.Menu>
+                                <NativeMenu>
+                                    <NativeMenuItem Header="All Files"
+                                                    Gesture="Cmd+R"
+                                                    Command="{Binding ReparseAllFilesCommand}" />
+                                    <NativeMenuItem Header="Selected Files"
+                                                    Gesture="Cmd+Alt+R"
+                                                    Command="{Binding ReparseSelectedFilesCommand}" />
+                                </NativeMenu>
+                            </NativeMenuItem.Menu>
+                        </NativeMenuItem>
+                        <NativeMenuItem Header="Close">
+                            <NativeMenuItem.Menu>
+                                <NativeMenu>
+                                    <NativeMenuItem Header="All Files"
+                                                    Gesture="Cmd+W"
+                                                    Command="{Binding CloseAllFilesCommand}" />
+                                    <NativeMenuItem Header="Selected Files"
+                                                    Gesture="Cmd+Alt+W"
+                                                    Command="{Binding CloseSelectedFilesCommand}" />
+                                </NativeMenu>
+                            </NativeMenuItem.Menu>
+                        </NativeMenuItem>
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+
+            <!-- Reports: только статические пункты. Динамические Quick/Custom Reports
+                 (ItemsSource + стили) остаются в in-window Menu — NativeMenu не поддерживает
+                 шаблонизированные списки из коллекции. -->
+            <NativeMenuItem Header="Reports">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Manage Templates">
+                            <NativeMenuItem.Menu>
+                                <NativeMenu>
+                                    <NativeMenuItem Header="Create New Template..."
+                                                    Command="{Binding CreateReportTemplateCommand}" />
+                                    <NativeMenuItem Header="Edit Template..."
+                                                    Command="{Binding EditReportTemplateCommand}" />
+                                    <NativeMenuItem Header="Import Template..."
+                                                    Command="{Binding ImportReportTemplateCommand}" />
+                                    <NativeMenuItem Header="Export Template..."
+                                                    Command="{Binding ExportReportTemplateCommand}" />
+                                </NativeMenu>
+                            </NativeMenuItem.Menu>
+                        </NativeMenuItem>
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Recent Reports..."
+                                        Command="{Binding OpenRecentReportsCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+
+            <NativeMenuItem Header="Window">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Files"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IsTraceFilesSectionVisible}"
+                                        Gesture="Cmd+Shift+F1"
+                                        Command="{Binding SwitchVisibleTraceFilesSectionCommand}" />
+                        <NativeMenuItem Header="Search, Sort and Filters"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IsSearchSectionVisible}"
+                                        Gesture="Cmd+Shift+F2"
+                                        Command="{Binding SwitchVisibleSearchSectionCommand}" />
+                        <NativeMenuItem Header="Events"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IsEventsSectionVisible}"
+                                        Gesture="Cmd+Shift+F3"
+                                        Command="{Binding SwitchEventsSectionVisibleCommand}" />
+                        <NativeMenuItem Header="Statistics"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IsStatisticsSectionVisible}"
+                                        Gesture="Cmd+Shift+F4"
+                                        Command="{Binding SwitchStatisticsSectionVisibleCommand}" />
+                        <NativeMenuItem Header="Logs"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IsLogsSectionVisible}"
+                                        Gesture="Cmd+Shift+F5"
+                                        Command="{Binding SwitchLogsSectionVisibleCommand}" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Reset"
+                                        Gesture="Cmd+Shift+F12"
+                                        Command="{Binding GoToFactorySettingsSectionCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+
+            <NativeMenuItem Header="Settings">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Set up remote access" />
+                        <NativeMenuItem Header="Configure open file update" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+
+        </NativeMenu>
+    </NativeMenu.Menu>
+    
 
     <Grid Background="{DynamicResource Background}" RowDefinitions="30 Auto Auto * Auto, Auto">
         <Menu Grid.Row="0">
