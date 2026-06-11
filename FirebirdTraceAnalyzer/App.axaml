@@ -4,6 +4,7 @@
              xmlns:local="using:FirebirdTraceAnalyzer"
              xmlns:events="clr-namespace:FirebirdTraceAnalyzer.Controls.EventCards"
              xmlns:core="clr-namespace:FirebirdTraceParser.Models.Events;assembly=FirebirdTraceParser"
+             Name="Firebird Trace Analyzer"
              RequestedThemeVariant="Default">
 
     <Application.DataTemplates>
