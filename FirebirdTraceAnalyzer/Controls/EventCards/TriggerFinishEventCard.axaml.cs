@@ -49,8 +49,8 @@ public class TriggerFinishEventCard : TemplatedControl
     public static readonly StyledProperty<int> ProcessIdProperty =
         AvaloniaProperty.Register<TriggerFinishEventCard, int>(nameof(ProcessId), 0);
     
-    public static readonly StyledProperty<int> TransactionIdProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, int>(nameof(TransactionId), 0);
+    public static readonly StyledProperty<long> TransactionIdProperty =
+        AvaloniaProperty.Register<TriggerFinishEventCard, long>(nameof(TransactionId), 0);
     
     public static readonly StyledProperty<string> IsolationLevelProperty =
         AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(IsolationLevel), "<not set>");
@@ -169,7 +169,7 @@ public class TriggerFinishEventCard : TemplatedControl
         set => SetValue(ProcessIdProperty, value);
     }
     
-    public int TransactionId
+    public long TransactionId
     {
         get => GetValue(TransactionIdProperty);
         set => SetValue(TransactionIdProperty, value);

@@ -81,8 +81,8 @@ public class StatementStartEventCard : TemplatedControl
     public static readonly StyledProperty<int> ProcessIdProperty =
         AvaloniaProperty.Register<StatementStartEventCard, int>(nameof(ProcessId), 0);
     
-    public static readonly StyledProperty<int> TransactionIdProperty =
-        AvaloniaProperty.Register<StatementStartEventCard, int>(nameof(TransactionId), 0);
+    public static readonly StyledProperty<long> TransactionIdProperty =
+        AvaloniaProperty.Register<StatementStartEventCard, long>(nameof(TransactionId), 0);
     
     public static readonly StyledProperty<string> IsolationLevelProperty =
         AvaloniaProperty.Register<StatementStartEventCard, string>(nameof(IsolationLevel), "<not set>");
@@ -189,7 +189,7 @@ public class StatementStartEventCard : TemplatedControl
         set => SetValue(ProcessIdProperty, value);
     }
     
-    public int TransactionId
+    public long TransactionId
     {
         get => GetValue(TransactionIdProperty);
         set => SetValue(TransactionIdProperty, value);
