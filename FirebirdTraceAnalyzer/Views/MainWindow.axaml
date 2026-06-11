@@ -3,7 +3,6 @@
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls"
         xmlns:usercontrols="clr-namespace:FirebirdTraceAnalyzer.UserControls"
         xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
@@ -151,67 +150,10 @@
     <Grid Background="{DynamicResource Background}" RowDefinitions="30 Auto Auto * Auto, Auto">
         <usercontrols:MainMenuView Grid.Row="0" />
 
-        <Grid Grid.Row="1"
-              Background="{DynamicResource Surface}"
-              IsVisible="{Binding IsTraceFilesSectionVisible}">
-
-            <ListBox
-                Padding="10"
-                SelectionMode="Multiple"
-                SelectedItems="{Binding SelectedFileCards}"
-                ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                ItemsSource="{Binding FileCards}"
-                IsVisible="{Binding FileCards.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
-
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <controls:FileCard
-                            FileName="{Binding FileInfo.FileName}"
-                            FileSize="{Binding FileInfo.FileSize}"
-                            EventCount="{Binding FileInfo.EventCount}"
-                            StartTrace="{Binding FileInfo.StartTrace}"
-                            EndTrace="{Binding FileInfo.EndTrace}"
-                            RemoveFileCommand="{Binding RemoveFileCommand}" />
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            
-            <Border
-                Padding="40"
-                IsVisible="{Binding !FileCards.Count}">
-
-                <StackPanel
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="16"
-                    MaxWidth="400">
-
-                    <!-- Заголовок -->
-                    <TextBlock
-                        Text="No trace files loaded"
-                        FontSize="16"
-                        FontWeight="SemiBold"
-                        HorizontalAlignment="Center"
-                        Foreground="{DynamicResource PrimaryText}" />
-
-                    <!-- Описание -->
-                    <TextBlock
-                        Text="Start by opening Firebird trace log files to analyze database events, performance metrics, and SQL queries."
-                        FontSize="12"
-                        TextAlignment="Center"
-                        TextWrapping="Wrap"
-                        Foreground="{DynamicResource SecondaryText}" />
-
-                </StackPanel>
-            </Border>
-
-        </Grid>
+        <usercontrols:FileCardsSection
+            Grid.Row="1"
+            Background="{DynamicResource Surface}"
+            IsVisible="{Binding IsTraceFilesSectionVisible}" />
 
 
         <Border Grid.Row="2" Padding="10" Background="{DynamicResource Surface}"
