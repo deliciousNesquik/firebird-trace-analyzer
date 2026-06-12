@@ -93,8 +93,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isEventsSectionVisible;
     [ObservableProperty] private bool _isStatisticsSectionVisible;
     [ObservableProperty] private bool _isLogsSectionVisible;
-
-    [ObservableProperty] private SearchType _currentSearchType;
+    
     [ObservableProperty] private bool _isClassicSearch;
 
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -226,7 +225,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Search Type
         IsClassicSearch = _appSettings.IsClassicSearch;
-        CurrentSearchType = IsClassicSearch ? SearchType.Classic : SearchType.Regex;
 
         Logger.Info("Application settings loaded.");
         StatusMessage = "Application settings loaded.";
@@ -907,6 +905,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Применяем фильтры + поиск
         ApplyAllFilters();
+    }
+
+    [RelayCommand]
+    private void ChangeSearchType()
+    {
+        IsClassicSearch = !IsClassicSearch;
     }
 
     /// <summary>
@@ -1795,19 +1799,6 @@ public partial class MainWindowViewModel : ViewModelBase
     #endregion
 
     #region UI Commands
-
-    [RelayCommand]
-    private void SwitchSearchType()
-    {
-        CurrentSearchType = CurrentSearchType == SearchType.Classic
-            ? SearchType.Regex
-            : SearchType.Classic;
-    }
-
-    partial void OnCurrentSearchTypeChanged(SearchType value)
-    {
-        IsClassicSearch = value == SearchType.Classic;
-    }
 
     [RelayCommand]
     private void SwitchVisibleTraceFilesSection()
