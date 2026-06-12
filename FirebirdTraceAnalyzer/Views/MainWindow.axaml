@@ -167,16 +167,6 @@
                 </TextBox>
 
                 <Button Grid.Row="0" Grid.Column="1"
-                        Height="40" Width="40"
-                        Classes="normal"
-                        Command="{Binding ClearSearchCommand}"
-                        IsVisible="{Binding IsSearchActive}"
-                        ToolTip.Tip="Clear search text">
-                    <Svg Width="40" Path="{DynamicResource ClearIcon}"
-                         Css="{DynamicResource ThemeIconFill}" />
-                </Button>
-
-                <Button Grid.Row="0" Grid.Column="2"
                         Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding ExecuteSearchCommand}"
@@ -198,12 +188,28 @@
                     </Button.Content>
                 </Button>
 
+                <Button Grid.Row="0" Grid.Column="2"
+                        Height="40" Width="40"
+                        Classes="normal"
+                        Command="{Binding ChangeSearchTypeCommand}"
+                        ToolTip.Tip="Change search mode. States: [Classic/Regex]">
+                    
+                    <Grid>
+                        <Svg IsVisible="{Binding IsClassicSearch}" Width="40" Path="{DynamicResource ClassicSearchIcon}"
+                             Css="{DynamicResource ThemeIconStroke}" />
+                    
+                        <Svg IsVisible="{Binding !IsClassicSearch}" Width="40" Path="{DynamicResource RegexSearchIcon}"
+                             Css="{DynamicResource ThemeIconFill}" />
+                    </Grid>
+                </Button>
+                
                 <!-- Кнопка сортировки событий -->
                 <Button Grid.Row="0"
                         Grid.Column="3"
                         Classes="normal"
                         Height="40" 
-                        Width="40">
+                        Width="40"
+                        ToolTip.Tip="Sort events">
                     
                     <Button.Flyout>
                         <Flyout FlyoutPresenterClasses="NoPadding" 
@@ -235,7 +241,8 @@
                         Grid.Column="4"
                         Classes="normal"
                         Height="40" 
-                        Width="40">
+                        Width="40"
+                        ToolTip.Tip="Filter events">
 
                     <Button.Flyout>
                         <Flyout FlyoutPresenterClasses="NoPadding"
