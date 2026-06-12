@@ -12,8 +12,8 @@ public class ProcedureEventBase : EventBase
     public required AttachmentInfo Attachment { get; init; }
     public required TransactionInfo Transaction { get; init; }
     
-    [SortableField("Procedure name", Category = "Procedures")]
-    [FilterableField("Procedure name", Category = "Procedures", FilterType =  FilterType.StringMultiSelect)]
+    [SortableField("Procedure Name", Category = "Procedures")]
+    [FilterableField("Procedure Name", Category = "Procedures", FilterType =  FilterType.StringMultiSelect)]
     public required string ProcedureName { get; init; }
     public required IReadOnlyList<SqlParameters> Parameters { get; init; }
 }
