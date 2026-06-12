@@ -203,78 +203,31 @@
                     </Button.Content>
                 </Button>
 
+                <!-- Кнопка сортировки событий -->
                 <Button Grid.Row="0"
                         Grid.Column="3"
                         Classes="normal"
-                        Height="40" Width="40">
-
+                        Height="40" 
+                        Width="40">
+                    
                     <Button.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedRight" ShowMode="Standard">
-                            <Border MinWidth="200" MaxHeight="400">
-                                <ScrollViewer MaxHeight="450">
-                                    <StackPanel Spacing="8">
-
-                                        <TextBlock Text="Sort by"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="16"
-                                                   Margin="4,8,4,8" />
-
-                                        <!-- Группируем по категориям -->
-                                        <ItemsControl ItemsSource="{Binding AvailableSortsByCategory}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <StackPanel Spacing="4" Margin="0,0,0,6">
-
-                                                        <!-- Заголовок категории -->
-                                                        <TextBlock Text="{Binding Key}"
-                                                                   FontWeight="SemiBold"
-                                                                   FontSize="12"
-                                                                   Foreground="{DynamicResource AccentColor}"
-                                                                   Margin="4,4,4,2" />
-
-                                                        <!-- Сортировки в категории -->
-                                                        <ItemsControl ItemsSource="{Binding}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <RadioButton
-                                                                        BorderBrush="{DynamicResource AccentColor}"
-                                                                        GroupName="SortSelection"
-                                                                        Content="{Binding DisplayName}"
-                                                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSortCommand}"
-                                                                        CommandParameter="{Binding}"
-                                                                        Margin="8,2"
-                                                                        Padding="8,4" />
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-
-                                        <Separator Margin="0,0" />
-
-                                        <CheckBox Content="Descending"
-                                                  IsChecked="{Binding IsSortDescending}"
-                                                  Margin="8,4" />
-
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Border>
+                        <Flyout FlyoutPresenterClasses="NoPadding" 
+                                Placement="BottomEdgeAlignedRight" 
+                                ShowMode="Standard">
+                            
+                            <usercontrols:SortFlyout/>
                         </Flyout>
                     </Button.Flyout>
 
                     <Button.Content>
                         <Panel>
-                            <!-- По убыванию: сверху вниз -->
+                            <!-- По убыванию -->
                             <Svg Width="40"
                                  Path="{DynamicResource SortDescendingIcon}"
                                  Css="{DynamicResource ThemeIconStroke}"
                                  IsVisible="{Binding IsSortDescending, Converter={x:Static BoolConverters.Not}}" />
 
-                            <!-- По возрастанию: снизу вверх -->
+                            <!-- По возрастанию -->
                             <Svg Width="40"
                                  Path="{DynamicResource SortAscendingIcon}"
                                  Css="{DynamicResource ThemeIconStroke}"
