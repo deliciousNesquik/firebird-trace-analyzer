@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="190"
+             mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="200"
              x:Class="FirebirdTraceAnalyzer.UserControls.SortFlyout"
              x:DataType="vm:MainWindowViewModel">
     
@@ -23,44 +23,42 @@
                       Grid.Row="1" 
                       MaxHeight="450" 
                       Margin="15,0,15,0">
-            <StackPanel Spacing="8">
-                
-                <!-- Группируем по категориям -->
-                <ItemsControl ItemsSource="{Binding AvailableSortsByCategory}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Spacing="4" Margin="0,0,0,6">
+            
+            <!-- Группируем по категориям -->
+            <ItemsControl ItemsSource="{Binding AvailableSortsByCategory}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Spacing="4" Margin="0,0,0,6">
 
-                                <!-- Заголовок категории -->
-                                <TextBlock Text="{Binding Key}"
-                                           FontWeight="SemiBold"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource AccentColor}"
-                                           Margin="0,4,0,2" />
+                            <!-- Заголовок категории -->
+                            <TextBlock Text="{Binding Key}"
+                                       FontWeight="SemiBold"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource AccentColor}"
+                                       Margin="0,4,0,2" />
 
-                                <!-- Сортировки в категории -->
-                                <ItemsControl ItemsSource="{Binding}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <RadioButton
-                                                BorderBrush="{DynamicResource AccentColor}"
-                                                GroupName="SortSelection"
-                                                Content="{Binding DisplayName}"
-                                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSortCommand}"
-                                                CommandParameter="{Binding}"
-                                                Margin="0,2"
-                                                Padding="8,4" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                            <!-- Сортировки в категории -->
+                            <ItemsControl ItemsSource="{Binding}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton
+                                            BorderBrush="{DynamicResource AccentColor}"
+                                            GroupName="SortSelection"
+                                            Content="{Binding DisplayName}"
+                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSortCommand}"
+                                            CommandParameter="{Binding}"
+                                            Margin="0,2"
+                                            Padding="8,4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>        
-
-            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
         </ScrollViewer>
         
         <!-- Показать empty-state -->
