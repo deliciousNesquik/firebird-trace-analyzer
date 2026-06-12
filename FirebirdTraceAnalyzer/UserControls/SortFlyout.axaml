@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="190"
+             x:Class="FirebirdTraceAnalyzer.UserControls.SortFlyout"
+             x:DataType="vm:MainWindowViewModel">
+    
+    <Grid RowDefinitions="Auto * Auto" MaxHeight="400" Width="250">
+        
+        <!-- Заголовок flyout окна -->
+        <Border Grid.Row="0" Margin="15,20,15,20" >
+            <TextBlock Text="Sort by"
+                       FontWeight="SemiBold"
+                       FontSize="16"/>    
+        </Border>
+        
+        
+        
+        <!-- Список сортировок -->
+        <ScrollViewer IsVisible="{Binding AvailableSortsByCategory.Count, Converter={x:Static ObjectConverters.IsNotNull}}" 
+                      Grid.Row="1" 
+                      MaxHeight="450" 
+                      Margin="15,0,15,0">
+            <StackPanel Spacing="8">
+                
+                <!-- Группируем по категориям -->
+                <ItemsControl ItemsSource="{Binding AvailableSortsByCategory}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Spacing="4" Margin="0,0,0,6">
+
+                                <!-- Заголовок категории -->
+                                <TextBlock Text="{Binding Key}"
+                                           FontWeight="SemiBold"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource AccentColor}"
+                                           Margin="0,4,0,2" />
+
+                                <!-- Сортировки в категории -->
+                                <ItemsControl ItemsSource="{Binding}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton
+                                                BorderBrush="{DynamicResource AccentColor}"
+                                                GroupName="SortSelection"
+                                                Content="{Binding DisplayName}"
+                                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSortCommand}"
+                                                CommandParameter="{Binding}"
+                                                Margin="0,2"
+                                                Padding="8,4" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>        
+
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Показать empty-state -->
+        <Border Grid.Row="1" 
+                Margin="10, 30" 
+                IsVisible="{Binding !AvailableSortsByCategory.Count}">
+            
+            <TextBlock Text="No available sorts" 
+                       Foreground="{DynamicResource SecondaryText}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        
+        <!-- Панель опций сортировки -->
+        <Border Grid.Row="2" 
+                Padding="15"
+                BorderBrush="Gray" 
+                BorderThickness="0 1 0 0">
+            
+            <CheckBox Content="Descending"
+                      IsChecked="{Binding IsSortDescending}"/>
+        </Border>
+    </Grid>
+</UserControl>

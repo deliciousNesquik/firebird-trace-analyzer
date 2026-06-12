@@ -448,5 +448,9 @@
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         
+        <Style Selector="FlyoutPresenter.NoPadding">
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        
     </Application.Styles>
 </Application>
