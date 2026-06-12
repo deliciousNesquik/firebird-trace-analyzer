@@ -159,6 +159,8 @@
     
     <!-- Иконки -->
     <x:String x:Key="ThemeIconFill">.ThemeIconFill { fill:#F1F1F1; }</x:String>
+    <x:String x:Key="ThemeIconFillOnlyWhite">.ThemeIconFill { fill:#FFFFFF; }</x:String>
     <x:String x:Key="ThemeIconStroke">.ThemeIconStroke { stroke:#F1F1F1; }</x:String>
+    <x:String x:Key="ThemeIconStrokeOnlyWhite">.ThemeIconStroke { stroke:#FFFFFF; }</x:String>
 
 </ResourceDictionary>
