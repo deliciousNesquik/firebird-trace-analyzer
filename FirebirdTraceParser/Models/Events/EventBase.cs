@@ -8,8 +8,8 @@ namespace FirebirdTraceParser.Models.Events;
 public class EventBase
 {
     /// <summary>Время события в формате ISO 8601</summary>
-    [SortableField("Event time", Category = "General", IsDefault = true)]
-    [FilterableField("Event time", Category = "General", FilterType = FilterType.DateTimeRange)]
+    [SortableField("Time", Category = "General", IsDefault = true)]
+    [FilterableField("Time", Category = "General", FilterType = FilterType.DateTimeRange)]
     public required DateTime Timestamp { get; init; }
     
     /// <summary>Идентификатор trace‑сессии (decimal)</summary>
@@ -23,7 +23,7 @@ public class EventBase
     public required string HexTraceId { get; init; }
     
     /// <summary>Тип события трассировки</summary>
-    [SortableField("Event type", Category = "General")]
-    [FilterableField("Event type", Category = "General", FilterType =  FilterType.EnumMultiSelect)]
+    [SortableField("Type", Category = "General")]
+    [FilterableField("Type", Category = "General", FilterType =  FilterType.EnumMultiSelect)]
     public required EventType EventType { get; init; }
 }

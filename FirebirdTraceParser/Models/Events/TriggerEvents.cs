@@ -12,12 +12,12 @@ public class TriggerEventBase : EventBase
     public required AttachmentInfo Attachment { get; init; }
     public required TransactionInfo Transaction { get; init; }
     
-    [SortableField("Trigger name", Category = "Triggers")]
-    [FilterableField("Trigger name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
+    [SortableField("Trigger Name", Category = "Triggers")]
+    [FilterableField("Trigger Name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public required string TriggerName { get; init; }
     
-    [SortableField("Table name", Category = "Triggers")]
-    [FilterableField("Table name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
+    [SortableField("Table Name", Category = "Triggers")]
+    [FilterableField("Table Name", Category = "Triggers", FilterType = FilterType.StringMultiSelect)]
     public string? Table { get; init; } // ← убрали 'required'
     
     [SortableField("Timing", Category = "Triggers")]

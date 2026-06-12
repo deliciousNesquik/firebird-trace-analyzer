@@ -9,7 +9,7 @@ namespace FirebirdTraceParser.Models.ValueObjects;
 /// </summary>
 public sealed class AttachmentInfo
 {
-    [FilterableField("Database path", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
+    [FilterableField("Database Path", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public required string DatabasePath { get; init; }
 
     [SortableField("Attachment ID", Category = "Attachment")]
@@ -46,6 +46,6 @@ public sealed class AttachmentInfo
     public string? ProcessPath { get; init; }
     
     /// <summary>ID процесса клиента (опционально)</summary>
-    [FilterableField("Client application PID", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
+    [FilterableField("Client Application PID", Category = "Attachment", FilterType =  FilterType.StringMultiSelect)]
     public int? ProcessId { get; init; }
 }
