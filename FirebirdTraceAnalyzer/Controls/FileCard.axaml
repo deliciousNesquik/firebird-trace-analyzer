@@ -3,36 +3,34 @@
         xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls"
         xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters">
     <Design.PreviewWith>
-        <controls:FileCard FileName="2026_05_07__00_00_01.log" FileSize="234567860" StartTrace="2026-05-07 00:00:01"
-                           EndTrace="2026-05-07 00:20:00" EventCount="943000" />
+        <controls:FileCard FileName="2026_05_07__00_00_01.log" 
+                           FileSize="234567860" 
+                           StartTrace="2026-05-07 00:00:01"
+                           EndTrace="2026-05-07 00:20:00" 
+                           EventCount="943000" />
     </Design.PreviewWith>
 
     <Style Selector="controls|FileCard">
-
         <Setter Property="Template">
-
             <ControlTemplate>
-
                 <Border 
-                        BorderBrush="{DynamicResource PrimaryText}"
+                        BorderBrush="{DynamicResource BorderColor}"
                         BorderThickness="1"
                         Padding="10">
 
                     <Grid RowDefinitions="Auto,Auto"
-                          ColumnDefinitions="*,Auto"
-                          RowSpacing="8"
+                          ColumnDefinitions="*,Auto,Auto"
+                          RowSpacing="10"
                           ColumnSpacing="10">
-
-                        <!-- FILE NAME -->
+                        
                         <StackPanel Grid.Row="0"
                                     Grid.Column="0"
                                     Spacing="2">
 
-                            <TextBlock Text="TRACE FILE"
+                            <TextBlock Text="FIREBIRD TRACE FILE"
                                        FontSize="10"
                                        FontWeight="Bold"
-                                       FontFamily="Consolas"
-                                       Foreground="{DynamicResource Primary}" />
+                                       Foreground="{DynamicResource AccentColor}" />
 
                             <TextBlock Text="{TemplateBinding FileName}"
                                        FontSize="16"
@@ -41,69 +39,95 @@
 
                         </StackPanel>
 
-                        <Button Grid.Row="0" Grid.Column="1" 
-                                Width="30" Height="30" Padding="5"
+                        <Button Grid.Row="0" 
+                                Grid.Column="1" 
+                                Width="30" 
+                                Height="30" 
+                                Padding="5"
+                                Classes="normal"
+                                ToolTip.Tip="Opens the log file in the default system viewer">
+                            <Button.Content>
+                                <Svg Path="{DynamicResource FolderIcon}" 
+                                     Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                            </Button.Content>
+                        </Button>
+                        
+                        <!--<Button Grid.Row="0" 
+                                Grid.Column="2" 
+                                Width="30" 
+                                Height="30" 
+                                Padding="5"
                                 Classes="danger"
                                 Command="{TemplateBinding RemoveFileCommand}"
                                 ToolTip.Tip="Deletes the trace log and its associated events">
                             <Button.Content>
-                                <Svg Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                                <Svg Path="{DynamicResource ClearIcon}" 
+                                     Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                             </Button.Content>
-                        </Button>
+                        </Button>-->
                         
-                        <Grid Grid.Column="0" Grid.Row="1"
+                        <Grid Grid.Column="0" 
+                              Grid.Row="1"
                               Grid.ColumnSpan="2"
                               VerticalAlignment="Center"
                               ColumnDefinitions="Auto,*,Auto,Auto"
                               ColumnSpacing="12">
                             
                             <StackPanel Grid.Column="0"
-                                        VerticalAlignment="Center"
+                                        VerticalAlignment="Bottom"
                                         Orientation="Horizontal"
-                                        Spacing="5">
+                                        Spacing="10">
 
-                                <TextBlock Text="{TemplateBinding StartTrace}"
-                                           FontFamily="Consolas" VerticalAlignment="Bottom"
-                                           FontSize="12" />
-
-                                <TextBlock Text="🠪" FontSize="12" VerticalAlignment="Top"/>
-
-                                <TextBlock Text="{TemplateBinding EndTrace}"
-                                           FontFamily="Consolas" VerticalAlignment="Bottom"
-                                           FontSize="12" />
-
+                                <StackPanel Orientation="Vertical"
+                                            Spacing="5">
+                                    <TextBlock Text="START"
+                                               Foreground="{DynamicResource AccentColor}"
+                                               FontSize="10"
+                                               FontWeight="Bold"/>
+                                    
+                                    <TextBlock Text="{TemplateBinding StartTrace}"
+                                               FontSize="12" />    
+                                </StackPanel>
+                                
+                                <StackPanel Orientation="Vertical"
+                                            Spacing="5">
+                                    <TextBlock Text="END"
+                                               Foreground="{DynamicResource AccentColor}"
+                                               FontSize="10"
+                                               FontWeight="Bold"/>
+                                    
+                                    <TextBlock Text="{TemplateBinding EndTrace}"
+                                               FontSize="12" />
+                                </StackPanel>
+                                
                             </StackPanel>
                             
                             <StackPanel Grid.Column="2"
-                                        Orientation="Horizontal"
-                                        Spacing="4">
+                                        Orientation="Vertical"
+                                        VerticalAlignment="Bottom"
+                                        Spacing="5">
 
                                 <TextBlock Text="SIZE"
-                                           FontFamily="Consolas"
-                                           Foreground="{DynamicResource Primary}"
-                                           FontSize="11"
+                                           Foreground="{DynamicResource AccentColor}"
+                                           FontSize="10"
                                            FontWeight="Bold"/>
 
-                                <TextBlock
-                                    Text="{TemplateBinding FileSize, Converter={x:Static converters:BytesToReadableSizeConverter.Instance}}"
-                                    FontFamily="Consolas"
-                                    FontSize="12" />
+                                <TextBlock FontSize="12"
+                                           Text="{TemplateBinding FileSize, Converter={x:Static converters:BytesToReadableSizeConverter.Instance}}"/>
 
                             </StackPanel>
-
-                            <!-- EVENTS -->
+                            
                             <StackPanel Grid.Column="3"
-                                        Orientation="Horizontal"
-                                        Spacing="4">
+                                        Orientation="Vertical"
+                                        VerticalAlignment="Bottom"
+                                        Spacing="5">
 
                                 <TextBlock Text="EVENTS"
-                                           Foreground="{DynamicResource Primary}"
-                                           FontSize="11"
-                                           FontFamily="Consolas"
+                                           Foreground="{DynamicResource AccentColor}"
+                                           FontSize="10"
                                            FontWeight="Bold"/>
 
                                 <TextBlock Text="{Binding EventCount, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:N0}'}"
-                                           FontFamily="Consolas"
                                            FontSize="12" />
 
                             </StackPanel>
