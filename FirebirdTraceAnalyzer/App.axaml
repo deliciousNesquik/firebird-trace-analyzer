@@ -1,16 +1,12 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="FirebirdTraceAnalyzer.App"
              xmlns:local="using:FirebirdTraceAnalyzer"
              xmlns:events="clr-namespace:FirebirdTraceAnalyzer.Controls.EventCards"
              xmlns:core="clr-namespace:FirebirdTraceParser.Models.Events;assembly=FirebirdTraceParser"
              xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
+             x:Class="FirebirdTraceAnalyzer.App"
              Name="Firebird Trace Analyzer"
              RequestedThemeVariant="Default">
-
-    <Application.DataTemplates>
-        <local:ViewLocator/>
-    </Application.DataTemplates>
   
     <NativeMenu.Menu>
         <NativeMenu>
@@ -19,6 +15,10 @@
     </NativeMenu.Menu>
     
     <Application.DataTemplates>
+        <!-- Поиск и сборка (view + view_model) -->
+        <local:ViewLocator/>
+        
+        <!-- Шаблоны данных -->
         <DataTemplate DataType="core:TraceInitEvent">
             <events:TraceInitEventCard
                 Timestamp="{Binding Timestamp}"
@@ -367,7 +367,6 @@
     
     <Application.Resources>
         <ResourceDictionary>
-
             <ResourceDictionary.ThemeDictionaries>
 
                 <ResourceDictionary x:Key="Light">
@@ -384,7 +383,7 @@
 
             </ResourceDictionary.ThemeDictionaries>
 
-            <!-- Icons -->
+            <!-- Подгрузка (svg) иконок приложения -->
             <x:String x:Key="AppIcon">avares://FirebirdTraceAnalyzer/Assets/app.ico</x:String>
             <x:String x:Key="SearchIcon">avares://FirebirdTraceAnalyzer/Assets/search.svg</x:String>
             <x:String x:Key="SortAscendingIcon">avares://FirebirdTraceAnalyzer/Assets/sort-from-bottom-to-top.svg</x:String>
@@ -403,7 +402,7 @@
             <x:String x:Key="ClassicSearchIcon">avares://FirebirdTraceAnalyzer/Assets/text-search.svg</x:String>
             <x:String x:Key="RegexSearchIcon">avares://FirebirdTraceAnalyzer/Assets/regex-search.svg</x:String>
 
-            <!-- Подключение всех конвертеров в одном месте -->
+            <!-- Подключение всех конвертеров -->
             <converters:BoolToPasswordCharConverter x:Key="BoolToPasswordCharConverter" />
             <converters:BytesToReadableSizeConverter x:Key="BytesToReadableSizeConverter" />
             <converters:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter" />
@@ -415,10 +414,11 @@
     </Application.Resources>         
              
     <Application.Styles>
-        
-        
+        <!-- Использование (Fluent) темы для базовых элементов, 
+        после переопределения своего дизайна данная строка не понадобится -->
         <FluentTheme />
         
+        <!-- Загрузка всех (Control) для участия в сборке приложения -->
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/FileCard.axaml" />
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/FocusTextBlock.axaml" />
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TraceInitEventCard.axaml" />
@@ -436,13 +436,12 @@
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/FailedTriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/ErrorEventCard.axaml"/>
-        
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/InfoTip.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/CopyButton.axaml"/>
-        
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Styles/Menu.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Styles/Buttons.axaml"/>
         
+        <!-- Общие стили которые еще не вынесены в отдельный файл -->
         <Style Selector="ListBoxItem">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
