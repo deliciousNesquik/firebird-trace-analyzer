@@ -3,14 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-             xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
              mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="500"
              x:Class="FirebirdTraceAnalyzer.UserControls.FilterFlyout"
              x:DataType="vm:MainWindowViewModel">
-
-    <UserControl.Resources>
-        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
-    </UserControl.Resources>
     
     <Grid RowDefinitions="Auto, *, Auto" MaxHeight="600" Width="380">
 

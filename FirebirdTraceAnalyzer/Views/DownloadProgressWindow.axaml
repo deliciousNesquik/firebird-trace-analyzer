@@ -3,7 +3,6 @@
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="FirebirdTraceAnalyzer.Views.DownloadProgressWindow"
         x:DataType="vm:DownloadProgressViewModel"
@@ -18,12 +17,6 @@
     <Design.DataContext>
         <vm:DownloadProgressViewModel />
     </Design.DataContext>
-
-    <Window.Resources>
-        <converters:BytesToReadableSizeConverter  x:Key="BytesToReadableSizeConverter" />
-        <converters:SpeedConverter x:Key="SpeedConverter" />
-        <converters:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter" />
-    </Window.Resources>
     
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
 

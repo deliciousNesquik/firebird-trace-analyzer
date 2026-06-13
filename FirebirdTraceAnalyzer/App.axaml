@@ -4,6 +4,7 @@
              xmlns:local="using:FirebirdTraceAnalyzer"
              xmlns:events="clr-namespace:FirebirdTraceAnalyzer.Controls.EventCards"
              xmlns:core="clr-namespace:FirebirdTraceParser.Models.Events;assembly=FirebirdTraceParser"
+             xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
              Name="Firebird Trace Analyzer"
              RequestedThemeVariant="Default">
 
@@ -402,6 +403,14 @@
             <x:String x:Key="ClassicSearchIcon">avares://FirebirdTraceAnalyzer/Assets/text-search.svg</x:String>
             <x:String x:Key="RegexSearchIcon">avares://FirebirdTraceAnalyzer/Assets/regex-search.svg</x:String>
 
+            <!-- Подключение всех конвертеров в одном месте -->
+            <converters:BoolToPasswordCharConverter x:Key="BoolToPasswordCharConverter" />
+            <converters:BytesToReadableSizeConverter x:Key="BytesToReadableSizeConverter" />
+            <converters:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter" />
+            <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+            <converters:BoolToPermissionConverter x:Key="BoolToPermissionConverter" />
+            <converters:SpeedConverter x:Key="SpeedConverter" />
+            
         </ResourceDictionary>
     </Application.Resources>         
              
