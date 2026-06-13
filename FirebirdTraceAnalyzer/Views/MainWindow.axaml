@@ -142,8 +142,8 @@
     </NativeMenu.Menu>
 
 
-    <Grid Background="{DynamicResource Background}" RowDefinitions="30 Auto Auto * Auto, Auto">
-        <usercontrols:MainMenuView Grid.Row="0" />
+    <Grid Background="{DynamicResource Background}" RowDefinitions="Auto Auto Auto * Auto, Auto">
+        <usercontrols:MainMenuView Grid.Row="0"/>
 
         <usercontrols:FileCardsSection
             Grid.Row="1"
