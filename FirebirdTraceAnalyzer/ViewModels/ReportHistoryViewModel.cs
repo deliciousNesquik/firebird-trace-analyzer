@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FirebirdTraceAnalyzer.Interfaces;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -15,6 +16,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 public partial class ReportHistoryViewModel : ViewModelBase
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly IFileDialogService _fileDialogService;
 
     private readonly string _reportsDirectory;
 
@@ -34,8 +36,22 @@ public partial class ReportHistoryViewModel : ViewModelBase
     public ObservableCollection<ReportHistoryItem> AllReports { get; } = new();
     public ObservableCollection<ReportHistoryItem> FilteredReports { get; } = new();
 
+    public ReportHistoryViewModel(IFileDialogService fileDialogService)
+    {
+        _fileDialogService = fileDialogService;
+        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        _reportsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
+
+        if (!Directory.Exists(_reportsDirectory))
+        {
+            Directory.CreateDirectory(_reportsDirectory);
+            Logger.Info("Created reports history directory: {Path}", _reportsDirectory);
+        }
+    }
+
     public ReportHistoryViewModel()
     {
+        _fileDialogService = null!;
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         _reportsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
 
@@ -158,30 +174,23 @@ public partial class ReportHistoryViewModel : ViewModelBase
     /// Открывает папку с отчётом
     /// </summary>
     [RelayCommand]
-    private void OpenReportFolder(ReportHistoryItem? report)
+    private async Task<bool> OpenReportFolder(ReportHistoryItem? report)
     {
         if (report == null)
-            return;
+            return false;
 
         try
         {
-            var directory = Path.GetDirectoryName(report.FilePath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = directory,
-                    UseShellExecute = true
-                });
-
-                Logger.Info("Opened folder: {Path}", directory);
-            }
+            Logger.Info("Open folder: {Path}", report.FilePath);
+            return await _fileDialogService.RevealInFileManagerAsync(report.FilePath);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening folder");
             StatusMessage = $"Error opening folder: {ex.Message}";
         }
+        
+        return false;
     }
 
     /// <summary>

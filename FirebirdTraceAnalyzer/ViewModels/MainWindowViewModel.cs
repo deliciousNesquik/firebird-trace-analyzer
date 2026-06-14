@@ -833,7 +833,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var historyViewModel = new ReportHistoryViewModel();
+            var historyViewModel = new ReportHistoryViewModel(_fileDialogService);
             await historyViewModel.LoadReportsCommand.ExecuteAsync(null);
 
             var window = new Window

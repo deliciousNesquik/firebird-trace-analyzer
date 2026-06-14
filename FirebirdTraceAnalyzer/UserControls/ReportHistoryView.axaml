@@ -68,19 +68,19 @@
                                                FontSize="14" />
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
-                                            <Run Text="Format:" />
-                                            <Run Text="{Binding Format}" FontWeight="Medium" />
+                                        <TextBlock FontSize="11">
+                                            <Run Text="FORMAT:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
+                                            <Run Text="{Binding Format}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
                                         </TextBlock>
 
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
-                                            <Run Text="Size:" />
-                                            <Run Text="{Binding FormattedSize}" FontWeight="Medium" />
+                                        <TextBlock FontSize="11">
+                                            <Run Text="SIZE:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
+                                            <Run Text="{Binding FormattedSize}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
                                         </TextBlock>
 
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
-                                            <Run Text="Created:" />
-                                            <Run Text="{Binding FormattedDate}" FontWeight="Medium" />
+                                        <TextBlock FontSize="11">
+                                            <Run Text="CREATED:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
+                                            <Run Text="{Binding FormattedDate}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </StackPanel>
