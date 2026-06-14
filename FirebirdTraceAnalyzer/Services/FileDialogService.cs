@@ -1,4 +1,6 @@
-﻿using Avalonia.Platform.Storage;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Avalonia.Platform.Storage;
 using FirebirdTraceAnalyzer.Interfaces;
 using NLog;
 
@@ -52,6 +54,57 @@ public class FileDialogService : IFileDialogService
         {
             Logger.Error(ex, "Error opening file selection dialog.");
             return [];
+        }
+    }
+
+    public Task<bool> RevealInFileManagerAsync(string filePath)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                Logger.Warn($"File does not exist or path is invalid: {filePath}");
+                return Task.FromResult(false);
+            }
+
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Windows: открывает проводник и выделяет конкретный файл
+                    Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // macOS: аргумент -R (reveal) открывает Finder и выделяет файл
+                    Process.Start("open", $"-R \"{filePath}\"");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // Linux: xdg-open обычно умеет открывать только директорию
+                    var directory = Path.GetDirectoryName(filePath);
+                    if (directory != null)
+                    {
+                        Process.Start("xdg-open", $"\"{directory}\"");
+                    }
+                }
+                else
+                {
+                    Logger.Warn("Unsupported OS platform for opening file storage.");
+                    return Task.FromResult(false);
+                }
+
+                return Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to open file in storage: {filePath}");
+                return Task.FromResult(false);
+            }
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<bool>(exception);
         }
     }
 }
