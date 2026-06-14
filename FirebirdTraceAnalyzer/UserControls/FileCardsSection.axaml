@@ -34,7 +34,8 @@
                         EventCount="{Binding FileInfo.EventCount}"
                         StartTrace="{Binding FileInfo.StartTrace}"
                         EndTrace="{Binding FileInfo.EndTrace}"
-                        RemoveFileCommand="{Binding RemoveFileCommand}" />
+                        RemoveFileCommand="{Binding RemoveFileCommand}" 
+                        OpenFileCommand="{Binding OpenFileCommand}"/>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

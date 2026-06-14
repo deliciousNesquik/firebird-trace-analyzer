@@ -1110,6 +1110,11 @@ public partial class MainWindowViewModel : ViewModelBase
             fileHash);
     }
 
+    private async Task<bool> OpenFileInStorageAsync(FileCardViewModel card)
+    {
+        return await _fileDialogService.RevealInFileManagerAsync(card.FileInfo.FilePath);
+    }
+
     /// <summary>Удаляет файл и его события</summary>
     private Task RemoveTraceFileAsync(FileCardViewModel card)
     {
@@ -1224,8 +1229,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private FileCardViewModel CreateFileCardViewModel(TraceFileInfoModel fileInfo)
     {
-        return new FileCardViewModel(fileInfo, RemoveTraceFileAsync,
-            card => ReparseTraceFileAsync(card, CancellationToken.None));
+        return new FileCardViewModel(fileInfo, RemoveTraceFileAsync, OpenFileInStorageAsync);
     }
 
     #endregion
