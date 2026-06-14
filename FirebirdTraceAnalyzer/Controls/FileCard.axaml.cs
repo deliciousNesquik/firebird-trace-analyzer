@@ -24,6 +24,9 @@ public class FileCard : TemplatedControl
 
     public static readonly StyledProperty<ICommand?> RemoveFileCommandProperty =
         AvaloniaProperty.Register<FileCard, ICommand?>(nameof(RemoveFileCommand));
+    
+    public static readonly StyledProperty<ICommand?> OpenFileCommandProperty =
+        AvaloniaProperty.Register<FileCard, ICommand?>(nameof(OpenFileCommand));
 
     public string FileName
     {
@@ -59,5 +62,11 @@ public class FileCard : TemplatedControl
     {
         get => GetValue(RemoveFileCommandProperty);
         set => SetValue(RemoveFileCommandProperty, value);
+    }
+    
+    public ICommand? OpenFileCommand
+    {
+        get => GetValue(OpenFileCommandProperty);
+        set => SetValue(OpenFileCommandProperty, value);
     }
 }
