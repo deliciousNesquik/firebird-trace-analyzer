@@ -132,6 +132,22 @@
         <DependentUpon>StatementRestartEventCard.axaml</DependentUpon>
         <SubType>Code</SubType>
       </Compile>
+      <Compile Update="Controls\Common\CopyButton.axaml.cs">
+        <DependentUpon>CopyButton.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Controls\Common\FocusTextBlock.axaml.cs">
+        <DependentUpon>FocusTextBlock.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Controls\Base\FileCard.axaml.cs">
+        <DependentUpon>FileCard.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Controls\Common\InfoTip.axaml.cs">
+        <DependentUpon>InfoTip.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
