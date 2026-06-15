@@ -100,3 +100,34 @@ deliberately skips `FirebirdTraceParser.dll` so a plugin's copy of the SDK isn't
 **To write a plugin**, mirror `TemplatePlugin/`: a `net10.0` library referencing
 `FirebirdTraceAnalyzer` + `FirebirdTraceParser`, implementing the relevant interface, then
 drop its build output in a subfolder of the plugins directory above.
+
+## UI layer details (Avalonia)
+
+- **MainWindow composition**: `Views/MainWindow.axaml` is a 6-row `Grid` that composes
+  `UserControls/` — `MainMenuView`, `FileCardsSection`, `EventsSection`, `StatisticInfoSection`,
+  plus `SortFlyout`/`FilterFlyout`. UserControls have no DataContext of their own; they inherit
+  `MainWindowViewModel` from the window (set `x:DataType="vm:MainWindowViewModel"` on each).
+  A `NativeMenu.Menu` (macOS/Linux) mirrors the in-window menu's *static* items only — dynamic
+  Quick/Custom report lists (`ItemsSource`) stay in the in-window `<Menu>` (NativeMenu has no
+  templated ItemsSource). Submenus in NativeMenu **must** use `<NativeMenuItem.Menu><NativeMenu>`
+  or the native exporter NREs.
+- **Theming**: `Themes/Light.axaml` + `Themes/Dark.axaml` define ~150 brushes incl. a per-event-type
+  color per card (`StatementStartEventColor`, …). SVG icons recolor at runtime via the Svg control's
+  `Css` bound to `ThemeIconFill`/`ThemeIconStroke` (+`…OnlyWhite`) — **icon SVGs must carry
+  `class="ThemeIconStroke"`/`"ThemeIconFill"` on their paths** or they won't theme. Icons are
+  registered as `x:String` resource keys in `App.axaml` and used via `Svg Path="{DynamicResource X}"`.
+  `RequestedThemeVariant="Default"` (follows OS); **`AppSettings.Theme` is dead config** — it's never
+  applied to `Application.RequestedThemeVariant` and there is no in-app light/dark toggle.
+- **EventCards** (`Controls/EventCards`, ~15 `TemplatedControl`s): heavy duplication — no shared base
+  class; each re-declares ~20-55 `StyledProperty`s and repeats header/ID/transaction/params markup
+  (~57% duplicated XAML, ~80% boilerplate .cs). Copy buttons read values from `DataContext` (the event
+  model), not the styled properties (the styled props default to `<not set>`).
+- **State flow**: `MainWindowViewModel` is a ~1900-line god object. `AllEvents` (List) is the source of
+  truth; `VisibleEvents` (`Core/RangeObservableCollection`, single Reset via `ReplaceRange`) is
+  search→filter→sort applied by `ApplyAllFilters()` on the **UI thread**. No search debounce (recompute
+  per keystroke) and no list virtualization (ItemsRepeater inside a ScrollViewer). File parsing is async
+  streaming + cancellable; `_isBatchUpdate` guards cascade recomputes.
+- **Persistence gaps**: section visibility, search mode, and window size/position are loaded from
+  `appsettings.json` (`AppSettings`/`UiSectionSettings`, options pattern) but **never saved back**.
+- **Design-time**: `Mocks/` holds design data; controls use `Design.PreviewWith` (not `Design.DataContext`).
+- **Errors** surface only as `StatusMessage` text in the status bar — no error dialogs.
