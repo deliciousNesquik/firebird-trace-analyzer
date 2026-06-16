@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Avalonia;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;

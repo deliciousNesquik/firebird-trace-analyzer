@@ -1,6 +1,6 @@
 ﻿using FirebirdTraceAnalyzer.Models;
 
-namespace FirebirdTraceAnalyzer.Interfaces;
+namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
 /// <summary>
 /// Сервис для работы с удалёнными файлами
