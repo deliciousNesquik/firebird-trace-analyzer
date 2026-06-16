@@ -310,14 +310,5 @@ public class DocxReportExporter : IReportExporter
     }
 
     private string FormatValue(object? value, string? format)
-    {
-        if (value == null) return string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(format) && value is IFormattable formattable)
-        {
-            return formattable.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        return value.ToString() ?? string.Empty;
-    }
+        => ReportValueFormatter.Format(value, format);
 }

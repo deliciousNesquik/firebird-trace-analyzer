@@ -16,4 +16,7 @@ public sealed record SqlParameters
 
     /// <summary>Значение параметра в строковом представлении</summary>
     public required string Value { get; init; }
+
+    /// <summary>Человекочитаемое представление: "&lt;имя&gt; (&lt;тип&gt;) = &lt;значение&gt;".</summary>
+    public override string ToString() => $"{Name} ({Dtype}) = {Value}";
 }
