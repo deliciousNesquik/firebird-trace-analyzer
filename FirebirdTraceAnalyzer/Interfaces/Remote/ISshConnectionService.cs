@@ -1,6 +1,6 @@
 ﻿using FirebirdTraceAnalyzer.Models;
 
-namespace FirebirdTraceAnalyzer.Interfaces;
+namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
 /// <summary>
 /// Сервис для управления SSH подключениями

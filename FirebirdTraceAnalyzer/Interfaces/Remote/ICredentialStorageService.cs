@@ -1,4 +1,4 @@
-﻿namespace FirebirdTraceAnalyzer.Interfaces;
+﻿namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
 /// <summary>
 /// Сервис для безопасного хранения учётных данных

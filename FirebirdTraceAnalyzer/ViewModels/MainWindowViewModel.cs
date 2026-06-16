@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Enums;
+using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Mocks;
 using FirebirdTraceAnalyzer.Models;
