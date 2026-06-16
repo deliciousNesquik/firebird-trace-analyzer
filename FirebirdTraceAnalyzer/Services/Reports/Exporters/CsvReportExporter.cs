@@ -220,20 +220,7 @@ public class CsvReportExporter : IReportExporter
     }
 
     private string FormatValue(object? value, string? format)
-    {
-        if (value == null)
-            return string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(format))
-        {
-            if (value is IFormattable formattable)
-            {
-                return formattable.ToString(format, CultureInfo.InvariantCulture);
-            }
-        }
-
-        return value.ToString() ?? string.Empty;
-    }
+        => ReportValueFormatter.Format(value, format);
 
     private static string FormatFileSize(long bytes)
     {
