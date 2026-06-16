@@ -8,6 +8,7 @@ using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports;
+using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -211,15 +212,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
     }
 
     private static string FormatCellValue(object? value, string? format)
-    {
-        if (value == null)
-            return string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(format) && value is IFormattable formattable)
-            return formattable.ToString(format, CultureInfo.InvariantCulture);
-
-        return value.ToString() ?? string.Empty;
-    }
+        => ReportValueFormatter.Format(value, format);
 
     /// <summary>
     ///     Генерирует превью данные
