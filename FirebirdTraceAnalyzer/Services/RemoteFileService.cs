@@ -1,7 +1,6 @@
-﻿using FirebirdTraceAnalyzer.Interfaces;
+﻿using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
-using Renci.SshNet.Sftp;
 
 namespace FirebirdTraceAnalyzer.Services;
 
