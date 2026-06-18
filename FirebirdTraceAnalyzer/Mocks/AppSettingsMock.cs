@@ -9,6 +9,7 @@ public class AppSettingsMock: AppSettings
         IsClassicSearch = true;
         Theme = AppTheme.Auto;
         RemoteDownloadPath = string.Empty;
+        ReportsPath = string.Empty;
     }
 }
 

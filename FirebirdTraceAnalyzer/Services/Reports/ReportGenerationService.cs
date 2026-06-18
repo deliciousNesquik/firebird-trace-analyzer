@@ -1,4 +1,5 @@
 ﻿using FirebirdTraceAnalyzer.Enums.Reports;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
@@ -21,7 +22,7 @@ public class ReportGenerationService : IReportGenerationService
     private readonly Dictionary<ReportFormat, IReportExporter> _exporters;
     private readonly IEventPropertyAccessor _propertyAccessor;
     private readonly ISortingService _sortingService;
-    private readonly string _reportsDirectory;
+    private readonly ISettingsService _settingsService;
 
     public ReportGenerationService(
         PdfReportExporter pdfExporter,
@@ -29,10 +30,12 @@ public class ReportGenerationService : IReportGenerationService
         XlsxReportExporter xlsxExporter,
         CsvReportExporter csvExporter,
         IEventPropertyAccessor propertyAccessor,
-        ISortingService sortingService)
+        ISortingService sortingService,
+        ISettingsService settingsService)
     {
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
+        _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _exporters = new Dictionary<ReportFormat, IReportExporter>
         {
             [ReportFormat.PDF] = pdfExporter,
@@ -40,15 +43,6 @@ public class ReportGenerationService : IReportGenerationService
             [ReportFormat.XLSX] = xlsxExporter,
             [ReportFormat.CSV] = csvExporter
         };
-
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _reportsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
-
-        if (!Directory.Exists(_reportsDirectory))
-        {
-            Directory.CreateDirectory(_reportsDirectory);
-            Logger.Info("Created reports directory: {Path}", _reportsDirectory);
-        }
     }
 
     public async Task<GeneratedReport> GenerateReportAsync(
@@ -289,7 +283,16 @@ public class ReportGenerationService : IReportGenerationService
 
         var fileName = $"{timestamp}_{sanitizedName}{extension}";
 
-        return Path.Combine(_reportsDirectory, fileName);
+        // Папка резолвится из настроек на момент генерации, чтобы смена пути в настройках
+        // вступала в силу без перезапуска. Создаём, если её ещё нет.
+        var reportsDirectory = _settingsService.GetReportsDirectory();
+        if (!Directory.Exists(reportsDirectory))
+        {
+            Directory.CreateDirectory(reportsDirectory);
+            Logger.Info("Created reports directory: {Path}", reportsDirectory);
+        }
+
+        return Path.Combine(reportsDirectory, fileName);
     }
 
     private static string GetFileExtension(ReportFormat format)

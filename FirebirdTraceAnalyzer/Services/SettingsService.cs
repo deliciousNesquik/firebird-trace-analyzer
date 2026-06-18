@@ -33,6 +33,7 @@ public sealed class SettingsService : ISettingsService
     // MainWindowViewModel, поэтому при Reset/Import мы копируем поля внутрь, а не заменяем объект.
     public AppSettings App { get; }
     public UiSectionSettings Ui { get; }
+    public WindowSettings Window { get; }
 
     public SettingsService(IOptions<AppSettings> defaultApp, IOptions<UiSectionSettings> defaultUi)
     {
@@ -42,11 +43,13 @@ public sealed class SettingsService : ISettingsService
         _defaults = new UserSettings
         {
             App = CloneApp(defaultApp.Value),
-            Ui = CloneUi(defaultUi.Value)
+            Ui = CloneUi(defaultUi.Value),
+            Window = new WindowSettings()
         };
 
         App = CloneApp(defaultApp.Value);
         Ui = CloneUi(defaultUi.Value);
+        Window = new WindowSettings();
 
         Load();
     }
@@ -85,7 +88,9 @@ public sealed class SettingsService : ISettingsService
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            var json = JsonSerializer.Serialize(new UserSettings { App = App, Ui = Ui }, JsonOptions);
+            var json = JsonSerializer.Serialize(
+                new UserSettings { App = App, Ui = Ui, Window = Window },
+                JsonOptions);
             File.WriteAllText(_settingsFilePath, json);
 
             Logger.Debug("User settings saved to {Path}", _settingsFilePath);
@@ -99,7 +104,8 @@ public sealed class SettingsService : ISettingsService
     public UserSettings GetDefaults() => new()
     {
         App = CloneApp(_defaults.App),
-        Ui = CloneUi(_defaults.Ui)
+        Ui = CloneUi(_defaults.Ui),
+        Window = new WindowSettings()
     };
 
     public async Task ExportAsync(string path, UserSettings settings)
@@ -132,6 +138,15 @@ public sealed class SettingsService : ISettingsService
         return Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "RemoteDownloads");
     }
 
+    public string GetReportsDirectory()
+    {
+        if (!string.IsNullOrWhiteSpace(App.ReportsPath))
+            return ExpandPath(App.ReportsPath);
+
+        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        return Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
+    }
+
     /// <summary>
     /// Раскрывает "~" в домашний каталог пользователя (.NET сам этого не делает — иначе
     /// рядом с приложением создаётся буквальная папка "~"). Также раскрывает переменные
@@ -160,6 +175,9 @@ public sealed class SettingsService : ISettingsService
 
         if (source.Ui != null)
             CopyUi(source.Ui, Ui);
+
+        if (source.Window != null)
+            CopyWindow(source.Window, Window);
     }
 
     private static void CopyApp(AppSettings source, AppSettings target)
@@ -167,6 +185,16 @@ public sealed class SettingsService : ISettingsService
         target.IsClassicSearch = source.IsClassicSearch;
         target.Theme = source.Theme;
         target.RemoteDownloadPath = source.RemoteDownloadPath;
+        target.ReportsPath = source.ReportsPath;
+    }
+
+    private static void CopyWindow(WindowSettings source, WindowSettings target)
+    {
+        target.Width = source.Width;
+        target.Height = source.Height;
+        target.X = source.X;
+        target.Y = source.Y;
+        target.Maximized = source.Maximized;
     }
 
     private static void CopyUi(UiSectionSettings source, UiSectionSettings target)

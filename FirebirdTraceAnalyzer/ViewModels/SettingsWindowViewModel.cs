@@ -36,9 +36,11 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     #endregion
 
-    #region Remote
+    #region Paths
 
     [ObservableProperty] private string _remoteDownloadPath = string.Empty;
+
+    [ObservableProperty] private string _reportsPath = string.Empty;
 
     #endregion
 
@@ -92,6 +94,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
         app.IsClassicSearch = IsClassicSearch;
         app.Theme = Theme;
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
+        app.ReportsPath = ReportsPath?.Trim() ?? string.Empty;
 
         var ui = _settingsService.Ui;
         ui.Files = SectionFiles;
@@ -183,7 +186,16 @@ public partial class SettingsWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task BrowseDownloadPathAsync()
+    private Task BrowseDownloadPathAsync() => PickFolderIntoAsync(
+        "Select Download Folder",
+        path => RemoteDownloadPath = path);
+
+    [RelayCommand]
+    private Task BrowseReportsPathAsync() => PickFolderIntoAsync(
+        "Select Reports Folder",
+        path => ReportsPath = path);
+
+    private async Task PickFolderIntoAsync(string title, Action<string> assign)
     {
         var topLevel = _windowProvider.GetCurrent();
         if (topLevel?.StorageProvider == null)
@@ -193,16 +205,16 @@ public partial class SettingsWindowViewModel : ViewModelBase
         {
             var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
             {
-                Title = "Select Download Folder",
+                Title = title,
                 AllowMultiple = false
             });
 
             if (folders.Count > 0)
-                RemoteDownloadPath = folders[0].Path.LocalPath;
+                assign(folders[0].Path.LocalPath);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error selecting download folder");
+            Logger.Error(ex, "Error selecting folder");
             StatusMessage = $"Error: {ex.Message}";
         }
     }
@@ -220,6 +232,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
         IsClassicSearch = app.IsClassicSearch;
         Theme = app.Theme;
         RemoteDownloadPath = app.RemoteDownloadPath;
+        ReportsPath = app.ReportsPath;
 
         SectionFiles = ui.Files;
         SectionSearch = ui.Search;
@@ -234,7 +247,8 @@ public partial class SettingsWindowViewModel : ViewModelBase
         {
             IsClassicSearch = IsClassicSearch,
             Theme = Theme,
-            RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty
+            RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
+            ReportsPath = ReportsPath?.Trim() ?? string.Empty
         },
         Ui = new UiSectionSettings
         {

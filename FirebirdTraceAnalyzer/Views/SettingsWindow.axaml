@@ -136,6 +136,28 @@
 
                 <Separator Margin="0,6,0,16" />
 
+                <!-- Reports -->
+                <TextBlock Classes="sectionHeader" Text="Reports" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Reports folder" />
+                        <TextBlock Classes="desc"
+                                   Text="Folder where generated reports are saved. Empty = default app folder." />
+                    </StackPanel>
+                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding ReportsPath}"
+                                 PlaceholderText="Default (AppData)" />
+                        <Button Grid.Column="1"
+                                Content="..."
+                                Classes="focused"
+                                Command="{Binding BrowseReportsPathCommand}" />
+                    </Grid>
+                </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
                 <!-- UI sections visibility -->
                 <TextBlock Classes="sectionHeader" Text="Sections visibility" />
 
