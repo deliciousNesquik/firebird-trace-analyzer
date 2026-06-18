@@ -15,17 +15,17 @@
 
             <ControlTemplate>
 
-                <Border BorderThickness="1" Padding="10" BorderBrush="Black">
+                <Border BorderThickness="1" Padding="10" BorderBrush="{DynamicResource BorderBrush}">
 
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="Auto Auto *">
                             <Border Grid.Column="0"
-                                    Background="{DynamicResource TraceFiniEventColor}"
+                                    Background="{DynamicResource TraceFiniEventBrush}"
                                     CornerRadius="5"
                                     Padding="16, 8, 16, 12">
 
                                 <TextBlock Text="TRACE FINISH"
-                                           Foreground="White"
+                                           Foreground="{DynamicResource TextOnAccentBrush}"
                                            FontWeight="Bold"
                                            FontSize="16" />
                             </Border>
@@ -45,7 +45,7 @@
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="TRACE ID"
                                                FontSize="11"
-                                               Foreground="#777" />
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding TraceId}"
                                                FontWeight="Bold"
                                                Cursor="Hand"
@@ -55,7 +55,7 @@
                                             Spacing="4">
                                     <TextBlock Text="HEX"
                                                FontSize="11"
-                                               Foreground="#777" />
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding HexTraceId}"
                                                Cursor="Hand"
                                                FontFamily="Consolas" />
@@ -64,7 +64,7 @@
                                             Spacing="4">
                                     <TextBlock Text="SESSION ID"
                                                FontSize="11"
-                                               Foreground="#777" />
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding SessionId}"
                                                Cursor="Hand"
                                                FontFamily="Consolas" />

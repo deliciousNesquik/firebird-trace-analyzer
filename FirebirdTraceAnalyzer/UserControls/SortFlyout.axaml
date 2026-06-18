@@ -34,7 +34,7 @@
                             <TextBlock Text="{Binding Key}"
                                        FontWeight="SemiBold"
                                        FontSize="12"
-                                       Foreground="{DynamicResource AccentColor}"
+                                       Foreground="{DynamicResource AccentBrush}"
                                        Margin="0,4,0,2" />
 
                             <!-- Сортировки в категории -->
@@ -42,7 +42,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <RadioButton
-                                            BorderBrush="{DynamicResource AccentColor}"
+                                            BorderBrush="{DynamicResource AccentBrush}"
                                             GroupName="SortSelection"
                                             Content="{Binding DisplayName}"
                                             IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -67,14 +67,14 @@
                 IsVisible="{Binding !AvailableSortsByCategory.Count}">
             
             <TextBlock Text="No available sorts" 
-                       Foreground="{DynamicResource SecondaryText}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         
         <!-- Панель опций сортировки -->
         <Border Grid.Row="2" 
                 Padding="15"
-                BorderBrush="Gray" 
+                BorderBrush="{DynamicResource BorderBrush}" 
                 BorderThickness="0 1 0 0">
             
             <CheckBox Content="Descending"
