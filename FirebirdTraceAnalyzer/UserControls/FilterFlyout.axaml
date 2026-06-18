@@ -29,7 +29,7 @@
                             <TextBlock Text="{Binding Key}"
                                        FontWeight="SemiBold"
                                        FontSize="13"
-                                       Foreground="{DynamicResource AccentColor}"
+                                       Foreground="{DynamicResource AccentBrush}"
                                        Margin="0,0,0,12" />
 
                             <ItemsControl ItemsSource="{Binding}">
@@ -41,7 +41,7 @@
                                                 Content="{Binding DisplayName}"
                                                 IsChecked="{Binding IsActive}"
                                                 FontWeight="Medium"
-                                                Foreground="{DynamicResource PrimaryText}"
+                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                 Margin="0" />
 
                                             <StackPanel IsVisible="{Binding IsActive}"
@@ -75,7 +75,7 @@
                                                                             Text="{Binding DisplayName}" />
                                                                         <TextBlock
                                                                             Text="{Binding Count, StringFormat='({0})'}"
-                                                                            Foreground="{DynamicResource SecondaryText}"
+                                                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                                                             FontSize="11" />
                                                                     </StackPanel>
                                                                 </CheckBox.Content>
@@ -95,7 +95,7 @@
                                                     
                                                     <TextBlock Text="Range:"
                                                                FontSize="11"
-                                                               Foreground="{DynamicResource SecondaryText}" />
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
 
                                                     <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
                                                         <TextBlock Grid.Column="0"
@@ -118,7 +118,7 @@
                                                     </Grid>
 
                                                     <TextBlock FontSize="10"
-                                                               Foreground="{DynamicResource SecondaryText}">
+                                                               Foreground="{DynamicResource TextSecondaryBrush}">
                                                         <Run Text="Min:" />
                                                         <Run Text="{Binding MinValue}" />
                                                         <Run Text=" | Max:" />
@@ -145,14 +145,14 @@
                 IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.FiltersByCategory.Count}">
             
             <TextBlock Text="No available filters" 
-                       Foreground="{DynamicResource SecondaryText}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" 
                        VerticalAlignment="Center"/>
         </Border>
         
         <Border Grid.Row="2" 
                 Padding="16"
-                BorderBrush="{DynamicResource BorderColor}" 
+                BorderBrush="{DynamicResource BorderBrush}" 
                 BorderThickness="0,1,0,0">
             
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
