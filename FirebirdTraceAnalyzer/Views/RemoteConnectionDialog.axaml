@@ -189,7 +189,7 @@
                 </StackPanel>
 
                 <CheckBox Content="Delete files from server after processing"
-                          IsChecked="{Binding DeleteAfterProcessing}"
+                          IsChecked="{Binding DeleteAfterProcessingFromServer}"
                           FontWeight="Medium">
                     <CheckBox.Styles>
                         <Style Selector="CheckBox:checked">
@@ -197,13 +197,18 @@
                         </Style>
                     </CheckBox.Styles>
                 </CheckBox>
+                
+                <CheckBox Content="Delete files on locale machine after processing"
+                          IsChecked="{Binding DeleteAfterProcessingOnLocaleMachine}"
+                          FontWeight="Medium">
+                </CheckBox>
 
                 <Border Background="{DynamicResource WarningSurfaceBrush}"
                         BorderBrush="{DynamicResource WarningBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="12"
-                        IsVisible="{Binding DeleteAfterProcessing}">
+                        IsVisible="{Binding DeleteAfterProcessingFromServer}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Warning"
                                    FontWeight="SemiBold"
