@@ -19,7 +19,7 @@ public partial class ReportHistoryViewModel : ViewModelBase
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IFileDialogService _fileDialogService;
 
-    private readonly string _reportsDirectory;
+    private readonly ISettingsService? _settingsService;
 
     #region Observable Properties
 
@@ -37,30 +37,36 @@ public partial class ReportHistoryViewModel : ViewModelBase
     public ObservableCollection<ReportHistoryItem> AllReports { get; } = new();
     public ObservableCollection<ReportHistoryItem> FilteredReports { get; } = new();
 
-    public ReportHistoryViewModel(IFileDialogService fileDialogService)
+    public ReportHistoryViewModel(IFileDialogService fileDialogService, ISettingsService settingsService)
     {
         _fileDialogService = fileDialogService;
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _reportsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
-
-        if (!Directory.Exists(_reportsDirectory))
-        {
-            Directory.CreateDirectory(_reportsDirectory);
-            Logger.Info("Created reports history directory: {Path}", _reportsDirectory);
-        }
+        _settingsService = settingsService;
     }
 
     public ReportHistoryViewModel()
     {
         _fileDialogService = null!;
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _reportsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
+        _settingsService = null;
+    }
 
-        if (!Directory.Exists(_reportsDirectory))
+    /// <summary>
+    /// Папка с историей отчётов: берётся из настроек (с дефолтом), создаётся при необходимости.
+    /// Резолвится при каждой загрузке, чтобы учитывать смену пути в настройках без перезапуска.
+    /// </summary>
+    private string ResolveReportsDirectory()
+    {
+        var directory = _settingsService?.GetReportsDirectory()
+                        ?? Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                            "FirebirdTraceAnalyzer", "Reports", "History");
+
+        if (!Directory.Exists(directory))
         {
-            Directory.CreateDirectory(_reportsDirectory);
-            Logger.Info("Created reports history directory: {Path}", _reportsDirectory);
+            Directory.CreateDirectory(directory);
+            Logger.Info("Created reports history directory: {Path}", directory);
         }
+
+        return directory;
     }
 
     /// <summary>
@@ -76,9 +82,11 @@ public partial class ReportHistoryViewModel : ViewModelBase
 
             AllReports.Clear();
 
+            var reportsDirectory = ResolveReportsDirectory();
+
             await Task.Run(() =>
             {
-                var files = Directory.GetFiles(_reportsDirectory, "*.*", SearchOption.TopDirectoryOnly)
+                var files = Directory.GetFiles(reportsDirectory, "*.*", SearchOption.TopDirectoryOnly)
                     .Where(f => IsReportFile(f))
                     .OrderByDescending(f => File.GetCreationTime(f));
 

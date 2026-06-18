@@ -15,8 +15,14 @@ public interface ISettingsService
     /// <summary>Настройки видимости секций UI (живой экземпляр, который сохраняется в Save).</summary>
     UiSectionSettings Ui { get; }
 
+    /// <summary>Геометрия главного окна (живой экземпляр, который сохраняется в Save).</summary>
+    WindowSettings Window { get; }
+
     /// <summary>Папка для скачивания удалённых файлов с учётом значения по умолчанию.</summary>
     string GetRemoteDownloadDirectory();
+
+    /// <summary>Папка для сохранения отчётов с учётом значения по умолчанию.</summary>
+    string GetReportsDirectory();
 
     /// <summary>Сохраняет текущие настройки в пользовательский файл.</summary>
     void Save();

@@ -30,6 +30,25 @@ public class AppSettings
     /// выключено). Пусто — используется папка по умолчанию (%AppData%/FirebirdTraceAnalyzer/RemoteDownloads).
     /// </summary>
     public string RemoteDownloadPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Папка, в которую сохраняются сгенерированные отчёты. Пусто — папка по умолчанию
+    /// (%AppData%/FirebirdTraceAnalyzer/Reports/History).
+    /// </summary>
+    public string ReportsPath { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Геометрия главного окна (последние размеры/позиция). Сохраняется при закрытии окна.
+/// Поля nullable: null — значение ещё не сохранялось, используются размеры из XAML.
+/// </summary>
+public sealed class WindowSettings
+{
+    public double? Width { get; set; }
+    public double? Height { get; set; }
+    public int? X { get; set; }
+    public int? Y { get; set; }
+    public bool Maximized { get; set; }
 }
 
 /// <summary>
@@ -53,4 +72,5 @@ public sealed class UserSettings
 {
     public AppSettings App { get; set; } = new();
     public UiSectionSettings Ui { get; set; } = new();
+    public WindowSettings Window { get; set; } = new();
 }
