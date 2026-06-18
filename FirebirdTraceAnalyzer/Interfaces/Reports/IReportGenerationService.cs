@@ -26,16 +26,13 @@ public interface IReportGenerationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Подготавливает события для отчёта (применяет фильтры и сортировку шаблона)
+    /// Подготавливает события для отчёта: применяет фильтры шаблона, затем сортировку
+    /// шаблона через общий <see cref="Sorting.ISortingService"/> (как на главной форме) и лимит.
     /// </summary>
     /// <param name="visibleEvents">Текущие видимые события (уже отфильтрованные пользователем)</param>
     /// <param name="template">Шаблон отчёта</param>
-    /// <param name="currentSortField">Текущее поле сортировки (если есть)</param>
-    /// <param name="currentSortDescending">Текущее направление сортировки</param>
     /// <returns>События, готовые для включения в отчёт</returns>
     IReadOnlyList<EventBase> PrepareEventsForReport(
         IEnumerable<EventBase> visibleEvents,
-        ReportTemplate template,
-        string? currentSortField,
-        bool currentSortDescending);
+        ReportTemplate template);
 }

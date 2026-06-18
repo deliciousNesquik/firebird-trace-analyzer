@@ -636,13 +636,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            // Подготавливаем события для отчёта
-            var currentSortField = GetCurrentSortField();
+            // Подготавливаем события для отчёта (сортировку применит сам сервис по шаблону)
             var preparedEvents = generationService.PrepareEventsForReport(
                 VisibleEvents,
-                template,
-                currentSortField,
-                IsSortDescending);
+                template);
 
             if (preparedEvents.Count == 0)
             {
@@ -1908,26 +1905,6 @@ public partial class MainWindowViewModel : ViewModelBase
             (0, > 0) => "No files loaded: all files are duplicates.",
             _ => "No files selected."
         };
-    }
-
-    /// <summary>
-    ///     Получает текущее поле сортировки (путь к свойству)
-    /// </summary>
-    /// <returns>Путь к свойству или null, если сортировка не применена</returns>
-    public string? GetCurrentSortField()
-    {
-        if (SelectedSort == null)
-            return null;
-
-        // Для встроенных сортировок по полям, Id имеет формат "field_property_path"
-        // Например: "field_performance_executems"
-
-        if (_propertyAccessor.TryResolveSortId(SelectedSort.Id, out var propertyPath))
-            return propertyPath;
-
-        // Для кастомных сортировок возвращаем null
-        // (они не соответствуют напрямую полям)
-        return null;
     }
 
     #endregion

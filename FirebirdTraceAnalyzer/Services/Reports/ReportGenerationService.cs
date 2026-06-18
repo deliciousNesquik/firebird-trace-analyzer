@@ -2,6 +2,7 @@
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
@@ -19,6 +20,7 @@ public class ReportGenerationService : IReportGenerationService
 
     private readonly Dictionary<ReportFormat, IReportExporter> _exporters;
     private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly ISortingService _sortingService;
     private readonly string _reportsDirectory;
 
     public ReportGenerationService(
@@ -26,9 +28,11 @@ public class ReportGenerationService : IReportGenerationService
         DocxReportExporter docxExporter,
         XlsxReportExporter xlsxExporter,
         CsvReportExporter csvExporter,
-        IEventPropertyAccessor propertyAccessor)
+        IEventPropertyAccessor propertyAccessor,
+        ISortingService sortingService)
     {
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _exporters = new Dictionary<ReportFormat, IReportExporter>
         {
             [ReportFormat.PDF] = pdfExporter,
@@ -95,9 +99,7 @@ public class ReportGenerationService : IReportGenerationService
 
     public IReadOnlyList<EventBase> PrepareEventsForReport(
         IEnumerable<EventBase> visibleEvents,
-        ReportTemplate template,
-        string? currentSortField,
-        bool currentSortDescending)
+        ReportTemplate template)
     {
         var events = visibleEvents.ToList();
 
@@ -112,24 +114,25 @@ public class ReportGenerationService : IReportGenerationService
             Logger.Debug("After template filters: {Count} events", events.Count);
         }
 
-        // ✅ ШАГ 2: Проверяем и применяем сортировку (если отличается от текущей)
+        // ✅ ШАГ 2: Применяем сортировку шаблона ТЕМ ЖЕ сервисом, что и главная форма.
+        // Сортируем всегда, когда поле задано: раньше здесь была оптимизация "пропустить,
+        // если совпадает с текущей сортировкой", но вызывающий код (предпросмотр дизайнера)
+        // передавал в качестве текущей сортировку самого шаблона — из-за чего сортировка
+        // никогда не применялась к кастомным отчётам.
         if (!string.IsNullOrWhiteSpace(template.SortByField))
         {
-            var needsResorting = currentSortField != template.SortByField ||
-                                 currentSortDescending != template.SortDescending;
+            // Идемпотентно регистрируем сортировки по полям для типов событий этого отчёта,
+            // чтобы ApplySort нашёл дескриптор по полю (как это делает главная форма).
+            _sortingService.GetAvailableSorts(events);
 
-            if (needsResorting)
-            {
-                events = SortEvents(events, template.SortByField, template.SortDescending);
+            var sortId = _propertyAccessor.ToSortId(template.SortByField);
+            events = _sortingService
+                .ApplySort(events, sortId, template.SortDescending)
+                .ToList();
 
-                Logger.Debug("Applied sorting: {Field} ({Direction})",
-                    template.SortByField,
-                    template.SortDescending ? "DESC" : "ASC");
-            }
-            else
-            {
-                Logger.Debug("Sorting already matches template, skipping");
-            }
+            Logger.Debug("Applied sorting via SortingService: {Field} ({Direction})",
+                template.SortByField,
+                template.SortDescending ? "DESC" : "ASC");
         }
 
         // ✅ ШАГ 3: Применяем лимит (если указан)
@@ -229,24 +232,6 @@ public class ReportGenerationService : IReportGenerationService
             filter.DisplayName);
         propertyPath = string.Empty;
         return false;
-    }
-
-    /// <summary>
-    ///     Сортирует события по указанному полю
-    /// </summary>
-    private List<EventBase> SortEvents(List<EventBase> events, string fieldPath, bool descending)
-    {
-        var list = events.ToList();
-
-        list.Sort((a, b) =>
-        {
-            var valueA = _propertyAccessor.GetValue(a, fieldPath);
-            var valueB = _propertyAccessor.GetValue(b, fieldPath);
-            var result = _propertyAccessor.Compare(valueA, valueB);
-            return descending ? -result : result;
-        });
-
-        return list;
     }
 
     /// <summary>
