@@ -56,7 +56,10 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     private string _remoteDirectory = "/var/log/firebird";
 
     [ObservableProperty]
-    private bool _deleteAfterProcessing;
+    private bool _deleteAfterProcessingFromServer;
+    
+    [ObservableProperty]
+    private bool _deleteAfterProcessingOnLocaleMachine;
 
     #endregion
 
@@ -392,7 +395,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
                 ? KeyPassphrase 
                 : null,
             RemoteDirectory = RemoteDirectory.Trim(),
-            DeleteAfterProcessing = DeleteAfterProcessing,
+            DeleteAfterProcessingFromServer = DeleteAfterProcessingFromServer,
+            DeleteAfterProcessingOnLocaleMachine = DeleteAfterProcessingOnLocaleMachine,
             ConnectionTimeout = 30
         };
     }
@@ -408,7 +412,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
         PrivateKeyPath = settings.PrivateKeyPath ?? string.Empty;
         KeyPassphrase = settings.KeyPassphrase ?? string.Empty;
         RemoteDirectory = settings.RemoteDirectory;
-        DeleteAfterProcessing = settings.DeleteAfterProcessing;
+        DeleteAfterProcessingFromServer = settings.DeleteAfterProcessingFromServer;
+        DeleteAfterProcessingOnLocaleMachine = settings.DeleteAfterProcessingOnLocaleMachine;
 
         // Пытаемся загрузить сохранённый пароль (асинхронно, с маршалингом записи свойств на UI-поток)
         if (_credentialStorage != null && settings.AuthMethod == AuthenticationMethod.Password)

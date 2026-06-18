@@ -1248,7 +1248,8 @@ public partial class MainWindowViewModel : ViewModelBase
         OpenLocalFileCommand.NotifyCanExecuteChanged();
 
         CancellationTokenSource? cts = null;
-        string? tempDirectory = null;
+        string? downloadDirectory = null;
+        var deleteLocalFilesAfterProcessing = false;
 
         try
         {
@@ -1302,19 +1303,32 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            // Каталог для временных файлов; удаляется в finally независимо от исхода
-            tempDirectory = Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDirectory);
+            // Папка для скачивания зависит от флага удаления локальных файлов:
+            //  • удаляем после обработки → пишем во временный каталог (целиком удаляется в finally);
+            //  • оставляем файлы → пишем в стабильную папку приложения, чтобы они никуда не делись
+            //    и оставались доступны для повторного парсинга после перезапуска.
+            deleteLocalFilesAfterProcessing = settings.DeleteAfterProcessingOnLocaleMachine;
+
+            downloadDirectory = deleteLocalFilesAfterProcessing
+                ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
+                : Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "FirebirdTraceAnalyzer",
+                    "RemoteDownloads");
+            Directory.CreateDirectory(downloadDirectory);
 
             // Загружаем файлы с прогрессом
             var downloadedPaths = await DownloadFilesWithProgressAsync(
                 selectedFiles,
-                tempDirectory,
-                settings.DeleteAfterProcessing,
+                downloadDirectory,
+                settings.DeleteAfterProcessingFromServer,
                 cts.Token);
 
             // Обрабатываем загруженные файлы
-            await ProcessDownloadedFilesAsync(downloadedPaths, cts.Token);
+            await ProcessDownloadedFilesAsync(
+                downloadedPaths,
+                deleteLocalFilesAfterProcessing,
+                cts.Token);
 
             StatusMessage = $"Successfully processed {downloadedPaths.Count} remote file(s).";
             Logger.Info("Remote files processed: {Count}", downloadedPaths.Count);
@@ -1339,17 +1353,18 @@ public partial class MainWindowViewModel : ViewModelBase
                 cts.Dispose();
             }
 
-            // Удаляем временный каталог при любом исходе (в т.ч. при ранней ошибке загрузки)
-            if (!string.IsNullOrEmpty(tempDirectory))
+            // Удаляем каталог скачивания только если пользователь включил удаление локальных
+            // файлов после обработки. Иначе файлы остаются в стабильной папке приложения.
+            if (deleteLocalFilesAfterProcessing && !string.IsNullOrEmpty(downloadDirectory))
             {
                 try
                 {
-                    if (Directory.Exists(tempDirectory))
-                        Directory.Delete(tempDirectory, true);
+                    if (Directory.Exists(downloadDirectory))
+                        Directory.Delete(downloadDirectory, true);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn(ex, "Failed to delete temp directory: {Path}", tempDirectory);
+                    Logger.Warn(ex, "Failed to delete download directory: {Path}", downloadDirectory);
                 }
             }
 
@@ -1379,7 +1394,7 @@ public partial class MainWindowViewModel : ViewModelBase
             settings.RemoteDirectory,
             files);
 
-        viewModel.DeleteAfterProcessing = settings.DeleteAfterProcessing;
+        viewModel.DeleteAfterProcessing = settings.DeleteAfterProcessingFromServer;
 
         // Источник обновления списка: команда RefreshAsync во ViewModel сама асинхронна,
         // отменяема и сама маршалит обновление списка (выполняется на UI-потоке).
@@ -1391,7 +1406,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(
         IReadOnlyList<RemoteFileInfo> files,
-        string tempDirectory,
+        string downloadDirectory,
         bool deleteAfterDownload,
         CancellationToken cancellationToken)
     {
@@ -1435,7 +1450,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 var localPath = await _remoteFileService.DownloadFileAsync(
                     file,
-                    tempDirectory,
+                    downloadDirectory,
                     fileProgress,
                     cancellationToken);
 
@@ -1480,6 +1495,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task ProcessDownloadedFilesAsync(
         IReadOnlyList<string> downloadedPaths,
+        bool deleteAfterProcessing,
         CancellationToken cancellationToken)
     {
         var addedCount = 0;
@@ -1508,14 +1524,17 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     Logger.Warn("Duplicate file skipped: {FilePath}", path);
 
-                    // Удаляем дубликат
-                    try
+                    // Удаляем дубликат с диска только если включено удаление локальных файлов
+                    if (deleteAfterProcessing)
                     {
-                        File.Delete(path);
-                    }
-                    catch
-                    {
-                        /* ignore */
+                        try
+                        {
+                            File.Delete(path);
+                        }
+                        catch
+                        {
+                            /* ignore */
+                        }
                     }
 
                     continue;
@@ -1528,21 +1547,25 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 addedCount++;
 
-                // Удаляем временный файл после обработки
-                try
+                // Удаляем локальный файл после обработки только если пользователь это выбрал
+                if (deleteAfterProcessing)
                 {
-                    File.Delete(path);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn(ex, "Failed to delete temp file: {Path}", path);
+                    try
+                    {
+                        File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(ex, "Failed to delete local file: {Path}", path);
+                    }
                 }
             }
         }
         finally
         {
             _isBatchUpdate = false;
-            // Временный каталог удаляется в OpenRemoteFileAsync (finally) при любом исходе.
+            // Каталог скачивания удаляется в OpenRemoteFileAsync (finally) только если пользователь
+            // включил удаление локальных файлов после обработки.
         }
 
         if (addedCount > 0) ApplyAllFilters();

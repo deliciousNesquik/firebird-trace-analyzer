@@ -31,8 +31,11 @@ public sealed record SshConnectionSettings
     /// <summary>Удалённая директория с трассировочными файлами</summary>
     public string RemoteDirectory { get; init; } = "/var/log/firebird";
     
-    /// <summary>Удалять файлы после обработки</summary>
-    public bool DeleteAfterProcessing { get; init; }
+    /// <summary>Удалять файлы на сервере после обработки</summary>
+    public bool DeleteAfterProcessingFromServer { get; init; }
+    
+    /// <summary>Удалять файлы на локальной машине после обработки</summary>
+    public bool DeleteAfterProcessingOnLocaleMachine { get; init; }
     
     /// <summary>Таймаут подключения (секунды)</summary>
     public int ConnectionTimeout { get; init; } = 30;
