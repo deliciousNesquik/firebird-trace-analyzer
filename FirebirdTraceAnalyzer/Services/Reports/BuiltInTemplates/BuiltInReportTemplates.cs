@@ -123,12 +123,21 @@ public static class BuiltInReportTemplates
                     },
                     new()
                     {
+                        Name = "Parameters",
+                        DisplayName = "Parameters",
+                        PropertyPath = "Parameters",
+                        WidthPercent = 48,
+                        Order = 5,
+                        Alignment = TextAlignment.Left
+                    },
+                    new()
+                    {
                         Name = "ReadCount",
                         DisplayName = "Reads",
                         PropertyPath = "Performance.ReadCount",
                         Format = "N0",
                         WidthPercent = 10,
-                        Order = 5,
+                        Order = 6,
                         Alignment = TextAlignment.Right
                     },
                     new()
@@ -138,7 +147,7 @@ public static class BuiltInReportTemplates
                         PropertyPath = "Performance.WriteCount",
                         Format = "N0",
                         WidthPercent = 10,
-                        Order = 6,
+                        Order = 7,
                         Alignment = TextAlignment.Right
                     },
                     new()
@@ -148,7 +157,7 @@ public static class BuiltInReportTemplates
                         PropertyPath = "Performance.FetchCount",
                         Format = "N0",
                         WidthPercent = 8,
-                        Order = 7,
+                        Order = 8,
                         Alignment = TextAlignment.Right
                     }
                 },
@@ -279,11 +288,20 @@ public static class BuiltInReportTemplates
                     },
                     new()
                     {
+                        Name = "Parameters",
+                        DisplayName = "Parameters",
+                        PropertyPath = "Parameters",
+                        WidthPercent = 30,
+                        Order = 3,
+                        Alignment = TextAlignment.Left
+                    },
+                    new()
+                    {
                         Name = "User",
                         DisplayName = "User",
                         PropertyPath = "Attachment.User",
                         WidthPercent = 12,
-                        Order = 3,
+                        Order = 4,
                         Alignment = TextAlignment.Left
                     },
                     new()
@@ -293,7 +311,7 @@ public static class BuiltInReportTemplates
                         PropertyPath = "Performance.ExecuteMs",
                         Format = "N0",
                         WidthPercent = 15,
-                        Order = 4,
+                        Order = 5,
                         Alignment = TextAlignment.Right
                     },
                     new()
@@ -303,7 +321,7 @@ public static class BuiltInReportTemplates
                         PropertyPath = "Performance.ReadCount",
                         Format = "N0",
                         WidthPercent = 10,
-                        Order = 5,
+                        Order = 6,
                         Alignment = TextAlignment.Right
                     },
                     new()
@@ -313,7 +331,7 @@ public static class BuiltInReportTemplates
                         PropertyPath = "Performance.WriteCount",
                         Format = "N0",
                         WidthPercent = 10,
-                        Order = 6,
+                        Order = 7,
                         Alignment = TextAlignment.Right
                     }
                 },
