@@ -297,25 +297,127 @@
 
                         <Separator />
 
-                        <TextBlock Text="Active Filters" FontWeight="Medium" FontSize="12" />
-                        
-                        <ScrollViewer MaxHeight="250">
-                            <ItemsControl ItemsSource="{Binding AvailableFilters}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="Active Filters"
+                                       FontWeight="Medium"
+                                       FontSize="12"
+                                       VerticalAlignment="Center" />
+                            <Button Grid.Column="1"
+                                    Content="Reset Filters"
+                                    Classes="danger"
+                                    Padding="10,4"
+                                    Command="{Binding FiltersPanel.ResetAllFiltersCommand}" />
+                        </Grid>
+
+                        <!-- Тот же фильтр, что и на главной форме: группировка по категориям,
+                             выбор значений (чекбоксы со счётчиками) и диапазоны. -->
+                        <ScrollViewer MaxHeight="320"
+                                      IsVisible="{Binding FiltersPanel.FiltersByCategory.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <ItemsControl ItemsSource="{Binding FiltersPanel.FiltersByCategory}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Padding="8,4">
-                                            <StackPanel Spacing="4">
-                                                <CheckBox Content="{Binding DisplayName}"
-                                                          IsChecked="{Binding IsActive}"
-                                                          FontWeight="Medium" />
-                                                
-                                                <!-- TODO: Add filter value selection UI based on FilterType -->
-                                            </StackPanel>
-                                        </Border>
+                                        <StackPanel Margin="0,0,0,8">
+
+                                            <TextBlock Text="{Binding Key}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       Margin="0,0,0,8" />
+
+                                            <ItemsControl ItemsSource="{Binding}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Margin="0,0,0,12">
+
+                                                            <CheckBox Content="{Binding DisplayName}"
+                                                                      IsChecked="{Binding IsActive}"
+                                                                      FontWeight="Medium"
+                                                                      Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                                                            <StackPanel IsVisible="{Binding IsActive}"
+                                                                        Margin="28,8,0,0">
+
+                                                                <TextBox PlaceholderText="Type to find filter..."
+                                                                         Text="{Binding ValueSearchText, Mode=TwoWay}"
+                                                                         IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                                                                         Margin="0,0,0,8" />
+
+                                                                <ItemsControl ItemsSource="{Binding FilteredValues}"
+                                                                              MaxHeight="200"
+                                                                              IsVisible="{Binding FilteredValues.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <VirtualizingStackPanel />
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox Margin="0,4"
+                                                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                                                                                <CheckBox.Content>
+                                                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                                        <TextBlock Text="{Binding DisplayName}" />
+                                                                                        <TextBlock Text="{Binding Count, StringFormat='({0})'}"
+                                                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                                                   FontSize="11" />
+                                                                                    </StackPanel>
+                                                                                </CheckBox.Content>
+                                                                            </CheckBox>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+
+                                                                <StackPanel Spacing="8"
+                                                                            Margin="0,4,0,0"
+                                                                            IsVisible="{Binding MinValue, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                                                                    <TextBlock Text="Range:"
+                                                                               FontSize="11"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                                                                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+                                                                        <TextBlock Grid.Column="0" Text="From:" VerticalAlignment="Center" FontSize="11" />
+                                                                        <TextBox Grid.Column="1" FontSize="11" Padding="6,4"
+                                                                                 Text="{Binding CurrentMinValue, Mode=TwoWay}" />
+                                                                        <TextBlock Grid.Column="2" Text="To:" VerticalAlignment="Center" FontSize="11" />
+                                                                        <TextBox Grid.Column="3" FontSize="11" Padding="6,4"
+                                                                                 Text="{Binding CurrentMaxValue, Mode=TwoWay}" />
+                                                                    </Grid>
+
+                                                                    <TextBlock FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}">
+                                                                        <Run Text="Min:" />
+                                                                        <Run Text="{Binding MinValue}" />
+                                                                        <Run Text=" | Max:" />
+                                                                        <Run Text="{Binding MaxValue}" />
+                                                                    </TextBlock>
+                                                                </StackPanel>
+
+                                                            </StackPanel>
+
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                        </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+
+                        <TextBlock Text="No available filters"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   IsVisible="{Binding !FiltersPanel.FiltersByCategory.Count}"
+                                   Margin="0,4" />
+
+                        <Button Content="Apply Filters"
+                                Classes="focused"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Margin="0,4,0,0"
+                                
+                                Command="{Binding FiltersPanel.ApplyFiltersCommand}" />
                     </StackPanel>
                 </Border>
 

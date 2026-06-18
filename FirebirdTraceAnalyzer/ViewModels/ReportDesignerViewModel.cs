@@ -89,7 +89,11 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
     #region Observable Properties - Filters & Sort
 
-    public ObservableCollection<FilterConfigItem> AvailableFilters { get; } = new();
+    /// <summary>
+    ///     Панель фильтров — тот же VM, что и на главной форме (категории, выбор значений,
+    ///     диапазоны). Заполняется независимыми копиями дескрипторов в <see cref="LoadAvailableFilters"/>.
+    /// </summary>
+    public FiltersPanelViewModel FiltersPanel { get; }
 
     public ObservableCollection<SortOptionItem> AvailableSorts { get; } = new();
 
@@ -100,7 +104,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
     private bool _sortDescending = true;
 
     [ObservableProperty]
-    private int? _eventLimit = 5;
+    private int? _eventLimit;
 
     #endregion
 
@@ -156,6 +160,8 @@ public partial class ReportDesignerViewModel : ViewModelBase
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _fieldDiscovery = fieldDiscovery ?? throw new ArgumentNullException(nameof(fieldDiscovery));
 
+        FiltersPanel = CreateFiltersPanel();
+
         InitializeAvailableOptions();
     }
 
@@ -168,7 +174,58 @@ public partial class ReportDesignerViewModel : ViewModelBase
         _propertyAccessor = new EventPropertyAccessor();
         _fieldDiscovery = null!;
 
+        FiltersPanel = CreateFiltersPanel();
+
         InitializeAvailableOptions();
+    }
+
+    /// <summary>
+    ///     Создаёт панель фильтров и помечает шаблон изменённым при любой правке фильтров
+    ///     (включение/выключение, выбор значений, диапазоны).
+    /// </summary>
+    private FiltersPanelViewModel CreateFiltersPanel()
+    {
+        var panel = new FiltersPanelViewModel(ApplyDesignerFilters, _propertyAccessor);
+
+        panel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FiltersPanelViewModel.HasUnappliedChanges) &&
+                panel.HasUnappliedChanges)
+                HasUnsavedChanges = true;
+        };
+
+        return panel;
+    }
+
+    /// <summary>
+    ///     Реакция на кнопку «Apply» в панели фильтров. НЕ открывает предпросмотр: применяет
+    ///     активные фильтры к событиям сессии (предикатами, как на главной форме) и пересобирает
+    ///     доступные сортировки и счётчики значений под отфильтрованный набор типов событий —
+    ///     чтобы пользователь мог настроить фильтры и сортировку целиком внутри дизайнера.
+    /// </summary>
+    private void ApplyDesignerFilters()
+    {
+        HasUnsavedChanges = true;
+
+        if (_sessionContext == null || _sessionContext.SourceEvents.Count == 0)
+            return;
+
+        var filtered = _filteringService
+            .ApplyFilters(_sessionContext.SourceEvents, FiltersPanel.AvailableFilters)
+            .ToList();
+
+        // Пересобираем сортировки под отфильтрованные типы событий (с сохранением выбора).
+        LoadAvailableSorts(filtered);
+
+        // Пересобираем список фильтров под отфильтрованные типы событий — например, при фильтре
+        // по типу "statement start" появляются поля, специфичные для этого события.
+        // FiltersPanel.LoadFilters сохраняет активность и выбранные значения по Id фильтра.
+        LoadAvailableFilters(filtered);
+
+        // Обновляем счётчики значений фильтров под отфильтрованный набор.
+        FiltersPanel.UpdateFilterCounts(filtered);
+
+        StatusMessage = $"Filters applied: {filtered.Count} of {_sessionContext.SourceEvents.Count} events";
     }
 
     /// <summary>
@@ -240,36 +297,23 @@ public partial class ReportDesignerViewModel : ViewModelBase
     /// </summary>
     public void LoadAvailableFilters(IEnumerable<EventBase> sampleEvents)
     {
-        AvailableFilters.Clear();
-
         var eventList = sampleEvents.ToList();
         if (eventList.Count == 0)
         {
             Logger.Warn("No events provided for filter extraction");
+            FiltersPanel.LoadFilters([]);
             return;
         }
 
-        // Получаем доступные фильтры через сервис фильтрации
-        var filters = _filteringService.GetAvailableFilters(eventList);
+        // Берём те же фильтры, что и главная форма, но независимыми копиями (CreateConfigurableClone),
+        // и отдаём их той же панели фильтров, что используется на главной форме.
+        var filters = _filteringService.GetAvailableFilters(eventList)
+            .Select(f => _filteringService.CreateConfigurableClone(f))
+            .ToList();
 
-        foreach (var filter in filters)
-        {
-            AvailableFilters.Add(new FilterConfigItem
-            {
-                FilterId = filter.Id,
-                PropertyPath = filter.PropertyPath,
-                DisplayName = filter.DisplayName,
-                FilterType = filter.FilterType,
-                IsActive = false,
-                SelectedValues = new ObservableCollection<object>(),
-                MinValue = filter.MinValue,
-                MaxValue = filter.MaxValue,
-                AvailableValues = new ObservableCollection<object>(
-                    filter.AvailableValues.Select(v => v.Value))
-            });
-        }
+        FiltersPanel.LoadFilters(filters);
 
-        Logger.Info("Loaded {Count} available filters", AvailableFilters.Count);
+        Logger.Info("Loaded {Count} available filters", FiltersPanel.AvailableFilters.Count);
     }
 
     /// <summary>
@@ -277,6 +321,10 @@ public partial class ReportDesignerViewModel : ViewModelBase
     /// </summary>
     public void LoadAvailableSorts(IEnumerable<EventBase> sampleEvents)
     {
+        // Запоминаем выбранную сортировку, чтобы восстановить её, если поле всё ещё доступно
+        // после пересбора (например, при повторном применении фильтров).
+        var previousPath = SelectedSort?.PropertyPath;
+
         AvailableSorts.Clear();
 
         var eventList = sampleEvents.ToList();
@@ -301,6 +349,10 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 Category = sort.Category
             });
         }
+
+        // Восстанавливаем выбор, если поле всё ещё доступно (иначе сортировка сбрасывается).
+        if (!string.IsNullOrWhiteSpace(previousPath))
+            SelectedSort = AvailableSorts.FirstOrDefault(s => s.PropertyPath == previousPath);
 
         Logger.Info("Loaded {Count} available sorts", AvailableSorts.Count);
     }
@@ -362,27 +414,38 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 }
             }
 
-            // Фильтры
+            // Фильтры — восстанавливаем состояние на дескрипторах панели фильтров
             if (template.Filters != null)
             {
                 foreach (var filterConfig in template.Filters)
                 {
-                    var item = AvailableFilters.FirstOrDefault(f =>
+                    var filter = FiltersPanel.AvailableFilters.FirstOrDefault(f =>
                         (!string.IsNullOrWhiteSpace(filterConfig.PropertyPath) &&
                          string.Equals(f.PropertyPath, filterConfig.PropertyPath, StringComparison.Ordinal)) ||
-                        string.Equals(f.FilterId, filterConfig.FilterId, StringComparison.OrdinalIgnoreCase));
-                    if (item != null)
-                    {
-                        item.IsActive = filterConfig.IsActive;
-                        
-                        if (filterConfig.SelectedValues != null)
-                        {
-                            item.SelectedValues = new ObservableCollection<object>(filterConfig.SelectedValues);
-                        }
+                        string.Equals(f.Id, filterConfig.FilterId, StringComparison.OrdinalIgnoreCase));
+                    if (filter == null)
+                        continue;
 
-                        item.MinValue = filterConfig.MinValue;
-                        item.MaxValue = filterConfig.MaxValue;
+                    filter.IsActive = filterConfig.IsActive;
+
+                    if (filterConfig.SelectedValues is { Count: > 0 })
+                    {
+                        // Значения из шаблона после JSON — строки/JsonElement, поэтому сопоставляем
+                        // по строковому представлению значения (enum → имя).
+                        var selected = filterConfig.SelectedValues
+                            .Select(v => v?.ToString())
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .ToHashSet();
+
+                        foreach (var value in filter.AvailableValues)
+                            value.IsSelected = value.Value != null && selected.Contains(value.Value.ToString());
                     }
+
+                    if (filterConfig.MinValue != null)
+                        filter.CurrentMinValue = filterConfig.MinValue;
+
+                    if (filterConfig.MaxValue != null)
+                        filter.CurrentMaxValue = filterConfig.MaxValue;
                 }
             }
 
@@ -489,19 +552,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
                     ShowPageNumbers = true
                 },
 
-                Filters = AvailableFilters
-                    .Where(f => f.IsActive)
-                    .Select(f => new ReportFilterConfig
-                    {
-                        FilterId = f.FilterId,
-                        PropertyPath = f.PropertyPath,
-                        DisplayName = f.DisplayName,
-                        IsActive = true,
-                        SelectedValues = f.SelectedValues?.ToList(),
-                        MinValue = f.MinValue,
-                        MaxValue = f.MaxValue
-                    })
-                    .ToList(),
+                Filters = BuildFilterConfigs(),
 
                 SortByField = SelectedSort?.PropertyPath,
                 SortDescending = SortDescending,
@@ -666,24 +717,38 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 Text = "Preview Mode",
                 ShowPageNumbers = true
             },
-            Filters = AvailableFilters
-                .Where(f => f.IsActive)
-                .Select(f => new ReportFilterConfig
-                {
-                    FilterId = f.FilterId,
-                    PropertyPath = f.PropertyPath,
-                    DisplayName = f.DisplayName,
-                    IsActive = true,
-                    SelectedValues = f.SelectedValues?.ToList(),
-                    MinValue = f.MinValue,
-                    MaxValue = f.MaxValue
-                })
-                .ToList(),
+            Filters = BuildFilterConfigs(),
             SortByField = SelectedSort?.PropertyPath,
             SortDescending = SortDescending,
             EventLimit = EventLimit,
             DefaultFormat = DefaultFormat
         };
+    }
+
+    /// <summary>
+    ///     Собирает конфигурацию активных фильтров из панели фильтров для сохранения в шаблон.
+    ///     Для enum/string берём выбранные значения, для диапазонов — текущие границы.
+    /// </summary>
+    private List<ReportFilterConfig> BuildFilterConfigs()
+    {
+        return FiltersPanel.AvailableFilters
+            .Where(f => f.IsActive)
+            .Select(f => new ReportFilterConfig
+            {
+                FilterId = f.Id,
+                PropertyPath = f.PropertyPath,
+                DisplayName = f.DisplayName,
+                IsActive = true,
+                // Сохраняем строковое представление (enum → имя), чтобы значение переживало
+                // JSON-сериализацию и совпадало с value.ToString() при применении фильтра отчёта.
+                SelectedValues = f.AvailableValues
+                    .Where(v => v.IsSelected)
+                    .Select(v => (object)(v.Value?.ToString() ?? string.Empty))
+                    .ToList(),
+                MinValue = f.CurrentMinValue,
+                MaxValue = f.CurrentMaxValue
+            })
+            .ToList();
     }
     
     private ReportMetadata CreateReportMetadata(IReadOnlyList<EventBase> preparedEvents)
@@ -699,7 +764,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
             Events = preparedEvents,
             TotalEventsCount = _sessionContext?.TotalEventsCount ?? preparedEvents.Count,
             Files = _sessionContext?.Files ?? [],
-            ActiveFilters = string.Join(", ", AvailableFilters.Where(f => f.IsActive).Select(f => f.DisplayName)),
+            ActiveFilters = string.Join(", ", FiltersPanel.AvailableFilters.Where(f => f.IsActive).Select(f => f.DisplayName)),
             ActiveSort = sortDescription
         };
     }
@@ -805,34 +870,6 @@ public partial class EventFieldItem : ObservableObject
     
     [ObservableProperty]
     private TextAlignment _alignment;
-}
-
-public partial class FilterConfigItem : ObservableObject
-{
-    [ObservableProperty]
-    private string _filterId = string.Empty;
-
-    [ObservableProperty]
-    private string _propertyPath = string.Empty;
-    
-    [ObservableProperty]
-    private string _displayName = string.Empty;
-    
-    public FilterType FilterType { get; init; }
-    
-    [ObservableProperty]
-    private bool _isActive;
-    
-    [ObservableProperty]
-    private ObservableCollection<object>? _selectedValues;
-    
-    [ObservableProperty]
-    private object? _minValue;
-    
-    [ObservableProperty]
-    private object? _maxValue;
-    
-    public ObservableCollection<object> AvailableValues { get; init; } = new();
 }
 
 public partial class SortOptionItem : ObservableObject
