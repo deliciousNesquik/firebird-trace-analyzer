@@ -14,7 +14,7 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border 
-                        BorderBrush="{DynamicResource BorderColor}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         Padding="10">
 
@@ -30,7 +30,7 @@
                             <TextBlock Text="FIREBIRD TRACE FILE"
                                        FontSize="10"
                                        FontWeight="Bold"
-                                       Foreground="{DynamicResource AccentColor}" />
+                                       Foreground="{DynamicResource AccentBrush}" />
 
                             <TextBlock Text="{TemplateBinding FileName}"
                                        FontSize="16"
@@ -49,7 +49,7 @@
                                 Command="{TemplateBinding OpenFileCommand}">
                             <Button.Content>
                                 <Svg Path="{DynamicResource FolderIcon}" 
-                                     Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                                     Css="{DynamicResource ThemeIconStroke}" />
                             </Button.Content>
                         </Button>
                         
@@ -82,7 +82,7 @@
                                 <StackPanel Orientation="Vertical"
                                             Spacing="5">
                                     <TextBlock Text="START"
-                                               Foreground="{DynamicResource AccentColor}"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                FontSize="10"
                                                FontWeight="Bold"/>
                                     
@@ -93,7 +93,7 @@
                                 <StackPanel Orientation="Vertical"
                                             Spacing="5">
                                     <TextBlock Text="END"
-                                               Foreground="{DynamicResource AccentColor}"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                FontSize="10"
                                                FontWeight="Bold"/>
                                     
@@ -109,7 +109,7 @@
                                         Spacing="5">
 
                                 <TextBlock Text="SIZE"
-                                           Foreground="{DynamicResource AccentColor}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            FontSize="10"
                                            FontWeight="Bold"/>
 
@@ -124,7 +124,7 @@
                                         Spacing="5">
 
                                 <TextBlock Text="EVENTS"
-                                           Foreground="{DynamicResource AccentColor}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            FontSize="10"
                                            FontWeight="Bold"/>
 

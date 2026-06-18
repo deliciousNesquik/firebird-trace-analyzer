@@ -11,7 +11,7 @@
          неявные DataTemplate из App.axaml (по типу события). DataContext наследуется
          от хост-окна (MainWindowViewModel). -->
     <Grid>
-        <ScrollViewer Background="{DynamicResource SurfaceElevated}"
+        <ScrollViewer Background="{DynamicResource SurfaceElevatedBrush}"
                       IsVisible="{Binding IsEventsSectionVisible}">
 
             <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
@@ -40,14 +40,14 @@
                     FontSize="16"
                     FontWeight="SemiBold"
                     HorizontalAlignment="Center"
-                    Foreground="{DynamicResource PrimaryText}" />
+                    Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <TextBlock
                     Text="After processing the file(s), the data will appear here."
                     FontSize="12"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
-                    Foreground="{DynamicResource SecondaryText}" />
+                    Foreground="{DynamicResource TextSecondaryBrush}" />
 
             </StackPanel>
         </Border>

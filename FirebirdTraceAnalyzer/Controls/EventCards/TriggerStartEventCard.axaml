@@ -34,7 +34,7 @@
 
             <ControlTemplate>
 
-                <Border BorderThickness="1" Padding="10" BorderBrush="Black">
+                <Border BorderThickness="1" Padding="10" BorderBrush="{DynamicResource BorderBrush}">
 
                     <StackPanel Spacing="10">
 
@@ -43,12 +43,12 @@
 
                             <!-- EVENT TYPE -->
                             <Border Grid.Column="0"
-                                    Background="{DynamicResource TriggerStartEventColor}"
+                                    Background="{DynamicResource TriggerStartEventBrush}"
                                     CornerRadius="5"
                                     Padding="16, 8, 16, 12">
 
                                 <TextBlock Text="TRIGGER START"
-                                           Foreground="White"
+                                           Foreground="{DynamicResource TextOnAccentBrush}"
                                            FontWeight="Bold"
                                            FontSize="16" />
                             </Border>
@@ -71,7 +71,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <TextBlock Text="TRACE ID"
                                                    FontSize="11"
-                                                   Foreground="#777" />
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
                                             Text="Unique identifier of trace event thread/session inside Firebird trace engine."/>
                                     </StackPanel>
@@ -86,7 +86,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <TextBlock Text="HEX"
                                                    FontSize="11"
-                                                   Foreground="#777" />
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
                                             Text="Unique thread/session identifier in the hex tracing event system within the Firebird tracing mechanism."/>
                                     </StackPanel>
@@ -102,7 +102,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <TextBlock Text="TRANSACTION ID"
                                                    FontSize="11"
-                                                   Foreground="#777" />
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
                                             Text="Identifies a database transaction that groups multiple SQL statements into a single unit of work."/>
                                     </StackPanel>
@@ -118,7 +118,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <TextBlock Text="ATTACHMENT ID"
                                                    FontSize="11"
-                                                   Foreground="#777" />
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
                                             Text="Identifies a client connection/session to the database. One attachment can contain multiple transactions and statements."/>
                                     </StackPanel>
@@ -154,7 +154,7 @@
                                        FontFamily="Consolas" />
                         </WrapPanel>
                         
-                        <Border BorderBrush="Gray" BorderThickness="1" Padding="10">
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10">
                             <Grid ColumnDefinitions="*,Auto">
                                 
                                 <TextBlock Text="{Binding TriggerDescription,

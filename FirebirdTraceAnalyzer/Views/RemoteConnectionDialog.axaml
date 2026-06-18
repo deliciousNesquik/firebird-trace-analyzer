@@ -17,11 +17,11 @@
         <vm:RemoteConnectionDialogViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0" 
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
@@ -30,11 +30,11 @@
                 <TextBlock Text="SSH Connection Settings"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="{DynamicResource PrimaryText}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 
                 <TextBlock Text="Connect to a remote server to download trace log files"
                            FontSize="12"
-                           Foreground="{DynamicResource SecondaryText}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
         </Border>
 
@@ -63,7 +63,7 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="Medium" />
                                     <TextBlock Text="{Binding Settings.Hostname}" 
                                              FontSize="11" 
-                                             Foreground="{DynamicResource SecondaryText}" />
+                                             Foreground="{DynamicResource TextSecondaryBrush}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
@@ -193,13 +193,13 @@
                           FontWeight="Medium">
                     <CheckBox.Styles>
                         <Style Selector="CheckBox:checked">
-                            <Setter Property="Foreground" Value="{DynamicResource ErrorColor}" />
+                            <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
                         </Style>
                     </CheckBox.Styles>
                 </CheckBox>
 
-                <Border Background="{DynamicResource WarningBackground}"
-                        BorderBrush="{DynamicResource WarningBorder}"
+                <Border Background="{DynamicResource WarningSurfaceBrush}"
+                        BorderBrush="{DynamicResource WarningBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="12"
@@ -207,11 +207,11 @@
                     <StackPanel Spacing="4">
                         <TextBlock Text="Warning"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarningText}" />
+                                   Foreground="{DynamicResource WarningTextBrush}" />
                         <TextBlock Text="Files will be permanently deleted from the remote server after processing. This action cannot be undone!"
                                    TextWrapping="Wrap"
                                    FontSize="11"
-                                   Foreground="{DynamicResource WarningText}" />
+                                   Foreground="{DynamicResource WarningTextBrush}" />
                     </StackPanel>
                 </Border>
 
@@ -236,15 +236,15 @@
                 </Grid>
 
                 <!-- Error Message -->
-                <Border Background="{DynamicResource ErrorBackground}"
-                        BorderBrush="{DynamicResource ErrorBorder}"
+                <Border Background="{DynamicResource ErrorSurfaceBrush}"
+                        BorderBrush="{DynamicResource ErrorBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="12"
                         IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                     <TextBlock Text="{Binding ErrorMessage}"
                                TextWrapping="Wrap"
-                               Foreground="{DynamicResource ErrorText}"
+                               Foreground="{DynamicResource ErrorTextBrush}"
                                FontSize="12" />
                 </Border>
 
@@ -253,7 +253,7 @@
 
         <!-- Footer -->
         <Border Grid.Row="2"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
@@ -267,7 +267,7 @@
                     
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="12"
-                               Foreground="{DynamicResource SecondaryText}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     
                     <ProgressBar IsIndeterminate="True"
                                  IsVisible="{Binding IsConnecting}"
