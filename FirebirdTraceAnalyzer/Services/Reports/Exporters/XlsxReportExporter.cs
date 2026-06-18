@@ -1,9 +1,8 @@
 ﻿using ClosedXML.Excel;
 using FirebirdTraceAnalyzer.Enums.Reports;
-using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -15,11 +14,11 @@ namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 public class XlsxReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IReportProjectionService _projectionService;
 
-    public XlsxReportExporter(IEventPropertyAccessor propertyAccessor)
+    public XlsxReportExporter(IReportProjectionService projectionService)
     {
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     public Task ExportAsync(
@@ -176,16 +175,15 @@ public class XlsxReportExporter : IReportExporter
 
     private int ComposeEventsTable(IXLWorksheet worksheet, int startRow, ReportTemplate template, IReadOnlyList<EventBase> events)
     {
-        var fields = template.Body.VisibleFields.OrderBy(f => f.Order).ToList();
+        var data = _projectionService.BuildTable(template, events);
         var row = startRow;
 
         // Заголовки столбцов
-        for (var i = 0; i < fields.Count; i++)
+        for (var i = 0; i < data.Columns.Count; i++)
         {
-            var field = fields[i];
             var cell = worksheet.Cell(row, i + 1);
-            
-            cell.Value = field.DisplayName;
+
+            cell.Value = data.Columns[i].DisplayName;
             cell.Style
                 .Font.SetBold()
                 .Fill.SetBackgroundColor(XLColor.LightGray)
@@ -195,41 +193,41 @@ public class XlsxReportExporter : IReportExporter
         row++;
 
         // Данные
-        foreach (var evt in events)
+        foreach (var rowCells in data.Rows)
         {
-            for (var i = 0; i < fields.Count; i++)
+            for (var i = 0; i < data.Columns.Count; i++)
             {
-                var field = fields[i];
-                var value = _propertyAccessor.GetValue(evt, field.PropertyPath);
+                var column = data.Columns[i];
+                var value = rowCells[i];
                 var cell = worksheet.Cell(row, i + 1);
 
-                // Устанавливаем значение
+                // Устанавливаем значение (типизированно — чтобы Excel правильно форматировал даты/числа)
                 if (value != null)
                 {
                     if (value is DateTime dateTime)
                     {
                         cell.Value = dateTime;
-                        if (!string.IsNullOrWhiteSpace(field.Format))
+                        if (!string.IsNullOrWhiteSpace(column.Format))
                         {
-                            cell.Style.DateFormat.Format = field.Format;
+                            cell.Style.DateFormat.Format = column.Format;
                         }
                     }
                     else if (value is int || value is long || value is decimal || value is double || value is float)
                     {
                         cell.Value = Convert.ToDouble(value);
-                        if (!string.IsNullOrWhiteSpace(field.Format))
+                        if (!string.IsNullOrWhiteSpace(column.Format))
                         {
-                            cell.Style.NumberFormat.Format = field.Format;
+                            cell.Style.NumberFormat.Format = column.Format;
                         }
                     }
                     else
                     {
-                        cell.Value = FormatValue(value, field.Format);
+                        cell.Value = FormatValue(value, column.Format);
                     }
                 }
 
                 // Выравнивание
-                cell.Style.Alignment.Horizontal = field.Alignment switch
+                cell.Style.Alignment.Horizontal = column.Alignment switch
                 {
                     TextAlignment.Left => XLAlignmentHorizontalValues.Left,
                     TextAlignment.Center => XLAlignmentHorizontalValues.Center,

@@ -117,6 +117,7 @@ internal sealed class Program
         
         // сервисы отчетов
         services.AddSingleton<IReportTemplateService, ReportTemplateService>();
+        services.AddSingleton<IReportProjectionService, ReportProjectionService>();
         services.AddSingleton<IReportGenerationService, ReportGenerationService>();
         
         services.AddTransient<ReportDesignerViewModel>();

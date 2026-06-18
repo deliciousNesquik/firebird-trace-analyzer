@@ -103,6 +103,19 @@ public partial class ReportDesignerViewModel : ViewModelBase
     [ObservableProperty]
     private bool _sortDescending = true;
 
+    /// <summary>
+    ///     Видимые колонки, доступные как цель сортировки для сгруппированного отчёта
+    ///     (ключи группировки и агрегаты). Синхронизируется с AvailableFields.
+    /// </summary>
+    public ObservableCollection<EventFieldItem> SortableColumns { get; } = new();
+
+    /// <summary>Колонка, по которой сортируется сгруппированный результат (по её DisplayName).</summary>
+    [ObservableProperty]
+    private EventFieldItem? _selectedSortColumn;
+
+    /// <summary>Активна ли группировка (есть хотя бы одна видимая колонка-ключ группировки).</summary>
+    public bool IsGrouped => AvailableFields.Any(f => f.IsVisible && f.Kind == ColumnKind.GroupKey);
+
     [ObservableProperty]
     private int? _eventLimit;
 
@@ -278,7 +291,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
         var order = 1;
         foreach (var field in allFields)
         {
-            AvailableFields.Add(new EventFieldItem
+            var item = new EventFieldItem
             {
                 PropertyPath = field.PropertyPath,
                 DisplayName = field.DisplayName,
@@ -286,10 +299,40 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 Order = order++,
                 Alignment = TextAlignment.Left,
                 Format = field.Format
-            });
+            };
+
+            // Следим за видимостью/ролью: от них зависят список колонок для сортировки и факт группировки.
+            item.PropertyChanged += OnFieldItemChanged;
+            AvailableFields.Add(item);
         }
 
+        RefreshSortableColumns();
+        OnPropertyChanged(nameof(IsGrouped));
+
         Logger.Info("Loaded {Count} available fields for reporting", AvailableFields.Count);
+    }
+
+    private void OnFieldItemChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(EventFieldItem.IsVisible)
+            or nameof(EventFieldItem.Kind)
+            or nameof(EventFieldItem.DisplayName))
+        {
+            RefreshSortableColumns();
+            OnPropertyChanged(nameof(IsGrouped));
+        }
+    }
+
+    /// <summary>Пересобирает список колонок-целей сортировки из видимых полей, сохраняя выбор.</summary>
+    private void RefreshSortableColumns()
+    {
+        var previous = SelectedSortColumn?.DisplayName;
+
+        SortableColumns.Clear();
+        foreach (var field in AvailableFields.Where(f => f.IsVisible).OrderBy(f => f.Order))
+            SortableColumns.Add(field);
+
+        SelectedSortColumn = SortableColumns.FirstOrDefault(c => c.DisplayName == previous);
     }
 
     /// <summary>
@@ -411,7 +454,17 @@ public partial class ReportDesignerViewModel : ViewModelBase
                     item.Format = field.Format;
                     item.Alignment = field.Alignment;
                     item.WidthPercent = field.WidthPercent;
+                    item.Kind = field.Kind;
+                    item.Aggregate = field.Aggregate ?? AggregateFunction.Count;
                 }
+            }
+
+            // Восстанавливаем колонку сортировки сгруппированного результата (после правок IsVisible/Kind
+            // выше SortableColumns уже пересобран через OnFieldItemChanged).
+            if (!string.IsNullOrWhiteSpace(template.Body.SortByColumn))
+            {
+                SelectedSortColumn = SortableColumns
+                    .FirstOrDefault(c => string.Equals(c.DisplayName, template.Body.SortByColumn, StringComparison.Ordinal));
             }
 
             // Фильтры — восстанавливаем состояние на дескрипторах панели фильтров
@@ -554,7 +607,8 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
                 Filters = BuildFilterConfigs(),
 
-                SortByField = SelectedSort?.PropertyPath,
+                // Для сгруппированного отчёта сортировка событий не применяется — сортируем результат по колонке.
+                SortByField = IsGrouped ? null : SelectedSort?.PropertyPath,
                 SortDescending = SortDescending,
                 EventLimit = EventLimit,
 
@@ -649,17 +703,30 @@ public partial class ReportDesignerViewModel : ViewModelBase
     
   private ReportBody BuildReportBodyFromCurrentSettings()
     {
+        var visibleFields = AvailableFields
+            .Where(f => f.IsVisible)
+            .ToList();
+
         return new ReportBody
         {
             DisplayStyle = DisplayStyle,
             ShowSummary = ShowSummary,
-            VisibleFields = AvailableFields
-                .Where(f => f.IsVisible)
+            // Группируем по колонкам, помеченным как GroupKey (порядок — по Order).
+            GroupByFields = visibleFields
+                .Where(f => f.Kind == ColumnKind.GroupKey)
+                .OrderBy(f => f.Order)
+                .Select(f => f.PropertyPath)
+                .ToList(),
+            // Сортировка сгруппированного результата по выбранной колонке (только при группировке).
+            SortByColumn = IsGrouped ? SelectedSortColumn?.DisplayName : null,
+            VisibleFields = visibleFields
                 .Select(f => new EventField
                 {
                     Name = f.PropertyPath.Replace(".", "_"),
                     DisplayName = f.DisplayName,
                     PropertyPath = f.PropertyPath,
+                    Kind = f.Kind,
+                    Aggregate = f.Kind == ColumnKind.Aggregate ? f.Aggregate : null,
                     Format = f.Format,
                     WidthPercent = f.WidthPercent,
                     Order = f.Order,
@@ -718,7 +785,8 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 ShowPageNumbers = true
             },
             Filters = BuildFilterConfigs(),
-            SortByField = SelectedSort?.PropertyPath,
+            // Для сгруппированного отчёта сортировка событий не применяется — сортируем результат по колонке.
+            SortByField = IsGrouped ? null : SelectedSort?.PropertyPath,
             SortDescending = SortDescending,
             EventLimit = EventLimit,
             DefaultFormat = DefaultFormat
@@ -827,6 +895,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
     partial void OnDisplayStyleChanged(EventDisplayStyle value) => HasUnsavedChanges = true;
     partial void OnSelectedSortChanged(SortOptionItem? value) => HasUnsavedChanges = true;
     partial void OnSortDescendingChanged(bool value) => HasUnsavedChanges = true;
+    partial void OnSelectedSortColumnChanged(EventFieldItem? value) => HasUnsavedChanges = true;
     partial void OnEventLimitChanged(int? value) => HasUnsavedChanges = true;
 
     #endregion
@@ -850,26 +919,44 @@ public partial class ReportVariableItem : ObservableObject
 
 public partial class EventFieldItem : ObservableObject
 {
+    private static readonly ColumnKind[] KindValues = Enum.GetValues<ColumnKind>();
+    private static readonly AggregateFunction[] AggregateValues = Enum.GetValues<AggregateFunction>();
+
     [ObservableProperty]
     private string _propertyPath = string.Empty;
-    
+
     [ObservableProperty]
     private string _displayName = string.Empty;
-    
+
     [ObservableProperty]
     private bool _isVisible;
-    
+
     [ObservableProperty]
     private int _order;
-    
+
     [ObservableProperty]
     private string? _format;
-    
+
     [ObservableProperty]
     private int? _widthPercent;
-    
+
     [ObservableProperty]
     private TextAlignment _alignment;
+
+    /// <summary>Роль колонки: обычное поле, ключ группировки или агрегат.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAggregate))]
+    private ColumnKind _kind = ColumnKind.Field;
+
+    /// <summary>Агрегатная функция (используется только при Kind == Aggregate).</summary>
+    [ObservableProperty]
+    private AggregateFunction _aggregate = AggregateFunction.Count;
+
+    /// <summary>Показывать ли выбор функции (колонка-агрегат).</summary>
+    public bool IsAggregate => Kind == ColumnKind.Aggregate;
+
+    public IReadOnlyList<ColumnKind> KindOptions => KindValues;
+    public IReadOnlyList<AggregateFunction> AggregateOptions => AggregateValues;
 }
 
 public partial class SortOptionItem : ObservableObject

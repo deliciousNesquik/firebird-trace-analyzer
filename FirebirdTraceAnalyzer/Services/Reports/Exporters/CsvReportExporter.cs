@@ -1,10 +1,9 @@
 ﻿using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
-using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -16,11 +15,11 @@ namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 public class CsvReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IReportProjectionService _projectionService;
 
-    public CsvReportExporter(IEventPropertyAccessor propertyAccessor)
+    public CsvReportExporter(IReportProjectionService projectionService)
     {
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     public async Task ExportAsync(
@@ -46,11 +45,14 @@ public class CsvReportExporter : IReportExporter
             // Пустая строка для разделения
             await csv.NextRecordAsync();
 
+            // Строим таблицу (колонки + строки) и пишем заголовки и данные из неё
+            var table = _projectionService.BuildTable(template, metadata.Events);
+
             // Записываем заголовки столбцов
-            await WriteHeadersAsync(csv, template, cancellationToken);
+            await WriteHeadersAsync(csv, table, cancellationToken);
 
             // Записываем события
-            await WriteEventsAsync(csv, template, metadata.Events, cancellationToken);
+            await WriteEventsAsync(csv, table, cancellationToken);
 
             // Записываем статистику (если включена)
             if (template.Body.ShowSummary)
@@ -103,14 +105,12 @@ public class CsvReportExporter : IReportExporter
 
     private async Task WriteHeadersAsync(
         CsvWriter csv,
-        ReportTemplate template,
+        ReportTable table,
         CancellationToken cancellationToken)
     {
-        var fields = template.Body.VisibleFields.OrderBy(f => f.Order).ToList();
-
-        foreach (var field in fields)
+        foreach (var column in table.Columns)
         {
-            csv.WriteField(field.DisplayName);
+            csv.WriteField(column.DisplayName);
         }
 
         await csv.NextRecordAsync();
@@ -119,21 +119,16 @@ public class CsvReportExporter : IReportExporter
 
     private async Task WriteEventsAsync(
         CsvWriter csv,
-        ReportTemplate template,
-        IReadOnlyList<EventBase> events,
+        ReportTable table,
         CancellationToken cancellationToken)
     {
-        var fields = template.Body.VisibleFields.OrderBy(f => f.Order).ToList();
-
-        foreach (var evt in events)
+        foreach (var rowCells in table.Rows)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var field in fields)
+            for (var i = 0; i < table.Columns.Count; i++)
             {
-                var value = _propertyAccessor.GetValue(evt, field.PropertyPath);
-                var formattedValue = FormatValue(value, field.Format);
-                csv.WriteField(formattedValue);
+                csv.WriteField(FormatValue(rowCells[i], table.Columns[i].Format));
             }
 
             await csv.NextRecordAsync();
