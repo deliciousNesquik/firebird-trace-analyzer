@@ -26,9 +26,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Configuration\nlog.config">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
       <None Update="Configuration\rules.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>

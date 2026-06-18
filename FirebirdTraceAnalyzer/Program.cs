@@ -24,8 +24,13 @@ internal sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Пути к конфигам строим от каталога приложения (AppContext.BaseDirectory), а не от
+        // текущего рабочего каталога: при запуске .app из Finder/launchd CWD = "/", и
+        // относительные пути ("Configuration/rules.json" и т.п.) не находятся → приложение падает.
+        var baseDir = AppContext.BaseDirectory;
+
         var logger = LogManager.Setup()
-            .LoadConfigurationFromFile("nlog.config")
+            .LoadConfigurationFromFile(Path.Combine(baseDir, "Configuration", "nlog.config"))
             .GetCurrentClassLogger();
 
         try
@@ -56,10 +61,14 @@ internal sealed class Program
     public static IServiceProvider ConfigureServices()
     {
         var logger = LogManager.GetCurrentClassLogger();
-        
+
+        // База — каталог приложения (AppContext.BaseDirectory), а не CWD: при запуске .app из
+        // Finder/launchd текущий каталог = "/", и относительные пути не находятся → краш.
+        var baseDir = AppContext.BaseDirectory;
+
         // конфигурация приложения, настройки, расположение и прочее
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
+            .SetBasePath(baseDir)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .Build();
 
@@ -74,8 +83,8 @@ internal sealed class Program
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
-            rulesPath: "Configuration/rules.json",
-            nlogConfigPath: "Configuration/nlog.config"
+            rulesPath: Path.Combine(baseDir, "Configuration", "rules.json"),
+            nlogConfigPath: Path.Combine(baseDir, "Configuration", "nlog.config")
         );
 
         // добавляем сервисы для ui приложения
