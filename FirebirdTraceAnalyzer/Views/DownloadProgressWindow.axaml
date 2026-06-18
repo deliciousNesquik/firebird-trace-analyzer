@@ -18,11 +18,11 @@
         <vm:DownloadProgressViewModel />
     </Design.DataContext>
     
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
@@ -31,11 +31,11 @@
                 <TextBlock Text="Downloading Files"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="{DynamicResource PrimaryText}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 
                 <TextBlock Text="{Binding StatusMessage}"
                            FontSize="12"
-                           Foreground="{DynamicResource SecondaryText}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
         </Border>
 
@@ -63,7 +63,7 @@
                                  Height="8"
                                  CornerRadius="4" />
 
-                    <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                         <Run Text="{Binding CurrentFileBytes, Converter={StaticResource BytesToReadableSizeConverter}}" />
                         <Run Text="/" />
                         <Run Text="{Binding CurrentFileTotalBytes, Converter={StaticResource BytesToReadableSizeConverter}}" />
@@ -86,7 +86,7 @@
                                  CornerRadius="6" />
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                        <TextBlock Grid.Column="0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                             <Run Text="{Binding TotalBytesTransferred, Converter={StaticResource BytesToReadableSizeConverter}}" />
                             <Run Text="/" />
                             <Run Text="{Binding TotalBytesOverall, Converter={StaticResource BytesToReadableSizeConverter}}" />
@@ -95,12 +95,12 @@
                         </TextBlock>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                                 <Run Text="Speed:" />
                                 <Run Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" FontWeight="Medium" />
                             </TextBlock>
 
-                            <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                                 <Run Text="Remaining:" />
                                 <Run Text="{Binding EstimatedTimeRemaining, Converter={StaticResource TimeSpanToStringConverter}}" FontWeight="Medium" />
                             </TextBlock>
@@ -117,9 +117,9 @@
                     <TextBlock Text="Completed"
                                FontWeight="SemiBold"
                                FontSize="13"
-                               Foreground="{DynamicResource SuccessColor}" />
+                               Foreground="{DynamicResource SuccessBrush}" />
 
-                    <Border Background="{DynamicResource SurfaceElevated}"
+                    <Border Background="{DynamicResource SurfaceElevatedBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4"
@@ -130,7 +130,7 @@
                             <TextBlock Text="{Binding CompletedFilesList}"
                                        FontSize="11"
                                        FontFamily="Consolas,Courier New,monospace"
-                                       Foreground="{DynamicResource SuccessColor}"
+                                       Foreground="{DynamicResource SuccessBrush}"
                                        TextWrapping="Wrap" />
                         </ScrollViewer>
                     </Border>
@@ -143,9 +143,9 @@
                     <TextBlock Text="Pending"
                                FontWeight="SemiBold"
                                FontSize="13"
-                               Foreground="{DynamicResource SecondaryText}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                    <Border Background="{DynamicResource SurfaceElevated}"
+                    <Border Background="{DynamicResource SurfaceElevatedBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4"
@@ -156,7 +156,7 @@
                             <TextBlock Text="{Binding PendingFilesList}"
                                        FontSize="11"
                                        FontFamily="Consolas,Courier New,monospace"
-                                       Foreground="{DynamicResource SecondaryText}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" />
                         </ScrollViewer>
                     </Border>
@@ -167,7 +167,7 @@
 
         <!-- Footer -->
         <Border Grid.Row="2"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
@@ -178,7 +178,7 @@
                 <TextBlock Grid.Column="0"
                            VerticalAlignment="Center"
                            FontSize="12"
-                           Foreground="{DynamicResource SecondaryText}">
+                           Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run Text="{Binding CurrentFileIndex}" />
                     <Run Text="/" />
                     <Run Text="{Binding TotalFiles}" />

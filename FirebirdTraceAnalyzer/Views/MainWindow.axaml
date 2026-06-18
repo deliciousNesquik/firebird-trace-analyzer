@@ -142,21 +142,21 @@
     </NativeMenu.Menu>
 
 
-    <Grid Background="{DynamicResource Background}" RowDefinitions="Auto Auto Auto * Auto, Auto">
+    <Grid Background="{DynamicResource AppBackgroundBrush}" RowDefinitions="Auto Auto Auto * Auto, Auto">
         <usercontrols:MainMenuView Grid.Row="0"/>
 
         <usercontrols:FileCardsSection
             Grid.Row="1"
-            Background="{DynamicResource Surface}"
+            Background="{DynamicResource SurfaceBrush}"
             IsVisible="{Binding IsTraceFilesSectionVisible}" />
 
 
-        <Border Grid.Row="2" Padding="10" Background="{DynamicResource Surface}"
+        <Border Grid.Row="2" Padding="10" Background="{DynamicResource SurfaceBrush}"
                 IsVisible="{Binding IsSearchSectionVisible}">
 
             <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
-                         Background="{DynamicResource Surface}"
+                         Background="{DynamicResource SurfaceBrush}"
                          PlaceholderText="Search by SQL text or procedure and trigger name..."
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText, Mode=TwoWay}">
@@ -177,7 +177,7 @@
                             <Svg Width="40" Path="{DynamicResource SearchIcon}"
                                  Css="{DynamicResource ThemeIconFill}" />
 
-                            <Border Background="{DynamicResource Primary}"
+                            <Border Background="{DynamicResource AccentBrush}"
                                     CornerRadius="8"
                                     Padding="4,2"
                                     HorizontalAlignment="Right"
@@ -257,7 +257,7 @@
                         <Grid>
                             <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
 
-                            <Border Background="{DynamicResource AccentColor}"
+                            <Border Background="{DynamicResource AccentBrush}"
                                     CornerRadius="8"
                                     Padding="4,2"
                                     Width="15" Height="15"
@@ -267,7 +267,7 @@
                                     IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount, Converter={x:Static ObjectConverters.IsNotNull}}">
                                 <TextBlock
                                     Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount}"
-                                    Foreground="White"
+                                    Foreground="{DynamicResource TextOnAccentBrush}"
                                     FontSize="9"
                                     FontWeight="Bold" />
                             </Border>
@@ -283,12 +283,12 @@
         <usercontrols:StatisticInfoSection
             Grid.Row="4"
             Padding="10"
-            Background="{DynamicResource SurfaceElevated}"
+            Background="{DynamicResource SurfaceElevatedBrush}"
             IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatisticsSectionVisible}"
             DataContext="{Binding StatisticInfoModels}" />
 
         <TextBlock Grid.Row="5"
-                   Background="{DynamicResource Surface}"
+                   Background="{DynamicResource SurfaceBrush}"
                    IsVisible="{Binding IsLogsSectionVisible}"
                    Text="{Binding StatusMessage}"
                    Padding="10" />

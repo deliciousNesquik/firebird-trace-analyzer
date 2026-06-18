@@ -17,27 +17,27 @@
         <vm:RemoteFileSelectionViewModel />
     </Design.DataContext>
     
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
             <StackPanel Spacing="4">
                 <TextBlock Text="Select Files for Download"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="{DynamicResource PrimaryText}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 
-                <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryText}">
+                <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run Text="Server:" />
                     <Run Text="{Binding ServerInfo}" FontWeight="Medium" />
                 </TextBlock>
                 
-                <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryText}">
+                <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run Text="Directory:" />
                     <Run Text="{Binding RemoteDirectory}" FontWeight="Medium" />
                 </TextBlock>
@@ -46,9 +46,9 @@
 
         <!-- Search and Filters -->
         <Border Grid.Row="1"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20,10"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
@@ -109,7 +109,7 @@
 
         <!-- File List -->
         <Border Grid.Row="2"
-                Background="{DynamicResource Background}"
+                Background="{DynamicResource AppBackgroundBrush}"
                 Padding="20">
             
             <Grid RowDefinitions="Auto,*">
@@ -132,8 +132,8 @@
                     <ItemsControl ItemsSource="{Binding FilteredFiles}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{DynamicResource Surface}"
-                                        BorderBrush="{DynamicResource BorderColor}"
+                                <Border Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="4"
                                         Padding="12"
@@ -155,7 +155,7 @@
                                                        FontWeight="Medium"
                                                        FontSize="13" />
                                             
-                                            <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryText}">
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                                                 <Run Text="Modified:" />
                                                 <Run Text="{Binding FormattedDate}" />
                                                 <Run Text=" • " />
@@ -167,7 +167,7 @@
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding Owner}"
                                                    FontSize="11"
-                                                   Foreground="{DynamicResource SecondaryText}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0" />
 
@@ -175,7 +175,7 @@
                                         <TextBlock Grid.Column="3"
                                                    FontSize="11"
                                                    FontFamily="Consolas,Courier New,monospace"
-                                                   Foreground="{DynamicResource SecondaryText}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                    VerticalAlignment="Center">
                                             <Run Text="{Binding Permissions.OwnerCanRead, Converter={StaticResource BoolToPermissionConverter}, ConverterParameter=r}" />
                                             <Run Text="{Binding Permissions.OwnerCanWrite, Converter={StaticResource BoolToPermissionConverter}, ConverterParameter=w}" />
@@ -198,9 +198,9 @@
 
         <!-- Footer -->
         <Border Grid.Row="3"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             
             <Grid RowDefinitions="Auto,Auto,Auto">
@@ -210,7 +210,7 @@
                     <TextBlock Grid.Column="0"
                                Text="{Binding StatusMessage}"
                                FontSize="12"
-                               Foreground="{DynamicResource SecondaryText}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
@@ -229,8 +229,8 @@
 
                 <!-- Delete Warning -->
                 <Border Grid.Row="1"
-                        Background="{DynamicResource WarningBackground}"
-                        BorderBrush="{DynamicResource WarningBorder}"
+                        Background="{DynamicResource WarningSurfaceBrush}"
+                        BorderBrush="{DynamicResource WarningBorderBrush}"
                         HorizontalAlignment="Center"
                         Padding="0"
                         Margin="0,0,0,12"
@@ -244,7 +244,7 @@
                                    FontSize="14"
                                    FontWeight="Bold"
                                    VerticalAlignment="Center"
-                                   Foreground="{DynamicResource DangerColor}" />
+                                   Foreground="{DynamicResource DangerBrush}" />
                     </StackPanel>
                 </Border>
 
@@ -258,7 +258,7 @@
                               FontWeight="Medium">
                         <CheckBox.Styles>
                             <Style Selector="CheckBox:checked">
-                                <Setter Property="Foreground" Value="{DynamicResource ErrorColor}" />
+                                <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
                             </Style>
                         </CheckBox.Styles>
                     </CheckBox>

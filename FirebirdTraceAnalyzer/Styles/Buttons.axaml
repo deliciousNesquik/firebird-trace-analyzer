@@ -1,7 +1,7 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Design.PreviewWith>
-        <Border Padding="50" Background="{DynamicResource BackgroundBrush}">
+        <Border Padding="50" Background="{DynamicResource AppBackgroundBrush}">
             <StackPanel Spacing="20" Orientation="Horizontal">
                 <!-- Пример: Обычная кнопка -->
                 <Button Classes="normal" Content="Обычная" />

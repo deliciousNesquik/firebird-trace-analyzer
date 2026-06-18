@@ -17,13 +17,13 @@
         <vm:ReportPreviewViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
             <Grid ColumnDefinitions="*,Auto">
@@ -34,7 +34,7 @@
                     
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="12"
-                               Foreground="{DynamicResource SecondaryText}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -55,7 +55,7 @@
 
         <!-- Preview Content -->
         <ScrollViewer Grid.Row="1" Padding="40">
-            <Border Background="White"
+            <Border Background="{DynamicResource SurfaceElevatedBrush}"
                     Padding="40"
                     CornerRadius="4"
                     BoxShadow="0 2 8 0 #20000000">
@@ -68,17 +68,17 @@
                                    FontSize="24"
                                    FontWeight="Bold"
                                    TextAlignment="Center"
-                                   Foreground="#1976D2" />
+                                   Foreground="{DynamicResource AccentBrush}" />
 
                         <TextBlock Text="{Binding PreviewSubtitle}"
                                    FontSize="14"
                                    FontStyle="Italic"
                                    TextAlignment="Center"
-                                   Foreground="#666"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    IsVisible="{Binding PreviewSubtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                         <Border Height="2"
-                                Background="#E0E0E0"
+                                Background="{DynamicResource BorderSubtleBrush}"
                                 Margin="0,8" />
                     </StackPanel>
 
@@ -90,13 +90,13 @@
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Label}"
                                                FontWeight="SemiBold"
-                                               Foreground="#333" />
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
                                     
-                                    <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="#333"/>
+                                    <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding Value}"
-                                               Foreground="#666"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Grid>
                             </DataTemplate>
@@ -104,7 +104,7 @@
                     </ItemsControl>
 
                     <Border Height="1"
-                            Background="#E0E0E0"
+                            Background="{DynamicResource BorderSubtleBrush}"
                             Margin="0,12" />
 
                     <!-- Events Section -->
@@ -112,10 +112,10 @@
                         <TextBlock Text="Events"
                                    FontSize="16"
                                    FontWeight="SemiBold"
-                                   Foreground="#1976D2" />
+                                   Foreground="{DynamicResource AccentBrush}" />
 
                         <!-- Events Table -->
-                        <Border BorderBrush="#E0E0E0"
+                        <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
                                 BorderThickness="1"
                                 CornerRadius="4">
                             
@@ -126,8 +126,8 @@
 
                                     <!-- Table Header -->
                                     <Border Grid.Row="0"
-                                            Background="#F5F5F5"
-                                            BorderBrush="#E0E0E0"
+                                            Background="{DynamicResource SurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderSubtleBrush}"
                                             BorderThickness="0,0,0,1">
                                         
                                         <ItemsControl ItemsSource="{Binding EventColumns}">
@@ -141,13 +141,13 @@
                                                 <DataTemplate>
                                                     <Border Padding="12,8"
                                                             MinWidth="100"
-                                                            BorderBrush="#E0E0E0"
+                                                            BorderBrush="{DynamicResource BorderSubtleBrush}"
                                                             BorderThickness="0,0,1,0">
                                                         
                                                         <TextBlock Text="{Binding Header}"
                                                                    FontWeight="SemiBold"
                                                                    FontSize="12"
-                                                                   Foreground="#333" />
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
@@ -159,7 +159,7 @@
                                                   ItemsSource="{Binding PreviewEventRows}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border BorderBrush="#E0E0E0"
+                                                <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
                                                         BorderThickness="0,0,0,1">
                                                     <ItemsControl ItemsSource="{Binding Cells}">
                                                         <ItemsControl.ItemsPanel>
@@ -171,11 +171,11 @@
                                                             <DataTemplate>
                                                                 <Border Padding="12,8"
                                                                         MinWidth="100"
-                                                                        BorderBrush="#E0E0E0"
+                                                                        BorderBrush="{DynamicResource BorderSubtleBrush}"
                                                                         BorderThickness="0,0,1,0">
                                                                     <TextBlock Text="{Binding}"
                                                                                FontSize="11"
-                                                                               Foreground="#333"
+                                                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                                                TextWrapping="Wrap" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -192,7 +192,7 @@
                         <TextBlock Text="{Binding PreviewEventRows.Count, StringFormat='Total events: {0}'}"
                                    FontSize="11"
                                    FontStyle="Italic"
-                                   Foreground="#999" />
+                                   Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
 
                     <!-- Statistics Section -->
@@ -200,13 +200,13 @@
                                 IsVisible="{Binding Statistics.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
                         
                         <Border Height="1"
-                                Background="#E0E0E0"
+                                Background="{DynamicResource BorderSubtleBrush}"
                                 Margin="0,12" />
 
                         <TextBlock Text="Summary Statistics"
                                    FontSize="16"
                                    FontWeight="SemiBold"
-                                   Foreground="#1976D2" />
+                                   Foreground="{DynamicResource AccentBrush}" />
 
                         <ItemsControl ItemsSource="{Binding Statistics}">
                             <ItemsControl.ItemTemplate>
@@ -215,13 +215,13 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="{Binding Label}"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#333" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                     
-                                        <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="#333"/>
+                                        <TextBlock Grid.Column="1" Text=":" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding Value}"
-                                                   Foreground="#666"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                    TextWrapping="Wrap" />
                                     </Grid>
                                 </DataTemplate>
@@ -234,14 +234,14 @@
                                 IsVisible="{Binding FooterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         
                         <Border Height="1"
-                                Background="#E0E0E0"
+                                Background="{DynamicResource BorderSubtleBrush}"
                                 Margin="0,20,0,12" />
 
                         <TextBlock Text="{Binding FooterText}"
                                    FontSize="10"
                                    FontStyle="Italic"
                                    TextAlignment="Center"
-                                   Foreground="#999" />
+                                   Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
 
                 </StackPanel>
@@ -250,9 +250,9 @@
 
         <!-- Footer -->
         <Border Grid.Row="2"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             
             <Grid ColumnDefinitions="*,Auto">
