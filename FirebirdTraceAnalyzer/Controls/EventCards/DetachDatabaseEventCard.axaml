@@ -22,13 +22,13 @@
         <!-- Set Defaults -->
         <Setter Property="Template">
             <ControlTemplate>
-                <Border BorderThickness="1" Padding="10" BorderBrush="Black">
+                <Border BorderThickness="1" Padding="10" BorderBrush="{DynamicResource BorderBrush}">
 
                 <StackPanel Spacing="18">
                     <Grid ColumnDefinitions="Auto * Auto">
                         
                         <Border Grid.Column="0"
-                                Background="{DynamicResource DetachDatabaseEventColor}"
+                                Background="{DynamicResource DetachDatabaseEventBrush}"
                                 CornerRadius="5"
                                 Padding="16, 8, 16, 12">
 
@@ -38,7 +38,7 @@
                                 <TextBlock Text="DETACH DATABASE"
                                            FontWeight="Bold"
                                            FontSize="15"
-                                           Foreground="White"/>
+                                           Foreground="{DynamicResource TextOnAccentBrush}"/>
 
                             </StackPanel>
 
@@ -60,7 +60,7 @@
                             <StackPanel Spacing="4">
                                 <TextBlock Text="TRACE ID"
                                            FontSize="11"
-                                           Foreground="#777" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding TraceId}"
                                            FontWeight="Bold"
                                            Cursor="Hand"
@@ -70,7 +70,7 @@
                                         Spacing="4">
                                 <TextBlock Text="HEX"
                                            FontSize="11"
-                                           Foreground="#777" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding HexTraceId}"
                                            Cursor="Hand"
                                            FontFamily="Consolas" />
@@ -79,7 +79,7 @@
                                         Spacing="4">
                                 <TextBlock Text="ATTACHEMENT ID"
                                            FontSize="11"
-                                           Foreground="#777" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding AttachmentId}"
                                            Cursor="Hand"
                                            FontFamily="Consolas" />
@@ -96,7 +96,7 @@
                         <!-- USER -->
                         <TextBlock Grid.Column="0" Grid.Row="0" Text="USER / ROLE"
                                    FontWeight="Bold"
-                                   Foreground="#555"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         
                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="5">
@@ -116,7 +116,7 @@
                         <TextBlock Grid.Column="0" Grid.Row="1"
                                    Text="ADDRESS"
                                    FontWeight="Bold"
-                                   Foreground="#555"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <StackPanel Grid.Row="1"
                                     Grid.Column="1"
@@ -142,7 +142,7 @@
                         <TextBlock Grid.Column="0" Grid.Row="2"
                                    Text="APPLICATION"
                                    FontWeight="Bold"
-                                   Foreground="#555"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <StackPanel Grid.Row="2"
                                     Grid.Column="1"
@@ -165,7 +165,7 @@
                         <TextBlock Grid.Column="0" Grid.Row="3"
                                    Text="CHARSET"
                                    FontWeight="Bold"
-                                   Foreground="#555"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <TextBlock Grid.Row="3"
                                    Grid.Column="1"
@@ -176,7 +176,7 @@
                         <TextBlock Grid.Column="0" Grid.Row="4"
                                    Text="DATABASE"
                                    FontWeight="Bold"
-                                   Foreground="#555"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <TextBlock Grid.Row="4"
                                    Grid.Column="1"

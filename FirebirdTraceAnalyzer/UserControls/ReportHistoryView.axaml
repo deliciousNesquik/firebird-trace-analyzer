@@ -11,13 +11,13 @@
         <vm:ReportHistoryViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Search Bar -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="16"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
             <Grid ColumnDefinitions="*,Auto">
@@ -29,7 +29,7 @@
                         <Svg Path="{DynamicResource SearchIcon}"
                              Width="16" Height="16"
                              Margin="8,0,0,0"
-                             Css="{DynamicResource ThemeIconStroke}" />
+                             Css="{DynamicResource ThemeIconFill}" />
                     </TextBox.InnerLeftContent>
                 </TextBox>
 
@@ -54,8 +54,8 @@
             <ItemsControl Padding="16" ItemsSource="{Binding FilteredReports}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{DynamicResource Surface}"
-                                BorderBrush="{DynamicResource BorderColor}"
+                        <Border Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="4"
                                 Padding="16"
@@ -69,18 +69,18 @@
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="16">
                                         <TextBlock FontSize="11">
-                                            <Run Text="FORMAT:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
-                                            <Run Text="{Binding Format}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
+                                            <Run Text="FORMAT:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{Binding Format}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
 
                                         <TextBlock FontSize="11">
-                                            <Run Text="SIZE:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
-                                            <Run Text="{Binding FormattedSize}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
+                                            <Run Text="SIZE:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{Binding FormattedSize}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
 
                                         <TextBlock FontSize="11">
-                                            <Run Text="CREATED:" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
-                                            <Run Text="{Binding FormattedDate}" FontWeight="Medium" Foreground="{DynamicResource SecondaryText}"/>
+                                            <Run Text="CREATED:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{Binding FormattedDate}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </StackPanel>

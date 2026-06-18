@@ -27,7 +27,7 @@
 
                 <Border BorderThickness="1"
                         Padding="10"
-                        BorderBrush="Black">
+                        BorderBrush="{DynamicResource BorderBrush}">
 
                     <StackPanel Spacing="10">
 
@@ -36,12 +36,12 @@
                         <Grid ColumnDefinitions="Auto,*">
 
                             <Border Grid.Column="0"
-                                    Background="{DynamicResource ErrorEventColor}"
+                                    Background="{DynamicResource ErrorEventBrush}"
                                     CornerRadius="5"
                                     Padding="16,8,16,12">
 
                                 <TextBlock Text="ERROR"
-                                           Foreground="White"
+                                           Foreground="{DynamicResource TextOnAccentBrush}"
                                            FontWeight="Bold"
                                            FontSize="16"/>
 
@@ -74,7 +74,7 @@
 
                                         <TextBlock Text="TRACE ID"
                                                    FontSize="11"
-                                                   Foreground="#777"/>
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                                     </StackPanel>
 
@@ -92,7 +92,7 @@
 
                                         <TextBlock Text="HEX"
                                                    FontSize="11"
-                                                   Foreground="#777"/>
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                                     </StackPanel>
 
@@ -109,7 +109,7 @@
 
                                         <TextBlock Text="ATTACHMENT ID"
                                                    FontSize="11"
-                                                   Foreground="#777"/>
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                                     </StackPanel>
 
@@ -124,7 +124,7 @@
 
                         <!-- COMPONENT -->
 
-                        <Border BorderBrush="Gray"
+                        <Border BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 Padding="10">
 
@@ -164,7 +164,7 @@
                                 <DataTemplate x:DataType="models:ErrorLines">
 
                                     <Border BorderThickness="0,0,0,1"
-                                            BorderBrush="{DynamicResource SurfaceElevated}"
+                                            BorderBrush="{DynamicResource SurfaceElevatedBrush}"
                                             Padding="0,4">
 
                                         <Grid ColumnDefinitions="140,*">

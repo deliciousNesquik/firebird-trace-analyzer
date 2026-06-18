@@ -37,7 +37,7 @@
                             
                             <Path Name="PART_PlusIcon"
                                   Data="M 3,0 L 3,6 M 0,3 L 6,3"
-                                  Stroke="Red"
+                                  Stroke="{DynamicResource DangerBrush}"
                                   StrokeThickness="2"
                                   StrokeLineCap="Round"
                                   Width="6" Height="6"
