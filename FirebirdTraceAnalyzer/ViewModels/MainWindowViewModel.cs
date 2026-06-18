@@ -32,7 +32,6 @@ using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Parsing.Engine;
 using FirebirdTraceParser.Parsing.Utils;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -43,6 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #region Dependencies (Injected Services)
 
+    private readonly ISettingsService _settingsService;
     private readonly AppSettings _appSettings;
     private readonly UiSectionSettings _uiSettings;
     private readonly IFileDialogService _fileDialogService;
@@ -91,6 +91,10 @@ public partial class MainWindowViewModel : ViewModelBase
     // ✅ Флаг пакетного обновления (для предотвращения множественных пересчётов)
     private bool _isBatchUpdate;
 
+    // Флаг завершения первичной загрузки настроек: пока false, изменения видимости секций и
+    // режима поиска не сохраняются (иначе LoadSettings перезаписывал бы файл при инициализации).
+    private bool _settingsLoaded;
+
     #endregion
 
     #region Observable Properties - UI State
@@ -132,6 +136,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         // Mock-данные для дизайнера
+        _settingsService = null!;
         _appSettings = new AppSettingsMock();
         _uiSettings = new UiSectionSettingsMock();
         _parser = null!;
@@ -170,8 +175,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ISortingService sortingService,
         IFilteringService filteringService,
         ISearchService searchService,
-        IOptions<AppSettings> appSettings,
-        IOptions<UiSectionSettings> uiSettings,
+        ISettingsService settingsService,
         ISshConnectionService sshConnectionService,
         IRemoteFileService remoteFileService,
         IEventPropertyAccessor propertyAccessor,
@@ -191,8 +195,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _filteringService = filteringService ?? throw new ArgumentNullException(nameof(filteringService));
         _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
-        _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
-        _uiSettings = uiSettings.Value ?? throw new ArgumentNullException(nameof(uiSettings));
+        _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+        _appSettings = _settingsService.App;
+        _uiSettings = _settingsService.Ui;
 
         _sshConnectionService = sshConnectionService ?? throw new ArgumentNullException(nameof(sshConnectionService));
         _remoteFileService = remoteFileService ?? throw new ArgumentNullException(nameof(remoteFileService));
@@ -208,6 +213,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Загрузка настроек
         LoadSettings();
+
+        // С этого момента изменения секций/поиска можно сохранять
+        _settingsLoaded = true;
 
         StatusMessage = "Ready to go!";
         Logger.Info("MainWindowViewModel initialized.");
@@ -236,6 +244,43 @@ public partial class MainWindowViewModel : ViewModelBase
         Logger.Info("Application settings loaded.");
         StatusMessage = "Application settings loaded.";
     }
+
+    /// <summary>
+    ///     Переносит текущее состояние видимости секций в модель настроек и сохраняет её.
+    ///     Срабатывает при любом изменении секций (через меню, горячие клавиши или сброс).
+    /// </summary>
+    private void PersistUiSettings()
+    {
+        if (!_settingsLoaded || _settingsService == null)
+            return;
+
+        _uiSettings.Files = IsTraceFilesSectionVisible;
+        _uiSettings.Search = IsSearchSectionVisible;
+        _uiSettings.Events = IsEventsSectionVisible;
+        _uiSettings.Statistics = IsStatisticsSectionVisible;
+        _uiSettings.Logs = IsLogsSectionVisible;
+
+        _settingsService.Save();
+    }
+
+    /// <summary>Сохраняет основные настройки приложения (режим поиска и т.п.).</summary>
+    private void PersistAppSettings()
+    {
+        if (!_settingsLoaded || _settingsService == null)
+            return;
+
+        _appSettings.IsClassicSearch = IsClassicSearch;
+
+        _settingsService.Save();
+    }
+
+    partial void OnIsTraceFilesSectionVisibleChanged(bool value) => PersistUiSettings();
+    partial void OnIsSearchSectionVisibleChanged(bool value) => PersistUiSettings();
+    partial void OnIsEventsSectionVisibleChanged(bool value) => PersistUiSettings();
+    partial void OnIsStatisticsSectionVisibleChanged(bool value) => PersistUiSettings();
+    partial void OnIsLogsSectionVisibleChanged(bool value) => PersistUiSettings();
+
+    partial void OnIsClassicSearchChanged(bool value) => PersistAppSettings();
 
     /// <summary>Регистрирует сортировки из загруженных плагинов</summary>
     private void RegisterCustomSorts()
@@ -1311,10 +1356,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             downloadDirectory = deleteLocalFilesAfterProcessing
                 ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
-                : Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "FirebirdTraceAnalyzer",
-                    "RemoteDownloads");
+                : _settingsService.GetRemoteDownloadDirectory();
             Directory.CreateDirectory(downloadDirectory);
 
             // Загружаем файлы с прогрессом

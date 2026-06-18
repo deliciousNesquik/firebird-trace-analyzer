@@ -7,6 +7,12 @@ public class AppSettings
 {
     public bool IsClassicSearch { get; set; }
     public string Theme { get; set; } = "Light";
+
+    /// <summary>
+    /// Папка, в которую сохраняются скачанные с сервера файлы (когда удаление после обработки
+    /// выключено). Пусто — используется папка по умолчанию (%AppData%/FirebirdTraceAnalyzer/RemoteDownloads).
+    /// </summary>
+    public string RemoteDownloadPath { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -19,4 +25,15 @@ public class UiSectionSettings
     public bool Events { get; set; }
     public bool Statistics { get; set; }
     public bool Logs { get; set; }
+}
+
+/// <summary>
+/// Корневая модель пользовательских настроек, которая сохраняется на диск
+/// (в %AppData%/FirebirdTraceAnalyzer/settings.json). Значения по умолчанию берутся из
+/// поставляемого с приложением appsettings.json, а изменения пользователя пишутся в этот файл.
+/// </summary>
+public sealed class UserSettings
+{
+    public AppSettings App { get; set; } = new();
+    public UiSectionSettings Ui { get; set; } = new();
 }
