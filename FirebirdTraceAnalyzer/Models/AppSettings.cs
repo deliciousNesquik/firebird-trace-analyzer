@@ -1,12 +1,29 @@
 ﻿namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
+/// Режим оформления приложения.
+/// </summary>
+public enum AppTheme
+{
+    /// <summary>Следовать системным настройкам (light/dark).</summary>
+    Auto,
+
+    /// <summary>Всегда светлая тема.</summary>
+    Light,
+
+    /// <summary>Всегда тёмная тема.</summary>
+    Dark
+}
+
+/// <summary>
 /// Основные настройки приложения
 /// </summary>
 public class AppSettings
 {
     public bool IsClassicSearch { get; set; }
-    public string Theme { get; set; } = "Light";
+
+    /// <summary>Режим оформления: Auto (по системе) / Light / Dark.</summary>
+    public AppTheme Theme { get; set; } = AppTheme.Auto;
 
     /// <summary>
     /// Папка, в которую сохраняются скачанные с сервера файлы (когда удаление после обработки

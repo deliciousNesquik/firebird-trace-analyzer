@@ -20,4 +20,13 @@ public interface ISettingsService
 
     /// <summary>Сохраняет текущие настройки в пользовательский файл.</summary>
     void Save();
+
+    /// <summary>Возвращает копию заводских настроек (из appsettings.json) — для кнопки «Сброс».</summary>
+    UserSettings GetDefaults();
+
+    /// <summary>Сериализует переданные настройки в указанный файл.</summary>
+    Task ExportAsync(string path, UserSettings settings);
+
+    /// <summary>Читает и валидирует настройки из файла (без применения к приложению).</summary>
+    Task<UserSettings> ReadFromFileAsync(string path);
 }

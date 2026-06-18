@@ -1903,6 +1903,45 @@ public partial class MainWindowViewModel : ViewModelBase
         IsLogsSectionVisible = !IsLogsSectionVisible;
     }
 
+    /// <summary>Открывает окно настроек приложения.</summary>
+    [RelayCommand]
+    private async Task OpenSettingsAsync()
+    {
+        try
+        {
+            var viewModel = App.Services?.GetRequiredService<SettingsWindowViewModel>();
+            if (viewModel == null)
+            {
+                StatusMessage = "Settings service not available";
+                return;
+            }
+
+            var window = new SettingsWindow(viewModel);
+            var changed = await window.ShowDialog<bool>(
+                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+
+            if (!changed)
+                return;
+
+            // Подтягиваем сохранённые значения в живые свойства окна. _appSettings/_uiSettings —
+            // те же экземпляры, что и в SettingsService, поэтому уже содержат новые значения.
+            IsTraceFilesSectionVisible = _uiSettings.Files;
+            IsSearchSectionVisible = _uiSettings.Search;
+            IsEventsSectionVisible = _uiSettings.Events;
+            IsStatisticsSectionVisible = _uiSettings.Statistics;
+            IsLogsSectionVisible = _uiSettings.Logs;
+            IsClassicSearch = _appSettings.IsClassicSearch;
+
+            StatusMessage = "Settings updated";
+            Logger.Info("Settings updated from settings window");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening settings window");
+            StatusMessage = $"Error: {ex.Message}";
+        }
+    }
+
     [RelayCommand]
     private void GoToFactorySettingsSection()
     {

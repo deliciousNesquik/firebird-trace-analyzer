@@ -7,7 +7,7 @@ public class AppSettingsMock: AppSettings
     public AppSettingsMock()
     {
         IsClassicSearch = true;
-        Theme = "Light";
+        Theme = AppTheme.Auto;
         RemoteDownloadPath = string.Empty;
     }
 }
