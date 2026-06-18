@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.ValueObjects;
 
@@ -11,37 +12,6 @@ namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
 public class StatementFinishEventCard : TemplatedControl
 {
-    
-    private static string FormatParam(SqlParameters parameters)
-    {
-        var value = parameters.Value?.ToString();
-
-        if (value == "<NULL>")
-            return "NULL";
-
-        return parameters.Dtype.ToLower() switch
-        {
-            "varchar(32764)" or "varchar" or "char" or "text" =>
-                $"'{value?.Replace("'", "''")}'",
-
-            "timestamp" =>
-                $"'{value}'",
-
-            "date" =>
-                $"'{value}'",
-
-            "time" =>
-                $"'{value}'",
-
-            "bigint" or "int" or "smallint" or "integer" =>
-                value ?? "NULL",
-
-            _ =>
-                value ?? "NULL"
-        };
-    }
-    
-    
     public static readonly StyledProperty<DateTime> TimestampProperty =
         AvaloniaProperty.Register<StatementFinishEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
     
@@ -240,33 +210,8 @@ public class StatementFinishEventCard : TemplatedControl
         set => SetValue(SqlProperty, value);
     }
     
-    public string ExecuteSql
-    {
-        get
-        {
-            if (Params == null || Params.Count == 0)
-                return Sql;
+    public string ExecuteSql => ExecuteStatementsBuilder.Build(Sql, Params);
 
-            var sql = new StringBuilder();
-            int index = 0;
-
-            foreach (var ch in Sql)
-            {
-                if (ch == '?' && index < Params.Count)
-                {
-                    sql.Append(FormatParam(Params[index]));
-                    index++;
-                }
-                else
-                {
-                    sql.Append(ch);
-                }
-            }
-
-            return sql.ToString();
-        }
-    }
-    
     public IReadOnlyList<SqlParameters> Params
     {
         get => GetValue(ParamsProperty);
