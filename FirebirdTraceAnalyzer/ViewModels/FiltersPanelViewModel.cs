@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.Services.EventProperties;

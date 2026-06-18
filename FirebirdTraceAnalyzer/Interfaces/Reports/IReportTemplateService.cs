@@ -1,6 +1,6 @@
 ﻿using FirebirdTraceAnalyzer.Models.Reports;
 
-namespace FirebirdTraceAnalyzer.Services.Reports;
+namespace FirebirdTraceAnalyzer.Interfaces.Reports;
 
 /// <summary>
 /// Сервис управления шаблонами отчётов

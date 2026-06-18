@@ -1,6 +1,7 @@
-﻿using FirebirdTraceParser.Models.Events;
+﻿using FirebirdTraceAnalyzer.Services.Sorting;
+using FirebirdTraceParser.Models.Events;
 
-namespace FirebirdTraceAnalyzer.Services.Sorting;
+namespace FirebirdTraceAnalyzer.Interfaces.Sorting;
 
 public interface ISortingService
 {

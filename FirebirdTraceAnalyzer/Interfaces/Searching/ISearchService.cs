@@ -1,7 +1,7 @@
 ﻿using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.Enums;
 
-namespace FirebirdTraceAnalyzer.Services.Searching;
+namespace FirebirdTraceAnalyzer.Interfaces.Searching;
 
 public interface ISearchService
 {

@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Avalonia.Platform.Storage;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Window;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.Services;
