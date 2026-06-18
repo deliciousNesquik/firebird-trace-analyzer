@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 using Microsoft.Extensions.Options;
@@ -18,22 +19,34 @@ public sealed class SettingsService : ISettingsService
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        // Чтобы тема писалась читаемо ("Auto"/"Light"/"Dark"), а не числом.
+        Converters = { new JsonStringEnumConverter() }
     };
 
     private readonly string _settingsFilePath;
 
-    public AppSettings App { get; private set; }
-    public UiSectionSettings Ui { get; private set; }
+    // Заводские значения по умолчанию (из appsettings.json) — для кнопки «Сброс».
+    private readonly UserSettings _defaults;
+
+    // App и Ui — стабильные экземпляры на всё время жизни сервиса: ссылки на них держит
+    // MainWindowViewModel, поэтому при Reset/Import мы копируем поля внутрь, а не заменяем объект.
+    public AppSettings App { get; }
+    public UiSectionSettings Ui { get; }
 
     public SettingsService(IOptions<AppSettings> defaultApp, IOptions<UiSectionSettings> defaultUi)
     {
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         _settingsFilePath = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "settings.json");
 
-        // Клонируем значения из IOptions, чтобы не мутировать общий singleton-экземпляр опций.
-        App = Clone(defaultApp.Value);
-        Ui = Clone(defaultUi.Value);
+        _defaults = new UserSettings
+        {
+            App = CloneApp(defaultApp.Value),
+            Ui = CloneUi(defaultUi.Value)
+        };
+
+        App = CloneApp(defaultApp.Value);
+        Ui = CloneUi(defaultUi.Value);
 
         Load();
     }
@@ -54,8 +67,7 @@ public sealed class SettingsService : ISettingsService
             if (loaded == null)
                 return;
 
-            App = loaded.App ?? App;
-            Ui = loaded.Ui ?? Ui;
+            ApplyInto(loaded);
 
             Logger.Info("User settings loaded from {Path}", _settingsFilePath);
         }
@@ -82,6 +94,33 @@ public sealed class SettingsService : ISettingsService
         {
             Logger.Error(ex, "Failed to save user settings");
         }
+    }
+
+    public UserSettings GetDefaults() => new()
+    {
+        App = CloneApp(_defaults.App),
+        Ui = CloneUi(_defaults.Ui)
+    };
+
+    public async Task ExportAsync(string path, UserSettings settings)
+    {
+        var json = JsonSerializer.Serialize(settings, JsonOptions);
+        await File.WriteAllTextAsync(path, json);
+        Logger.Info("Settings exported to {Path}", path);
+    }
+
+    public async Task<UserSettings> ReadFromFileAsync(string path)
+    {
+        var json = await File.ReadAllTextAsync(path);
+
+        var loaded = JsonSerializer.Deserialize<UserSettings>(json, JsonOptions)
+                     ?? throw new InvalidDataException("Settings file is empty or has an invalid format.");
+
+        // Гарантируем непустые секции, чтобы вызывающий код не падал на null.
+        loaded.App ??= CloneApp(_defaults.App);
+        loaded.Ui ??= CloneUi(_defaults.Ui);
+
+        return loaded;
     }
 
     public string GetRemoteDownloadDirectory()
@@ -113,19 +152,43 @@ public sealed class SettingsService : ISettingsService
         return Path.GetFullPath(Environment.ExpandEnvironmentVariables(trimmed));
     }
 
-    private static AppSettings Clone(AppSettings source) => new()
+    /// <summary>Копирует значения из <paramref name="source"/> в стабильные App/Ui.</summary>
+    private void ApplyInto(UserSettings source)
     {
-        IsClassicSearch = source.IsClassicSearch,
-        Theme = source.Theme,
-        RemoteDownloadPath = source.RemoteDownloadPath
-    };
+        if (source.App != null)
+            CopyApp(source.App, App);
 
-    private static UiSectionSettings Clone(UiSectionSettings source) => new()
+        if (source.Ui != null)
+            CopyUi(source.Ui, Ui);
+    }
+
+    private static void CopyApp(AppSettings source, AppSettings target)
     {
-        Files = source.Files,
-        Search = source.Search,
-        Events = source.Events,
-        Statistics = source.Statistics,
-        Logs = source.Logs
-    };
+        target.IsClassicSearch = source.IsClassicSearch;
+        target.Theme = source.Theme;
+        target.RemoteDownloadPath = source.RemoteDownloadPath;
+    }
+
+    private static void CopyUi(UiSectionSettings source, UiSectionSettings target)
+    {
+        target.Files = source.Files;
+        target.Search = source.Search;
+        target.Events = source.Events;
+        target.Statistics = source.Statistics;
+        target.Logs = source.Logs;
+    }
+
+    private static AppSettings CloneApp(AppSettings source)
+    {
+        var copy = new AppSettings();
+        CopyApp(source, copy);
+        return copy;
+    }
+
+    private static UiSectionSettings CloneUi(UiSectionSettings source)
+    {
+        var copy = new UiSectionSettings();
+        CopyUi(source, copy);
+        return copy;
+    }
 }

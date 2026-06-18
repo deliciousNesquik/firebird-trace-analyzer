@@ -186,6 +186,12 @@
 
         <MenuItem Header="_Settings [S]">
             <MenuItem
+                Header="_Preferences... [P]"
+                Command="{Binding OpenSettingsCommand}" />
+
+            <Separator />
+
+            <MenuItem
                 Header="Set up remote access" />
 
             <MenuItem

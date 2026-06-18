@@ -91,6 +91,7 @@ internal sealed class Program
         // Сервис пользовательских настроек: значения по умолчанию из appsettings.json,
         // сохранение изменений — в %AppData%/FirebirdTraceAnalyzer/settings.json
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IThemeService, ThemeService>();
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
@@ -137,6 +138,7 @@ internal sealed class Program
 
         // добавляем ViewModels главного окна
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<SettingsWindowViewModel>();
         
         // view model для ssh удаленного скачивания файлов
         services.AddTransient<RemoteConnectionDialogViewModel>();

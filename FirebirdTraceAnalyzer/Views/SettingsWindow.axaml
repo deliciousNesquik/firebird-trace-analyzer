@@ -1,0 +1,299 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="640"
+        x:Class="FirebirdTraceAnalyzer.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="Settings"
+        Width="640"
+        Height="640"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:SettingsWindowViewModel />
+    </Design.DataContext>
+
+    <Window.Styles>
+        <!-- Строка настройки: слева название+описание, справа редактор значения.
+             ColumnDefinitions задаётся инлайн на каждом Grid (через Style для коллекции
+             ColumnDefinitions в Avalonia работает ненадёжно). -->
+        <Style Selector="Grid.settingRow">
+            <Setter Property="Margin" Value="0,0,0,14" />
+        </Style>
+        <Style Selector="Grid.settingRow > StackPanel.label">
+            <Setter Property="Spacing" Value="2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+        </Style>
+        <Style Selector="Grid.settingRow > StackPanel.label > TextBlock.title">
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="Grid.settingRow > StackPanel.label > TextBlock.desc">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.sectionHeader">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,4,0,10" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Application Settings"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Values are applied after you press Save"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="20" Spacing="4">
+
+                <!-- General -->
+                <TextBlock Classes="sectionHeader" Text="General" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Search mode" />
+                        <TextBlock Classes="desc"
+                                   Text="Classic — plain substring search. Regex — regular expressions." />
+                    </StackPanel>
+                    <!-- Сегмент из двух кнопок: слева Classic, справа Regex. Клик всегда выставляет
+                         нужный режим (Command), IsChecked отражает состояние в одну сторону. -->
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Classic"
+                                      MinWidth="84"
+                                        CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding IsClassicSearch, Mode=OneWay}"
+                                      Command="{Binding SelectClassicCommand}" />
+                        <ToggleButton Content="Regex"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding IsRegexSearch, Mode=OneWay}"
+                                      Command="{Binding SelectRegexCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Theme" />
+                        <TextBlock Classes="desc"
+                                   Text="Application color theme." />
+                    </StackPanel>
+                    <ComboBox Grid.Column="1"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{Binding AvailableThemes}"
+                              SelectedItem="{Binding Theme}" />
+                </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
+                <!-- Remote files -->
+                <TextBlock Classes="sectionHeader" Text="Remote files" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Download folder" />
+                        <TextBlock Classes="desc"
+                                   Text="Folder where downloaded remote files are kept (when 'delete after processing' is off). Empty = default app folder." />
+                    </StackPanel>
+                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding RemoteDownloadPath}"
+                                 PlaceholderText="Default (AppData)" />
+                        <Button Grid.Column="1"
+                                Content="..."
+                                Classes="focused"
+                                Command="{Binding BrowseDownloadPathCommand}" />
+                    </Grid>
+                </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
+                <!-- UI sections visibility -->
+                <TextBlock Classes="sectionHeader" Text="Sections visibility" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Grid.Column="0" Classes="label">
+                        <TextBlock Classes="title" Text="Files" />
+                        <TextBlock Classes="desc" Text="Show the loaded trace files section." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Show"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding SectionFiles}"/>
+                        <ToggleButton Content="Hidden"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !SectionFiles}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Search, Sort and Filters" />
+                        <TextBlock Classes="desc" Text="Show the search / sort / filters section." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Show"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding SectionSearch}"/>
+                        <ToggleButton Content="Hidden"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !SectionSearch}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Events" />
+                        <TextBlock Classes="desc" Text="Show the events list section." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Show"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding SectionEvents}"/>
+                        <ToggleButton Content="Hidden"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !SectionEvents}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Statistics" />
+                        <TextBlock Classes="desc" Text="Show the statistics section." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Show"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding SectionStatistics}"/>
+                        <ToggleButton Content="Hidden"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !SectionStatistics}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="Logs" />
+                        <TextBlock Classes="desc" Text="Show the logs section." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Show"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding SectionLogs}"/>
+                        <ToggleButton Content="Hidden"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !SectionLogs}"/>
+                    </StackPanel>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+
+                <TextBlock Grid.Row="0"
+                           Text="{Binding StatusMessage}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Content="Reset to defaults"
+                            Classes="normal"
+                            Command="{Binding ResetToDefaultsCommand}" />
+
+                    <Button Grid.Column="2"
+                            Content="Import"
+                            Classes="normal"
+                            Command="{Binding ImportCommand}" />
+
+                    <Button Grid.Column="3"
+                            Content="Export"
+                            Classes="normal"
+                            Command="{Binding ExportCommand}" />
+
+                    <Button Grid.Column="4"
+                            Content="Save"
+                            Classes="focused"
+                            Command="{Binding SaveCommand}" />
+
+                    <Button Grid.Column="5"
+                            Content="Close"
+                            Classes="danger"
+                            Command="{Binding CancelCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>
