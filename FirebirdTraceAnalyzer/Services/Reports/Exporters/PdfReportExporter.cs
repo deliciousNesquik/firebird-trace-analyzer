@@ -1,8 +1,7 @@
 ﻿using FirebirdTraceAnalyzer.Enums.Reports;
-using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 using QuestPDF.Fluent;
@@ -17,11 +16,11 @@ namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 public class PdfReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IReportProjectionService _projectionService;
 
-    public PdfReportExporter(IEventPropertyAccessor propertyAccessor)
+    public PdfReportExporter(IReportProjectionService projectionService)
     {
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     static PdfReportExporter()
@@ -175,18 +174,18 @@ public class PdfReportExporter : IReportExporter
 
     private void ComposeEventsTable(IContainer container, ReportTemplate template, IReadOnlyList<EventBase> events)
     {
-        var fields = template.Body.VisibleFields.OrderBy(f => f.Order).ToList();
+        var data = _projectionService.BuildTable(template, events);
 
         container.Table(table =>
         {
             // Определяем колонки
             table.ColumnsDefinition(columns =>
             {
-                foreach (var field in fields)
+                foreach (var column in data.Columns)
                 {
-                    if (field.WidthPercent.HasValue)
+                    if (column.WidthPercent.HasValue)
                     {
-                        columns.RelativeColumn((float)field.WidthPercent.Value);
+                        columns.RelativeColumn((float)column.WidthPercent.Value);
                     }
                     else
                     {
@@ -198,9 +197,9 @@ public class PdfReportExporter : IReportExporter
             // Заголовок таблицы
             table.Header(header =>
             {
-                foreach (var field in fields)
+                foreach (var column in data.Columns)
                 {
-                    header.Cell().Element(CellStyle).Text(field.DisplayName)
+                    header.Cell().Element(CellStyle).Text(column.DisplayName)
                         .FontSize(9)
                         .Bold();
                 }
@@ -213,12 +212,11 @@ public class PdfReportExporter : IReportExporter
             });
 
             // Строки данных
-            foreach (var evt in events)
+            foreach (var rowCells in data.Rows)
             {
-                foreach (var field in fields)
+                for (var i = 0; i < data.Columns.Count; i++)
                 {
-                    var value = _propertyAccessor.GetValue(evt, field.PropertyPath);
-                    var formattedValue = FormatValue(value, field.Format);
+                    var formattedValue = FormatValue(rowCells[i], data.Columns[i].Format);
 
                     table.Cell().Element(CellStyle).Text(formattedValue)
                         .FontSize(8);

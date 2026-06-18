@@ -7,10 +7,9 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FirebirdTraceAnalyzer.Enums.Reports;
-using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -22,11 +21,11 @@ namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 public class DocxReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IReportProjectionService _projectionService;
 
-    public DocxReportExporter(IEventPropertyAccessor propertyAccessor)
+    public DocxReportExporter(IReportProjectionService projectionService)
     {
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     public Task ExportAsync(
@@ -181,7 +180,7 @@ public class DocxReportExporter : IReportExporter
 
     private void ComposeEventsTable(Body body, ReportTemplate template, IReadOnlyList<EventBase> events)
     {
-        var fields = template.Body.VisibleFields.OrderBy(f => f.Order).ToList();
+        var data = _projectionService.BuildTable(template, events);
 
         var table = body.AppendChild(new Table());
 
@@ -199,31 +198,30 @@ public class DocxReportExporter : IReportExporter
 
         // Заголовок таблицы
         var headerRow = table.AppendChild(new TableRow());
-        foreach (var field in fields)
+        foreach (var column in data.Columns)
         {
             var cell = headerRow.AppendChild(new TableCell());
             var paragraph = cell.AppendChild(new Paragraph());
             var run = paragraph.AppendChild(new Run());
-            run.AppendChild(new Text(field.DisplayName));
-            
+            run.AppendChild(new Text(column.DisplayName));
+
             var runProps = run.AppendChild(new RunProperties());
             runProps.AppendChild(new Bold());
-            
+
             // Затенение заголовка
             var cellProps = cell.AppendChild(new TableCellProperties());
             cellProps.AppendChild(new Shading { Val = ShadingPatternValues.Clear, Fill = "D3D3D3" });
         }
 
         // Строки данных
-        foreach (var evt in events)
+        foreach (var rowCells in data.Rows)
         {
             var dataRow = table.AppendChild(new TableRow());
-            
-            foreach (var field in fields)
+
+            for (var i = 0; i < data.Columns.Count; i++)
             {
-                var value = _propertyAccessor.GetValue(evt, field.PropertyPath);
-                var formattedValue = FormatValue(value, field.Format);
-                
+                var formattedValue = FormatValue(rowCells[i], data.Columns[i].Format);
+
                 var cell = dataRow.AppendChild(new TableCell());
                 var paragraph = cell.AppendChild(new Paragraph());
                 var run = paragraph.AppendChild(new Run());

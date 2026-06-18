@@ -15,7 +15,18 @@ public sealed class EventField
     
     /// <summary>Путь к свойству (например, "Performance.ExecuteMs")</summary>
     public string PropertyPath { get; init; } = string.Empty;
-    
+
+    /// <summary>
+    /// Роль колонки: обычное поле (по умолчанию), ключ группировки или агрегат.
+    /// </summary>
+    public ColumnKind Kind { get; init; } = ColumnKind.Field;
+
+    /// <summary>
+    /// Агрегатная функция для колонки с <see cref="ColumnKind.Aggregate"/>.
+    /// Для Count <see cref="PropertyPath"/> может быть пустым; для прочих ролей — null.
+    /// </summary>
+    public AggregateFunction? Aggregate { get; init; }
+
     /// <summary>Форматирование (например, "{0:N0} ms")</summary>
     public string? Format { get; init; }
     
