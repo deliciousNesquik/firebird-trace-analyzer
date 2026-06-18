@@ -1,6 +1,6 @@
 ﻿using FirebirdTraceAnalyzer.Models.Reports;
 
-namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
+namespace FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 
 /// <summary>
 /// Интерфейс экспортера отчётов

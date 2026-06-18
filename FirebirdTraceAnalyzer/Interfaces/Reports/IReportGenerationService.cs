@@ -2,7 +2,7 @@
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Events;
 
-namespace FirebirdTraceAnalyzer.Services.Reports;
+namespace FirebirdTraceAnalyzer.Interfaces.Reports;
 
 /// <summary>
 /// Сервис генерации отчётов

@@ -1,7 +1,7 @@
 ﻿using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceParser.Models.Events;
 
-namespace FirebirdTraceAnalyzer.Services;
+namespace FirebirdTraceAnalyzer.Interfaces;
 
 /// <summary>
 /// Сервис для обнаружения доступных полей в событиях трассировки

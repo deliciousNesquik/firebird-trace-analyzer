@@ -1,6 +1,6 @@
 ﻿using Avalonia.Platform.Storage;
 
-namespace FirebirdTraceAnalyzer.Interfaces;
+namespace FirebirdTraceAnalyzer.Interfaces.Window;
 
 public interface IFileDialogService
 {

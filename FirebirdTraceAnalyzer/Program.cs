@@ -1,7 +1,14 @@
 ﻿using System.Text.RegularExpressions;
 using Avalonia;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
+using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Interfaces.Searching;
+using FirebirdTraceAnalyzer.Interfaces.Sorting;
+using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;

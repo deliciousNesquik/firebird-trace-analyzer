@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Reports.BuiltInTemplates;
 using NLog;

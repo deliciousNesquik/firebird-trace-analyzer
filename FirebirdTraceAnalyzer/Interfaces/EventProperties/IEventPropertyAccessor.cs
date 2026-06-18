@@ -1,4 +1,4 @@
-namespace FirebirdTraceAnalyzer.Services.EventProperties;
+namespace FirebirdTraceAnalyzer.Interfaces.EventProperties;
 
 /// <summary>
 /// Единый доступ к значениям свойств событий по пути (например, <c>Attachment.User</c>)

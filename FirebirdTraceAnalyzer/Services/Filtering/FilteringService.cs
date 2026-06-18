@@ -1,5 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.Reflection;
+using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Attributes;

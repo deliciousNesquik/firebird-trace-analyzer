@@ -1,6 +1,7 @@
-﻿using FirebirdTraceParser.Models.Events;
+﻿using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceParser.Models.Events;
 
-namespace FirebirdTraceAnalyzer.Services.Filtering;
+namespace FirebirdTraceAnalyzer.Interfaces.Filtering;
 
 public interface IFilteringService
 {

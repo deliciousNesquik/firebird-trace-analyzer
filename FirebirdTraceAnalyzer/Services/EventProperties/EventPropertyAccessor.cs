@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
 
