@@ -1,0 +1,92 @@
+name: Release
+
+# Публикация релиза при пуше тега версии:
+#   v1.2.3          → обычный релиз
+#   v1.2.3-alpha    → pre-release
+#   v1.2.3-beta.1   → pre-release
+#
+# Механизм сборки — единый скрипт build/build.sh (тот же, что и локально).
+# CI лишь прогоняет его на нужных раннерах и заливает артефакты в GitHub Release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # нужно для создания релиза и загрузки ассетов
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macos-arm64, os: macos-14,      target: mac,   mac_rid: osx-arm64 }
+          - { name: macos-x64,   os: macos-14,      target: mac,   mac_rid: osx-x64   }
+          - { name: windows-x64, os: ubuntu-latest, target: win }
+          - { name: linux-x64,   os: ubuntu-latest, target: linux }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Derive version from tag
+        id: ver
+        shell: bash
+        run: |
+          # GITHUB_REF_NAME = тег, например v1.2.3-alpha → версия без префикса v
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build (${{ matrix.target }})
+        shell: bash
+        env:
+          MAC_RID: ${{ matrix.mac_rid }}
+        run: bash build/build.sh "${{ matrix.target }}" "${{ steps.ver.outputs.version }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          if-no-files-found: error
+          retention-days: 7
+          # Только готовые архивы; промежуточные publish-каталоги и .app не нужны.
+          path: |
+            build/artifacts/*.zip
+            build/artifacts/*.tar.gz
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist           # каждый job → dist/<name>/...
+
+      - name: Determine pre-release
+        id: pre
+        shell: bash
+        run: |
+          # Тег с суффиксом -alpha / -beta помечается как pre-release.
+          if [[ "${GITHUB_REF_NAME}" == *-alpha* || "${GITHUB_REF_NAME}" == *-beta* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          prerelease: ${{ steps.pre.outputs.prerelease }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
