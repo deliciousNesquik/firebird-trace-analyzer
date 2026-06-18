@@ -559,9 +559,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
             var preparedEvents = _generationService.PrepareEventsForReport(
                 _sessionContext.SourceEvents,
-                currentTemplate,
-                currentTemplate.SortByField,
-                currentTemplate.SortDescending);
+                currentTemplate);
 
             if (preparedEvents.Count == 0)
             {
