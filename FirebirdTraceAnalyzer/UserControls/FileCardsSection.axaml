@@ -56,7 +56,7 @@
                     FontSize="16"
                     FontWeight="SemiBold"
                     HorizontalAlignment="Center"
-                    Foreground="{DynamicResource PrimaryText}" />
+                    Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <!-- Описание -->
                 <TextBlock
@@ -64,7 +64,7 @@
                     FontSize="12"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
-                    Foreground="{DynamicResource SecondaryText}" />
+                    Foreground="{DynamicResource TextSecondaryBrush}" />
 
             </StackPanel>
         </Border>

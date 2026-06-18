@@ -16,7 +16,7 @@
 
                 <Border Width="{TemplateBinding Width}"
                         Height="{TemplateBinding Height}"
-                        Background="#D0D0D0"
+                        Background="{DynamicResource BorderBrush}"
                         CornerRadius="8"
                         Cursor="Help">
 

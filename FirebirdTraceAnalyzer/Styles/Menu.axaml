@@ -1,7 +1,7 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Design.PreviewWith>
-        <Border Padding="400" Background="White">
+        <Border Padding="400" Background="{DynamicResource AppBackgroundBrush}">
             <Menu>
                 <MenuItem
                     Header="_Open [O]">
@@ -80,14 +80,14 @@
 
 
     <Style Selector="Menu">
-        <Setter Property="Background" Value="{DynamicResource Background}" />
-        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="0,0" />
     </Style>
 
     <Style Selector="MenuItem">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="Margin" Value="0" />
         <Setter Property="CornerRadius" Value="0" />
@@ -101,7 +101,7 @@
     </Style>
 
     <Style Selector="Separator">
-        <Setter Property="Background" Value="{DynamicResource SurfaceElevated}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
         <Setter Property="Height" Value="1" />
         <Setter Property="Margin" Value="0,4" />
     </Style>

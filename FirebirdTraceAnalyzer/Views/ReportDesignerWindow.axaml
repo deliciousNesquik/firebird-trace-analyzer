@@ -18,13 +18,13 @@
         <vm:ReportDesignerViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource Background}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
             <Grid ColumnDefinitions="*,Auto">
@@ -35,7 +35,7 @@
                     
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="12"
-                               Foreground="{DynamicResource SecondaryText}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -64,7 +64,7 @@
             <StackPanel Spacing="20" Margin="20">
 
                 <!-- Template Info -->
-                <Border BorderBrush="{DynamicResource BorderColor}"
+                <Border BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="16">
@@ -104,7 +104,7 @@
                 </Border>
 
                 <!-- Header Settings -->
-                <Border BorderBrush="{DynamicResource BorderColor}"
+                <Border BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="16">
@@ -171,7 +171,7 @@
                 </Border>
 
                 <!-- Body Settings -->
-                <Border BorderBrush="{DynamicResource BorderColor}"
+                <Border BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="16">
@@ -219,7 +219,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Padding="8,4"
-                                                BorderBrush="{DynamicResource BorderColor}"
+                                                BorderBrush="{DynamicResource BorderBrush}"
                                                 BorderThickness="0,0,0,1">
                                             
                                             <Grid ColumnDefinitions="Auto,*,100,80,80">
@@ -264,7 +264,7 @@
                 </Border>
 
                 <!-- Filters & Sorting -->
-                <Border BorderBrush="{DynamicResource BorderColor}"
+                <Border BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="16">
@@ -320,7 +320,7 @@
                 </Border>
 
                 <!-- Export Formats -->
-                <Border BorderBrush="{DynamicResource BorderColor}"
+                <Border BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="16">
@@ -365,19 +365,19 @@
 
         <!-- Footer -->
         <Border Grid.Row="2"
-                Background="{DynamicResource Surface}"
+                Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
-                BorderBrush="{DynamicResource BorderColor}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="●"
-                               Foreground="{DynamicResource WarningColor}"
+                               Foreground="{DynamicResource WarningTextBrush}"
                                FontSize="16"
                                IsVisible="{Binding HasUnsavedChanges}" />
                     <TextBlock Text="Unsaved changes"
-                               Foreground="{DynamicResource SecondaryText}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                IsVisible="{Binding HasUnsavedChanges}" />
                 </StackPanel>
 
