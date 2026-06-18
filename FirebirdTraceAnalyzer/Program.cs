@@ -85,8 +85,12 @@ internal sealed class Program
         // настройки приложения сопоставляются с моделями данных для использования объекта как конфигурации
         services.Configure<AppSettings>(config:configuration.GetSection("Settings"));
         services.Configure<UiSectionSettings>(config:configuration.GetSection("UI:Sections"));
-        
+
         services.AddSingleton<IConfiguration>(configuration);
+
+        // Сервис пользовательских настроек: значения по умолчанию из appsettings.json,
+        // сохранение изменений — в %AppData%/FirebirdTraceAnalyzer/settings.json
+        services.AddSingleton<ISettingsService, SettingsService>();
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(

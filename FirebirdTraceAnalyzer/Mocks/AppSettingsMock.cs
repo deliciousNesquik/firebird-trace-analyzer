@@ -8,6 +8,7 @@ public class AppSettingsMock: AppSettings
     {
         IsClassicSearch = true;
         Theme = "Light";
+        RemoteDownloadPath = string.Empty;
     }
 }
 
