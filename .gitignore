@@ -4,3 +4,7 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 .idea
+
+# Артефакты сборки (скрипты в build/ — версионируются, результаты — нет)
+build/artifacts/
+build/icon.icns
