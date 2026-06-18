@@ -168,6 +168,75 @@ public sealed class FilteringService : IFilteringService
         return events.Where(evt => activeFilters.All(filter => filter.FilterPredicate(evt)));
     }
 
+    public FilterDescriptor CreateConfigurableClone(FilterDescriptor source)
+    {
+        var clone = new FilterDescriptor(
+            source.Id,
+            source.DisplayName,
+            source.FilterType,
+            source.PropertyPath,
+            _ => true,
+            source.Category,
+            source.Priority)
+        {
+            MinValue = source.MinValue,
+            MaxValue = source.MaxValue,
+            CurrentMinValue = source.MinValue,
+            CurrentMaxValue = source.MaxValue
+        };
+
+        foreach (var value in source.AvailableValues)
+            clone.AvailableValues.Add(new FilterValueItem(value.Value, value.DisplayName, value.Count));
+
+        clone.InitializeFilteredValues();
+
+        // Предикат привязан к состоянию КОПИИ — та же логика, что у живых фильтров главной формы.
+        switch (clone.FilterType)
+        {
+            case FilterType.EnumMultiSelect:
+                clone.UpdatePredicate(evt => CheckEnumFilter(evt, clone.PropertyPath, clone.AvailableValues));
+                break;
+
+            case FilterType.StringMultiSelect:
+                clone.UpdatePredicate(evt => CheckStringFilter(evt, clone.PropertyPath, clone.AvailableValues));
+                break;
+
+            case FilterType.NumericRange:
+                clone.UpdatePredicate(evt =>
+                {
+                    if (_propertyAccessor.GetValue(evt, clone.PropertyPath) is not IComparable value)
+                        return false;
+
+                    if (clone.CurrentMinValue is IComparable min && value.CompareTo(min) < 0)
+                        return false;
+
+                    if (clone.CurrentMaxValue is IComparable max && value.CompareTo(max) > 0)
+                        return false;
+
+                    return true;
+                });
+                break;
+
+            case FilterType.DateTimeRange:
+                clone.UpdatePredicate(evt =>
+                {
+                    if (_propertyAccessor.GetValue(evt, clone.PropertyPath) is not DateTime dateTime)
+                        return false;
+
+                    if (DateTime.TryParse(clone.CurrentMinValue?.ToString(), out var min) && dateTime < min)
+                        return false;
+
+                    if (DateTime.TryParse(clone.CurrentMaxValue?.ToString(), out var max) && dateTime > max)
+                        return false;
+
+                    return true;
+                });
+                break;
+        }
+
+        return clone;
+    }
+
     private FilterDescriptor? CreateFieldFilter(DiscoveredField field, List<EventBase> events)
     {
         var filterId = _propertyAccessor.ToFilterId(field.PropertyPath);

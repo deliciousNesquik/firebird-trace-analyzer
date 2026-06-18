@@ -174,7 +174,9 @@ public class ReportGenerationService : IReportGenerationService
     /// </summary>
     private bool CheckFilter(EventBase evt, ReportFilterConfig filter)
     {
-        // Для фильтров с выбранными значениями (Enum/String)
+        // Для фильтров с выбранными значениями (Enum/String).
+        // Значения из шаблона после JSON приходят как JsonElement/число/строка, поэтому
+        // сравниваем по строковому представлению (enum → имя), а не по ссылке/типу.
         if (filter.SelectedValues != null && filter.SelectedValues.Count > 0)
         {
             if (!TryResolveFilterPropertyPath(filter, out var propertyPath))
@@ -185,7 +187,7 @@ public class ReportGenerationService : IReportGenerationService
             if (value == null)
                 return false;
 
-            return filter.SelectedValues.Contains(value);
+            return filter.SelectedValues.Any(selected => SelectedValueMatches(selected, value));
         }
 
         // Для Range фильтров (Numeric/DateTime)
@@ -196,16 +198,13 @@ public class ReportGenerationService : IReportGenerationService
 
             var value = _propertyAccessor.GetValue(evt, propertyPath);
 
-            if (value == null)
-                return false;
-
             if (value is not IComparable comparable)
                 return false;
 
-            if (filter.MinValue != null && comparable.CompareTo(filter.MinValue) < 0)
+            if (CompareToBound(comparable, filter.MinValue) is < 0)
                 return false;
 
-            if (filter.MaxValue != null && comparable.CompareTo(filter.MaxValue) > 0)
+            if (CompareToBound(comparable, filter.MaxValue) is > 0)
                 return false;
 
             return true;
@@ -232,6 +231,51 @@ public class ReportGenerationService : IReportGenerationService
             filter.DisplayName);
         propertyPath = string.Empty;
         return false;
+    }
+
+    /// <summary>
+    ///     Сравнивает выбранное в шаблоне значение (после JSON это строка/число/JsonElement)
+    ///     с фактическим значением события. Сравнение по строке: enum совпадает по имени,
+    ///     строки — как есть. Запасной путь — для старых шаблонов, где enum был сохранён числом.
+    /// </summary>
+    private static bool SelectedValueMatches(object? selected, object actual)
+    {
+        var selectedText = selected?.ToString();
+        if (string.IsNullOrEmpty(selectedText))
+            return false;
+
+        if (string.Equals(selectedText, actual.ToString(), StringComparison.Ordinal))
+            return true;
+
+        // legacy: enum сохранён числовым значением (например 6 вместо "StatementFinish")
+        return actual is Enum enumValue
+               && long.TryParse(selectedText, out var numeric)
+               && Convert.ToInt64(enumValue) == numeric;
+    }
+
+    /// <summary>
+    ///     Сравнивает фактическое значение с границей диапазона из шаблона, приводя границу
+    ///     (возможно JsonElement после десериализации) к типу значения. Возвращает null,
+    ///     если граница не задана или её не удалось привести (тогда она не ограничивает).
+    /// </summary>
+    private static int? CompareToBound(IComparable actual, object? bound)
+    {
+        var boundText = bound?.ToString();
+        if (string.IsNullOrEmpty(boundText))
+            return null;
+
+        try
+        {
+            object converted = actual is DateTime
+                ? DateTime.Parse(boundText, System.Globalization.CultureInfo.InvariantCulture)
+                : Convert.ChangeType(boundText, actual.GetType(), System.Globalization.CultureInfo.InvariantCulture);
+
+            return actual.CompareTo(converted);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
