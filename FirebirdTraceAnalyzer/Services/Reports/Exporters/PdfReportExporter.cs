@@ -46,7 +46,10 @@ public class PdfReportExporter : IReportExporter
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Black));
+                    // WrapAnywhere: длинный неразрывный текст (большой SQL, значения параметров без
+                    // пробелов) переносится внутри узкой колонки, а не требует невозможной ширины —
+                    // иначе QuestPDF падает с DocumentLayoutException ("conflicting size constraints").
+                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Black).WrapAnywhere());
 
                     // Заголовок
                     page.Header().Element(c => ComposeHeader(c, template, metadata));
