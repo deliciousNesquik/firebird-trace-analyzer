@@ -1,6 +1,7 @@
 ﻿using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
+using Renci.SshNet;
 
 namespace FirebirdTraceAnalyzer.Services;
 
@@ -35,6 +36,10 @@ public class RemoteFileService : IRemoteFileService
 
                 var files = new List<RemoteFileInfo>();
 
+                // SFTP отдаёт только числовой UID владельца. Пытаемся один раз получить карту
+                // uid → имя из /etc/passwd; если не вышло — оставим числовой id.
+                var ownerNames = TryLoadOwnerNames(sftpClient);
+
                 foreach (var f in sftpClient.ListDirectory(remoteDirectory))
                 {
                     try
@@ -59,8 +64,8 @@ public class RemoteFileService : IRemoteFileService
                                 f.Attributes.OthersCanWrite,
                                 f.Attributes.OthersCanExecute
                             ),
-                            // SFTP (v3) отдаёт числовой UID владельца, не имя
-                            Owner = f.Attributes.UserId.ToString()
+                            // Имя владельца из /etc/passwd, иначе — числовой UID
+                            Owner = ResolveOwner(f.Attributes.UserId, ownerNames)
                         });
                     }
                     catch (Exception ex)
@@ -85,6 +90,39 @@ public class RemoteFileService : IRemoteFileService
             }
         }, cancellationToken);
     }
+
+    /// <summary>
+    ///     Пытается прочитать /etc/passwd с сервера и построить карту uid → имя пользователя.
+    ///     Возвращает null, если файл недоступен (не Linux, нет прав и т.п.) — тогда показываем UID.
+    /// </summary>
+    private static Dictionary<int, string>? TryLoadOwnerNames(SftpClient sftpClient)
+    {
+        try
+        {
+            var passwd = sftpClient.ReadAllText("/etc/passwd");
+            var map = new Dictionary<int, string>();
+
+            foreach (var line in passwd.Split('\n'))
+            {
+                // Формат строки: name:x:uid:gid:gecos:home:shell
+                var parts = line.Split(':');
+                if (parts.Length >= 3 && int.TryParse(parts[2], out var uid) && parts[0].Length > 0)
+                    map[uid] = parts[0];
+            }
+
+            return map.Count > 0 ? map : null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not read /etc/passwd; owner will be shown as numeric UID");
+            return null;
+        }
+    }
+
+    private static string ResolveOwner(int uid, Dictionary<int, string>? ownerNames)
+        => ownerNames != null && ownerNames.TryGetValue(uid, out var name)
+            ? name
+            : uid.ToString();
 
     public Task<string> DownloadFileAsync(
         RemoteFileInfo fileInfo,
