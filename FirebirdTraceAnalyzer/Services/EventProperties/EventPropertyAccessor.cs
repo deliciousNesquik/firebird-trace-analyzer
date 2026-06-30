@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceParser.Attributes;
@@ -114,36 +115,56 @@ public sealed class EventPropertyAccessor : IEventPropertyAccessor
     private static Func<object, object?>? CreateGetter(Type rootType, string propertyPath)
     {
         var parts = propertyPath.Split('.');
-        var chain = new List<PropertyInfo>(parts.Length);
+        var steps = new Func<object, object?>[parts.Length];
         var currentType = rootType;
 
-        foreach (var part in parts)
+        for (var i = 0; i < parts.Length; i++)
         {
             var prop = currentType.GetProperty(
-                part,
+                parts[i],
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
             if (prop == null)
                 return null;
 
-            chain.Add(prop);
+            // Компилируем доступ к свойству в делегат (без reflection-invoke на каждый вызов).
+            // Это горячий путь: фильтрация/сортировка/проекция вызывают GetValue миллионы раз.
+            steps[i] = CompileStep(currentType, prop);
             currentType = prop.PropertyType;
         }
+
+        if (steps.Length == 1)
+            return steps[0];
 
         return target =>
         {
             object? current = target;
 
-            foreach (var prop in chain)
+            foreach (var step in steps)
             {
-                if (current == null)
+                if (current is null)
                     return null;
 
-                current = prop.GetValue(current);
+                current = step(current);
             }
 
             return current;
         };
+    }
+
+    /// <summary>
+    ///     Компилирует чтение одного свойства в делегат: (object)((TDeclaring)o).Prop.
+    ///     Преобразование в object боксит значимые типы; для ссылочных — просто приведение.
+    /// </summary>
+    private static Func<object, object?> CompileStep(Type declaringType, PropertyInfo prop)
+    {
+        var parameter = Expression.Parameter(typeof(object), "o");
+
+        var body = Expression.Convert(
+            Expression.Property(Expression.Convert(parameter, declaringType), prop),
+            typeof(object));
+
+        return Expression.Lambda<Func<object, object?>>(body, parameter).Compile();
     }
 
     private static HashSet<string> CollectKnownPropertyPaths()
