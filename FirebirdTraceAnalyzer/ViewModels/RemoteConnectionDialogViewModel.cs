@@ -21,6 +21,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     
     private readonly IWindowProvider _windowProvider;
     private readonly ISshConnectionService _sshService;
+    private readonly IFileDialogService? _fileDialogService;
     private readonly ICredentialStorageService? _credentialStorage;
 
     #region Observable Properties - Connection Settings
@@ -103,10 +104,12 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     public RemoteConnectionDialogViewModel(
         IWindowProvider windowProvider,
         ISshConnectionService sshService,
+        IFileDialogService fileDialogService,
         ICredentialStorageService? credentialStorage = null)
     {
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _sshService = sshService ?? throw new ArgumentNullException(nameof(sshService));
+        _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _credentialStorage = credentialStorage;
 
         LoadSavedProfiles();
@@ -121,6 +124,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     {
         _windowProvider = null!;
         _sshService = null!;
+        _fileDialogService = null;
         _credentialStorage = null;
     }
 
@@ -287,13 +291,14 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
                 SavedProfiles.Remove(existing);
 
             SavedProfiles.Add(profile);
-            
+
             await SaveProfilesToFileAsync();
 
-            StatusMessage = $"Profile '{ProfileName}' saved";
-            Logger.Info("Profile saved: {Name}", ProfileName);
-            
-            ProfileName = string.Empty;
+            // Держим выбор на сохранённом профиле: после upsert старый объект в списке заменён новым.
+            SelectedProfile = profile;
+
+            StatusMessage = $"Profile '{profile.Name}' saved";
+            Logger.Info("Profile saved: {Name}", profile.Name);
         }
         catch (Exception ex)
         {
@@ -311,7 +316,11 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
         {
             SavedProfiles.Remove(profile);
             await SaveProfilesToFileAsync();
-            
+
+            // Сбрасываем имя в поле сохранения, если оно указывало на удалённый профиль.
+            if (string.Equals(ProfileName, profile.Name, StringComparison.Ordinal))
+                ProfileName = string.Empty;
+
             StatusMessage = $"Profile '{profile.Name}' deleted";
             Logger.Info("Profile deleted: {Name}", profile.Name);
         }
@@ -320,6 +329,61 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
             Logger.Error(ex, "Error deleting profile");
             ErrorMessage = $"Error deleting profile: {ex.Message}";
         }
+    }
+
+    [RelayCommand]
+    private async Task DuplicateProfileAsync(SshConnectionProfile? profile)
+    {
+        if (profile == null)
+            return;
+
+        try
+        {
+            var copy = new SshConnectionProfile
+            {
+                Name = GetUniqueCopyName(profile.Name),
+                Settings = profile.Settings,
+                CreatedAt = DateTime.Now
+            };
+
+            SavedProfiles.Add(copy);
+            await SaveProfilesToFileAsync();
+
+            // Выбираем дубликат: его имя подставится в поле, пользователь может переименовать.
+            SelectedProfile = copy;
+
+            StatusMessage = $"Profile duplicated: {copy.Name}";
+            Logger.Info("Profile duplicated: {Source} -> {Copy}", profile.Name, copy.Name);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error duplicating profile");
+            ErrorMessage = $"Error duplicating profile: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenProfileFileAsync()
+    {
+        if (_fileDialogService == null)
+            return;
+
+        var revealed = await _fileDialogService.RevealInFileManagerAsync(GetProfilesFilePath());
+
+        if (!revealed)
+            StatusMessage = "Profiles file not found yet — save a profile first";
+    }
+
+    /// <summary>Имя для дубликата: base_copy, при коллизии — base_copy2, base_copy3, …</summary>
+    private string GetUniqueCopyName(string baseName)
+    {
+        var candidate = $"{baseName}_copy";
+        var counter = 2;
+
+        while (SavedProfiles.Any(p => string.Equals(p.Name, candidate, StringComparison.Ordinal)))
+            candidate = $"{baseName}_copy{counter++}";
+
+        return candidate;
     }
 
     [RelayCommand]
@@ -404,7 +468,11 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     private void LoadProfileSettings(SshConnectionProfile profile)
     {
         var settings = profile.Settings;
-        
+
+        // Подставляем имя профиля в поле сохранения: Save обновит этот же профиль,
+        // а если пользователь переименует — сохранится как новый.
+        ProfileName = profile.Name;
+
         Hostname = settings.Hostname;
         Port = settings.Port;
         Username = settings.Username;
