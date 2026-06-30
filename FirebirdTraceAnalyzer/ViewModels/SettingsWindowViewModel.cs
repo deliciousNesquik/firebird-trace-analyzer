@@ -225,10 +225,10 @@ public partial class SettingsWindowViewModel : ViewModelBase
         folder => ParserLogPath = Path.Combine(folder, "parser.log"));
 
     [RelayCommand]
-    private Task OpenAppLogFolderAsync() => RevealLogAsync(LogConfiguration.ResolveAppLogFile(AppLogPath));
+    private Task OpenAppLogFolderAsync() => RevealFileAsync(LogConfiguration.ResolveAppLogFile(AppLogPath));
 
     [RelayCommand]
-    private Task OpenParserLogFolderAsync() => RevealLogAsync(LogConfiguration.ResolveParserLogFile(ParserLogPath));
+    private Task OpenParserLogFolderAsync() => RevealFileAsync(LogConfiguration.ResolveParserLogFile(ParserLogPath));
 
     [RelayCommand]
     private void ClearAppLogs() => ClearLogs(LogConfiguration.ResolveAppLogFile(AppLogPath), "application");
@@ -236,14 +236,49 @@ public partial class SettingsWindowViewModel : ViewModelBase
     [RelayCommand]
     private void ClearParserLogs() => ClearLogs(LogConfiguration.ResolveParserLogFile(ParserLogPath), "parser");
 
-    private async Task RevealLogAsync(string logFile)
+    [RelayCommand]
+    private Task OpenRulesFolderAsync() => RevealFileAsync(RulesConfiguration.RulesFilePath);
+
+    [RelayCommand]
+    private async Task ImportRulesFileAsync()
+    {
+        var topLevel = _windowProvider.GetCurrent();
+        if (topLevel?.StorageProvider == null)
+            return;
+
+        try
+        {
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Import rules.json",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Rules file") { Patterns = new[] { "*.json" } }
+                }
+            });
+
+            if (files.Count == 0)
+                return;
+
+            RulesConfiguration.ImportRules(files[0].Path.LocalPath);
+            StatusMessage = "Rules imported. Restart the application to apply.";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error importing rules");
+            StatusMessage = $"Import failed: {ex.Message}";
+        }
+    }
+
+    private async Task RevealFileAsync(string filePath)
     {
         if (_fileDialogService == null)
             return;
 
-        var revealed = await _fileDialogService.RevealInFileManagerAsync(logFile);
+        var revealed = await _fileDialogService.RevealInFileManagerAsync(filePath);
         if (!revealed)
-            StatusMessage = "Log file does not exist yet";
+            StatusMessage = "File does not exist yet";
     }
 
     private void ClearLogs(string logFile, string kind)

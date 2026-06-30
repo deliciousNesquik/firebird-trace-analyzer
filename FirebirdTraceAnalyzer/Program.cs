@@ -99,7 +99,7 @@ internal sealed class Program
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
-            rulesPath: Path.Combine(baseDir, "Configuration", "rules.json"),
+            rulesPath: RulesConfiguration.EnsureRulesFile(),
             nlogConfigPath: Path.Combine(baseDir, "Configuration", "nlog.config")
         );
 
