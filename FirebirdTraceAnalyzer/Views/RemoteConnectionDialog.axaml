@@ -239,20 +239,6 @@
                             Command="{Binding SaveProfileCommand}"
                             IsEnabled="{Binding !IsConnecting}" />
                 </Grid>
-
-                <!-- Error Message -->
-                <Border Background="{DynamicResource ErrorSurfaceBrush}"
-                        BorderBrush="{DynamicResource ErrorBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="12"
-                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding ErrorMessage}"
-                               TextWrapping="Wrap"
-                               Foreground="{DynamicResource ErrorTextBrush}"
-                               FontSize="12" />
-                </Border>
-
             </StackPanel>
         </ScrollViewer>
 
@@ -263,12 +249,26 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             
-            <Grid RowDefinitions="Auto,Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto">
+                
+                <!-- Error Message -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource ErrorSurfaceBrush}"
+                        BorderBrush="{DynamicResource ErrorBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource ErrorTextBrush}"
+                               FontSize="12" />
+                </Border>
                 
                 <!-- Status -->
-                <StackPanel Grid.Row="0" 
+                <StackPanel Grid.Row="1" 
                            Spacing="8"
-                           Margin="0,0,0,12">
+                           Margin="0,10,0,12">
                     
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="12"
@@ -280,7 +280,7 @@
                 </StackPanel>
 
                 <!-- Buttons -->
-                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                     
                     <Button Grid.Column="0"
                             Content="Test Connection"
