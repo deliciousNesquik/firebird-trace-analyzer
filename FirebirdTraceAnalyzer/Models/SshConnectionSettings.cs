@@ -49,7 +49,7 @@ public sealed record SshConnectionSettings
             return false;
         }
 
-        if (Port < 1 || Port > 65535)
+        if (Port is < 1 or > 65535)
         {
             errorMessage = "Port must be between 1 and 65535";
             return false;
@@ -70,6 +70,13 @@ public sealed record SshConnectionSettings
         if (AuthMethod == AuthenticationMethod.PrivateKey && string.IsNullOrWhiteSpace(PrivateKeyPath))
         {
             errorMessage = "Private key path is required";
+            return false;
+        }
+        
+        // проверка на существование ключа
+        if (AuthMethod == AuthenticationMethod.PrivateKey && !File.Exists(PrivateKeyPath))
+        {
+            errorMessage = "Private key path is not exists";
             return false;
         }
 
