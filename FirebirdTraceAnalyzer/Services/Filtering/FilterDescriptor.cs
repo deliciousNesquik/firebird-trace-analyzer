@@ -73,7 +73,10 @@ public partial class FilterDescriptor : ViewModelBase
         ValueSearchText = string.Empty;
 
         foreach (var value in AvailableValues)
+        {
             value.IsSelected = false;
+            value.IsExcluded = false;
+        }
 
         UpdateFilteredValues();
     }
@@ -102,9 +105,9 @@ public partial class FilterDescriptor : ViewModelBase
                 v.DisplayName.Contains(ValueSearchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Сортируем: сначала выбранные, потом по количеству
+        // Сортируем: сначала отмеченные (включённые/исключённые), потом по количеству
         foreach (var item in query
-                     .OrderByDescending(v => v.IsSelected)
+                     .OrderByDescending(v => v.IsSelected || v.IsExcluded)
                      .ThenByDescending(v => v.Count))
         {
             FilteredValues.Add(item);

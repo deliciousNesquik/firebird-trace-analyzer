@@ -413,13 +413,20 @@
                                                                     <ItemsControl.ItemTemplate>
                                                                         <DataTemplate>
                                                                             <CheckBox Margin="0,4"
-                                                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                                                                                      IsThreeState="True"
+                                                                                      ToolTip.Tip="Не выбран → выбран → исключён"
+                                                                                      IsChecked="{Binding IsChecked, Mode=TwoWay}">
                                                                                 <CheckBox.Content>
                                                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                                                         <TextBlock Text="{Binding DisplayName}" />
                                                                                         <TextBlock Text="{Binding Count, StringFormat='({0})'}"
                                                                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                                                                    FontSize="11" />
+                                                                                        <TextBlock Text="excluded"
+                                                                                                   FontSize="10"
+                                                                                                   VerticalAlignment="Center"
+                                                                                                   Foreground="{DynamicResource ErrorTextBrush}"
+                                                                                                   IsVisible="{Binding IsExcluded}" />
                                                                                     </StackPanel>
                                                                                 </CheckBox.Content>
                                                                             </CheckBox>

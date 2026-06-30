@@ -49,6 +49,7 @@ public partial class FiltersPanelViewModel(
     {
         public bool IsActive { get; set; }
         public HashSet<object> SelectedValues { get; set; } = new();
+        public HashSet<object> ExcludedValues { get; set; } = new();
         public object? CurrentMinValue { get; set; }
         public object? CurrentMaxValue { get; set; }
     }
@@ -109,6 +110,10 @@ public partial class FiltersPanelViewModel(
                     .Where(v => v.IsSelected)
                     .Select(v => v.Value)
                     .ToHashSet(),
+                ExcludedValues = filter.AvailableValues
+                    .Where(v => v.IsExcluded)
+                    .Select(v => v.Value)
+                    .ToHashSet(),
                 CurrentMinValue = filter.CurrentMinValue,
                 CurrentMaxValue = filter.CurrentMaxValue
             };
@@ -122,10 +127,14 @@ public partial class FiltersPanelViewModel(
         // Восстанавливаем IsActive
         filter.IsActive = state.IsActive;
 
-        // Восстанавливаем выбранные значения
+        // Восстанавливаем выбранные/исключённые значения
         foreach (var item in filter.AvailableValues)
+        {
             if (state.SelectedValues.Contains(item.Value))
                 item.IsSelected = true;
+            else if (state.ExcludedValues.Contains(item.Value))
+                item.IsExcluded = true;
+        }
 
         // Восстанавливаем диапазоны
         filter.CurrentMinValue = state.CurrentMinValue ?? filter.MinValue;
@@ -187,7 +196,7 @@ public partial class FiltersPanelViewModel(
 
     private void OnFilterValueChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(FilterValueItem.IsSelected))
+        if (e.PropertyName is nameof(FilterValueItem.IsSelected) or nameof(FilterValueItem.IsExcluded))
         {
             MarkAsChanged();
         }
