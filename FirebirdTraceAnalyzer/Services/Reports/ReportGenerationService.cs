@@ -154,58 +154,103 @@ public class ReportGenerationService : IReportGenerationService
 
         Logger.Info("Applying {Count} template filter(s)", activeFilters.Count);
 
-        var filteredEvents = events.Where(evt =>
-        {
-            // Событие должно пройти ВСЕ активные фильтры
-            return activeFilters.All(filter => CheckFilter(evt, filter));
-        }).ToList();
+        // Компилируем каждый фильтр ОДИН раз (резолв пути, построение множеств совпадений),
+        // чтобы в горячем цикле по событиям не делать строковую работу на каждое событие.
+        var predicates = activeFilters
+            .Select(CompileTemplateFilter)
+            .ToArray();
+
+        var filteredEvents = events
+            .Where(evt =>
+            {
+                foreach (var predicate in predicates)
+                {
+                    if (!predicate(evt))
+                        return false;
+                }
+
+                return true;
+            })
+            .ToList();
 
         return filteredEvents;
     }
 
     /// <summary>
-    ///     Проверяет, проходит ли событие через фильтр
+    ///     Компилирует один фильтр шаблона в предикат. Тяжёлая подготовка (резолв пути,
+    ///     множества значений) выполняется здесь однократно; возвращаемый делегат в цикле
+    ///     делает только дешёвую проверку. Нерезолвящийся активный фильтр исключает все
+    ///     события (сохранение прежней семантики All()).
     /// </summary>
-    private bool CheckFilter(EventBase evt, ReportFilterConfig filter)
+    private Func<EventBase, bool> CompileTemplateFilter(ReportFilterConfig filter)
     {
-        // Для фильтров с выбранными значениями (Enum/String).
-        // Значения из шаблона после JSON приходят как JsonElement/число/строка, поэтому
-        // сравниваем по строковому представлению (enum → имя), а не по ссылке/типу.
-        if (filter.SelectedValues != null && filter.SelectedValues.Count > 0)
+        // Фильтр по выбранным значениям (Enum/String).
+        if (filter.SelectedValues is { Count: > 0 } selectedValues)
         {
             if (!TryResolveFilterPropertyPath(filter, out var propertyPath))
-                return false;
+                return static _ => false;
 
-            var value = _propertyAccessor.GetValue(evt, propertyPath);
+            // Быстрый путь — сравнение по значению (boxed enum/строка/число) без аллокаций.
+            var valueSet = new HashSet<object>(selectedValues.Where(v => v != null)!);
 
-            if (value == null)
-                return false;
+            // Запасной путь — по строковому представлению (значения из JSON: enum как имя/число).
+            var textSet = new HashSet<string>(StringComparer.Ordinal);
+            var numericSet = new HashSet<long>();
+            foreach (var selected in selectedValues)
+            {
+                var text = selected?.ToString();
+                if (string.IsNullOrEmpty(text))
+                    continue;
 
-            return filter.SelectedValues.Any(selected => SelectedValueMatches(selected, value));
+                textSet.Add(text);
+                if (long.TryParse(text, out var numeric))
+                    numericSet.Add(numeric);
+            }
+
+            return evt =>
+            {
+                var value = _propertyAccessor.GetValue(evt, propertyPath);
+                if (value is null)
+                    return false;
+
+                if (valueSet.Contains(value))
+                    return true;
+
+                var text = value.ToString();
+                if (text != null && textSet.Contains(text))
+                    return true;
+
+                return value is Enum enumValue && numericSet.Contains(Convert.ToInt64(enumValue));
+            };
         }
 
-        // Для Range фильтров (Numeric/DateTime)
+        // Range-фильтр (Numeric/DateTime).
         if (filter.MinValue != null || filter.MaxValue != null)
         {
             if (!TryResolveFilterPropertyPath(filter, out var propertyPath))
-                return false;
+                return static _ => false;
 
-            var value = _propertyAccessor.GetValue(evt, propertyPath);
+            var min = filter.MinValue;
+            var max = filter.MaxValue;
 
-            if (value is not IComparable comparable)
-                return false;
+            return evt =>
+            {
+                var value = _propertyAccessor.GetValue(evt, propertyPath);
+                if (value is not IComparable comparable)
+                    return false;
 
-            if (CompareToBound(comparable, filter.MinValue) is < 0)
-                return false;
+                if (CompareToBound(comparable, min) is < 0)
+                    return false;
 
-            if (CompareToBound(comparable, filter.MaxValue) is > 0)
-                return false;
+                if (CompareToBound(comparable, max) is > 0)
+                    return false;
 
-            return true;
+                return true;
+            };
         }
 
-        // Если фильтр не имеет условий, пропускаем событие
-        return true;
+        // Фильтр без условий — пропускает всё.
+        return static _ => true;
     }
 
     private bool TryResolveFilterPropertyPath(ReportFilterConfig filter, out string propertyPath)
@@ -225,26 +270,6 @@ public class ReportGenerationService : IReportGenerationService
             filter.DisplayName);
         propertyPath = string.Empty;
         return false;
-    }
-
-    /// <summary>
-    ///     Сравнивает выбранное в шаблоне значение (после JSON это строка/число/JsonElement)
-    ///     с фактическим значением события. Сравнение по строке: enum совпадает по имени,
-    ///     строки — как есть. Запасной путь — для старых шаблонов, где enum был сохранён числом.
-    /// </summary>
-    private static bool SelectedValueMatches(object? selected, object actual)
-    {
-        var selectedText = selected?.ToString();
-        if (string.IsNullOrEmpty(selectedText))
-            return false;
-
-        if (string.Equals(selectedText, actual.ToString(), StringComparison.Ordinal))
-            return true;
-
-        // legacy: enum сохранён числовым значением (например 6 вместо "StatementFinish")
-        return actual is Enum enumValue
-               && long.TryParse(selectedText, out var numeric)
-               && Convert.ToInt64(enumValue) == numeric;
     }
 
     /// <summary>
