@@ -129,6 +129,9 @@
                                  PlaceholderText="Default (AppData)" />
                         <Button Grid.Column="1"
                                 Content="..."
+                                Width="40"
+                                Height="40"
+                                Padding="0"
                                 Classes="focused"
                                 Command="{Binding BrowseDownloadPathCommand}" />
                     </Grid>
@@ -149,12 +152,77 @@
                         <TextBox Grid.Column="0"
                                  Text="{Binding ReportsPath}"
                                  PlaceholderText="Default (AppData)" />
+                        
                         <Button Grid.Column="1"
                                 Content="..."
+                                Width="40"
+                                Height="40"
+                                Padding="0"
                                 Classes="focused"
                                 Command="{Binding BrowseReportsPathCommand}" />
                     </Grid>
                 </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
+                <!-- Logs -->
+                <TextBlock Classes="sectionHeader" Text="Logs" />
+
+                <!-- Предупреждение: смена путей логов требует перезапуска -->
+                <Border Background="{DynamicResource WarningSurfaceBrush}"
+                        BorderBrush="{DynamicResource WarningBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12"
+                        Margin="0,0,0,12">
+                    <TextBlock Text="Changing log file paths takes full effect only after restarting the application (the parser log is initialized at startup)."
+                               TextWrapping="Wrap"
+                               FontSize="11"
+                               Foreground="{DynamicResource WarningTextBrush}" />
+                </Border>
+
+                <!-- Application log -->
+                <StackPanel Spacing="6" Margin="0,0,0,12">
+                    <TextBlock Text="Application log file"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding AppLogPath}"
+                                 PlaceholderText="Default (logs/application.log)" />
+                        <Button Grid.Column="1" Width="40" Height="40" Padding="0" Content="..." Classes="focused" Command="{Binding BrowseAppLogPathCommand}" />
+                        
+                        <Button Grid.Column="2" Width="40" Height="40" Classes="normal" Command="{Binding OpenAppLogFolderCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                        </Button>
+                        
+                        <Button Grid.Column="3" Width="40" Height="40" Classes="danger" Command="{Binding ClearAppLogsCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Parser log -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Parser log file"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding ParserLogPath}"
+                                 PlaceholderText="Default (logs/parser.log)" />
+                        
+                        <Button Grid.Column="1" Content="..." Width="40" Height="40" Padding="0" Classes="focused" Command="{Binding BrowseParserLogPathCommand}" />
+                        
+                        <Button Grid.Column="2" Width="40" Height="40" Classes="normal" Command="{Binding OpenParserLogFolderCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                        </Button>
+                        
+                        <Button Grid.Column="3" Width="40" Height="40" Classes="danger" Command="{Binding ClearAppLogsCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
 
                 <Separator Margin="0,6,0,16" />
 

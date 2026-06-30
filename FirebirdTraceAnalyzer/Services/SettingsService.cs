@@ -186,6 +186,8 @@ public sealed class SettingsService : ISettingsService
         target.Theme = source.Theme;
         target.RemoteDownloadPath = source.RemoteDownloadPath;
         target.ReportsPath = source.ReportsPath;
+        target.AppLogPath = source.AppLogPath;
+        target.ParserLogPath = source.ParserLogPath;
     }
 
     private static void CopyWindow(WindowSettings source, WindowSettings target)

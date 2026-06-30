@@ -1,9 +1,11 @@
+using System.IO;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
+using FirebirdTraceAnalyzer.Services;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -20,6 +22,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
     private readonly IWindowProvider _windowProvider;
     private readonly IThemeService _themeService;
+    private readonly IFileDialogService? _fileDialogService;
 
     #region General
 
@@ -44,6 +47,14 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
     #endregion
 
+    #region Logs
+
+    [ObservableProperty] private string _appLogPath = string.Empty;
+
+    [ObservableProperty] private string _parserLogPath = string.Empty;
+
+    #endregion
+
     #region UI Sections
 
     [ObservableProperty] private bool _sectionFiles;
@@ -65,16 +76,19 @@ public partial class SettingsWindowViewModel : ViewModelBase
         _settingsService = null!;
         _windowProvider = null!;
         _themeService = null!;
+        _fileDialogService = null;
     }
 
     public SettingsWindowViewModel(
         ISettingsService settingsService,
         IWindowProvider windowProvider,
-        IThemeService themeService)
+        IThemeService themeService,
+        IFileDialogService fileDialogService)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+        _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
 
         LoadFrom(_settingsService.App, _settingsService.Ui);
     }
@@ -95,6 +109,8 @@ public partial class SettingsWindowViewModel : ViewModelBase
         app.Theme = Theme;
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
         app.ReportsPath = ReportsPath?.Trim() ?? string.Empty;
+        app.AppLogPath = AppLogPath?.Trim() ?? string.Empty;
+        app.ParserLogPath = ParserLogPath?.Trim() ?? string.Empty;
 
         var ui = _settingsService.Ui;
         ui.Files = SectionFiles;
@@ -107,6 +123,9 @@ public partial class SettingsWindowViewModel : ViewModelBase
 
         // Применяем тему сразу, чтобы изменение вступило в силу без перезапуска.
         _themeService.Apply(Theme);
+
+        // Применяем пути логов: File-таргеты NLog переключатся на новый путь со следующей записи.
+        LogConfiguration.Apply(app.AppLogPath, app.ParserLogPath);
 
         Logger.Info("Settings saved from settings window");
     }
@@ -195,6 +214,47 @@ public partial class SettingsWindowViewModel : ViewModelBase
         "Select Reports Folder",
         path => ReportsPath = path);
 
+    [RelayCommand]
+    private Task BrowseAppLogPathAsync() => PickFolderIntoAsync(
+        "Select Application Log Folder",
+        folder => AppLogPath = Path.Combine(folder, "application.log"));
+
+    [RelayCommand]
+    private Task BrowseParserLogPathAsync() => PickFolderIntoAsync(
+        "Select Parser Log Folder",
+        folder => ParserLogPath = Path.Combine(folder, "parser.log"));
+
+    [RelayCommand]
+    private Task OpenAppLogFolderAsync() => RevealLogAsync(LogConfiguration.ResolveAppLogFile(AppLogPath));
+
+    [RelayCommand]
+    private Task OpenParserLogFolderAsync() => RevealLogAsync(LogConfiguration.ResolveParserLogFile(ParserLogPath));
+
+    [RelayCommand]
+    private void ClearAppLogs() => ClearLogs(LogConfiguration.ResolveAppLogFile(AppLogPath), "application");
+
+    [RelayCommand]
+    private void ClearParserLogs() => ClearLogs(LogConfiguration.ResolveParserLogFile(ParserLogPath), "parser");
+
+    private async Task RevealLogAsync(string logFile)
+    {
+        if (_fileDialogService == null)
+            return;
+
+        var revealed = await _fileDialogService.RevealInFileManagerAsync(logFile);
+        if (!revealed)
+            StatusMessage = "Log file does not exist yet";
+    }
+
+    private void ClearLogs(string logFile, string kind)
+    {
+        var deleted = LogConfiguration.ClearLogs(logFile);
+        StatusMessage = deleted > 0
+            ? $"Cleared {deleted} {kind} log file(s)"
+            : $"No {kind} log files to clear";
+        Logger.Info("Cleared {Count} {Kind} log file(s)", deleted, kind);
+    }
+
     private async Task PickFolderIntoAsync(string title, Action<string> assign)
     {
         var topLevel = _windowProvider.GetCurrent();
@@ -233,6 +293,8 @@ public partial class SettingsWindowViewModel : ViewModelBase
         Theme = app.Theme;
         RemoteDownloadPath = app.RemoteDownloadPath;
         ReportsPath = app.ReportsPath;
+        AppLogPath = app.AppLogPath;
+        ParserLogPath = app.ParserLogPath;
 
         SectionFiles = ui.Files;
         SectionSearch = ui.Search;
@@ -248,7 +310,9 @@ public partial class SettingsWindowViewModel : ViewModelBase
             IsClassicSearch = IsClassicSearch,
             Theme = Theme,
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
-            ReportsPath = ReportsPath?.Trim() ?? string.Empty
+            ReportsPath = ReportsPath?.Trim() ?? string.Empty,
+            AppLogPath = AppLogPath?.Trim() ?? string.Empty,
+            ParserLogPath = ParserLogPath?.Trim() ?? string.Empty
         },
         Ui = new UiSectionSettings
         {

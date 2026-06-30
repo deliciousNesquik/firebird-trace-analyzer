@@ -10,6 +10,8 @@ public class AppSettingsMock: AppSettings
         Theme = AppTheme.Auto;
         RemoteDownloadPath = string.Empty;
         ReportsPath = string.Empty;
+        AppLogPath = string.Empty;
+        ParserLogPath = string.Empty;
     }
 }
 
