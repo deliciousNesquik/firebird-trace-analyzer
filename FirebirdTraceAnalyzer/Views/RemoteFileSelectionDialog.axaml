@@ -112,15 +112,35 @@
                 Background="{DynamicResource AppBackgroundBrush}"
                 Padding="20">
             
-            <Grid RowDefinitions="Auto,*">
-                
+            <Grid RowDefinitions="Auto,Auto,*">
+
+                <!-- Предупреждение: включено удаление файлов с сервера после обработки -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource WarningSurfaceBrush}"
+                        BorderBrush="{DynamicResource WarningBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12"
+                        Margin="0,0,0,12"
+                        IsVisible="{Binding DeleteAfterProcessing}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Delete from server is enabled"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WarningTextBrush}" />
+                        <TextBlock Text="Downloaded files will be permanently removed from the server after processing. To turn this off, uncheck “Delete files from the server” in the connection dialog."
+                                   TextWrapping="Wrap"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource WarningTextBrush}" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Selection Controls -->
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5" Margin="0,0,0,12">
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5" Margin="0,0,0,12">
                     <Button Grid.Column="0"
                             Content="Select All"
                             Classes="focused"
                             Command="{Binding SelectAllCommand}"/>
-                    
+
                     <Button Grid.Column="1"
                             Content="Deselect All"
                             Classes="danger"
@@ -128,7 +148,7 @@
                 </Grid>
 
                 <!-- Files -->
-                <ScrollViewer Grid.Row="1">
+                <ScrollViewer Grid.Row="2">
                     <ItemsControl ItemsSource="{Binding FilteredFiles}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -203,71 +223,62 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             
-            <Grid RowDefinitions="Auto,Auto,Auto">
-                
-                <!-- Statistics -->
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding StatusMessage}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
-                        <TextBlock FontSize="12">
-                            <Run Text="Selected:" />
-                            <Run Text="{Binding SelectedCount}" FontWeight="SemiBold" />
-                            <Run Text="file(s)" />
-                        </TextBlock>
+                <!-- Сводка по выбору: статус слева, метрики справа (заполняет нижнюю часть) -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource AppBackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="14,10">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="24">
 
-                        <TextBlock FontSize="12">
-                            <Run Text="Total size:" />
-                            <Run Text="{Binding SelectedTotalSize, Converter={StaticResource BytesToReadableSizeConverter}}" FontWeight="SemiBold" />
-                        </TextBlock>
-                    </StackPanel>
-                </Grid>
-
-                <!-- Delete Warning -->
-                <Border Grid.Row="1"
-                        Background="{DynamicResource WarningSurfaceBrush}"
-                        BorderBrush="{DynamicResource WarningBorderBrush}"
-                        HorizontalAlignment="Center"
-                        Padding="0"
-                        Margin="0,0,0,12"
-                        IsVisible="{Binding DeleteAfterProcessing}">
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Svg Width="40" Height="40" Source="{DynamicResource WarningIcon}" Css="{DynamicResource ThemeIconFill}"/>
-                        
-                        <TextBlock Text="Selected files will be permanently deleted from the server after processing"
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding StatusMessage}"
+                                   FontSize="12"
                                    TextWrapping="Wrap"
-                                   FontSize="14"
-                                   FontWeight="Bold"
                                    VerticalAlignment="Center"
-                                   Foreground="{DynamicResource DangerBrush}" />
-                    </StackPanel>
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="Selected"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}">
+                                <Run Text="{Binding SelectedCount}" />
+                                <Run Text="file(s)" />
+                            </TextBlock>
+                        </StackPanel>
+
+                        <Border Grid.Column="2"
+                                Width="1"
+                                Background="{DynamicResource BorderBrush}"
+                                Margin="0,2" />
+
+                        <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="Total size"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Text="{Binding SelectedTotalSize, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
                 <!-- Buttons -->
-                <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                    
-                    <CheckBox Grid.Column="0"
-                              Content="Delete files from server after processing"
-                              IsChecked="{Binding DeleteAfterProcessing}"
-                              VerticalAlignment="Center"
-                              FontWeight="Medium">
-                        <CheckBox.Styles>
-                            <Style Selector="CheckBox:checked">
-                                <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
-                            </Style>
-                        </CheckBox.Styles>
-                    </CheckBox>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
 
                     <Button Grid.Column="1"
                             Content="Download and Process"
                             Classes="focused"
+                            MinWidth="190"
                             Command="{Binding ConfirmCommand}"/>
-                    
+
                     <Button Grid.Column="2"
                             Content="Cancel"
                             Classes="danger"
