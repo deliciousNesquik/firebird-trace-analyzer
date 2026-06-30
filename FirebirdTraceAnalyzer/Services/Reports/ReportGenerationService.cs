@@ -3,7 +3,6 @@ using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
-using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
@@ -21,7 +20,6 @@ public class ReportGenerationService : IReportGenerationService
 
     private readonly Dictionary<ReportFormat, IReportExporter> _exporters;
     private readonly IEventPropertyAccessor _propertyAccessor;
-    private readonly ISortingService _sortingService;
     private readonly ISettingsService _settingsService;
 
     public ReportGenerationService(
@@ -30,11 +28,9 @@ public class ReportGenerationService : IReportGenerationService
         XlsxReportExporter xlsxExporter,
         CsvReportExporter csvExporter,
         IEventPropertyAccessor propertyAccessor,
-        ISortingService sortingService,
         ISettingsService settingsService)
     {
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
-        _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _exporters = new Dictionary<ReportFormat, IReportExporter>
         {
@@ -115,16 +111,9 @@ public class ReportGenerationService : IReportGenerationService
         // никогда не применялась к кастомным отчётам.
         if (!string.IsNullOrWhiteSpace(template.SortByField))
         {
-            // Идемпотентно регистрируем сортировки по полям для типов событий этого отчёта,
-            // чтобы ApplySort нашёл дескриптор по полю (как это делает главная форма).
-            _sortingService.GetAvailableSorts(events);
+            events = SortBySchwartzian(events, template.SortByField, template.SortDescending);
 
-            var sortId = _propertyAccessor.ToSortId(template.SortByField);
-            events = _sortingService
-                .ApplySort(events, sortId, template.SortDescending)
-                .ToList();
-
-            Logger.Debug("Applied sorting via SortingService: {Field} ({Direction})",
+            Logger.Debug("Applied sorting: {Field} ({Direction})",
                 template.SortByField,
                 template.SortDescending ? "DESC" : "ASC");
         }
@@ -140,6 +129,33 @@ public class ReportGenerationService : IReportGenerationService
         Logger.Info("Events prepared: {Count} events ready for report", events.Count);
 
         return events;
+    }
+
+    /// <summary>
+    ///     Сортировка отчёта преобразованием Шварца: ключ сортировки извлекается один раз на
+    ///     событие, далее сортируем по готовым ключам. Использует тот же <see cref="IEventPropertyAccessor.Compare"/>
+    ///     и тот же нестабильный <see cref="List{T}.Sort"/>, что и поле-сортировка в SortingService,
+    ///     поэтому итоговый порядок (включая равные элементы) идентичен, но обращений к свойству
+    ///     на порядок меньше.
+    /// </summary>
+    private List<EventBase> SortBySchwartzian(List<EventBase> events, string propertyPath, bool descending)
+    {
+        var keyed = new List<(EventBase Event, object? Key)>(events.Count);
+
+        foreach (var evt in events)
+            keyed.Add((evt, _propertyAccessor.GetValue(evt, propertyPath)));
+
+        keyed.Sort((x, y) =>
+        {
+            var result = _propertyAccessor.Compare(x.Key, y.Key);
+            return descending ? -result : result;
+        });
+
+        var sorted = new List<EventBase>(keyed.Count);
+        foreach (var item in keyed)
+            sorted.Add(item.Event);
+
+        return sorted;
     }
 
     /// <summary>
