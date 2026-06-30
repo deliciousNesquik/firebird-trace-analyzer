@@ -226,6 +226,45 @@
 
                 <Separator Margin="0,6,0,16" />
 
+                <!-- Parser rules -->
+                <TextBlock Classes="sectionHeader" Text="Parser rules" />
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="rules.json defines how trace lines are parsed. It lives in the app data folder — import a custom file or open the folder to edit it."
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <Border Background="{DynamicResource WarningSurfaceBrush}"
+                            BorderBrush="{DynamicResource WarningBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12">
+                        <TextBlock Text="Importing rules takes effect after restarting the application."
+                                   TextWrapping="Wrap"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource WarningTextBrush}" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Width="40" Height="40"
+                                Classes="focused"
+                                ToolTip.Tip="Import rules.json"
+                                Command="{Binding ImportRulesFileCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                        </Button>
+
+                        <Button Width="40" Height="40"
+                                Classes="normal"
+                                ToolTip.Tip="Open rules folder"
+                                Command="{Binding OpenRulesFolderCommand}">
+                            <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator Margin="0,6,0,16" />
+
                 <!-- UI sections visibility -->
                 <TextBlock Classes="sectionHeader" Text="Sections visibility" />
 
