@@ -1335,8 +1335,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            // Показываем диалог выбора файлов
-            var selectionDialog = CreateFileSelectionDialog(settings, remoteFiles);
+            // Папка для скачивания зависит от флага удаления локальных файлов:
+            //  • удаляем после обработки → временный каталог (целиком удаляется в finally);
+            //  • оставляем файлы → стабильная папка приложения, чтобы файлы не пропали.
+            // Путь вычисляем ДО окна выбора, чтобы окно могло проверить свободное место,
+            // и используем тот же путь для фактического скачивания.
+            deleteLocalFilesAfterProcessing = settings.DeleteAfterProcessingOnLocaleMachine;
+
+            downloadDirectory = deleteLocalFilesAfterProcessing
+                ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
+                : _settingsService.GetRemoteDownloadDirectory();
+
+            // Показываем диалог выбора файлов (передаём целевую папку для проверки места)
+            var selectionDialog = CreateFileSelectionDialog(settings, remoteFiles, downloadDirectory);
 
             var selectedFiles = await selectionDialog.ShowDialog<IReadOnlyList<RemoteFileInfo>?>(
                 App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
@@ -1348,15 +1359,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            // Папка для скачивания зависит от флага удаления локальных файлов:
-            //  • удаляем после обработки → пишем во временный каталог (целиком удаляется в finally);
-            //  • оставляем файлы → пишем в стабильную папку приложения, чтобы они никуда не делись
-            //    и оставались доступны для повторного парсинга после перезапуска.
-            deleteLocalFilesAfterProcessing = settings.DeleteAfterProcessingOnLocaleMachine;
-
-            downloadDirectory = deleteLocalFilesAfterProcessing
-                ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
-                : _settingsService.GetRemoteDownloadDirectory();
+            // Создаём каталог только после подтверждения выбора.
             Directory.CreateDirectory(downloadDirectory);
 
             // Загружаем файлы с прогрессом
@@ -1427,7 +1430,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private RemoteFileSelectionDialog CreateFileSelectionDialog(
         SshConnectionSettings settings,
-        IReadOnlyList<RemoteFileInfo> files)
+        IReadOnlyList<RemoteFileInfo> files,
+        string downloadDirectory)
     {
         var viewModel = new RemoteFileSelectionViewModel();
         viewModel.Initialize(
@@ -1437,6 +1441,9 @@ public partial class MainWindowViewModel : ViewModelBase
             files);
 
         viewModel.DeleteAfterProcessing = settings.DeleteAfterProcessingFromServer;
+
+        // Целевая папка скачивания — для проверки свободного места перед подтверждением.
+        viewModel.TargetDownloadDirectory = downloadDirectory;
 
         // Источник обновления списка: команда RefreshAsync во ViewModel сама асинхронна,
         // отменяема и сама маршалит обновление списка (выполняется на UI-потоке).

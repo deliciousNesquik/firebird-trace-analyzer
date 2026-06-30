@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
@@ -44,6 +45,15 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
     private bool _deleteAfterProcessing;
 
     #endregion
+
+    /// <summary>
+    /// Папка, куда будут скачиваться файлы. Задаётся владельцем диалога; используется для
+    /// проверки свободного места перед подтверждением. Если пусто — проверка пропускается.
+    /// </summary>
+    public string TargetDownloadDirectory { get; set; } = string.Empty;
+
+    /// <summary>Запас свободного места сверх суммарного размера файлов.</summary>
+    private const long FreeSpaceMarginBytes = 64L * 1024 * 1024;
 
     private ObservableCollection<RemoteFileInfo> AllFiles { get; } = [];
     public RangeObservableCollection<RemoteFileInfo> FilteredFiles { get; } = [];
@@ -226,11 +236,75 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
     private void Confirm()
     {
         var selectedFiles = AllFiles.Where(f => f.IsSelected).ToList();
-        
-        Logger.Info("Confirmed selection: {Count} files, total size: {Size} bytes", 
-            selectedFiles.Count, selectedFiles.Sum(f => f.Size));
+
+        // Проверяем, что на целевом диске хватит места под выбранные файлы.
+        var requiredBytes = selectedFiles.Sum(f => f.Size);
+        var freeBytes = GetAvailableFreeSpace(TargetDownloadDirectory);
+
+        if (freeBytes >= 0 && freeBytes < requiredBytes + FreeSpaceMarginBytes)
+        {
+            StatusMessage =
+                $"Not enough space for download: needed~{FormatSize(requiredBytes)}, " +
+                $"free {FormatSize(freeBytes)}. Please free up some space or deselect some files.";
+
+            Logger.Warn("Not enough disk space in {Dir}: need {Need} bytes, free {Free} bytes",
+                TargetDownloadDirectory, requiredBytes, freeBytes);
+            return;
+        }
+
+        Logger.Info("Confirmed selection: {Count} files, total size: {Size} bytes",
+            selectedFiles.Count, requiredBytes);
 
         FilesSelected?.Invoke(this, selectedFiles);
+    }
+
+    /// <summary>
+    /// Свободное место на разделе, где находится <paramref name="directory"/>.
+    /// Возвращает -1, если определить не удалось (тогда проверку пропускаем, чтобы не блокировать зря).
+    /// </summary>
+    private static long GetAvailableFreeSpace(string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory))
+            return -1;
+
+        try
+        {
+            var full = Path.GetFullPath(directory);
+            DriveInfo? best = null;
+
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                if (!drive.IsReady)
+                    continue;
+
+                var root = drive.RootDirectory.FullName;
+                if (full.StartsWith(root, StringComparison.OrdinalIgnoreCase) &&
+                    (best is null || root.Length > best.RootDirectory.FullName.Length))
+                    best = drive;
+            }
+
+            return best?.AvailableFreeSpace ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not determine free space for {Dir}", directory);
+            return -1;
+        }
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        string[] sizes = ["B", "KB", "MB", "GB", "TB"];
+        var order = 0;
+        var size = (double)bytes;
+
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+
+        return $"{size:0.##} {sizes[order]}";
     }
 
     private bool CanConfirm()
