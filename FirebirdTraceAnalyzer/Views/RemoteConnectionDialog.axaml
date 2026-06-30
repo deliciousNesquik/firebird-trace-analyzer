@@ -1,244 +1,309 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:enums="using:FirebirdTraceAnalyzer.Enums"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="700"
         x:Class="FirebirdTraceAnalyzer.Views.RemoteConnectionDialog"
         x:DataType="vm:RemoteConnectionDialogViewModel"
         Title="Connect to Remote Server"
-        Width="600"
+        Width="620"
         Height="700"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
-    
+
     <Design.DataContext>
         <vm:RemoteConnectionDialogViewModel />
     </Design.DataContext>
 
+    <Window.Styles>
+        <!-- Карточка-секция: визуально отделяет логические группы полей -->
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.sectionHint">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.fieldHint">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+    </Window.Styles>
+
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
-        <Border Grid.Row="0" 
+        <Border Grid.Row="0"
                 Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
-            
-            <StackPanel Spacing="8">
-                <TextBlock Text="SSH Connection Settings"
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="Connect to a remote server"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                
-                <TextBlock Text="Connect to a remote server to download trace log files"
+
+                <TextBlock Text="Download Firebird trace logs over SSH. Fields marked * are required."
                            FontSize="12"
+                           TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
         </Border>
 
         <!-- Content -->
-        <ScrollViewer Grid.Row="1" 
+        <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      VerticalAlignment="Stretch" >
-            <StackPanel Spacing="16" Margin="20">
+                      VerticalAlignment="Stretch">
+            <StackPanel Spacing="12" Margin="20">
 
-                <!-- Saved Profiles -->
-                <StackPanel Spacing="8"
-                            IsVisible="{Binding SavedProfiles.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    
-                    <TextBlock Text="Saved Profiles"
-                               FontWeight="SemiBold"
-                               FontSize="13" />
-                    
-                    <ComboBox ItemsSource="{Binding SavedProfiles}"
-                              SelectedItem="{Binding SelectedProfile}"
-                              PlaceholderText="Select a profile..."
-                              HorizontalAlignment="Stretch">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                                    <TextBlock Text="{Binding Settings.Hostname}" 
-                                             FontSize="11" 
-                                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-
-                <Separator />
-
-                <!-- Server Settings -->
-                <TextBlock Text="Server Settings"
-                           FontWeight="SemiBold"
-                           FontSize="13" />
-
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Hostname / IP Address *" FontSize="12" />
-                    <TextBox Text="{Binding Hostname}"
-                             PlaceholderText="192.168.1.100 or server.example.com"
-                             IsEnabled="{Binding !IsConnecting}" />
-                </StackPanel>
-
-                <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
-                    <StackPanel Grid.Column="0" Spacing="8">
-                        <TextBlock Text="Username *" FontSize="12" />
-                        <TextBox Text="{Binding Username}"
-                                 PlaceholderText="root"
-                                 IsEnabled="{Binding !IsConnecting}" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Spacing="8">
-                        <TextBlock Text="Port *" FontSize="12" />
-                        <NumericUpDown Value="{Binding Port}"
-                                       Minimum="1"
-                                       Maximum="65535"
-                                       IsEnabled="{Binding !IsConnecting}" />
-                    </StackPanel>
-                </Grid>
-
-                <Separator />
-
-                <!-- Authentication Method -->
-                <TextBlock Text="Authentication Method"
-                           FontWeight="SemiBold"
-                           FontSize="13" />
-
-                <StackPanel Spacing="8">
-                    <RadioButton Content="Password"
-                                 IsChecked="{Binding IsPasswordAuthSelected}"
-                                 Command="{Binding ChangeAuthMethodCommand}"
-                                 GroupName="AuthMethod"
-                                 CommandParameter="{x:Static enums:AuthenticationMethod.Password}"
-                                 IsEnabled="{Binding !IsConnecting}" />
-
-                    <Border IsVisible="{Binding IsPasswordAuthSelected}"
-                            Padding="20,0,0,0">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Password *" FontSize="12" />
-                            <TextBox Text="{Binding Password}"
-                                     PasswordChar="{Binding ShowPassword, Converter={StaticResource BoolToPasswordCharConverter}}"
-                                     PlaceholderText="Enter password"
-                                     IsEnabled="{Binding !IsConnecting}" />
-
-                            <CheckBox Content="Show password"
-                                      IsChecked="{Binding ShowPassword}"
-                                      FontSize="11" />
-
-                            <CheckBox Content="Remember password (stored securely)"
-                                      IsChecked="{Binding RememberPassword}"
-                                      FontSize="11" />
+                <!-- Profiles: загрузка и сохранение подключения — в самом верху -->
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="sectionTitle" Text="Profiles" />
+                            <TextBlock Classes="sectionHint"
+                                       Text="Load a saved connection, or save the current settings (without the password) to reuse later." />
                         </StackPanel>
-                    </Border>
 
-                    <RadioButton Content="Private Key"
-                                 IsChecked="{Binding IsPrivateKeyAuthSelected}"
-                                 Command="{Binding ChangeAuthMethodCommand}"
-                                 GroupName="AuthMethod"
-                                 CommandParameter="{x:Static enums:AuthenticationMethod.PrivateKey}"
-                                 IsEnabled="{Binding !IsConnecting}" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="fieldLabel" Text="Load a saved profile" />
+                            <ComboBox ItemsSource="{Binding SavedProfiles}"
+                                      SelectedItem="{Binding SelectedProfile}"
+                                      PlaceholderText="No profile selected"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                                            <TextBlock Text="{Binding Settings.Hostname}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
 
-                    <Border IsVisible="{Binding IsPrivateKeyAuthSelected}"
-                            Padding="20,0,0,0">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Private Key Path *" FontSize="12" />
-                            
-                            <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="fieldLabel" Text="Save current settings as" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <TextBox Grid.Column="0"
-                                         Text="{Binding PrivateKeyPath}"
-                                         PlaceholderText="~/.ssh/id_rsa"
+                                         Text="{Binding ProfileName}"
+                                         PlaceholderText="Profile name..."
                                          IsEnabled="{Binding !IsConnecting}" />
-                                
+
                                 <Button Grid.Column="1"
-                                        Content="Browse..."
+                                        Content="Save"
                                         Classes="focused"
-                                        Command="{Binding BrowsePrivateKeyCommand}"
-                                        IsEnabled="{Binding !IsConnecting}"
-                                        Margin="8,0,0,0" />
+                                        Command="{Binding SaveProfileCommand}"
+                                        IsEnabled="{Binding !IsConnecting}" />
                             </Grid>
-
-                            <TextBlock Text="Key Passphrase (optional)" FontSize="12" Margin="0,8,0,0" />
-                            <TextBox Text="{Binding KeyPassphrase}"
-                                     PasswordChar="{Binding ShowKeyPassphrase, Converter={StaticResource BoolToPasswordCharConverter}}"
-                                     PlaceholderText="Leave empty if no passphrase"
-                                     IsEnabled="{Binding !IsConnecting}" />
-
-                            <CheckBox Content="Show passphrase"
-                                      IsChecked="{Binding ShowKeyPassphrase}"
-                                      FontSize="11" />
                         </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <Separator />
-
-                <!-- Remote Directory -->
-                <TextBlock Text="Remote Directory"
-                           FontWeight="SemiBold"
-                           FontSize="13" />
-
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Path to trace files *" FontSize="12" />
-                    <TextBox Text="{Binding RemoteDirectory}"
-                             PlaceholderText="/var/log/firebird/trace"
-                             IsEnabled="{Binding !IsConnecting}" />
-                </StackPanel>
-
-                <CheckBox Content="Delete files from server after processing"
-                          IsChecked="{Binding DeleteAfterProcessingFromServer}"
-                          FontWeight="Medium">
-                    <CheckBox.Styles>
-                        <Style Selector="CheckBox:checked">
-                            <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
-                        </Style>
-                    </CheckBox.Styles>
-                </CheckBox>
-                
-                <CheckBox Content="Delete files on locale machine after processing"
-                          IsChecked="{Binding DeleteAfterProcessingOnLocaleMachine}"
-                          FontWeight="Medium">
-                </CheckBox>
-
-                <Border Background="{DynamicResource WarningSurfaceBrush}"
-                        BorderBrush="{DynamicResource WarningBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="12"
-                        IsVisible="{Binding DeleteAfterProcessingFromServer}">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Warning"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarningTextBrush}" />
-                        <TextBlock Text="Files will be permanently deleted from the remote server after processing. This action cannot be undone!"
-                                   TextWrapping="Wrap"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource WarningTextBrush}" />
                     </StackPanel>
                 </Border>
 
-                <Separator />
+                <!-- Step 2: Server -->
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="sectionTitle" Text="Server" />
+                            <TextBlock Classes="sectionHint" Text="Address and account used to log in over SSH." />
+                        </StackPanel>
 
-                <!-- Save Profile -->
-                <TextBlock Text="Save Connection Profile"
-                           FontWeight="SemiBold"
-                           FontSize="13" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="fieldLabel" Text="Hostname or IP address *" />
+                            <TextBox Text="{Binding Hostname}"
+                                     PlaceholderText="192.168.1.100 or server.example.com"
+                                     IsEnabled="{Binding !IsConnecting}" />
+                        </StackPanel>
 
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <TextBox Grid.Column="0"
-                             Text="{Binding ProfileName}"
-                             PlaceholderText="Profile name..."
-                             IsEnabled="{Binding !IsConnecting}" />
-                    
-                    <Button Grid.Column="1"
-                            Content="Save"
-                            Classes="focused"
-                            Command="{Binding SaveProfileCommand}"
-                            IsEnabled="{Binding !IsConnecting}" />
-                </Grid>
+                        <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Classes="fieldLabel" Text="Username *" />
+                                <TextBox Text="{Binding Username}"
+                                         PlaceholderText="root"
+                                         IsEnabled="{Binding !IsConnecting}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="fieldLabel" Text="Port *" />
+                                <NumericUpDown Value="{Binding Port}"
+                                               Minimum="1"
+                                               Maximum="65535"
+                                               IsEnabled="{Binding !IsConnecting}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step 3: Authentication -->
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="sectionTitle" Text="Authentication" />
+                            <TextBlock Classes="sectionHint" Text="Choose how to prove your identity to the server." />
+                        </StackPanel>
+
+                        <StackPanel Spacing="10">
+                            <RadioButton Content="Password"
+                                         IsChecked="{Binding IsPasswordAuthSelected}"
+                                         Command="{Binding ChangeAuthMethodCommand}"
+                                         GroupName="AuthMethod"
+                                         CommandParameter="{x:Static enums:AuthenticationMethod.Password}"
+                                         IsEnabled="{Binding !IsConnecting}" />
+
+                            <Border IsVisible="{Binding IsPasswordAuthSelected}"
+                                    Padding="24,0,0,0">
+                                <StackPanel Spacing="8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="fieldLabel" Text="Password *" />
+                                        <TextBox Text="{Binding Password}"
+                                                 PasswordChar="{Binding ShowPassword, Converter={StaticResource BoolToPasswordCharConverter}}"
+                                                 PlaceholderText="Enter password"
+                                                 IsEnabled="{Binding !IsConnecting}" />
+                                    </StackPanel>
+
+                                    <CheckBox Content="Show password"
+                                              IsChecked="{Binding ShowPassword}"
+                                              FontSize="11" />
+
+                                    <CheckBox Content="Remember password (stored securely)"
+                                              IsChecked="{Binding RememberPassword}"
+                                              FontSize="11" />
+                                </StackPanel>
+                            </Border>
+
+                            <RadioButton Content="Private key"
+                                         IsChecked="{Binding IsPrivateKeyAuthSelected}"
+                                         Command="{Binding ChangeAuthMethodCommand}"
+                                         GroupName="AuthMethod"
+                                         CommandParameter="{x:Static enums:AuthenticationMethod.PrivateKey}"
+                                         IsEnabled="{Binding !IsConnecting}" />
+
+                            <Border IsVisible="{Binding IsPrivateKeyAuthSelected}"
+                                    Padding="24,0,0,0">
+                                <StackPanel Spacing="8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="fieldLabel" Text="Private key file *" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox Grid.Column="0"
+                                                     Text="{Binding PrivateKeyPath}"
+                                                     PlaceholderText="~/.ssh/id_rsa"
+                                                     IsEnabled="{Binding !IsConnecting}" />
+
+                                            <Button Grid.Column="1"
+                                                    Content="Browse..."
+                                                    Classes="focused"
+                                                    Command="{Binding BrowsePrivateKeyCommand}"
+                                                    IsEnabled="{Binding !IsConnecting}"
+                                                    Margin="8,0,0,0" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="fieldLabel" Text="Key passphrase (optional)" />
+                                        <TextBox Text="{Binding KeyPassphrase}"
+                                                 PasswordChar="{Binding ShowKeyPassphrase, Converter={StaticResource BoolToPasswordCharConverter}}"
+                                                 PlaceholderText="Leave empty if the key has no passphrase"
+                                                 IsEnabled="{Binding !IsConnecting}" />
+                                    </StackPanel>
+
+                                    <CheckBox Content="Show passphrase"
+                                              IsChecked="{Binding ShowKeyPassphrase}"
+                                              FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step 4: Trace files location -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="sectionTitle" Text="Trace files" />
+                            <TextBlock Classes="sectionHint" Text="Folder on the server that contains the trace logs." />
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="fieldLabel" Text="Remote directory *" />
+                            <TextBox Text="{Binding RemoteDirectory}"
+                                     PlaceholderText="/var/log/firebird/trace"
+                                     IsEnabled="{Binding !IsConnecting}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step 5: After processing -->
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="sectionTitle" Text="After processing" />
+                            <TextBlock Classes="sectionHint" Text="What to do with the files once they are downloaded and parsed." />
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <CheckBox Content="Delete files from the server"
+                                      IsChecked="{Binding DeleteAfterProcessingFromServer}"
+                                      FontWeight="Medium">
+                                <CheckBox.Styles>
+                                    <Style Selector="CheckBox:checked">
+                                        <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
+                                    </Style>
+                                </CheckBox.Styles>
+                            </CheckBox>
+                            <TextBlock Classes="fieldHint"
+                                       Margin="28,0,0,0"
+                                       Text="Permanently removes the trace files from the remote server." />
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource WarningSurfaceBrush}"
+                                BorderBrush="{DynamicResource WarningBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="12"
+                                IsVisible="{Binding DeleteAfterProcessingFromServer}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="This cannot be undone"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource WarningTextBrush}" />
+                                <TextBlock Text="Files will be permanently deleted from the remote server after processing."
+                                           TextWrapping="Wrap"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource WarningTextBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="4">
+                            <CheckBox Content="Delete downloaded copies from this computer"
+                                      IsChecked="{Binding DeleteAfterProcessingOnLocaleMachine}"
+                                      FontWeight="Medium" />
+                            <TextBlock Classes="fieldHint"
+                                       Margin="28,0,0,0"
+                                       Text="Leave unchecked to keep the downloaded files locally (in your configured downloads folder)." />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
@@ -248,9 +313,9 @@
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
-            
+
             <Grid RowDefinitions="Auto,Auto,Auto">
-                
+
                 <!-- Error Message -->
                 <Border Grid.Row="0"
                         Background="{DynamicResource ErrorSurfaceBrush}"
@@ -264,16 +329,16 @@
                                Foreground="{DynamicResource ErrorTextBrush}"
                                FontSize="12" />
                 </Border>
-                
+
                 <!-- Status -->
-                <StackPanel Grid.Row="1" 
-                           Spacing="8"
-                           Margin="0,10,0,12">
-                    
+                <StackPanel Grid.Row="1"
+                            Spacing="8"
+                            Margin="0,10,0,12">
+
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
-                    
+
                     <ProgressBar IsIndeterminate="True"
                                  IsVisible="{Binding IsConnecting}"
                                  Height="4" />
@@ -281,23 +346,23 @@
 
                 <!-- Buttons -->
                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                    
+
                     <Button Grid.Column="0"
                             Content="Test Connection"
                             Classes="normal"
                             Command="{Binding TestConnectionCommand}"
-                            IsEnabled="{Binding !IsConnecting}"/>
+                            IsEnabled="{Binding !IsConnecting}" />
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
                         <Button Content="Connect"
                                 Classes="focused"
                                 Command="{Binding ConnectCommand}"
                                 IsEnabled="{Binding !IsConnecting}" />
-                        
+
                         <Button Content="Cancel"
                                 Classes="danger"
                                 Command="{Binding CancelCommand}"
-                                IsEnabled="{Binding !IsConnecting}"/>
+                                IsEnabled="{Binding !IsConnecting}" />
                     </StackPanel>
                 </Grid>
             </Grid>
