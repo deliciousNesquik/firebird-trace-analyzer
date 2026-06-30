@@ -82,10 +82,10 @@
                         <StackPanel Spacing="2">
                             <TextBlock Classes="sectionTitle" Text="Profiles" />
                             <TextBlock Classes="sectionHint"
-                                       Text="Load a saved connection, or save the current settings (without the password) to reuse later." />
+                                       Text="Load a saved connection, duplicate or delete it, or save the current settings (without the password) as a profile." />
                         </StackPanel>
 
-                        <StackPanel Spacing="4">
+                        <StackPanel Spacing="6">
                             <TextBlock Classes="fieldLabel" Text="Load a saved profile" />
                             <ComboBox ItemsSource="{Binding SavedProfiles}"
                                       SelectedItem="{Binding SelectedProfile}"
@@ -93,12 +93,52 @@
                                       HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                                            <TextBlock Text="{Binding Settings.Hostname}"
-                                                       FontSize="11"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        </StackPanel>
+                                        <!-- Карточка профиля: слева имя/хост, справа действия.
+                                             Команды берём у VM окна через $parent[ComboBox], параметр — сам профиль.
+                                             Content кнопок — временный текст, иконки подставишь позже. -->
+                                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="4">
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                                                <TextBlock Text="{Binding Settings.Hostname}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1"
+                                                    Padding="5,5"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="Open profiles file"
+                                                    IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                    Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).OpenProfileFileCommand}">
+                                                <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}"
+                                                     Css="{DynamicResource ThemeIconFill}" />
+                                            </Button>
+
+                                            <Button Grid.Column="2"
+                                                    Padding="5,5"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="Duplicate profile"
+                                                    IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                    Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DuplicateProfileCommand}"
+                                                    CommandParameter="{Binding}" >
+                                                
+                                                <Svg Width="20" Height="20" Path="{DynamicResource CopyIcon}"
+                                                     Css="{DynamicResource ThemeIconFill}" />
+                                            </Button>
+                                            
+                                            <Button Grid.Column="3"
+                                                    Classes="danger"
+                                                    Padding="5,5"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="Delete profile"
+                                                    IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                    Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DeleteProfileCommand}"
+                                                    CommandParameter="{Binding}">
+                                                
+                                                <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}"
+                                                     Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                                            </Button>
+                                        </Grid>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
