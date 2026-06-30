@@ -20,9 +20,12 @@ public sealed class ReportFilterConfig
     /// <summary>Активен ли фильтр</summary>
     public bool IsActive { get; init; }
     
-    /// <summary>Выбранные значения (для Enum/String фильтров)</summary>
+    /// <summary>Выбранные значения — событие должно совпадать с одним из них (Enum/String фильтры)</summary>
     public List<object>? SelectedValues { get; init; }
-    
+
+    /// <summary>Исключённые значения — события с такими значениями отбрасываются (Enum/String фильтры)</summary>
+    public List<object>? ExcludedValues { get; init; }
+
     /// <summary>Минимальное значение (для Range фильтров)</summary>
     public object? MinValue { get; init; }
     

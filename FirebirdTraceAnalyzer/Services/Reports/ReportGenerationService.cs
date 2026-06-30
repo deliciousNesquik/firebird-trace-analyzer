@@ -200,43 +200,32 @@ public class ReportGenerationService : IReportGenerationService
     /// </summary>
     private Func<EventBase, bool> CompileTemplateFilter(ReportFilterConfig filter)
     {
-        // Фильтр по выбранным значениям (Enum/String).
-        if (filter.SelectedValues is { Count: > 0 } selectedValues)
+        // Фильтр по значениям (Enum/String): включённые и/или исключённые.
+        var hasIncluded = filter.SelectedValues is { Count: > 0 };
+        var hasExcluded = filter.ExcludedValues is { Count: > 0 };
+
+        if (hasIncluded || hasExcluded)
         {
             if (!TryResolveFilterPropertyPath(filter, out var propertyPath))
                 return static _ => false;
 
-            // Быстрый путь — сравнение по значению (boxed enum/строка/число) без аллокаций.
-            var valueSet = new HashSet<object>(selectedValues.Where(v => v != null)!);
-
-            // Запасной путь — по строковому представлению (значения из JSON: enum как имя/число).
-            var textSet = new HashSet<string>(StringComparer.Ordinal);
-            var numericSet = new HashSet<long>();
-            foreach (var selected in selectedValues)
-            {
-                var text = selected?.ToString();
-                if (string.IsNullOrEmpty(text))
-                    continue;
-
-                textSet.Add(text);
-                if (long.TryParse(text, out var numeric))
-                    numericSet.Add(numeric);
-            }
+            var includeMatches = BuildValueMatcher(filter.SelectedValues);
+            var excludeMatches = BuildValueMatcher(filter.ExcludedValues);
 
             return evt =>
             {
                 var value = _propertyAccessor.GetValue(evt, propertyPath);
+
                 if (value is null)
+                    // Нет значения: проходит только если нет обязательных включённых.
+                    return !hasIncluded;
+
+                // Включённые заданы — значение должно совпасть с одним из них.
+                if (hasIncluded && !includeMatches(value))
                     return false;
 
-                if (valueSet.Contains(value))
-                    return true;
-
-                var text = value.ToString();
-                if (text != null && textSet.Contains(text))
-                    return true;
-
-                return value is Enum enumValue && numericSet.Contains(Convert.ToInt64(enumValue));
+                // Исключённые — значение не должно совпасть ни с одним.
+                return !(hasExcluded && excludeMatches(value));
             };
         }
 
@@ -267,6 +256,44 @@ public class ReportGenerationService : IReportGenerationService
 
         // Фильтр без условий — пропускает всё.
         return static _ => true;
+    }
+
+    /// <summary>
+    ///     Строит предикат «значение совпадает с одним из заданных». Быстрый путь — сравнение по
+    ///     значению (boxed enum/строка/число); запасной — по строковому представлению (значения из
+    ///     JSON: enum как имя/число). Для пустого набора всегда false.
+    /// </summary>
+    private static Func<object, bool> BuildValueMatcher(IReadOnlyList<object>? values)
+    {
+        if (values is null || values.Count == 0)
+            return static _ => false;
+
+        var valueSet = new HashSet<object>(values.Where(v => v != null)!);
+        var textSet = new HashSet<string>(StringComparer.Ordinal);
+        var numericSet = new HashSet<long>();
+
+        foreach (var item in values)
+        {
+            var text = item?.ToString();
+            if (string.IsNullOrEmpty(text))
+                continue;
+
+            textSet.Add(text);
+            if (long.TryParse(text, out var numeric))
+                numericSet.Add(numeric);
+        }
+
+        return value =>
+        {
+            if (valueSet.Contains(value))
+                return true;
+
+            var text = value.ToString();
+            if (text != null && textSet.Contains(text))
+                return true;
+
+            return value is Enum enumValue && numericSet.Contains(Convert.ToInt64(enumValue));
+        };
     }
 
     private bool TryResolveFilterPropertyPath(ReportFilterConfig filter, out string propertyPath)

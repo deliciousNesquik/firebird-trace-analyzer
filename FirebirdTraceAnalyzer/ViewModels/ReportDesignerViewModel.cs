@@ -481,17 +481,28 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
                     filter.IsActive = filterConfig.IsActive;
 
-                    if (filterConfig.SelectedValues is { Count: > 0 })
+                    if (filterConfig.SelectedValues is { Count: > 0 } || filterConfig.ExcludedValues is { Count: > 0 })
                     {
                         // Значения из шаблона после JSON — строки/JsonElement, поэтому сопоставляем
                         // по строковому представлению значения (enum → имя).
-                        var selected = filterConfig.SelectedValues
+                        var selected = (filterConfig.SelectedValues ?? [])
+                            .Select(v => v?.ToString())
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .ToHashSet();
+
+                        var excluded = (filterConfig.ExcludedValues ?? [])
                             .Select(v => v?.ToString())
                             .Where(s => !string.IsNullOrEmpty(s))
                             .ToHashSet();
 
                         foreach (var value in filter.AvailableValues)
-                            value.IsSelected = value.Value != null && selected.Contains(value.Value.ToString());
+                        {
+                            var text = value.Value?.ToString();
+                            if (text != null && selected.Contains(text))
+                                value.IsSelected = true;
+                            else if (text != null && excluded.Contains(text))
+                                value.IsExcluded = true;
+                        }
                     }
 
                     if (filterConfig.MinValue != null)
@@ -811,6 +822,10 @@ public partial class ReportDesignerViewModel : ViewModelBase
                 // JSON-сериализацию и совпадало с value.ToString() при применении фильтра отчёта.
                 SelectedValues = f.AvailableValues
                     .Where(v => v.IsSelected)
+                    .Select(v => (object)(v.Value?.ToString() ?? string.Empty))
+                    .ToList(),
+                ExcludedValues = f.AvailableValues
+                    .Where(v => v.IsExcluded)
                     .Select(v => (object)(v.Value?.ToString() ?? string.Empty))
                     .ToList(),
                 MinValue = f.CurrentMinValue,

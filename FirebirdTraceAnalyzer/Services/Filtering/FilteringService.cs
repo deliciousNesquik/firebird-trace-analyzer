@@ -462,30 +462,36 @@ public sealed class FilteringService : IFilteringService
 
     private bool CheckEnumFilter(EventBase evt, string propertyPath, ObservableCollection<FilterValueItem> availableValues)
     {
-        var selectedValues = availableValues
-            .Where(v => v.IsSelected)
-            .Select(v => v.Value)
-            .ToHashSet();
+        var included = availableValues.Where(v => v.IsSelected).Select(v => v.Value).ToHashSet();
+        var excluded = availableValues.Where(v => v.IsExcluded).Select(v => v.Value).ToHashSet();
 
-        if (selectedValues.Count == 0)
+        if (included.Count == 0 && excluded.Count == 0)
             return true;
 
         var value = _propertyAccessor.GetValue(evt, propertyPath);
-        return value != null && selectedValues.Contains(value);
+
+        // Включённые заданы — значение должно быть среди них.
+        if (included.Count > 0 && (value == null || !included.Contains(value)))
+            return false;
+
+        // Исключённые — значение не должно быть среди них.
+        return value == null || !excluded.Contains(value);
     }
 
     private bool CheckStringFilter(EventBase evt, string propertyPath, ObservableCollection<FilterValueItem> availableValues)
     {
-        var selectedValues = availableValues
-            .Where(v => v.IsSelected)
-            .Select(v => v.Value.ToString()!)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var included = availableValues.Where(v => v.IsSelected).Select(v => v.Value.ToString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var excluded = availableValues.Where(v => v.IsExcluded).Select(v => v.Value.ToString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        if (selectedValues.Count == 0)
+        if (included.Count == 0 && excluded.Count == 0)
             return true;
 
         var value = _propertyAccessor.GetValue(evt, propertyPath)?.ToString();
-        return value != null && selectedValues.Contains(value);
+
+        if (included.Count > 0 && (value == null || !included.Contains(value)))
+            return false;
+
+        return value == null || !excluded.Contains(value);
     }
 
     #endregion
