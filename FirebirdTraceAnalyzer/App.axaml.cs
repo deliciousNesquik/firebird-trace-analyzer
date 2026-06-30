@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using FirebirdTraceAnalyzer;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.ViewModels;
 using FirebirdTraceAnalyzer.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,9 @@ public partial class App : Application
         // Применяем сохранённую тему до создания окна (Auto = следовать ОС)
         var settings = Services.GetRequiredService<ISettingsService>();
         Services.GetRequiredService<IThemeService>().Apply(settings.App.Theme);
+
+        // Применяем пользовательские пути логов (если заданы) — File-таргеты подхватят на следующей записи
+        LogConfiguration.Apply(settings.App.AppLogPath, settings.App.ParserLogPath);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

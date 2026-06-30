@@ -36,6 +36,10 @@ internal sealed class Program
         // относительные пути ("Configuration/rules.json" и т.п.) не находятся → приложение падает.
         var baseDir = AppContext.BaseDirectory;
 
+        // Прописываем пути логов в NLog (GDC) ДО первой записи, читая их прямо из settings.json,
+        // чтобы стартовые логи (включая логи парсера) сразу шли в настроенную папку.
+        LogConfiguration.ApplyFromSettingsFile();
+
         var logger = LogManager.Setup()
             .LoadConfigurationFromFile(Path.Combine(baseDir, "Configuration", "nlog.config"))
             .GetCurrentClassLogger();

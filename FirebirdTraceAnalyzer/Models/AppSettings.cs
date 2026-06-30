@@ -36,6 +36,16 @@ public class AppSettings
     /// (%AppData%/FirebirdTraceAnalyzer/Reports/History).
     /// </summary>
     public string ReportsPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Путь к файлу лога приложения. Пусто — путь по умолчанию (рядом с приложением, logs/application.log).
+    /// </summary>
+    public string AppLogPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Путь к файлу лога парсера. Пусто — путь по умолчанию (logs/parser.log).
+    /// </summary>
+    public string ParserLogPath { get; set; } = string.Empty;
 }
 
 /// <summary>
