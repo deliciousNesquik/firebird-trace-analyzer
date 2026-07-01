@@ -337,66 +337,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
     ///     Получает значение переменной
     /// </summary>
     private string GetVariableValue(ReportVariable variable)
-    {
-        if (Metadata == null)
-            return "N/A";
-
-        return variable.Type switch
-        {
-            ReportVariableType.FileNames => string.Join(", ", Metadata.Files.Select(f => f.FileName)),
-            ReportVariableType.FilePaths => string.Join(", ", Metadata.Files.Select(f => f.FilePath)),
-            ReportVariableType.FileCount => Metadata.Files.Count.ToString(),
-            ReportVariableType.FileSizeTotal => FormatFileSize(Metadata.Files.Sum(f => f.FileSize)),
-
-            ReportVariableType.TotalEventsCount => Metadata.TotalEventsCount.ToString("N0"),
-            ReportVariableType.FilteredEventsCount => Metadata.Events.Count.ToString("N0"),
-            ReportVariableType.VisibleEventsCount => Metadata.Events.Count.ToString("N0"),
-
-            ReportVariableType.TraceStartTime => Metadata.Files.Count > 0
-                ? Metadata.Files.Min(f => f.StartTrace).ToString("yyyy-MM-dd HH:mm:ss")
-                : "N/A",
-            ReportVariableType.TraceEndTime => Metadata.Files.Count > 0
-                ? Metadata.Files.Max(f => f.EndTrace).ToString("yyyy-MM-dd HH:mm:ss")
-                : "N/A",
-            ReportVariableType.TraceDuration => GetTraceDuration(),
-
-            ReportVariableType.ActiveFilters => Metadata.ActiveFilters ?? "None",
-            ReportVariableType.ActiveSort => Metadata.ActiveSort ?? "None",
-
-            ReportVariableType.GeneratedDate => Metadata.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-            ReportVariableType.GeneratedBy => Environment.UserName,
-            ReportVariableType.ApplicationVersion => Metadata.ApplicationVersion,
-
-            _ => "N/A"
-        };
-    }
-
-    private string GetTraceDuration()
-    {
-        if (Metadata == null || Metadata.Files.Count == 0)
-            return "N/A";
-
-        var start = Metadata.Files.Min(f => f.StartTrace);
-        var end = Metadata.Files.Max(f => f.EndTrace);
-        var duration = end - start;
-
-        return $"{duration.TotalHours:F2} hours";
-    }
-
-    private static string FormatFileSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
-    }
+        => Metadata is null ? "N/A" : ReportMetadataFormatter.GetVariableValue(variable, Metadata);
 }
 
 #region Helper Classes

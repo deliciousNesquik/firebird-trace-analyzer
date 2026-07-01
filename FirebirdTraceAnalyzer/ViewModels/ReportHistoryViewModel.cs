@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using NLog;
@@ -266,21 +267,6 @@ public partial class ReportHistoryItem : ObservableObject
     [ObservableProperty]
     private string _format = string.Empty;
 
-    public string FormattedSize => FormatFileSize(FileSize);
+    public string FormattedSize => ByteSizeFormatter.FormatBytes(FileSize);
     public string FormattedDate => CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-
-    private static string FormatFileSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
-    }
 }

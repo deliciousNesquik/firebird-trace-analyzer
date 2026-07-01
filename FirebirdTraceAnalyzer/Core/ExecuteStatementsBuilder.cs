@@ -26,7 +26,7 @@ public sealed class ExecuteStatementsBuilder
         foreach (var ch in sql)
             if (ch == '?' && indexParameter < parameters.Count)
             {
-                sqlBuilder.Append(FormatParam(parameters[indexParameter]));
+                sqlBuilder.Append(SqlParameterFormatter.Format(parameters[indexParameter]));
                 indexParameter++;
             }
             else
@@ -35,38 +35,5 @@ public sealed class ExecuteStatementsBuilder
             }
 
         return sqlBuilder.ToString();
-    }
-
-
-    private static string FormatParam(SqlParameters parameter)
-    {
-        var value = parameter.Value;
-
-        if (value.Equals("<NULL>", StringComparison.CurrentCultureIgnoreCase) ||
-            value.Equals("NULL", StringComparison.CurrentCultureIgnoreCase))
-            return "NULL";
-        
-        if (parameter.Dtype.ToLower().StartsWith("varchar"))
-            return $"'{value?.Replace("'", "''")}'";
-
-        return parameter.Dtype.ToLower() switch
-        {
-            "blob" => $"'{value}'",
-            
-            "timestamp" =>
-                $"'{value}'",
-
-            "date" =>
-                $"'{value}'",
-
-            "time" =>
-                $"'{value}'",
-
-            "bigint" or "int" or "smallint" or "integer" =>
-                value ?? "NULL",
-
-            _ =>
-                value ?? "NULL"
-        };
     }
 }

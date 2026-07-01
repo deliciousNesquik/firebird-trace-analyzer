@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
@@ -195,24 +196,9 @@ public sealed class EventPropertyAccessor : IEventPropertyAccessor
             // ✅ Add ALL paths (removed attribute check)
             paths.Add(path);
 
-            if (ShouldScanNestedType(prop.PropertyType))
+            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
                 ScanType(prop.PropertyType, path, paths, depth + 1);
         }
-    }
-
-    private static bool ShouldScanNestedType(Type type)
-    {
-        if (type.IsPrimitive || type == typeof(string) || type.IsEnum)
-            return false;
-
-        if (type.IsGenericType)
-            return false;
-
-        if (type.Namespace?.StartsWith("System", StringComparison.Ordinal) == true)
-            return false;
-
-        return type.IsClass &&
-               type.Namespace?.StartsWith("FirebirdTraceParser", StringComparison.Ordinal) == true;
     }
 
     private static string TryNaiveIdToPath(string id, string prefix)

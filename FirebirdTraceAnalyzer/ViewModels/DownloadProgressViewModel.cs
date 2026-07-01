@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
 
@@ -224,34 +225,13 @@ public partial class DownloadProgressViewModel : ViewModelBase
 
     public string GetFormattedSpeed()
     {
-        if (DownloadSpeed < 1024)
-            return $"{DownloadSpeed:F0} B/s";
-        
-        if (DownloadSpeed < 1024 * 1024)
-            return $"{DownloadSpeed / 1024:F2} KB/s";
-        
-        return $"{DownloadSpeed / (1024 * 1024):F2} MB/s";
+        return ByteSizeFormatter.FormatSpeed(DownloadSpeed);
     }
 
     public string GetFormattedProgress()
     {
-        var current = FormatBytes(TotalBytesTransferred);
-        var total = FormatBytes(TotalBytesOverall);
+        var current = ByteSizeFormatter.FormatBytes(TotalBytesTransferred);
+        var total = ByteSizeFormatter.FormatBytes(TotalBytesOverall);
         return $"{current} / {total}";
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.ViewModels;
 
 namespace FirebirdTraceAnalyzer.Models;
@@ -37,23 +38,8 @@ public partial class RemoteFileInfo: ViewModelBase
     public partial bool IsSelected { get; set; }
 
     /// <summary>Размер в читаемом формате</summary>
-    public string FormattedSize => FormatFileSize(Size);
+    public string FormattedSize => ByteSizeFormatter.FormatBytes(Size);
 
     /// <summary>Дата в читаемом формате</summary>
     public string FormattedDate => LastModified.ToString("yyyy-MM-dd HH:mm:ss");
-
-    private static string FormatFileSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
-    }
 }
