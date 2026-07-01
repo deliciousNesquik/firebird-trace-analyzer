@@ -37,7 +37,7 @@
                     <StackPanel Spacing="10">
 
                         <!-- HEADER -->
-                        <Grid ColumnDefinitions="Auto Auto *">
+                        <Grid ColumnDefinitions="Auto Auto * Auto">
 
                             <!-- EVENT TYPE -->
                             <Border Grid.Column="0"
@@ -59,6 +59,12 @@
                                        FontFamily="Consolas"
                                        FontSize="16"
                                        FontWeight="DemiBold" />
+
+                            <Button Grid.Column="3"
+                                    Classes="card-action"
+                                    Content="⋯"
+                                    Margin="12,0,0,0"
+                                    ToolTip.Tip="Actions" />
 
                         </Grid>
                         

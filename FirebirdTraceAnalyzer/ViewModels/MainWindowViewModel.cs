@@ -11,6 +11,7 @@ using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
@@ -52,6 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IFilteringService _filteringService;
     private readonly ISearchService _searchService;
     private readonly IEventPropertyAccessor _propertyAccessor;
+    private readonly IEventChainService _eventChainService;
 
     #endregion
 
@@ -149,6 +151,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _sshConnectionService = null!;
         _remoteFileService = null!;
         _propertyAccessor = new EventPropertyAccessor();
+        _eventChainService = null!;
 
         // Инициализация ViewModels
         StatisticInfoModels = new StatisticsInfoSectionViewModel();
@@ -179,6 +182,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ISshConnectionService sshConnectionService,
         IRemoteFileService remoteFileService,
         IEventPropertyAccessor propertyAccessor,
+        IEventChainService eventChainService,
         PluginManagerService pluginManager)
     {
         Logger.Info("Event(s) list(s) are clear");
@@ -202,6 +206,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _sshConnectionService = sshConnectionService ?? throw new ArgumentNullException(nameof(sshConnectionService));
         _remoteFileService = remoteFileService ?? throw new ArgumentNullException(nameof(remoteFileService));
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _eventChainService = eventChainService ?? throw new ArgumentNullException(nameof(eventChainService));
 
 
         // Инициализация ViewModels
@@ -222,6 +227,31 @@ public partial class MainWindowViewModel : ViewModelBase
         
         // Загрузка шаблонов отчетов
         _ = LoadReportTemplatesAsync();
+    }
+
+    #endregion
+
+    #region Event Inspector
+
+    /// <summary>
+    ///     Открывает окно «Инспектор события»: выбранное событие и его цепочка жизненного цикла.
+    ///     Цепочка строится из <see cref="AllEvents"/> (не зависит от текущих фильтров).
+    /// </summary>
+    [RelayCommand]
+    private void OpenEventInspector(EventBase? evt)
+    {
+        if (evt is null)
+            return;
+
+        var chain = _eventChainService.BuildChain(evt, AllEvents);
+        var viewModel = new EventInspectorViewModel(evt, chain);
+        var window = new EventInspectorWindow(viewModel);
+
+        var owner = App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window;
+        if (owner is not null)
+            window.Show(owner);
+        else
+            window.Show();
     }
 
     #endregion

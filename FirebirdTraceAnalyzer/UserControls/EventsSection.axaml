@@ -18,7 +18,14 @@
                            Margin="10">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <ContentPresenter Content="{Binding}" />
+                        <ContentControl Content="{Binding}">
+                            <ContentControl.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Open event inspector"
+                                              Click="OnOpenInspectorClick" />
+                                </ContextMenu>
+                            </ContentControl.ContextMenu>
+                        </ContentControl>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>

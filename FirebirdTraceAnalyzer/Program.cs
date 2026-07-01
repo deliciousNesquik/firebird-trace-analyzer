@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Avalonia;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
@@ -11,6 +12,7 @@ using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using FirebirdTraceAnalyzer.Services.EventLinking;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
 using FirebirdTraceAnalyzer.Services.Plugins;
@@ -105,6 +107,7 @@ internal sealed class Program
 
         // добавляем сервисы для ui приложения
         services.AddSingleton<IEventPropertyAccessor, EventPropertyAccessor>();
+        services.AddSingleton<IEventChainService, EventChainService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IWindowProvider, WindowProvider>();
         services.AddSingleton<ISortingService, SortingService>();
