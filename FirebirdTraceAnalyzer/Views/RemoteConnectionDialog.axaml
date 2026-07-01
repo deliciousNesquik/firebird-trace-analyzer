@@ -248,7 +248,7 @@
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBox Grid.Column="0"
                                                      Text="{Binding PrivateKeyPath}"
-                                                     PlaceholderText="~/.ssh/id_rsa"
+                                                     PlaceholderText="/absolute/path/to/private_key"
                                                      IsEnabled="{Binding !IsConnecting}" />
 
                                             <Button Grid.Column="1"
@@ -262,6 +262,7 @@
 
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="fieldLabel" Text="Key passphrase (optional)" />
+                                        <TextBlock Classes="sectionHint" Text="If you do not need to save the passphrase, then save the profile while the phrase is entered." />
                                         <TextBox Text="{Binding KeyPassphrase}"
                                                  PasswordChar="{Binding ShowKeyPassphrase, Converter={StaticResource BoolToPasswordCharConverter}}"
                                                  PlaceholderText="Leave empty if the key has no passphrase"
@@ -388,11 +389,12 @@
                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
 
                     <Button Grid.Column="0"
-                            Content="Test Connection"
+                            Content="Validate parameters"
                             Classes="normal"
                             Command="{Binding TestConnectionCommand}"
-                            IsEnabled="{Binding !IsConnecting}" />
-
+                            IsEnabled="{Binding !IsConnecting}" 
+                            ToolTip.Tip="Validate the connection parameters without actually connection."/> 
+    
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
                         <Button Content="Connect"
                                 Classes="focused"
