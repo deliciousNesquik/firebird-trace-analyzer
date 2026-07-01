@@ -244,8 +244,8 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
         if (freeBytes >= 0 && freeBytes < requiredBytes + FreeSpaceMarginBytes)
         {
             StatusMessage =
-                $"Not enough space for download: needed~{FormatSize(requiredBytes)}, " +
-                $"free {FormatSize(freeBytes)}. Please free up some space or deselect some files.";
+                $"Not enough space for download: needed~{ByteSizeFormatter.FormatBytes(requiredBytes)}, " +
+                $"free {ByteSizeFormatter.FormatBytes(freeBytes)}. Please free up some space or deselect some files.";
 
             Logger.Warn("Not enough disk space in {Dir}: need {Need} bytes, free {Free} bytes",
                 TargetDownloadDirectory, requiredBytes, freeBytes);
@@ -290,21 +290,6 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
             Logger.Debug(ex, "Could not determine free space for {Dir}", directory);
             return -1;
         }
-    }
-
-    private static string FormatSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB", "TB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
     }
 
     private bool CanConfirm()

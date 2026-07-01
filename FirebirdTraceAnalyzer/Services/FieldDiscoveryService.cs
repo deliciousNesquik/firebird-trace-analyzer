@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceParser.Attributes;
@@ -193,7 +194,7 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
             results.Add(field);
 
             // Сканируем вложенные типы
-            if (ShouldScanNestedType(prop.PropertyType))
+            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
             {
                 ScanProperties(prop.PropertyType, path, results, depth + 1);
             }
@@ -216,20 +217,5 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
         ).Trim();
 
         return formatted;
-    }
-
-    private static bool ShouldScanNestedType(Type type)
-    {
-        if (type.IsPrimitive || type == typeof(string) || type.IsEnum)
-            return false;
-
-        if (type.IsGenericType)
-            return false;
-
-        if (type.Namespace?.StartsWith("System") == true)
-            return false;
-
-        return type.IsClass &&
-               type.Namespace?.StartsWith("FirebirdTraceParser") == true;
     }
 }

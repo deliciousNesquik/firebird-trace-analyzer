@@ -2,6 +2,7 @@
 using System.Globalization;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
+using FirebirdTraceAnalyzer.Core;
 
 namespace FirebirdTraceAnalyzer.Converters;
 
@@ -20,7 +21,7 @@ public sealed class BytesToReadableSizeConverter : IValueConverter
         if (!TryGetBytes(value, out var bytes))
             return new BindingNotification(new InvalidCastException(), BindingErrorType.Error);
 
-        return FormatBytes(bytes);
+        return ByteSizeFormatter.FormatBytes(bytes);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -46,22 +47,5 @@ public sealed class BytesToReadableSizeConverter : IValueConverter
                 bytes = 0;
                 return false;
         }
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        string[] units = ["B", "KB", "MB", "GB", "TB", "PB"];
-        double size = bytes;
-        var unitIndex = 0;
-
-        while (size >= 1024 && unitIndex < units.Length - 1)
-        {
-            size /= 1024;
-            unitIndex++;
-        }
-
-        return unitIndex == 0
-            ? $"{bytes:N0} {units[unitIndex]}"
-            : $"{size:0.##} {units[unitIndex]}";
     }
 }

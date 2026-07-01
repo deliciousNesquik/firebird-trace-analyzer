@@ -1,9 +1,9 @@
-﻿using System.Text;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.ValueObjects;
 
@@ -200,36 +200,7 @@ public class ProcedureFinishEventCard : TemplatedControl
         set => SetValue(ProcedureNameProperty, value);
     }
     
-    public string ExecuteProcedure
-    {
-        get
-        {
-            var execute = new StringBuilder();
-
-            execute.Append($"EXECUTE PROCEDURE {ProcedureName}(");
-
-            execute.Append(string.Join(", ", Params.Select(param =>
-            {
-                var value = param.Value?.ToString();
-
-                if (value == "<NULL>")
-                    return "NULL";
-
-                if (int.TryParse(value, out _) ||
-                    decimal.TryParse(value, out _) ||
-                    bool.TryParse(value, out _))
-                {
-                    return value;
-                }
-
-                return $"'{value?.Replace("'", "''")}'";
-            })));
-
-            execute.Append(')');
-        
-            return execute.ToString();
-        }
-    }
+    public string ExecuteProcedure => ExecuteProcedureBuilder.Build(ProcedureName, Params);
     
     public IReadOnlyList<SqlParameters> Params
     {

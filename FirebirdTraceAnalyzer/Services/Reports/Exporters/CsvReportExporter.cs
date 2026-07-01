@@ -173,64 +173,8 @@ public class CsvReportExporter : IReportExporter
     }
 
     private string GetVariableValue(ReportVariable variable, ReportMetadata metadata)
-    {
-        return variable.Type switch
-        {
-            Enums.Reports.ReportVariableType.FileNames => string.Join(", ", metadata.Files.Select(f => f.FileName)),
-            Enums.Reports.ReportVariableType.FilePaths => string.Join(", ", metadata.Files.Select(f => f.FilePath)),
-            Enums.Reports.ReportVariableType.FileCount => metadata.Files.Count.ToString(),
-            Enums.Reports.ReportVariableType.FileSizeTotal => FormatFileSize(metadata.Files.Sum(f => f.FileSize)),
-            
-            Enums.Reports.ReportVariableType.TotalEventsCount => metadata.TotalEventsCount.ToString("N0"),
-            Enums.Reports.ReportVariableType.FilteredEventsCount => metadata.Events.Count.ToString("N0"),
-            Enums.Reports.ReportVariableType.VisibleEventsCount => metadata.Events.Count.ToString("N0"),
-            
-            Enums.Reports.ReportVariableType.TraceStartTime => metadata.Files.Count > 0 
-                ? metadata.Files.Min(f => f.StartTrace).ToString("yyyy-MM-dd HH:mm:ss") 
-                : "N/A",
-            Enums.Reports.ReportVariableType.TraceEndTime => metadata.Files.Count > 0 
-                ? metadata.Files.Max(f => f.EndTrace).ToString("yyyy-MM-dd HH:mm:ss") 
-                : "N/A",
-            Enums.Reports.ReportVariableType.TraceDuration => GetTraceDuration(metadata),
-            
-            Enums.Reports.ReportVariableType.ActiveFilters => metadata.ActiveFilters ?? "None",
-            Enums.Reports.ReportVariableType.ActiveSort => metadata.ActiveSort ?? "None",
-            
-            Enums.Reports.ReportVariableType.GeneratedDate => metadata.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-            Enums.Reports.ReportVariableType.GeneratedBy => Environment.UserName,
-            Enums.Reports.ReportVariableType.ApplicationVersion => metadata.ApplicationVersion,
-            
-            _ => "N/A"
-        };
-    }
-
-    private string GetTraceDuration(ReportMetadata metadata)
-    {
-        if (metadata.Files.Count == 0)
-            return "N/A";
-
-        var start = metadata.Files.Min(f => f.StartTrace);
-        var end = metadata.Files.Max(f => f.EndTrace);
-        var duration = end - start;
-
-        return $"{duration.TotalHours:F2} hours";
-    }
+        => ReportMetadataFormatter.GetVariableValue(variable, metadata);
 
     private string FormatValue(object? value, string? format)
         => ReportValueFormatter.Format(value, format);
-
-    private static string FormatFileSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        var order = 0;
-        var size = (double)bytes;
-
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
-    }
 }

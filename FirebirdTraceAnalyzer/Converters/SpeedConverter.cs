@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
+using FirebirdTraceAnalyzer.Core;
 
 namespace FirebirdTraceAnalyzer.Converters;
 
@@ -13,7 +14,7 @@ public class SpeedConverter : IValueConverter
     {
         if (value is double speed)
         {
-            return FormatSpeed(speed);
+            return ByteSizeFormatter.FormatSpeed(speed);
         }
 
         return "0 B/s";
@@ -22,16 +23,5 @@ public class SpeedConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
-    }
-
-    private static string FormatSpeed(double bytesPerSecond)
-    {
-        if (bytesPerSecond < 1024)
-            return $"{bytesPerSecond:F0} B/s";
-        
-        if (bytesPerSecond < 1024 * 1024)
-            return $"{bytesPerSecond / 1024:F2} KB/s";
-        
-        return $"{bytesPerSecond / (1024 * 1024):F2} MB/s";
     }
 }
