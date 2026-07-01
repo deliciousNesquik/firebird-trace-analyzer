@@ -132,4 +132,22 @@
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonDangerDisabledBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource ButtonDangerDisabledForegroundBrush}" />
     </Style>
+
+    <!-- ================================================================== -->
+    <!-- 4. ИКОНОЧНАЯ КНОПКА ДЕЙСТВИЙ НА КАРТОЧКЕ СОБЫТИЯ (Classes="card-action") -->
+    <!-- ================================================================== -->
+    <Style Selector="Button.card-action">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.card-action:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
 </Styles>

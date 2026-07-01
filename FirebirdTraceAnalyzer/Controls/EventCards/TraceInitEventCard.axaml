@@ -18,7 +18,7 @@
                 <Border BorderThickness="1" Padding="10" BorderBrush="{DynamicResource BorderBrush}">
 
                     <StackPanel Spacing="10">
-                        <Grid ColumnDefinitions="Auto Auto *">
+                        <Grid ColumnDefinitions="Auto Auto * Auto">
                             <Border Grid.Column="0"
                                     Background="{DynamicResource TraceInitEventBrush}"
                                     CornerRadius="5"
@@ -37,6 +37,12 @@
                                        FontFamily="Consolas"
                                        FontSize="16"
                                        FontWeight="DemiBold"/>
+
+                            <Button Grid.Column="3"
+                                    Classes="card-action"
+                                    Content="⋯"
+                                    Margin="12,0,0,0"
+                                    ToolTip.Tip="Actions" />
                         </Grid>
 
                         <Border>
