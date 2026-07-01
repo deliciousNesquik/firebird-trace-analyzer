@@ -3,7 +3,7 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
-.idea
+.idea/*
 
 # Артефакты сборки (скрипты в build/ — версионируются, результаты — нет)
 build/artifacts/
