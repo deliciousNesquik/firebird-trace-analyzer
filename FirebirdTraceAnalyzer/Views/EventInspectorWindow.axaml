@@ -41,7 +41,7 @@
                             CornerRadius="4"
                             Padding="6,2"
                             VerticalAlignment="Center"
-                            ToolTip.Tip="This feature is experimental: only same-statement lifecycles pair reliably; procedure/trigger pairing is best-effort and cross-event causality (which statement fired a trigger) is not tracked.">
+                            ToolTip.Tip="This feature is experimental: events are grouped into a connection lifecycle (attach → detach) by shared attachment id and time. Connection boundaries can be imperfect if the trace lacks attach/detach records.">
                         <TextBlock Text="EXPERIMENTAL"
                                    FontSize="10"
                                    FontWeight="Bold"
@@ -78,7 +78,7 @@
                                FontSize="13"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                    <TextBlock Text="The operation's own lifecycle (e.g. the same statement) with connection and trace-session bookends. Selected event is highlighted."
+                    <TextBlock Text="All events of the selected event's connection (attach → detach), with trace-session bookends. The selected event is highlighted."
                                FontSize="11"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
