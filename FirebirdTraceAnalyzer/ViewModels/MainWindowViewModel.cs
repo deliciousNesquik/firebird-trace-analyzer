@@ -11,6 +11,7 @@ using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
@@ -54,6 +55,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ISearchService _searchService;
     private readonly IEventPropertyAccessor _propertyAccessor;
     private readonly IEventChainService _eventChainService;
+
+    /// <summary>Сервис модальных диалогов внутри окна (биндится оверлеем DialogHost).</summary>
+    public IDialogService Dialogs { get; }
 
     #endregion
 
@@ -152,6 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _remoteFileService = null!;
         _propertyAccessor = new EventPropertyAccessor();
         _eventChainService = null!;
+        Dialogs = null!;
 
         // Инициализация ViewModels
         StatisticInfoModels = new StatisticsInfoSectionViewModel();
@@ -183,6 +188,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IRemoteFileService remoteFileService,
         IEventPropertyAccessor propertyAccessor,
         IEventChainService eventChainService,
+        IDialogService dialogService,
         PluginManagerService pluginManager)
     {
         Logger.Info("Event(s) list(s) are clear");
@@ -207,6 +213,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _remoteFileService = remoteFileService ?? throw new ArgumentNullException(nameof(remoteFileService));
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _eventChainService = eventChainService ?? throw new ArgumentNullException(nameof(eventChainService));
+        Dialogs = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
 
         // Инициализация ViewModels
@@ -1331,11 +1338,10 @@ public partial class MainWindowViewModel : ViewModelBase
             cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _loadingCts = cts;
 
-            // Показываем диалог подключения
-            var connectionDialog = CreateRemoteConnectionDialog();
+            // Показываем диалог подключения как встроенный оверлей внутри главного окна
+            var connectionViewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
 
-            var connectionResult = await connectionDialog.ShowDialog<bool>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var connectionResult = await Dialogs.ShowDialogAsync<bool>(connectionViewModel);
 
             if (!connectionResult)
             {
@@ -1448,14 +1454,6 @@ public partial class MainWindowViewModel : ViewModelBase
             OpenRemoteFileCommand.NotifyCanExecuteChanged();
             OpenLocalFileCommand.NotifyCanExecuteChanged();
         }
-    }
-
-    private RemoteConnectionDialog CreateRemoteConnectionDialog()
-    {
-        // Резолвим через DI (все зависимости зарегистрированы) — без ручного new и null-зависимостей
-        var viewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
-
-        return new RemoteConnectionDialog(viewModel);
     }
 
     private RemoteFileSelectionDialog CreateFileSelectionDialog(

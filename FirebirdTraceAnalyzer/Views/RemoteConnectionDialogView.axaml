@@ -1,23 +1,20 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:enums="using:FirebirdTraceAnalyzer.Enums"
-        mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="700"
-        x:Class="FirebirdTraceAnalyzer.Views.RemoteConnectionDialog"
-        x:DataType="vm:RemoteConnectionDialogViewModel"
-        Title="Connect to Remote Server"
-        Width="620"
-        Height="700"
-        CanResize="False"
-        WindowStartupLocation="CenterOwner">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:enums="using:FirebirdTraceAnalyzer.Enums"
+             mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="700"
+             x:Class="FirebirdTraceAnalyzer.Views.RemoteConnectionDialogView"
+             x:DataType="vm:RemoteConnectionDialogViewModel"
+             Width="620"
+             MaxHeight="760">
 
     <Design.DataContext>
         <vm:RemoteConnectionDialogViewModel />
     </Design.DataContext>
 
-    <Window.Styles>
+    <UserControl.Styles>
         <!-- Карточка-секция: визуально отделяет логические группы полей -->
         <Style Selector="Border.card">
             <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
@@ -45,7 +42,7 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
-    </Window.Styles>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
@@ -121,11 +118,11 @@
                                                     IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                     Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DuplicateProfileCommand}"
                                                     CommandParameter="{Binding}" >
-                                                
+
                                                 <Svg Width="20" Height="20" Path="{DynamicResource CopyIcon}"
                                                      Css="{DynamicResource ThemeIconFill}" />
                                             </Button>
-                                            
+
                                             <Button Grid.Column="3"
                                                     Classes="danger"
                                                     Padding="5,5"
@@ -134,7 +131,7 @@
                                                     IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                     Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DeleteProfileCommand}"
                                                     CommandParameter="{Binding}">
-                                                
+
                                                 <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}"
                                                      Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                                             </Button>
@@ -392,9 +389,9 @@
                             Content="Validate parameters"
                             Classes="normal"
                             Command="{Binding TestConnectionCommand}"
-                            IsEnabled="{Binding !IsConnecting}" 
-                            ToolTip.Tip="Validate the connection parameters without actually connection."/> 
-    
+                            IsEnabled="{Binding !IsConnecting}"
+                            ToolTip.Tip="Validate the connection parameters without actually connection."/>
+
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
                         <Button Content="Connect"
                                 Classes="focused"
@@ -411,4 +408,4 @@
         </Border>
 
     </Grid>
-</Window>
+</UserControl>
