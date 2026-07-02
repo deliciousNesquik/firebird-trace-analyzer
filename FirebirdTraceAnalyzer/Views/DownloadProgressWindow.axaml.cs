@@ -14,25 +14,10 @@ public partial class DownloadProgressWindow : Window
     public DownloadProgressWindow(DownloadProgressViewModel viewModel) : this()
     {
         DataContext = viewModel;
-        
-        // Запрещаем закрытие во время загрузки
-        Closing += (_, e) =>
-        {
-            if (DataContext is DownloadProgressViewModel vm && vm.IsDownloading)
-            {
-                e.Cancel = true; // Запрещаем закрытие
-                
-                // Можно показать диалог подтверждения
-                // "Вы уверены, что хотите отменить загрузку?"
-            }
-        };
 
-        // Автоматически закрываем после завершения (опционально)
-        viewModel.Completed += (_, _) =>
-        {
-            // Можно автоматически закрыть или оставить открытым
-            // Close();
-        };
+        // Закрытие окна во время загрузки не отменяет её: возврат в док-панель делает владелец
+        // (MainWindowViewModel.PopOutDownload вешает свой обработчик Closing). Здесь ничего не
+        // блокируем — иначе окно нельзя было бы закрыть.
     }
 
     private void CloseButton_OnClick(object? sender, RoutedEventArgs e)
