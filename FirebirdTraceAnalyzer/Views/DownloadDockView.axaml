@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="150"
+             x:Class="FirebirdTraceAnalyzer.Views.DownloadDockView"
+             x:DataType="vm:DownloadProgressViewModel">
+
+    <Design.DataContext>
+        <vm:DownloadProgressViewModel />
+    </Design.DataContext>
+
+    <!-- Мини-панель прогресса загрузки: закреплена снизу-справа в главном окне.
+         Крестика нет — только «вынести в окно» и «отмена». -->
+    <Border Width="360"
+            Background="{DynamicResource SurfaceElevatedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="14"
+            BoxShadow="0 6 20 0 #40000000">
+
+        <StackPanel Spacing="8">
+
+            <!-- Header: title + pop-out + cancel -->
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                <TextBlock Grid.Column="0"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}">
+                    <Run Text="Downloading" />
+                    <Run Text="{Binding CurrentFileIndex}" />
+                    <Run Text="/" />
+                    <Run Text="{Binding TotalFiles}" />
+                </TextBlock>
+
+                <Button Grid.Column="1"
+                        Classes="normal"
+                        Height="32" Width="32"
+                        Padding="0"
+                        ToolTip.Tip="Open in a separate window"
+                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PopOutDownloadCommand}">
+                    <Svg Width="18" Height="18" Path="{DynamicResource ExportIcon}"
+                         Css="{DynamicResource ThemeIconStroke}" />
+                </Button>
+
+                <Button Grid.Column="2"
+                        Classes="danger"
+                        Height="32"
+                        Padding="10,0"
+                        Content="Cancel"
+                        Command="{Binding CancelCommand}" />
+            </Grid>
+
+            <!-- Current file -->
+            <TextBlock Text="{Binding CurrentFileName}"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+
+            <!-- Overall progress -->
+            <ProgressBar Value="{Binding OverallProgress}"
+                         Maximum="100"
+                         Height="6"
+                         CornerRadius="3" />
+
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                    <Run Text="{Binding TotalBytesTransferred, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                    <Run Text="/" />
+                    <Run Text="{Binding TotalBytesOverall, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                    <Run Text="•" />
+                    <Run Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" />
+                </TextBlock>
+
+                <TextBlock Grid.Column="1"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="{Binding OverallProgress, StringFormat={}{0:F0}%}" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>
