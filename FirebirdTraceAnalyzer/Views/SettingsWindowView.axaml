@@ -1,22 +1,19 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="640"
-        x:Class="FirebirdTraceAnalyzer.Views.SettingsWindow"
-        x:DataType="vm:SettingsWindowViewModel"
-        Title="Settings"
-        Width="640"
-        Height="640"
-        CanResize="False"
-        WindowStartupLocation="CenterOwner">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="640"
+             x:Class="FirebirdTraceAnalyzer.Views.SettingsWindowView"
+             x:DataType="vm:SettingsWindowViewModel"
+             Width="640"
+             MaxHeight="720">
 
     <Design.DataContext>
         <vm:SettingsWindowViewModel />
     </Design.DataContext>
 
-    <Window.Styles>
+    <UserControl.Styles>
         <!-- Строка настройки: слева название+описание, справа редактор значения.
              ColumnDefinitions задаётся инлайн на каждом Grid (через Style для коллекции
              ColumnDefinitions в Avalonia работает ненадёжно). -->
@@ -43,7 +40,7 @@
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="Margin" Value="0,4,0,10" />
         </Style>
-    </Window.Styles>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
@@ -425,4 +422,4 @@
         </Border>
 
     </Grid>
-</Window>
+</UserControl>

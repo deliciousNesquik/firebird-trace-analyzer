@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
@@ -15,7 +16,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// <summary>
 /// ViewModel диалога подключения к удалённому серверу
 /// </summary>
-public partial class RemoteConnectionDialogViewModel : ViewModelBase
+public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
@@ -98,8 +99,11 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
 
     #endregion
 
-    /// <summary>Событие успешного подключения (возвращает настройки)</summary>
-    public event EventHandler<SshConnectionSettings>? ConnectionEstablished;
+    /// <summary>
+    /// Диалог просит закрыться. Результат: <c>true</c> — подключение установлено (настройки уже
+    /// сохранены в <see cref="ISshConnectionService"/>), <c>false</c> — отмена.
+    /// </summary>
+    public event EventHandler<object?>? CloseRequested;
 
     public RemoteConnectionDialogViewModel(
         IWindowProvider windowProvider,
@@ -184,8 +188,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
             StatusMessage = "Connected successfully!";
             Logger.Info("Connection established successfully");
 
-            // Уведомляем об успешном подключении
-            ConnectionEstablished?.Invoke(this, settings);
+            // Уведомляем об успешном подключении (результат диалога — true)
+            CloseRequested?.Invoke(this, true);
         }
         catch (OperationCanceledException)
         {
@@ -219,7 +223,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase
     private void Cancel()
     {
         Logger.Info("Connection dialog cancelled");
-        ConnectionEstablished?.Invoke(this, null!);
+        CloseRequested?.Invoke(this, false);
     }
     
     [RelayCommand]

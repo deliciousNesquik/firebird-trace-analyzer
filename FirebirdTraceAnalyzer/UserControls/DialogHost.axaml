@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:dialogs="using:FirebirdTraceAnalyzer.Interfaces.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="FirebirdTraceAnalyzer.UserControls.DialogHost"
+             x:DataType="dialogs:IDialogService"
+             IsVisible="{Binding CurrentDialog, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+    <Panel>
+        <!-- Затемнение: перехватывает ввод (клики не доходят до UI под ним);
+             клик по фону = отмена. -->
+        <Border Background="#99000000" PointerPressed="OnBackdropPressed" />
+
+        <!-- Карточка диалога по центру. Содержимое — активный диалог-VM через ViewLocator. -->
+        <Border HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Margin="24"
+                CornerRadius="8"
+                ClipToBounds="True"
+                Background="{DynamicResource AppBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+            <ContentControl Content="{Binding CurrentDialog}" />
+        </Border>
+    </Panel>
+
+</UserControl>

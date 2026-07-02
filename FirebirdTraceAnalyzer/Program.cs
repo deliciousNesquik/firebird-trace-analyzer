@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Avalonia;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
@@ -12,6 +13,7 @@ using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using FirebirdTraceAnalyzer.Services.Dialogs;
 using FirebirdTraceAnalyzer.Services.EventLinking;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
@@ -110,6 +112,7 @@ internal sealed class Program
         services.AddSingleton<IEventChainService, EventChainService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IWindowProvider, WindowProvider>();
+        services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<ISortingService, SortingService>();
         services.AddSingleton<IFilteringService, FilteringService>();
         services.AddSingleton<ISearchService, SearchService>();
