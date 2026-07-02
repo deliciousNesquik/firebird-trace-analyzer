@@ -11,6 +11,7 @@ using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
@@ -54,6 +55,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ISearchService _searchService;
     private readonly IEventPropertyAccessor _propertyAccessor;
     private readonly IEventChainService _eventChainService;
+
+    /// <summary>Сервис модальных диалогов внутри окна (биндится оверлеем DialogHost).</summary>
+    public IDialogService Dialogs { get; }
 
     #endregion
 
@@ -152,6 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _remoteFileService = null!;
         _propertyAccessor = new EventPropertyAccessor();
         _eventChainService = null!;
+        Dialogs = null!;
 
         // Инициализация ViewModels
         StatisticInfoModels = new StatisticsInfoSectionViewModel();
@@ -183,6 +188,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IRemoteFileService remoteFileService,
         IEventPropertyAccessor propertyAccessor,
         IEventChainService eventChainService,
+        IDialogService dialogService,
         PluginManagerService pluginManager)
     {
         Logger.Info("Event(s) list(s) are clear");
@@ -207,6 +213,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _remoteFileService = remoteFileService ?? throw new ArgumentNullException(nameof(remoteFileService));
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _eventChainService = eventChainService ?? throw new ArgumentNullException(nameof(eventChainService));
+        Dialogs = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
 
         // Инициализация ViewModels
@@ -915,17 +922,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var historyViewModel = new ReportHistoryViewModel(_fileDialogService, _settingsService);
             await historyViewModel.LoadReportsCommand.ExecuteAsync(null);
 
-            var window = new Window
-            {
-                Title = "Recent Reports",
-                Width = 800,
-                Height = 600,
-                Content = new UserControls.ReportHistoryView { DataContext = historyViewModel },
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            await window.ShowDialog(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            await Dialogs.ShowDialogAsync<object>(historyViewModel);
         }
         catch (Exception ex)
         {
@@ -1331,11 +1328,10 @@ public partial class MainWindowViewModel : ViewModelBase
             cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _loadingCts = cts;
 
-            // Показываем диалог подключения
-            var connectionDialog = CreateRemoteConnectionDialog();
+            // Показываем диалог подключения как встроенный оверлей внутри главного окна
+            var connectionViewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
 
-            var connectionResult = await connectionDialog.ShowDialog<bool>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var connectionResult = await Dialogs.ShowDialogAsync<bool>(connectionViewModel);
 
             if (!connectionResult)
             {
@@ -1376,11 +1372,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
                 : _settingsService.GetRemoteDownloadDirectory();
 
-            // Показываем диалог выбора файлов (передаём целевую папку для проверки места)
-            var selectionDialog = CreateFileSelectionDialog(settings, remoteFiles, downloadDirectory);
+            // Показываем диалог выбора файлов как встроенный оверлей (передаём целевую папку для проверки места)
+            var selectionViewModel = CreateFileSelectionViewModel(settings, remoteFiles, downloadDirectory);
 
-            var selectedFiles = await selectionDialog.ShowDialog<IReadOnlyList<RemoteFileInfo>?>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var selectedFiles = await Dialogs.ShowDialogAsync<IReadOnlyList<RemoteFileInfo>>(selectionViewModel);
 
             if (selectedFiles == null || selectedFiles.Count == 0)
             {
@@ -1450,15 +1445,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private RemoteConnectionDialog CreateRemoteConnectionDialog()
-    {
-        // Резолвим через DI (все зависимости зарегистрированы) — без ручного new и null-зависимостей
-        var viewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
-
-        return new RemoteConnectionDialog(viewModel);
-    }
-
-    private RemoteFileSelectionDialog CreateFileSelectionDialog(
+    private RemoteFileSelectionViewModel CreateFileSelectionViewModel(
         SshConnectionSettings settings,
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory)
@@ -1480,7 +1467,7 @@ public partial class MainWindowViewModel : ViewModelBase
         viewModel.SetRefreshCallback(token =>
             _remoteFileService.GetFilesAsync(settings.RemoteDirectory, token));
 
-        return new RemoteFileSelectionDialog(viewModel);
+        return viewModel;
     }
 
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(
@@ -1953,9 +1940,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            var window = new SettingsWindow(viewModel);
-            var changed = await window.ShowDialog<bool>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var changed = await Dialogs.ShowDialogAsync<bool>(viewModel);
 
             if (!changed)
                 return;

@@ -142,6 +142,7 @@
     </NativeMenu.Menu>
 
 
+    <Panel>
     <Grid Background="{DynamicResource AppBackgroundBrush}" RowDefinitions="Auto Auto Auto * Auto, Auto">
         <usercontrols:MainMenuView Grid.Row="0"/>
 
@@ -293,4 +294,8 @@
                    Text="{Binding StatusMessage}"
                    Padding="10" />
     </Grid>
+
+        <!-- Оверлей модальных диалогов внутри окна -->
+        <usercontrols:DialogHost DataContext="{Binding Dialogs}" />
+    </Panel>
 </Window>
