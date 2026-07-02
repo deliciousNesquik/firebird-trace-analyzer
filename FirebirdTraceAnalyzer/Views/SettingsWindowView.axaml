@@ -139,6 +139,47 @@
 
                 <Separator Margin="0,6,0,16" />
 
+                <!-- Advanced -->
+                <TextBlock Classes="sectionHeader" Text="Advanced" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Grid.Column="0" Classes="label">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Classes="title" Text="Process while downloading" />
+                            <Border Background="{DynamicResource WarningSurfaceBrush}"
+                                    BorderBrush="{DynamicResource WarningBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="6,1"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="Advanced"
+                                           FontSize="9"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource WarningTextBrush}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Classes="desc"
+                                   Text="Allow processing of the downloaded file while another is downloading. Cuts total time on large batches, but is not recommended unless you understand the trade-offs." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="Enabled"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding AllowConcurrentProcessing}"/>
+                        <ToggleButton Content="Disabled"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !AllowConcurrentProcessing}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
                 <!-- Remote files -->
                 <TextBlock Classes="sectionHeader" Text="Remote files" />
 
