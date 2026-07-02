@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:usercontrols="clr-namespace:FirebirdTraceAnalyzer.UserControls"
+        xmlns:views="clr-namespace:FirebirdTraceAnalyzer.Views"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
         x:Class="FirebirdTraceAnalyzer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -287,6 +288,13 @@
                    Text="{Binding StatusMessage}"
                    Padding="10" />
     </Grid>
+
+        <!-- Мини-панель прогресса загрузки (снизу-справа), немодальная -->
+        <views:DownloadDockView DataContext="{Binding ActiveDownload}"
+                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsDownloadDockVisible}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,16,16" />
 
         <!-- Оверлей модальных диалогов внутри окна -->
         <usercontrols:DialogHost DataContext="{Binding Dialogs}" />
