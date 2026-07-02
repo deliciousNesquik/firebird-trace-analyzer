@@ -922,17 +922,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var historyViewModel = new ReportHistoryViewModel(_fileDialogService, _settingsService);
             await historyViewModel.LoadReportsCommand.ExecuteAsync(null);
 
-            var window = new Window
-            {
-                Title = "Recent Reports",
-                Width = 800,
-                Height = 600,
-                Content = new UserControls.ReportHistoryView { DataContext = historyViewModel },
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            await window.ShowDialog(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            await Dialogs.ShowDialogAsync<object>(historyViewModel);
         }
         catch (Exception ex)
         {
