@@ -129,6 +129,10 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         LogConfiguration.Apply(app.AppLogPath, app.ParserLogPath);
 
         Logger.Info("Settings saved from settings window");
+
+        // Применили и сохранили → закрываем диалог с результатом «изменения сохранены»,
+        // чтобы главное окно перечитало живые свойства (IsClassicSearch, видимость секций).
+        CloseRequested?.Invoke(this, true);
     }
 
     [RelayCommand]

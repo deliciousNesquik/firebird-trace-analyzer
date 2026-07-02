@@ -192,7 +192,7 @@
                         <Svg IsVisible="{Binding IsClassicSearch}" Width="40" Path="{DynamicResource ClassicSearchIcon}"
                              Css="{DynamicResource ThemeIconStroke}" />
                     
-                        <Svg IsVisible="{Binding !IsClassicSearch}" Width="40" Path="{DynamicResource RegexSearchIcon}"
+                        <Svg IsVisible="{Binding IsClassicSearch, Converter={x:Static BoolConverters.Not}}" Width="40" Path="{DynamicResource RegexSearchIcon}"
                              Css="{DynamicResource ThemeIconFill}" />
                     </Grid>
                 </Button>
