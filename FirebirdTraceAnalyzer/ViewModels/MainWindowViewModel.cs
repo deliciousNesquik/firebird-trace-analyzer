@@ -117,6 +117,21 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isFileLoading;
     [ObservableProperty] private double _loadProgress;
 
+    // --- Презентация загрузки: док-панель снизу-справа / вынесенное окно ---
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDownloadDockVisible))]
+    private DownloadProgressViewModel? _activeDownload;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDownloadDockVisible))]
+    private bool _isDownloadPoppedOut;
+
+    /// <summary>Мини-панель загрузки видна, пока идёт загрузка и она не вынесена в отдельное окно.</summary>
+    public bool IsDownloadDockVisible => ActiveDownload is not null && !IsDownloadPoppedOut;
+
+    // Экземпляр вынесенного окна прогресса (когда IsDownloadPoppedOut == true).
+    private DownloadProgressWindow? _downloadWindow;
+
     #endregion
 
     #region Observable Properties - Sorting & Filtering & Search
@@ -1470,6 +1485,33 @@ public partial class MainWindowViewModel : ViewModelBase
         return viewModel;
     }
 
+    /// <summary>Выносит текущую загрузку из док-панели в отдельное окно.</summary>
+    [RelayCommand]
+    private void PopOutDownload()
+    {
+        if (ActiveDownload is null)
+            return;
+
+        var window = new DownloadProgressWindow(ActiveDownload);
+
+        // Закрытие окна (X) во время загрузки не отменяет её, а возвращает в док-панель.
+        window.Closing += (_, _) =>
+        {
+            _downloadWindow = null;
+            if (ActiveDownload is { IsDownloading: true })
+                IsDownloadPoppedOut = false;
+        };
+
+        _downloadWindow = window;
+        IsDownloadPoppedOut = true;
+
+        var owner = App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window;
+        if (owner is not null)
+            window.Show(owner);
+        else
+            window.Show();
+    }
+
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory,
@@ -1479,12 +1521,11 @@ public partial class MainWindowViewModel : ViewModelBase
         var progressViewModel = new DownloadProgressViewModel();
         progressViewModel.Initialize(files);
 
-        var progressWindow = new DownloadProgressWindow(progressViewModel);
-
         var downloadedPaths = new List<string>();
 
-        // Показываем окно прогресса (неблокирующее)
-        progressWindow.Show();
+        // Презентация: сразу мини-панелью снизу-справа (немодально). Вынос в окно — по кнопке.
+        ActiveDownload = progressViewModel;
+        IsDownloadPoppedOut = false;
 
         try
         {
@@ -1549,12 +1590,15 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            // Гарантированно закрываем окно прогресса при любом исходе.
-            // Снимаем IsDownloading, иначе обработчик Closing заблокирует закрытие (например, при отмене).
+            // Гарантированно убираем презентацию при любом исходе (док и/или вынесенное окно).
+            // IsDownloading снимаем заранее, чтобы обработчик Closing не вернул окно в док.
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 progressViewModel.IsDownloading = false;
-                progressWindow.Close();
+                _downloadWindow?.Close();
+                _downloadWindow = null;
+                ActiveDownload = null;
+                IsDownloadPoppedOut = false;
             });
         }
     }

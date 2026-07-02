@@ -8,3 +8,6 @@ riderModule.iml
 # Артефакты сборки (скрипты в build/ — версионируются, результаты — нет)
 build/artifacts/
 build/icon.icns
+
+# macOS
+.DS_Store

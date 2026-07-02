@@ -1,205 +1,189 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+        xmlns:models="using:FirebirdTraceAnalyzer.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="580"
         x:Class="FirebirdTraceAnalyzer.Views.DownloadProgressWindow"
         x:DataType="vm:DownloadProgressViewModel"
         Title="Downloading Files"
         Width="600"
-        Height="500"
-        MinWidth="500"
-        MinHeight="400"
-        CanResize="False"
+        Height="580"
+        MinWidth="480"
+        MinHeight="440"
         WindowStartupLocation="CenterOwner">
 
     <Design.DataContext>
         <vm:DownloadProgressViewModel />
     </Design.DataContext>
-    
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+
+    <Window.Styles>
+        <!-- Строка файла в списке -->
+        <Style Selector="Border.fileRow">
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
                 Background="{DynamicResource SurfaceBrush}"
-                Padding="20"
+                Padding="20,16"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
-            
-            <StackPanel Spacing="8">
-                <TextBlock Text="Downloading Files"
+            <StackPanel Spacing="4">
+                <TextBlock Text="Downloading files"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                
                 <TextBlock Text="{Binding StatusMessage}"
                            FontSize="12"
+                           TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
         </Border>
 
-        <!-- Content -->
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="20" Margin="20">
-
-                <!-- Current File Progress -->
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Current File"
+        <!-- Overall progress -->
+        <Border Grid.Row="1" Padding="20,16">
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="Overall progress"
+                               FontSize="13"
                                FontWeight="SemiBold"
-                               FontSize="13" />
-
-                    <TextBlock FontSize="12">
-                        <Run Text="Downloading" />
-                        <Run Text="{Binding CurrentFileIndex}" FontWeight="Medium" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Grid.Column="1"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="{Binding CurrentFileIndex}" FontWeight="SemiBold" />
                         <Run Text="of" />
-                        <Run Text="{Binding TotalFiles}" FontWeight="Medium" />
-                        <Run Text=":" />
-                        <Run Text="{Binding CurrentFileName}" FontWeight="SemiBold" />
+                        <Run Text="{Binding TotalFiles}" FontWeight="SemiBold" />
+                        <Run Text="files" />
                     </TextBlock>
+                </Grid>
 
-                    <ProgressBar Value="{Binding CurrentFileProgress}"
-                                 Maximum="100"
-                                 Height="8"
-                                 CornerRadius="4" />
+                <ProgressBar Value="{Binding OverallProgress}"
+                             Maximum="100"
+                             Height="10"
+                             CornerRadius="5" />
 
-                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="{Binding CurrentFileBytes, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="{Binding TotalBytesTransferred, Converter={StaticResource BytesToReadableSizeConverter}}" />
                         <Run Text="/" />
-                        <Run Text="{Binding CurrentFileTotalBytes, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                        <Run Text="{Binding TotalBytesOverall, Converter={StaticResource BytesToReadableSizeConverter}}" />
                         <Run Text="•" />
-                        <Run Text="{Binding CurrentFileProgress, StringFormat={}{0:F1}%}" />
+                        <Run Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" />
+                        <Run Text="• Remaining:" />
+                        <Run Text="{Binding EstimatedTimeRemaining, Converter={StaticResource TimeSpanToStringConverter}}" />
                     </TextBlock>
-                </StackPanel>
-
-                <Separator />
-
-                <!-- Overall Progress -->
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Overall Progress"
-                               FontWeight="SemiBold"
-                               FontSize="13" />
-
-                    <ProgressBar Value="{Binding OverallProgress}"
-                                 Maximum="100"
-                                 Height="12"
-                                 CornerRadius="6" />
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <TextBlock Grid.Column="0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                            <Run Text="{Binding TotalBytesTransferred, Converter={StaticResource BytesToReadableSizeConverter}}" />
-                            <Run Text="/" />
-                            <Run Text="{Binding TotalBytesOverall, Converter={StaticResource BytesToReadableSizeConverter}}" />
-                            <Run Text="•" />
-                            <Run Text="{Binding OverallProgress, StringFormat={}{0:F1}%}" />
-                        </TextBlock>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                                <Run Text="Speed:" />
-                                <Run Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" FontWeight="Medium" />
-                            </TextBlock>
-
-                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                                <Run Text="Remaining:" />
-                                <Run Text="{Binding EstimatedTimeRemaining, Converter={StaticResource TimeSpanToStringConverter}}" FontWeight="Medium" />
-                            </TextBlock>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-
-                <Separator />
-
-                <!-- Completed Files -->
-                <StackPanel Spacing="8"
-                            IsVisible="{Binding CompletedFilesList, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    
-                    <TextBlock Text="Completed"
-                               FontWeight="SemiBold"
+                    <TextBlock Grid.Column="1"
                                FontSize="13"
-                               Foreground="{DynamicResource SuccessBrush}" />
-
-                    <Border Background="{DynamicResource SurfaceElevatedBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="12"
-                            MaxHeight="120">
-                        
-                        <ScrollViewer>
-                            <TextBlock Text="{Binding CompletedFilesList}"
-                                       FontSize="11"
-                                       FontFamily="Consolas,Courier New,monospace"
-                                       Foreground="{DynamicResource SuccessBrush}"
-                                       TextWrapping="Wrap" />
-                        </ScrollViewer>
-                    </Border>
-                </StackPanel>
-
-                <!-- Pending Files -->
-                <StackPanel Spacing="8"
-                            IsVisible="{Binding PendingFilesList, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    
-                    <TextBlock Text="Pending"
                                FontWeight="SemiBold"
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                    <Border Background="{DynamicResource SurfaceElevatedBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="12"
-                            MaxHeight="100">
-                        
-                        <ScrollViewer>
-                            <TextBlock Text="{Binding PendingFilesList}"
-                                       FontSize="11"
-                                       FontFamily="Consolas,Courier New,monospace"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       TextWrapping="Wrap" />
-                        </ScrollViewer>
-                    </Border>
-                </StackPanel>
-
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Text="{Binding OverallProgress, StringFormat={}{0:F0}%}" />
+                </Grid>
             </StackPanel>
-        </ScrollViewer>
+        </Border>
+
+        <!-- Files list -->
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="20,4,20,12">
+            <TextBlock Grid.Row="0"
+                       Text="Files"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,8"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <Border Grid.Row="1"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    ClipToBounds="True">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:DownloadFileItem">
+                                <Border Classes="fileRow">
+                                    <Grid ColumnDefinitions="24,*,Auto" VerticalAlignment="Center">
+
+                                        <!-- Status icon (одна видима) -->
+                                        <Panel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="○" FontSize="14"
+                                                       IsVisible="{Binding IsPending}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="↓" FontSize="14" FontWeight="Bold"
+                                                       IsVisible="{Binding IsDownloading}"
+                                                       Foreground="{DynamicResource AccentBrush}" />
+                                            <TextBlock Text="✓" FontSize="14" FontWeight="Bold"
+                                                       IsVisible="{Binding IsCompleted}"
+                                                       Foreground="{DynamicResource SuccessBrush}" />
+                                            <TextBlock Text="✕" FontSize="14" FontWeight="Bold"
+                                                       IsVisible="{Binding IsFailed}"
+                                                       Foreground="{DynamicResource ErrorTextBrush}" />
+                                        </Panel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding FileName}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                                        <!-- Status label (одна видима) -->
+                                        <Panel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Text="Pending" FontSize="11"
+                                                       IsVisible="{Binding IsPending}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="Downloading…" FontSize="11" FontWeight="SemiBold"
+                                                       IsVisible="{Binding IsDownloading}"
+                                                       Foreground="{DynamicResource AccentBrush}" />
+                                            <TextBlock Text="Done" FontSize="11"
+                                                       IsVisible="{Binding IsCompleted}"
+                                                       Foreground="{DynamicResource SuccessBrush}" />
+                                            <TextBlock Text="Failed" FontSize="11" FontWeight="SemiBold"
+                                                       IsVisible="{Binding IsFailed}"
+                                                       Foreground="{DynamicResource ErrorTextBrush}" />
+                                        </Panel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+        </Grid>
 
         <!-- Footer -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Background="{DynamicResource SurfaceBrush}"
-                Padding="20"
+                Padding="20,14"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
-            
             <Grid ColumnDefinitions="*,Auto">
-                
-                <!-- Status -->
                 <TextBlock Grid.Column="0"
                            VerticalAlignment="Center"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}">
-                    <Run Text="{Binding CurrentFileIndex}" />
-                    <Run Text="/" />
-                    <Run Text="{Binding TotalFiles}" />
-                    <Run Text="files" />
-                    <Run Text="•" />
-                    <Run Text="{Binding OverallProgress, StringFormat={}{0:F0}%}" FontWeight="SemiBold" />
-                </TextBlock>
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           IsVisible="{Binding IsDownloading}"
+                           Text="Closing this window keeps the download running in the corner panel." />
 
-                <!-- Cancel Button (только если идёт загрузка) -->
                 <Button Grid.Column="1"
                         Content="Cancel"
                         Classes="danger"
-                        Command="{Binding CancelCommand}"
-                        IsVisible="{Binding IsDownloading}"/>
+                        IsVisible="{Binding IsDownloading}"
+                        Command="{Binding CancelCommand}" />
 
-                <!-- Close Button (только после завершения) -->
                 <Button Grid.Column="1"
                         Content="Close"
-                        Classes="danger"
-                        Click="CloseButton_OnClick"
-                        IsVisible="{Binding IsCompleted}"/>
+                        Classes="normal"
+                        IsVisible="{Binding IsCompleted}"
+                        Click="CloseButton_OnClick" />
             </Grid>
         </Border>
 
