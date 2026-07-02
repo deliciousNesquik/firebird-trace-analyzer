@@ -1382,11 +1382,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 ? Path.Combine(Path.GetTempPath(), "FirebirdTraceAnalyzer", Guid.NewGuid().ToString())
                 : _settingsService.GetRemoteDownloadDirectory();
 
-            // Показываем диалог выбора файлов (передаём целевую папку для проверки места)
-            var selectionDialog = CreateFileSelectionDialog(settings, remoteFiles, downloadDirectory);
+            // Показываем диалог выбора файлов как встроенный оверлей (передаём целевую папку для проверки места)
+            var selectionViewModel = CreateFileSelectionViewModel(settings, remoteFiles, downloadDirectory);
 
-            var selectedFiles = await selectionDialog.ShowDialog<IReadOnlyList<RemoteFileInfo>?>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var selectedFiles = await Dialogs.ShowDialogAsync<IReadOnlyList<RemoteFileInfo>>(selectionViewModel);
 
             if (selectedFiles == null || selectedFiles.Count == 0)
             {
@@ -1456,7 +1455,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private RemoteFileSelectionDialog CreateFileSelectionDialog(
+    private RemoteFileSelectionViewModel CreateFileSelectionViewModel(
         SshConnectionSettings settings,
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory)
@@ -1478,7 +1477,7 @@ public partial class MainWindowViewModel : ViewModelBase
         viewModel.SetRefreshCallback(token =>
             _remoteFileService.GetFilesAsync(settings.RemoteDirectory, token));
 
-        return new RemoteFileSelectionDialog(viewModel);
+        return viewModel;
     }
 
     private async Task<IReadOnlyList<string>> DownloadFilesWithProgressAsync(

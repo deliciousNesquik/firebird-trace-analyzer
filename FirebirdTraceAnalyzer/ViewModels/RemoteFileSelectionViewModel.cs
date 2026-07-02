@@ -4,6 +4,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.ViewModels;
 using NLog;
@@ -14,7 +15,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// <summary>
 /// ViewModel диалога выбора файлов на удалённом сервере
 /// </summary>
-public partial class RemoteFileSelectionViewModel : ViewModelBase
+public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -58,8 +59,11 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
     private ObservableCollection<RemoteFileInfo> AllFiles { get; } = [];
     public RangeObservableCollection<RemoteFileInfo> FilteredFiles { get; } = [];
 
-    /// <summary>Событие подтверждения выбора файлов</summary>
-    public event EventHandler<IReadOnlyList<RemoteFileInfo>>? FilesSelected;
+    /// <summary>
+    /// Диалог просит закрыться. Результат: список выбранных файлов (подтверждение) или
+    /// <c>null</c> (отмена).
+    /// </summary>
+    public event EventHandler<object?>? CloseRequested;
 
     /// <summary>Колбэк получения свежего списка файлов с сервера (задаётся владельцем).</summary>
     private Func<CancellationToken, Task<IReadOnlyList<RemoteFileInfo>>>? _refreshCallback;
@@ -255,8 +259,11 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase
         Logger.Info("Confirmed selection: {Count} files, total size: {Size} bytes",
             selectedFiles.Count, requiredBytes);
 
-        FilesSelected?.Invoke(this, selectedFiles);
+        CloseRequested?.Invoke(this, selectedFiles);
     }
+
+    [RelayCommand]
+    private void Cancel() => CloseRequested?.Invoke(this, null);
 
     /// <summary>
     /// Свободное место на разделе, где находится <paramref name="directory"/>.
