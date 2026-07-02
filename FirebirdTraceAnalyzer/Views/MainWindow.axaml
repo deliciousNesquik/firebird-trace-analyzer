@@ -129,14 +129,7 @@
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
 
-            <NativeMenuItem Header="Settings">
-                <NativeMenuItem.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="Set up remote access" />
-                        <NativeMenuItem Header="Configure open file update" />
-                    </NativeMenu>
-                </NativeMenuItem.Menu>
-            </NativeMenuItem>
+            <NativeMenuItem Header="Settings" Command="{Binding OpenSettingsCommand}"/>
 
         </NativeMenu>
     </NativeMenu.Menu>
