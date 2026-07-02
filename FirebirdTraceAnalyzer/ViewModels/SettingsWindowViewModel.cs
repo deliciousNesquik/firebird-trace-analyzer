@@ -40,6 +40,13 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
     #endregion
 
+    #region Advanced
+
+    /// <summary>(Advanced) Парсить уже скачанный файл, пока качается следующий.</summary>
+    [ObservableProperty] private bool _allowConcurrentProcessing;
+
+    #endregion
+
     #region Paths
 
     [ObservableProperty] private string _remoteDownloadPath = string.Empty;
@@ -107,6 +114,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     {
         var app = _settingsService.App;
         app.IsClassicSearch = IsClassicSearch;
+        app.AllowConcurrentProcessing = AllowConcurrentProcessing;
         app.Theme = Theme;
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
         app.ReportsPath = ReportsPath?.Trim() ?? string.Empty;
@@ -330,6 +338,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private void LoadFrom(AppSettings app, UiSectionSettings ui)
     {
         IsClassicSearch = app.IsClassicSearch;
+        AllowConcurrentProcessing = app.AllowConcurrentProcessing;
         Theme = app.Theme;
         RemoteDownloadPath = app.RemoteDownloadPath;
         ReportsPath = app.ReportsPath;
@@ -348,6 +357,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         App = new AppSettings
         {
             IsClassicSearch = IsClassicSearch,
+            AllowConcurrentProcessing = AllowConcurrentProcessing,
             Theme = Theme,
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
             ReportsPath = ReportsPath?.Trim() ?? string.Empty,
