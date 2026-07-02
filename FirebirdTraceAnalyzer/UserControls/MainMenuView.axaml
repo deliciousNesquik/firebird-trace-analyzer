@@ -184,19 +184,6 @@
 
         </MenuItem>
 
-        <MenuItem Header="_Settings [S]">
-            <MenuItem
-                Header="_Preferences... [P]"
-                Command="{Binding OpenSettingsCommand}" />
-
-            <Separator />
-
-            <MenuItem
-                Header="Set up remote access" />
-
-            <MenuItem
-                Header="Configure open file update" />
-
-        </MenuItem>
+        <MenuItem Header="_Settings [S]" Command="{Binding OpenSettingsCommand}" />
     </Menu>
 </UserControl>
