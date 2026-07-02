@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using NLog;
 
@@ -15,7 +16,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// <summary>
 /// ViewModel для истории сгенерированных отчётов
 /// </summary>
-public partial class ReportHistoryViewModel : ViewModelBase
+public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IFileDialogService _fileDialogService;
@@ -49,6 +50,12 @@ public partial class ReportHistoryViewModel : ViewModelBase
         _fileDialogService = null!;
         _settingsService = null;
     }
+
+    /// <summary>Диалог просит закрыться (результат не используется).</summary>
+    public event EventHandler<object?>? CloseRequested;
+
+    [RelayCommand]
+    private void Close() => CloseRequested?.Invoke(this, null);
 
     /// <summary>
     /// Папка с историей отчётов: берётся из настроек (с дефолтом), создаётся при необходимости.

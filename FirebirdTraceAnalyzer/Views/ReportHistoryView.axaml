@@ -4,8 +4,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="FirebirdTraceAnalyzer.UserControls.ReportHistoryView"
-             x:DataType="vm:ReportHistoryViewModel">
+             x:Class="FirebirdTraceAnalyzer.Views.ReportHistoryView"
+             x:DataType="vm:ReportHistoryViewModel"
+             Width="800"
+             MaxHeight="640">
 
     <Design.DataContext>
         <vm:ReportHistoryViewModel />
@@ -20,7 +22,7 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBox Grid.Column="0"
                          Text="{Binding SearchText}"
                          PlaceholderText="Search reports..."
@@ -42,6 +44,13 @@
                         <Svg Width="40" Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                     </Button.Content>
                 </Button>
+
+                <Button Grid.Column="2"
+                        Content="Close"
+                        Command="{Binding CloseCommand}"
+                        Margin="8,0,0,0"
+                        Classes="danger"
+                        Height="40" />
             </Grid>
         </Border>
 

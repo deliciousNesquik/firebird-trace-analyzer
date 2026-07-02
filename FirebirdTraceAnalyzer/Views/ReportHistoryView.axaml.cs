@@ -2,7 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
-namespace FirebirdTraceAnalyzer.UserControls;
+namespace FirebirdTraceAnalyzer.Views;
 
 public partial class ReportHistoryView : UserControl
 {
