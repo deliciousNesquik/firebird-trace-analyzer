@@ -402,6 +402,7 @@
             <x:String x:Key="ClassicSearchIcon">avares://FirebirdTraceAnalyzer/Assets/text-search.svg</x:String>
             <x:String x:Key="RegexSearchIcon">avares://FirebirdTraceAnalyzer/Assets/regex-search.svg</x:String>
             <x:String x:Key="ImportIcon">avares://FirebirdTraceAnalyzer/Assets/import.svg</x:String>
+            <x:String x:Key="ResetIcon">avares://FirebirdTraceAnalyzer/Assets/reset.svg</x:String>
 
             <!-- Подключение всех конвертеров -->
             <converters:BoolToPasswordCharConverter x:Key="BoolToPasswordCharConverter" />
