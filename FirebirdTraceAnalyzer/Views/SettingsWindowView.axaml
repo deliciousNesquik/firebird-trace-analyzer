@@ -50,15 +50,43 @@
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
-            <StackPanel Spacing="6">
-                <TextBlock Text="Application Settings"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Values are applied after you press Save"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-            </StackPanel>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="5">
+                    <TextBlock Text="Application Settings"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="Values are applied after you press Save"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+                    <Button Height="40"
+                            Classes="normal"
+                            ToolTip.Tip="Importing settings from a file will overwrite all current settings. Use with caution."
+                            Command="{Binding ImportCommand}">
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                            <TextBlock Text="Import" />
+                        </StackPanel>
+                        
+                    </Button>
+
+                    <Button Height="40"
+                            Classes="normal"
+                            Command="{Binding ExportCommand}"
+                            ToolTip.Tip="Export current settings to a file.">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Svg Height="20" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                            <TextBlock Text="Export" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+            
         </Border>
 
         <!-- Content -->
@@ -80,7 +108,7 @@
                          нужный режим (Command), IsChecked отражает состояние в одну сторону. -->
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Classic"
                                       MinWidth="84"
@@ -225,39 +253,54 @@
 
                 <!-- Parser rules -->
                 <TextBlock Classes="sectionHeader" Text="Parser rules" />
-
-                <StackPanel Spacing="8">
-                    <TextBlock Text="rules.json defines how trace lines are parsed. It lives in the app data folder — import a custom file or open the folder to edit it."
-                               FontSize="11"
-                               TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-
-                    <Border Background="{DynamicResource WarningSurfaceBrush}"
-                            BorderBrush="{DynamicResource WarningBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="12">
-                        <TextBlock Text="Importing rules takes effect after restarting the application."
-                                   TextWrapping="Wrap"
+                
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <StackPanel Grid.Column="0" Spacing="8">
+                        <TextBlock Text="rules.json defines how trace lines are parsed. It lives in the app data folder — import a custom file or open the folder to edit it."
                                    FontSize="11"
-                                   Foreground="{DynamicResource WarningTextBrush}" />
-                    </Border>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Width="40" Height="40"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Spacing="8">
+                        <Button Height="40"
                                 Classes="focused"
                                 ToolTip.Tip="Import rules.json"
                                 Command="{Binding ImportRulesFileCommand}">
-                            <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                                <TextBlock Text="Import" />
+                            </StackPanel>
                         </Button>
 
-                        <Button Width="40" Height="40"
+                        <Button Height="40"
                                 Classes="normal"
                                 ToolTip.Tip="Open rules folder"
                                 Command="{Binding OpenRulesFolderCommand}">
-                            <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                <TextBlock Text="Open Folder" />
+                            </StackPanel>
+                            
                         </Button>
                     </StackPanel>
+                </Grid>
+                <Border Background="{DynamicResource WarningSurfaceBrush}"
+                        BorderBrush="{DynamicResource WarningBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Margin="0 15 0 0"
+                        Padding="12">
+                    <TextBlock Text="Importing rules takes effect after restarting the application."
+                               TextWrapping="Wrap"
+                               FontSize="11"
+                               Foreground="{DynamicResource WarningTextBrush}" />
+                </Border>
+                
+                <StackPanel Spacing="8">
+                    
                 </StackPanel>
 
                 <Separator Margin="0,6,0,16" />
@@ -272,7 +315,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Show"
                                       MinWidth="84"
@@ -294,7 +337,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Show"
                                       MinWidth="84"
@@ -316,7 +359,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Show"
                                       MinWidth="84"
@@ -338,7 +381,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Show"
                                       MinWidth="84"
@@ -360,7 +403,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <ToggleButton Content="Show"
                                       MinWidth="84"
@@ -392,31 +435,40 @@
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                    
                     <Button Grid.Column="0"
-                            Content="Reset to defaults"
                             Classes="normal"
-                            Command="{Binding ResetToDefaultsCommand}" />
+                            Command="{Binding ResetToDefaultsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Svg Width="20" Height="20" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFill}" />
+                            <TextBlock Text="Reset to defaults" />
+                        </StackPanel>
+                    </Button>
+                    
 
                     <Button Grid.Column="2"
-                            Content="Import"
-                            Classes="normal"
-                            Command="{Binding ImportCommand}" />
+                            Height="40"
+                            Classes="focused"
+                            Command="{Binding SaveCommand}" >
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Svg Path="{DynamicResource SaveIcon}"
+                                 Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="Save" />
+                        </StackPanel>
+                    </Button>
 
                     <Button Grid.Column="3"
-                            Content="Export"
-                            Classes="normal"
-                            Command="{Binding ExportCommand}" />
-
-                    <Button Grid.Column="4"
-                            Content="Save"
-                            Classes="focused"
-                            Command="{Binding SaveCommand}" />
-
-                    <Button Grid.Column="5"
-                            Content="Close"
+                            Height="40"
                             Classes="danger"
-                            Command="{Binding CancelCommand}" />
+                            Command="{Binding CancelCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Svg Path="{DynamicResource ClearIcon}"
+                                 Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="Cancel" />
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Grid>
         </Border>
