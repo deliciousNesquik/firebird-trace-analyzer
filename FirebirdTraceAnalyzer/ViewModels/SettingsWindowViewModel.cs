@@ -3,6 +3,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
@@ -15,7 +16,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// только по кнопке «Save». Reset/Import загружают значения в рабочую копию (тоже до Save),
 /// Export пишет текущую рабочую копию в файл.
 /// </summary>
-public partial class SettingsWindowViewModel : ViewModelBase
+public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -68,7 +69,7 @@ public partial class SettingsWindowViewModel : ViewModelBase
     [ObservableProperty] private string _statusMessage = string.Empty;
 
     /// <summary>Запрос на закрытие окна. Аргумент: были ли сохранены изменения.</summary>
-    public event EventHandler<bool>? CloseRequested;
+    public event EventHandler<object?>? CloseRequested;
 
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public SettingsWindowViewModel()

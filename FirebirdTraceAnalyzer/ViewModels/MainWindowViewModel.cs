@@ -1950,9 +1950,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            var window = new SettingsWindow(viewModel);
-            var changed = await window.ShowDialog<bool>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+            var changed = await Dialogs.ShowDialogAsync<bool>(viewModel);
 
             if (!changed)
                 return;
