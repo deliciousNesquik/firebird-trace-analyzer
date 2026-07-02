@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Models;
@@ -54,13 +55,10 @@ public partial class DownloadProgressViewModel : ViewModelBase
 
     #endregion
 
-    #region Observable Properties - Completed Files
+    #region Files
 
-    [ObservableProperty]
-    private string _completedFilesList = string.Empty;
-
-    [ObservableProperty]
-    private string _pendingFilesList = string.Empty;
+    /// <summary>Файлы очереди скачивания со статусами (наглядный список в окне прогресса).</summary>
+    public ObservableCollection<DownloadFileItem> Files { get; } = new();
 
     #endregion
 
@@ -78,8 +76,6 @@ public partial class DownloadProgressViewModel : ViewModelBase
     #endregion
 
     private DateTime _startTime;
-    private readonly List<string> _completedFiles = new();
-    private readonly List<string> _pendingFiles = new();
 
     // Фактический объём завершённых файлов и карта размеров — для точного общего прогресса
     private long _completedBytes;
@@ -99,19 +95,16 @@ public partial class DownloadProgressViewModel : ViewModelBase
         TotalBytesOverall = filesToDownload.Sum(f => f.Size);
         
         _startTime = DateTime.Now;
-
-        _completedFiles.Clear();
         _completedBytes = 0;
 
         _fileSizes.Clear();
         foreach (var f in filesToDownload)
             _fileSizes[f.FileName] = f.Size;
 
-        _pendingFiles.Clear();
-        _pendingFiles.AddRange(filesToDownload.Select(f => f.FileName));
+        Files.Clear();
+        foreach (var f in filesToDownload)
+            Files.Add(new DownloadFileItem { FileName = f.FileName });
 
-        UpdatePendingFilesList();
-        
         StatusMessage = $"Ready to download {TotalFiles} file(s)";
         Logger.Info("Download initialized: {Count} files, total size: {Size} bytes", 
             TotalFiles, TotalBytesOverall);
@@ -152,14 +145,12 @@ public partial class DownloadProgressViewModel : ViewModelBase
 
     public void FileCompleted(string fileName)
     {
-        _completedFiles.Add(fileName);
-        _pendingFiles.Remove(fileName);
-
         if (_fileSizes.TryGetValue(fileName, out var size))
             _completedBytes += size;
 
-        UpdateCompletedFilesList();
-        UpdatePendingFilesList();
+        var item = Files.FirstOrDefault(f => f.FileName == fileName);
+        if (item is not null)
+            item.Status = DownloadItemStatus.Completed;
 
         Logger.Debug("File completed: {FileName}", fileName);
     }
@@ -169,7 +160,11 @@ public partial class DownloadProgressViewModel : ViewModelBase
         CurrentFileName = fileName;
         CurrentFileBytes = 0;
         CurrentFileProgress = 0;
-        
+
+        var item = Files.FirstOrDefault(f => f.FileName == fileName);
+        if (item is not null)
+            item.Status = DownloadItemStatus.Downloading;
+
         StatusMessage = $"Downloading {fileName}...";
         Logger.Debug("File started: {FileName}", fileName);
     }
@@ -189,8 +184,13 @@ public partial class DownloadProgressViewModel : ViewModelBase
     public void DownloadFailed(string errorMessage)
     {
         IsDownloading = false;
+
+        var item = Files.FirstOrDefault(f => f.FileName == CurrentFileName);
+        if (item is not null)
+            item.Status = DownloadItemStatus.Failed;
+
         StatusMessage = $"✗ Download failed: {errorMessage}";
-        
+
         Logger.Error("Download failed: {Error}", errorMessage);
     }
 
@@ -211,16 +211,6 @@ public partial class DownloadProgressViewModel : ViewModelBase
         StatusMessage = $"Downloading {CurrentFileIndex}/{TotalFiles} • " +
                        $"{speedMBps:F2} MB/s • " +
                        $"Remaining: {remaining}";
-    }
-
-    private void UpdateCompletedFilesList()
-    {
-        CompletedFilesList = string.Join("\n", _completedFiles.Select(f => $"✓ {f}"));
-    }
-
-    private void UpdatePendingFilesList()
-    {
-        PendingFilesList = string.Join("\n", _pendingFiles.Select(f => $"• {f}"));
     }
 
     public string GetFormattedSpeed()
