@@ -48,6 +48,11 @@
                                    Foreground="White" />
                     </Border>
                 </StackPanel>
+                <TextBlock Text="If the trace lacks attach/detach records, the chain may be incomplete."
+                           FontSize="12"
+                           FontWeight="Bold"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
 
                 <TextBlock Text="{Binding ChainSummary}"
                            FontSize="12"
@@ -58,19 +63,6 @@
         <!-- Content -->
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="16" Margin="20">
-
-                <!-- Selected event -->
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Selected event"
-                               FontWeight="SemiBold"
-                               FontSize="13"
-                               Foreground="{DynamicResource AccentBrush}" />
-
-                    <ContentControl Content="{Binding FocusedEvent}" />
-                </StackPanel>
-
-                <Separator />
-
                 <!-- Lifecycle chain -->
                 <StackPanel Spacing="8">
                     <TextBlock Text="Lifecycle chain"
@@ -82,7 +74,7 @@
                                FontSize="11"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
-
+                    
                     <ItemsRepeater ItemsSource="{Binding Chain}">
                         <ItemsRepeater.ItemTemplate>
                             <DataTemplate x:DataType="vm:ChainItemViewModel">
