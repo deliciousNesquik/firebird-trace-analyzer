@@ -129,5 +129,26 @@
             </ItemsControl>
         </ScrollViewer>
 
+        <!-- Empty state -->
+        <Border Grid.Row="1"
+                Padding="40"
+                IsVisible="{Binding !FilteredReports.Count}">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        MaxWidth="400">
+                <TextBlock Text="No generated reports"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Reports you generate will appear here."
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
     </Grid>
 </UserControl>
