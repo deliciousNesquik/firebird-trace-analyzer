@@ -7,6 +7,7 @@ public class AppSettingsMock: AppSettings
     public AppSettingsMock()
     {
         IsClassicSearch = true;
+        AllowConcurrentProcessing = false;
         Theme = AppTheme.Auto;
         RemoteDownloadPath = string.Empty;
         ReportsPath = string.Empty;
