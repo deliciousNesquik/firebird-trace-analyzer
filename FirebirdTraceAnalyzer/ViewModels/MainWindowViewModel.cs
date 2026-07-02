@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -1402,21 +1403,51 @@ public partial class MainWindowViewModel : ViewModelBase
             // Создаём каталог только после подтверждения выбора.
             Directory.CreateDirectory(downloadDirectory);
 
-            // Загружаем файлы с прогрессом
-            var downloadedPaths = await DownloadFilesWithProgressAsync(
-                selectedFiles,
-                downloadDirectory,
-                settings.DeleteAfterProcessingFromServer,
-                cts.Token);
+            int processedCount;
 
-            // Обрабатываем загруженные файлы
-            await ProcessDownloadedFilesAsync(
-                downloadedPaths,
-                deleteLocalFilesAfterProcessing,
-                cts.Token);
+            if (_appSettings.AllowConcurrentProcessing)
+            {
+                // (Advanced) Overlap: качаем и парсим одновременно. Цикл скачивания — producer,
+                // единственный consumer-таск парсит файлы по мере готовности. Один consumer →
+                // AllEvents/_eventsByFileHash трогает только один поток, гонок нет.
+                var channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+                {
+                    SingleReader = true,
+                    SingleWriter = true
+                });
 
-            StatusMessage = $"Successfully processed {downloadedPaths.Count} remote file(s).";
-            Logger.Info("Remote files processed: {Count}", downloadedPaths.Count);
+                var downloadTask = DownloadFilesWithProgressAsync(
+                    selectedFiles,
+                    downloadDirectory,
+                    settings.DeleteAfterProcessingFromServer,
+                    cts.Token,
+                    channel.Writer);
+
+                var processTask = ProcessDownloadedFilesStreamAsync(
+                    channel.Reader,
+                    deleteLocalFilesAfterProcessing,
+                    cts.Token);
+
+                await Task.WhenAll(downloadTask, processTask);
+                processedCount = await processTask;
+            }
+            else
+            {
+                // Последовательно: сначала скачиваем все файлы, затем парсим.
+                var downloadedPaths = await DownloadFilesWithProgressAsync(
+                    selectedFiles,
+                    downloadDirectory,
+                    settings.DeleteAfterProcessingFromServer,
+                    cts.Token);
+
+                processedCount = await ProcessDownloadedFilesAsync(
+                    downloadedPaths,
+                    deleteLocalFilesAfterProcessing,
+                    cts.Token);
+            }
+
+            StatusMessage = $"Successfully processed {processedCount} remote file(s).";
+            Logger.Info("Remote files processed: {Count}", processedCount);
         }
         catch (OperationCanceledException)
         {
@@ -1516,7 +1547,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory,
         bool deleteAfterDownload,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ChannelWriter<string>? sink = null)
     {
         var progressViewModel = new DownloadProgressViewModel();
         progressViewModel.Initialize(files);
@@ -1564,6 +1596,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 downloadedPaths.Add(localPath);
 
                 await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.FileCompleted(file.FileName); });
+
+                // В overlap-режиме отдаём путь потребителю сразу, чтобы парсинг шёл параллельно
+                // со скачиванием следующего файла.
+                if (sink is not null)
+                    await sink.WriteAsync(localPath, cancellationToken);
             }
 
             // Удаляем с сервера если нужно
@@ -1575,6 +1612,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 Logger.Info("Deleted {Count} files from server", remotePaths.Count);
             }
 
+            // Все файлы отданы потребителю: закрываем канал, чтобы consumer завершил обработку,
+            // не дожидаясь косметической паузы ниже.
+            sink?.TryComplete();
+
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadCompleted(); });
 
             // Ждём 2 секунды, чтобы пользователь увидел завершение
@@ -1584,12 +1625,19 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            // Пробрасываем ошибку потребителю (если он есть), чтобы его await foreach завершился
+            // исключением, а не завис в ожидании новых элементов.
+            sink?.TryComplete(ex);
+
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadFailed(ex.Message); });
 
             throw;
         }
         finally
         {
+            // Страховка: если канал ещё открыт (например, неожиданный выход) — закрываем.
+            sink?.TryComplete();
+
             // Гарантированно убираем презентацию при любом исходе (док и/или вынесенное окно).
             // IsDownloading снимаем заранее, чтобы обработчик Closing не вернул окно в док.
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -1603,7 +1651,11 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private async Task ProcessDownloadedFilesAsync(
+    /// <summary>
+    /// Последовательная обработка: все файлы уже скачаны, парсим их по списку.
+    /// Возвращает число реально добавленных (не-дубликатных) файлов.
+    /// </summary>
+    private async Task<int> ProcessDownloadedFilesAsync(
         IReadOnlyList<string> downloadedPaths,
         bool deleteAfterProcessing,
         CancellationToken cancellationToken)
@@ -1618,57 +1670,8 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var fileInfo = new FileInfo(path);
-
-                if (!fileInfo.Exists)
-                {
-                    Logger.Warn("Downloaded file not found: {Path}", path);
-                    continue;
-                }
-
-                StatusMessage = $"Processing: {fileInfo.Name}";
-
-                var fileHash = await CalculateFileHashAsync(path, cancellationToken);
-
-                if (IsDuplicate(fileHash))
-                {
-                    Logger.Warn("Duplicate file skipped: {FilePath}", path);
-
-                    // Удаляем дубликат с диска только если включено удаление локальных файлов
-                    if (deleteAfterProcessing)
-                    {
-                        try
-                        {
-                            File.Delete(path);
-                        }
-                        catch
-                        {
-                            /* ignore */
-                        }
-                    }
-
-                    continue;
-                }
-
-                var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken);
-
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                    FileCards.Add(CreateFileCardViewModel(traceModel)));
-
-                addedCount++;
-
-                // Удаляем локальный файл после обработки только если пользователь это выбрал
-                if (deleteAfterProcessing)
-                {
-                    try
-                    {
-                        File.Delete(path);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn(ex, "Failed to delete local file: {Path}", path);
-                    }
-                }
+                if (await ProcessSingleDownloadedFileAsync(path, deleteAfterProcessing, cancellationToken))
+                    addedCount++;
             }
         }
         finally
@@ -1681,6 +1684,112 @@ public partial class MainWindowViewModel : ViewModelBase
         if (addedCount > 0) ApplyAllFilters();
 
         StatusMessage = $"Processed {addedCount} remote file(s).";
+
+        return addedCount;
+    }
+
+    /// <summary>
+    /// (Advanced) Overlap-обработка: consumer читает пути скачанных файлов из канала и парсит их
+    /// по мере поступления, пока producer (цикл скачивания) продолжает качать следующие.
+    /// Единственный consumer — поэтому <see cref="ParseFileAsync"/> и коллекции остаются
+    /// однопоточными. Возвращает число реально добавленных файлов.
+    /// </summary>
+    private async Task<int> ProcessDownloadedFilesStreamAsync(
+        ChannelReader<string> reader,
+        bool deleteAfterProcessing,
+        CancellationToken cancellationToken)
+    {
+        var addedCount = 0;
+
+        // Продолжения после await по каналу могут резюмироваться не на UI-потоке. Обработку каждого
+        // файла (парсинг + мутация AllEvents/FileCards/StatusMessage) и обновление списка событий
+        // выполняем строго на UI-потоке — как и остальной код приложения (single-threaded модель).
+        // Overlap при этом сохраняется: тяжёлая SFTP-передача идёт в Task.Run внутри
+        // DownloadFileAsync, пока UI-поток парсит уже скачанный файл.
+        //
+        // В отличие от последовательного режима, обновляем видимый список ПОСЛЕ КАЖДОГО файла, а не
+        // одним пакетом в конце: смысл overlap-режима в том, чтобы события уже обработанных файлов
+        // появлялись сразу, не дожидаясь окончания всей загрузки.
+        await foreach (var path in reader.ReadAllAsync(cancellationToken))
+        {
+            var added = await Dispatcher.UIThread.InvokeAsync(
+                () => ProcessSingleDownloadedFileAsync(path, deleteAfterProcessing, cancellationToken));
+
+            if (!added)
+                continue;
+
+            addedCount++;
+            await Dispatcher.UIThread.InvokeAsync(ApplyAllFilters);
+        }
+
+        StatusMessage = $"Processed {addedCount} remote file(s).";
+
+        return addedCount;
+    }
+
+    /// <summary>
+    /// Обрабатывает один скачанный файл: проверка существования, хэш, отсев дубликатов, парсинг,
+    /// добавление карточки файла и (опционально) удаление локального файла. Возвращает
+    /// <c>true</c>, если файл действительно добавлен (не пропущен и не дубликат).
+    /// </summary>
+    private async Task<bool> ProcessSingleDownloadedFileAsync(
+        string path,
+        bool deleteAfterProcessing,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var fileInfo = new FileInfo(path);
+
+        if (!fileInfo.Exists)
+        {
+            Logger.Warn("Downloaded file not found: {Path}", path);
+            return false;
+        }
+
+        StatusMessage = $"Processing: {fileInfo.Name}";
+
+        var fileHash = await CalculateFileHashAsync(path, cancellationToken);
+
+        if (IsDuplicate(fileHash))
+        {
+            Logger.Warn("Duplicate file skipped: {FilePath}", path);
+
+            // Удаляем дубликат с диска только если включено удаление локальных файлов
+            if (deleteAfterProcessing)
+            {
+                try
+                {
+                    File.Delete(path);
+                }
+                catch
+                {
+                    /* ignore */
+                }
+            }
+
+            return false;
+        }
+
+        var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+            FileCards.Add(CreateFileCardViewModel(traceModel)));
+
+        // Удаляем локальный файл после обработки только если пользователь это выбрал
+        if (deleteAfterProcessing)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to delete local file: {Path}", path);
+            }
+        }
+
+        return true;
     }
 
     #endregion
