@@ -277,9 +277,20 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     /// </summary>
     private void InitializeAvailableOptions()
     {
-        // Переменные заголовка
+        // Переменные заголовка. Агрегаты времени исполнения (среднее/макс/мин) убраны из шапки —
+        // им место в колонках-агрегатах таблицы, а не в оглавлении отчёта.
+        var excludedVariables = new HashSet<ReportVariableType>
+        {
+            ReportVariableType.AverageExecutionTime,
+            ReportVariableType.MaxExecutionTime,
+            ReportVariableType.MinExecutionTime
+        };
+
         foreach (ReportVariableType varType in Enum.GetValues(typeof(ReportVariableType)))
         {
+            if (excludedVariables.Contains(varType))
+                continue;
+
             var variable = new ReportVariableItem
             {
                 Type = varType,
