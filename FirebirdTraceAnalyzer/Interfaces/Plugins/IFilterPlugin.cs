@@ -1,8 +1,10 @@
-﻿namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+using FirebirdTraceAnalyzer.Services.Filtering;
 
-/// <summary>Интерфейс для плагинов, предоставляющих кастомные фильтры (на будущее)</summary>
+namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+
+/// <summary>Интерфейс для плагинов, предоставляющих кастомные фильтры</summary>
 public interface IFilterPlugin : IAnalyzerPlugin
 {
-    // Заготовка под будущую систему фильтрации
-    // IEnumerable<FilterDescriptor> GetFilters();
+    /// <summary>Возвращает кастомные фильтры, добавляемые плагином.</summary>
+    IEnumerable<FilterDescriptor> GetFilters();
 }

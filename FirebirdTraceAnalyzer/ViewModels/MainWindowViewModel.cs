@@ -236,8 +236,9 @@ public partial class MainWindowViewModel : ViewModelBase
         StatisticInfoModels = new StatisticsInfoSectionViewModel();
         FiltersPanelViewModel = new FiltersPanelViewModel(ApplyAllFilters, _propertyAccessor);
 
-        // Регистрация пользовательских сортировок
+        // Регистрация пользовательских сортировок и фильтров из плагинов
         RegisterCustomSorts();
+        RegisterCustomFilters();
 
         // Загрузка настроек
         LoadSettings();
@@ -358,6 +359,29 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         Logger.Info($"Total custom sorts registered from plugins: {loadedSortsCount}");
+    }
+
+    /// <summary>Регистрирует фильтры из загруженных плагинов</summary>
+    private void RegisterCustomFilters()
+    {
+        // Плагины уже загружены с диска в RegisterCustomSorts (LoadAllPlugins), поэтому повторно
+        // не сканируем — просто берём те, что поддерживают фильтрацию.
+        var filterPlugins = _pluginManager.GetFilterPlugins();
+
+        int loadedFiltersCount = 0;
+
+        foreach (var plugin in filterPlugins)
+        {
+            foreach (var filterDescriptor in plugin.GetFilters())
+            {
+                _filteringService.RegisterCustomFilter(filterDescriptor);
+                loadedFiltersCount++;
+            }
+
+            Logger.Info($"Loaded filters from plugin: {plugin.Name} (v{plugin.Version})");
+        }
+
+        Logger.Info($"Total custom filters registered from plugins: {loadedFiltersCount}");
     }
 
     #endregion
