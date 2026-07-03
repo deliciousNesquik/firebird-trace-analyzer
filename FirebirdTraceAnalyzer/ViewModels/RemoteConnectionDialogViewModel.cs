@@ -228,7 +228,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         return !IsConnecting 
                && !string.IsNullOrWhiteSpace(Hostname)
                && !string.IsNullOrWhiteSpace(Username)
-               && Port > 0 && Port <= 65535;
+               && Port is > 0 and <= 65535;
     }
     
     [RelayCommand]
