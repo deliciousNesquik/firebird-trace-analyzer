@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
+using NLog.Common;
 
 namespace FirebirdTraceAnalyzer.Services;
 
@@ -45,6 +46,18 @@ public static class LogConfiguration
     {
         GlobalDiagnosticsContext.Set(AppLogGdcKey, ResolveAppLogFile(appLogPath));
         GlobalDiagnosticsContext.Set(ParserLogGdcKey, ResolveParserLogFile(parserLogPath));
+
+        // Путь внутреннего лога NLog резолвим здесь, а не в nlog.config: его упрощённый парсер
+        // не понимает ${specialfolder:folder=...} и создаёт папку с буквальным именем плейсхолдера.
+        try
+        {
+            Directory.CreateDirectory(DefaultLogDirectory);
+            InternalLogger.LogFile = Path.Combine(DefaultLogDirectory, "internal.log");
+        }
+        catch
+        {
+            // Не критично — внутренний лог NLog не обязателен.
+        }
     }
 
     /// <summary>
