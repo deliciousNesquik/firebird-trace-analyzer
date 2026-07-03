@@ -32,7 +32,7 @@ public sealed class ReportProjectionService : IReportProjectionService
             .ToList();
 
         var columns = fields
-            .Select(f => new ReportColumn(f.DisplayName, f.Format, f.WidthPercent, f.Alignment))
+            .Select(f => new ReportColumn(BuildColumnHeader(f), f.Format, f.WidthPercent, f.Alignment))
             .ToList();
 
         var groupByPaths = template.Body.GroupByFields;
@@ -50,6 +50,29 @@ public sealed class ReportProjectionService : IReportProjectionService
 
         return new ReportTable(columns, rows);
     }
+
+    /// <summary>
+    /// Заголовок колонки для вывода: обычное поле — как есть; агрегат — с приставкой функции
+    /// (напр. «Error count (Count)»); ключ группировки — с приставкой «(group key)».
+    /// Внутренняя сортировка/логика по-прежнему работают с исходным DisplayName поля.
+    /// </summary>
+    private static string BuildColumnHeader(EventField field) => field.Kind switch
+    {
+        ColumnKind.GroupKey => $"{field.DisplayName} (group key)",
+        ColumnKind.Aggregate => $"{field.DisplayName} ({AggregateLabel(field.Aggregate)})",
+        _ => field.DisplayName
+    };
+
+    private static string AggregateLabel(AggregateFunction? aggregate) => aggregate switch
+    {
+        AggregateFunction.Count => "Count",
+        AggregateFunction.CountDistinct => "Count distinct",
+        AggregateFunction.Sum => "Sum",
+        AggregateFunction.Average => "Avg",
+        AggregateFunction.Min => "Min",
+        AggregateFunction.Max => "Max",
+        _ => "Aggregate"
+    };
 
     /// <summary>Одна строка на событие — значения свойств по PropertyPath.</summary>
     private List<IReadOnlyList<object?>> BuildEventRows(
