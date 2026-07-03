@@ -151,7 +151,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         try
         {
             // обновление последнего использования
-            SavedProfiles[SavedProfiles.IndexOf(SelectedProfile)].LastUsedAt = DateTime.Now;
+            if (SelectedProfile != null)
+                SavedProfiles[SavedProfiles.IndexOf(SelectedProfile)].LastUsedAt = DateTime.Now;
             await SaveProfilesToFileAsync();
             
             var settings = CreateConnectionSettings();
