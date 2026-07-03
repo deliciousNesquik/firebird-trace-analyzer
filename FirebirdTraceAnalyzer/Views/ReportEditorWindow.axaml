@@ -91,17 +91,27 @@
             </Grid>
         </Border>
 
-        <!-- Main: preview (left) + inspector (right) -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,400">
+        <!-- Main: preview (left) + splitter + inspector (right, resizable) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="360" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="440" MinWidth="420" MaxWidth="760" />
+            </Grid.ColumnDefinitions>
 
             <!-- Live preview -->
             <views:ReportPreviewView Grid.Column="0" DataContext="{Binding Preview}" />
 
+            <!-- Разделитель: тянем за него, чтобы менять ширину инспектора -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          ResizeDirection="Columns"
+                          Background="{DynamicResource BorderBrush}"
+                          HorizontalAlignment="Center" />
+
             <!-- Inspector -->
-            <Border Grid.Column="1"
-                    Background="{DynamicResource SurfaceBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="1,0,0,0">
+            <Border Grid.Column="2"
+                    Background="{DynamicResource SurfaceBrush}">
                 <ScrollViewer>
                     <!-- Отступы задаём Margin'ом контента (не Padding'ом ScrollViewer): нижний
                          Padding ScrollViewer не входит в область прокрутки, из-за чего последняя
@@ -199,23 +209,39 @@
                                            FontSize="11" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextMutedBrush}" />
 
+                                <!-- Строка поля: имя всегда видно (первая строка, тянется).
+                                     Атрибуты (Role · Agg · Fmt · W% · Order) — второй строкой в единой
+                                     сетке фикс. ширин, поэтому выровнены в одну линию у всех полей. -->
                                 <ItemsControl ItemsSource="{Binding AvailableFields}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border Padding="0,6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
                                                 <StackPanel Spacing="6">
-                                                    <Grid ColumnDefinitions="Auto,*,72,64">
+                                                    <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
-                                                        <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center" Margin="10,0" TextTrimming="CharacterEllipsis" />
-                                                        <TextBox Grid.Column="2" Text="{Binding Format}" PlaceholderText="Fmt" FontSize="11" IsEnabled="{Binding IsVisible}" />
-                                                        <NumericUpDown Grid.Column="3" Value="{Binding Order}" Minimum="1" Maximum="100" ShowButtonSpinner="False" FontSize="11" IsEnabled="{Binding IsVisible}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                                   Margin="10,0" TextTrimming="CharacterEllipsis" />
                                                     </Grid>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="28,0,0,0" IsVisible="{Binding IsVisible}">
-                                                        <TextBlock Text="Role" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <ComboBox ItemsSource="{Binding KindOptions}" SelectedItem="{Binding Kind}" FontSize="11" MinWidth="104" />
-                                                        <ComboBox ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding Aggregate}" FontSize="11" MinWidth="110" IsVisible="{Binding IsAggregate}" />
-                                                        <NumericUpDown Value="{Binding WidthPercent}" Minimum="5" Maximum="100" PlaceholderText="W%" ShowButtonSpinner="False" FontSize="11" Width="72" ToolTip.Tip="Width %" />
-                                                    </StackPanel>
+                                                    <Grid ColumnDefinitions="20,Auto,Auto,Auto,Auto,*" ColumnSpacing="5"
+                                                          IsVisible="{Binding IsVisible}">
+                                                        <ComboBox Grid.Column="1" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding Kind}"
+                                                                  FontSize="11" Width="84" ToolTip.Tip="Role: Field / Group key / Aggregate" />
+                                                        <TextBox Grid.Column="2" Text="{Binding Format}" PlaceholderText="Fmt"
+                                                                 FontSize="11" Width="50" ToolTip.Tip="Format, e.g. N0 or {}{0:N0} ms" />
+                                                        <NumericUpDown Grid.Column="3" Value="{Binding WidthPercent}" Minimum="5" Maximum="100"
+                                                                       PlaceholderText="W%" ShowButtonSpinner="False" FontSize="11" Width="54"
+                                                                       ToolTip.Tip="Width %" />
+                                                        <NumericUpDown Grid.Column="4" Value="{Binding Order}" Minimum="1" Maximum="100"
+                                                                       PlaceholderText="Ord" ShowButtonSpinner="False" FontSize="11" Width="54"
+                                                                       ToolTip.Tip="Order" />
+                                                    </Grid>
+                                                    <Grid ColumnDefinitions="24,Auto,Auto,*" ColumnSpacing="6"
+                                                          IsVisible="{Binding IsAggregate}">
+                                                        <TextBlock Grid.Column="1" Text="Func" VerticalAlignment="Center" FontSize="11"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <ComboBox Grid.Column="2" ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding Aggregate}"
+                                                                  FontSize="11" Width="120" ToolTip.Tip="Aggregate function" />
+                                                    </Grid>
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
