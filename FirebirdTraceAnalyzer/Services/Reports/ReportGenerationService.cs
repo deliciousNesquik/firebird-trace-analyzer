@@ -118,8 +118,14 @@ public class ReportGenerationService : IReportGenerationService
                 template.SortDescending ? "DESC" : "ASC");
         }
 
-        // ✅ ШАГ 3: Применяем лимит (если указан)
-        if (template.EventLimit.HasValue && template.EventLimit.Value > 0)
+        // ✅ ШАГ 3: Применяем лимит (если указан).
+        // ВАЖНО: для СГРУППИРОВАННОГО отчёта лимит здесь НЕ применяем — иначе он отрезал бы
+        // исходные события до группировки (брал первые N в исходном порядке), и «топ-N групп»
+        // получался бы неверным. Для группировки лимит применяется к СТРОКАМ-ГРУППАМ уже после
+        // агрегации и сортировки — в ReportProjectionService.BuildTable.
+        var isGrouped = template.Body.GroupByFields is { Count: > 0 };
+
+        if (!isGrouped && template.EventLimit is > 0)
         {
             events = events.Take(template.EventLimit.Value).ToList();
 

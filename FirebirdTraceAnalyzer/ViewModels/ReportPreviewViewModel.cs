@@ -1,7 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using Avalonia.Threading;
+using CsvHelper;
+using CsvHelper.Configuration;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
@@ -39,9 +43,25 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     [ObservableProperty] private string _statusMessage = "Ready";
 
-    [ObservableProperty] private ReportFormat _selectedFormat = ReportFormat.PDF;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDocumentPreview))]
+    [NotifyPropertyChangedFor(nameof(IsSheetPreview))]
+    [NotifyPropertyChangedFor(nameof(IsTextPreview))]
+    private ReportFormat _selectedFormat = ReportFormat.PDF;
 
     public List<ReportFormat> AvailableFormats { get; } = Enum.GetValues<ReportFormat>().ToList();
+
+    /// <summary>PDF и DOCX рисуются как «документ» (лист А4).</summary>
+    public bool IsDocumentPreview => SelectedFormat is ReportFormat.PDF or ReportFormat.DOCX;
+
+    /// <summary>XLSX — как лист Excel (сетка с буквами колонок и номерами строк).</summary>
+    public bool IsSheetPreview => SelectedFormat == ReportFormat.XLSX;
+
+    /// <summary>CSV — как plain-текст файла.</summary>
+    public bool IsTextPreview => SelectedFormat == ReportFormat.CSV;
+
+    /// <summary>Точный текст CSV-файла (для превью формата CSV).</summary>
+    [ObservableProperty] private string _csvText = string.Empty;
 
     /// <summary>Масштаб «листа» превью (1.0 = 100%).</summary>
     [ObservableProperty]
@@ -245,6 +265,9 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
         var footer = Template.Footer.Show ? Template.Footer.Text : string.Empty;
 
+        // Точный текст CSV-файла (для превью формата CSV) — те же строки, что пишет CsvReportExporter.
+        var csvText = BuildCsvText(columns, rows);
+
         cancellationToken.ThrowIfCancellationRequested();
 
         await Dispatcher.UIThread.InvokeAsync(() =>
@@ -255,6 +278,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
             FooterText = footer;
             ColumnWidths = columnWidths;
             RowNote = rowNote;
+            CsvText = csvText;
 
             HeaderVariables.Clear();
             foreach (var v in variables)
@@ -279,6 +303,90 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     private static string FormatCellValue(object? value, string? format)
         => ReportValueFormatter.Format(value, format);
+
+    /// <summary>
+    /// Собирает точный текст CSV-файла из колонок и (усечённых) строк превью — построчно повторяет
+    /// вывод <c>CsvReportExporter</c> (метаданные с «#», заголовки, значения через запятую, summary).
+    /// </summary>
+    private string BuildCsvText(IReadOnlyList<PreviewColumnItem> columns, IReadOnlyList<PreviewEventRow> rows)
+    {
+        if (Template is null || Metadata is null)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        using var writer = new StringWriter(sb);
+        using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            Delimiter = ",",
+            HasHeaderRecord = true
+        });
+
+        csv.WriteField($"# {Template.Header.Title}");
+        csv.NextRecord();
+
+        if (!string.IsNullOrWhiteSpace(Template.Header.Subtitle))
+        {
+            csv.WriteField($"# {Template.Header.Subtitle}");
+            csv.NextRecord();
+        }
+
+        csv.WriteField($"# Generated: {Metadata.GeneratedAt:yyyy-MM-dd HH:mm:ss}");
+        csv.NextRecord();
+        csv.WriteField($"# Application: Flytic v{Metadata.ApplicationVersion}");
+        csv.NextRecord();
+
+        foreach (var variable in Template.Header.Variables.Where(v => v.IsVisible).OrderBy(v => v.DisplayOrder))
+        {
+            csv.WriteField($"# {variable.DisplayName}: {GetVariableValue(variable)}");
+            csv.NextRecord();
+        }
+
+        csv.NextRecord(); // разделительная пустая строка
+
+        foreach (var column in columns)
+            csv.WriteField(column.Header);
+        csv.NextRecord();
+
+        foreach (var row in rows)
+        {
+            foreach (var cell in row.Cells)
+                csv.WriteField(cell.Text);
+            csv.NextRecord();
+        }
+
+        if (Template.Body.ShowSummary)
+        {
+            csv.NextRecord();
+            csv.WriteField("# Summary Statistics");
+            csv.NextRecord();
+            csv.WriteField("# Total Files");
+            csv.WriteField(Metadata.Files.Count);
+            csv.NextRecord();
+            csv.WriteField("# Total Events (before filters)");
+            csv.WriteField(Metadata.TotalEventsCount);
+            csv.NextRecord();
+            csv.WriteField("# Events in Report");
+            csv.WriteField(Metadata.Events.Count);
+            csv.NextRecord();
+
+            if (!string.IsNullOrWhiteSpace(Metadata.ActiveFilters))
+            {
+                csv.WriteField("# Active Filters");
+                csv.WriteField(Metadata.ActiveFilters);
+                csv.NextRecord();
+            }
+
+            if (!string.IsNullOrWhiteSpace(Metadata.ActiveSort))
+            {
+                csv.WriteField("# Active Sort");
+                csv.WriteField(Metadata.ActiveSort);
+                csv.NextRecord();
+            }
+        }
+
+        csv.Flush();
+        return sb.ToString();
+    }
 
     /// <summary>
     ///     Генерирует и экспортирует отчёт
