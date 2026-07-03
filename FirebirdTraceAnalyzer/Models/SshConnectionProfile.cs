@@ -15,7 +15,7 @@ public sealed record SshConnectionProfile
     public DateTime CreatedAt { get; init; } = DateTime.Now;
     
     /// <summary>Последнее использование</summary>
-    public DateTime? LastUsedAt { get; init; }
+    public DateTime? LastUsedAt { get; set; }
 
     /// <summary>Создаёт копию профиля с обновлённой датой использования</summary>
     public SshConnectionProfile WithLastUsed() => this with { LastUsedAt = DateTime.Now };
