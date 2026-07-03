@@ -36,6 +36,10 @@
     <SolidColorBrush x:Key="BorderBrush" Color="#444444" />
     <SolidColorBrush x:Key="BorderSubtleBrush" Color="#333333" />
 
+    <!-- Таблица отчёта: подложка заголовка и «зебра» строк на «бумажной» странице превью -->
+    <SolidColorBrush x:Key="ReportHeaderRowBrush" Color="#2B2B2B" />
+    <SolidColorBrush x:Key="ReportAltRowBrush" Color="#2A2A2A" />
+
     <!-- 4. Акцент -->
     <SolidColorBrush x:Key="AccentBrush" Color="#5B8DEF" />
 

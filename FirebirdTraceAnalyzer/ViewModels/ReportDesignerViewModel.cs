@@ -38,6 +38,15 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
     private ReportDesignSessionContext? _sessionContext;
 
+    // Живое превью (левая панель редактора). Рендерит ту же проекцию, что и экспорт (WYSIWYG).
+    public ReportPreviewViewModel Preview { get; }
+
+    // Debounce перерисовки превью: любое изменение настроек «пачкает» превью, а фактический
+    // пересчёт откладывается на PreviewDebounceMs, чтобы серии правок (набор текста, ползунки)
+    // не пересчитывали отчёт на каждый чих.
+    private const int PreviewDebounceMs = 300;
+    private CancellationTokenSource? _previewDebounceCts;
+
     #region Observable Properties - Template Info
 
     [ObservableProperty]
@@ -164,7 +173,8 @@ public partial class ReportDesignerViewModel : ViewModelBase
         IFilteringService filteringService,
         ISortingService sortingService,
         IEventPropertyAccessor propertyAccessor,
-        IFieldDiscoveryService fieldDiscovery)
+        IFieldDiscoveryService fieldDiscovery,
+        ReportPreviewViewModel preview)
     {
         _templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
         _generationService = generationService ?? throw new ArgumentNullException(nameof(generationService));
@@ -172,6 +182,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
         _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _fieldDiscovery = fieldDiscovery ?? throw new ArgumentNullException(nameof(fieldDiscovery));
+        Preview = preview ?? throw new ArgumentNullException(nameof(preview));
 
         FiltersPanel = CreateFiltersPanel();
 
@@ -186,6 +197,7 @@ public partial class ReportDesignerViewModel : ViewModelBase
         _sortingService = null!;
         _propertyAccessor = new EventPropertyAccessor();
         _fieldDiscovery = null!;
+        Preview = new ReportPreviewViewModel();
 
         FiltersPanel = CreateFiltersPanel();
 
@@ -239,6 +251,9 @@ public partial class ReportDesignerViewModel : ViewModelBase
         FiltersPanel.UpdateFilterCounts(filtered);
 
         StatusMessage = $"Filters applied: {filtered.Count} of {_sessionContext.SourceEvents.Count} events";
+
+        // Фильтры изменили выборку — перерисовываем превью.
+        MarkPreviewDirty();
     }
 
     /// <summary>
@@ -249,13 +264,22 @@ public partial class ReportDesignerViewModel : ViewModelBase
         // Переменные заголовка
         foreach (ReportVariableType varType in Enum.GetValues(typeof(ReportVariableType)))
         {
-            AvailableVariables.Add(new ReportVariableItem
+            var variable = new ReportVariableItem
             {
                 Type = varType,
                 DisplayName = GetVariableDisplayName(varType),
                 IsVisible = false,
                 DisplayOrder = (int)varType
-            });
+            };
+
+            // Видимость/порядок переменной шапки отражаются в превью.
+            variable.PropertyChanged += (_, _) =>
+            {
+                HasUnsavedChanges = true;
+                MarkPreviewDirty();
+            };
+
+            AvailableVariables.Add(variable);
         }
 
         // Форматы экспорта
@@ -321,6 +345,11 @@ public partial class ReportDesignerViewModel : ViewModelBase
             RefreshSortableColumns();
             OnPropertyChanged(nameof(IsGrouped));
         }
+
+        // Любое изменение колонки (видимость, роль, агрегат, формат, ширина, порядок, выравнивание)
+        // влияет на таблицу отчёта — перерисовываем превью.
+        HasUnsavedChanges = true;
+        MarkPreviewDirty();
     }
 
     /// <summary>Пересобирает список колонок-целей сортировки из видимых полей, сохраняя выбор.</summary>
@@ -654,61 +683,68 @@ public partial class ReportDesignerViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Генерирует превью отчёта
+    /// Помечает превью «грязным»: планирует отложенную (debounce) перерисовку. Вызывается из всех
+    /// точек изменения настроек. Серия быстрых правок схлопывается в один пересчёт.
     /// </summary>
-    [RelayCommand]
-    private async Task GeneratePreviewAsync(CancellationToken cancellationToken)
+    public void MarkPreviewDirty()
+    {
+        _previewDebounceCts?.Cancel();
+        _previewDebounceCts = new CancellationTokenSource();
+        var token = _previewDebounceCts.Token;
+
+        _ = DebouncedRefreshAsync(token);
+    }
+
+    private async Task DebouncedRefreshAsync(CancellationToken token)
     {
         try
         {
-            IsLoading = true;
-            StatusMessage = "Preparing preview...";
+            await Task.Delay(PreviewDebounceMs, token);
+            await RefreshPreviewAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Отменено следующей правкой — это норма.
+        }
+    }
 
-            if (_sessionContext == null || _sessionContext.SourceEvents.Count == 0)
-            {
-                StatusMessage = "Load trace files in the main window before preview";
-                Logger.Warn("Preview requested without session context or events");
-                return;
-            }
+    /// <summary>
+    /// Немедленная перерисовка живого превью из текущих настроек: тот же конвейер, что и экспорт
+    /// (шаблон → PrepareEventsForReport → метаданные → проекция в ReportPreviewViewModel).
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshPreviewAsync(CancellationToken cancellationToken)
+    {
+        if (_sessionContext == null || _sessionContext.SourceEvents.Count == 0)
+        {
+            StatusMessage = "Load trace files in the main window before preview";
+            return;
+        }
 
-            var currentTemplate = CreateTemplateFromCurrentSettings();
+        try
+        {
+            var template = CreateTemplateFromCurrentSettings();
 
             var preparedEvents = _generationService.PrepareEventsForReport(
                 _sessionContext.SourceEvents,
-                currentTemplate);
-
-            if (preparedEvents.Count == 0)
-            {
-                StatusMessage = "No events match the template filters";
-                Logger.Warn("Preview: no events after PrepareEventsForReport");
-                return;
-            }
+                template);
 
             var metadata = CreateReportMetadata(preparedEvents);
 
-            var previewVm = App.Services?.GetRequiredService<ReportPreviewViewModel>()
-                ?? throw new InvalidOperationException("Report preview service is not available");
+            await Preview.InitializeAsync(template, metadata, cancellationToken);
 
-            await previewVm.InitializeAsync(currentTemplate, metadata, cancellationToken);
-
-            var previewWindow = new Views.ReportPreviewWindow(previewVm);
-        
-            // Получаем родительское окно для CenterOwner
-            var visualRoot = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-
-            StatusMessage = "Displaying preview";
-            await previewWindow.ShowDialog(visualRoot!);
+            StatusMessage = preparedEvents.Count == 0
+                ? "No events match the current filters"
+                : $"Preview: {preparedEvents.Count:N0} of {_sessionContext.SourceEvents.Count:N0} events";
+        }
+        catch (OperationCanceledException)
+        {
+            // Заменено следующей правкой.
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to generate preview");
+            Logger.Error(ex, "Failed to refresh preview");
             StatusMessage = "Preview failed";
-        }
-        finally
-        {
-            IsLoading = false;
         }
     }
     
@@ -903,15 +939,34 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
     #region Property Changed Handlers
 
+    // Правки, не влияющие на содержимое превью (имя/описание шаблона) — только помечаем изменения.
     partial void OnTemplateNameChanged(string value) => HasUnsavedChanges = true;
     partial void OnTemplateDescriptionChanged(string value) => HasUnsavedChanges = true;
-    partial void OnReportTitleChanged(string value) => HasUnsavedChanges = true;
-    partial void OnReportSubtitleChanged(string value) => HasUnsavedChanges = true;
-    partial void OnDisplayStyleChanged(EventDisplayStyle value) => HasUnsavedChanges = true;
-    partial void OnSelectedSortChanged(SortOptionItem? value) => HasUnsavedChanges = true;
-    partial void OnSortDescendingChanged(bool value) => HasUnsavedChanges = true;
-    partial void OnSelectedSortColumnChanged(EventFieldItem? value) => HasUnsavedChanges = true;
-    partial void OnEventLimitChanged(int? value) => HasUnsavedChanges = true;
+
+    // Правки, влияющие на превью — помечаем изменения и перерисовываем.
+    partial void OnReportTitleChanged(string value) => MarkChangedAndPreview();
+    partial void OnReportSubtitleChanged(string value) => MarkChangedAndPreview();
+    partial void OnShowLogoChanged(bool value) => MarkChangedAndPreview();
+    partial void OnShowGeneratedDateChanged(bool value) => MarkChangedAndPreview();
+    partial void OnDisplayStyleChanged(EventDisplayStyle value) => MarkChangedAndPreview();
+    partial void OnShowSummaryChanged(bool value) => MarkChangedAndPreview();
+    partial void OnSelectedSortChanged(SortOptionItem? value) => MarkChangedAndPreview();
+    partial void OnSortDescendingChanged(bool value) => MarkChangedAndPreview();
+    partial void OnSelectedSortColumnChanged(EventFieldItem? value) => MarkChangedAndPreview();
+    partial void OnEventLimitChanged(int? value) => MarkChangedAndPreview();
+
+    // Формат по умолчанию не меняет содержимое превью — только синхронизируем формат экспорта.
+    partial void OnDefaultFormatChanged(ReportFormat value)
+    {
+        HasUnsavedChanges = true;
+        Preview.SelectedFormat = value;
+    }
+
+    private void MarkChangedAndPreview()
+    {
+        HasUnsavedChanges = true;
+        MarkPreviewDirty();
+    }
 
     #endregion
 }

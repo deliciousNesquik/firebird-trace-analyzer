@@ -24,7 +24,10 @@ public partial class ReportPreviewViewModel : ViewModelBase
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private readonly IReportGenerationService _generationService;
-    private readonly IEventPropertyAccessor _propertyAccessor;
+
+    // Та же проекция, что рисуют экспортёры (PDF/CSV/DOCX/XLSX) — благодаря ей превью совпадает
+    // с итоговым файлом, включая группировку и агрегаты (WYSIWYG).
+    private readonly IReportProjectionService _projectionService;
 
     #region Observable Properties
 
@@ -40,6 +43,29 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     public List<ReportFormat> AvailableFormats { get; } = Enum.GetValues<ReportFormat>().ToList();
 
+    /// <summary>Масштаб «листа» превью (1.0 = 100%).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercent))]
+    private double _zoom = 1.0;
+
+    public string ZoomPercent => $"{Zoom * 100:0}%";
+
+    [RelayCommand]
+    private void ZoomIn() => Zoom = Math.Min(3.0, Math.Round(Zoom + 0.1, 2));
+
+    [RelayCommand]
+    private void ZoomOut() => Zoom = Math.Max(0.5, Math.Round(Zoom - 0.1, 2));
+
+    [RelayCommand]
+    private void ZoomReset() => Zoom = 1.0;
+
+    /// <summary>
+    /// Инкрементируется после каждой перегенерации данных превью. Code-behind вью подписывается
+    /// на изменение и перестраивает таблицу событий одним Grid (гарантированное выравнивание колонок
+    /// заголовка и строк — как единая таблица в PDF).
+    /// </summary>
+    [ObservableProperty] private int _previewRevision;
+
     #endregion
 
     #region Preview Data
@@ -50,11 +76,11 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>Подзаголовок отчёта</summary>
     [ObservableProperty] private string _previewSubtitle = string.Empty;
 
+    /// <summary>Строка даты генерации ("Generated: ..."), как в PDF (пусто, если отключена).</summary>
+    [ObservableProperty] private string _generatedDateText = string.Empty;
+
     /// <summary>Переменные заголовка с их значениями</summary>
     public ObservableCollection<PreviewVariableItem> HeaderVariables { get; } = new();
-
-    /// <summary>События для отображения</summary>
-    public ObservableCollection<EventBase> PreviewEvents { get; } = new();
 
     /// <summary>Строки таблицы событий (ячейки по столбцам)</summary>
     public ObservableCollection<PreviewEventRow> PreviewEventRows { get; } = new();
@@ -62,26 +88,38 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>Столбцы таблицы событий</summary>
     public ObservableCollection<PreviewColumnItem> EventColumns { get; } = new();
 
+    /// <summary>
+    /// Общая раскладка колонок ("20*,50*,30*") — одна на заголовок и все строки, чтобы столбцы
+    /// идеально выравнивались. Считается из WidthPercent колонок (равные доли, если не заданы).
+    /// </summary>
+    [ObservableProperty] private string _columnWidths = string.Empty;
+
     /// <summary>Статистика</summary>
     public ObservableCollection<PreviewStatItem> Statistics { get; } = new();
 
+    /// <summary>Примечание об усечении числа строк в превью (пусто, если не усечено).</summary>
+    [ObservableProperty] private string _rowNote = string.Empty;
+
     /// <summary>Футер</summary>
     [ObservableProperty] private string _footerText = string.Empty;
+
+    /// <summary>Максимум строк в превью — это витрина дизайна, а не полный дамп данных.</summary>
+    private const int PreviewRowLimit = 200;
 
     #endregion
 
     public ReportPreviewViewModel()
     {
         _generationService = null!;
-        _propertyAccessor = new EventPropertyAccessor();
+        _projectionService = null!;
     }
 
     public ReportPreviewViewModel(
         IReportGenerationService generationService,
-        IEventPropertyAccessor propertyAccessor)
+        IReportProjectionService projectionService)
     {
         _generationService = generationService ?? throw new ArgumentNullException(nameof(generationService));
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     /// <summary>
@@ -125,6 +163,11 @@ public partial class ReportPreviewViewModel : ViewModelBase
         var title = Template.Header.Title;
         var subtitle = Template.Header.Subtitle ?? string.Empty;
 
+        // Как в PDF: "Generated: {date}" (только если включено в шапке).
+        var generatedDate = Template.Header.ShowGeneratedDate
+            ? $"Generated: {Metadata.GeneratedAt.ToString(Template.Header.DateFormat)}"
+            : string.Empty;
+
         var variables = Template.Header.Variables
             .Where(v => v.IsVisible)
             .OrderBy(v => v.DisplayOrder)
@@ -135,29 +178,48 @@ public partial class ReportPreviewViewModel : ViewModelBase
             })
             .ToList();
 
-        var columns = Template.Body.VisibleFields
-            .OrderBy(f => f.Order)
-            .Select(field => new PreviewColumnItem
+        // Строим ту же таблицу, что и экспортёры: группировка/агрегаты/порядок колонок — из проекции.
+        var table = _projectionService.BuildTable(Template, Metadata.Events);
+
+        var columns = table.Columns
+            .Select((col, i) => new PreviewColumnItem
             {
-                Header = field.DisplayName,
-                PropertyPath = field.PropertyPath,
-                Format = field.Format,
-                Alignment = field.Alignment
+                Index = i,
+                Header = col.DisplayName,
+                Format = col.Format,
+                WidthPercent = col.WidthPercent,
+                Alignment = col.Alignment
             })
             .ToList();
 
-        var events = Metadata.Events.ToList();
+        // Общая строка ширин колонок для заголовка и строк (равные доли, если WidthPercent не задан).
+        var columnWidths = columns.Count == 0
+            ? string.Empty
+            : string.Join(",", columns.Select(c => $"{(c.WidthPercent is > 0 ? c.WidthPercent.Value : 1)}*"));
 
-        var rows = events
-            .Select(evt => new PreviewEventRow
+        // Превью усекаем: показываем только первые PreviewRowLimit строк.
+        var totalRows = table.Rows.Count;
+
+        var rows = table.Rows
+            .Take(PreviewRowLimit)
+            .Select((cells, rowIndex) => new PreviewEventRow
             {
-                Cells = columns
-                    .Select(col => FormatCellValue(
-                        _propertyAccessor.GetValue(evt, col.PropertyPath),
-                        col.Format))
+                IsAlternate = rowIndex % 2 == 1,
+                ColumnWidths = columnWidths,
+                Cells = cells
+                    .Select((value, i) => new PreviewCell
+                    {
+                        Column = i,
+                        Text = FormatCellValue(value, columns[i].Format),
+                        Alignment = columns[i].Alignment
+                    })
                     .ToList()
             })
             .ToList();
+
+        var rowNote = totalRows > PreviewRowLimit
+            ? $"Showing first {PreviewRowLimit:N0} of {totalRows:N0} rows — export for the full report"
+            : $"{totalRows:N0} rows";
 
         var stats = new List<PreviewStatItem>();
         if (Template.Body.ShowSummary)
@@ -189,7 +251,10 @@ public partial class ReportPreviewViewModel : ViewModelBase
         {
             PreviewTitle = title;
             PreviewSubtitle = subtitle;
+            GeneratedDateText = generatedDate;
             FooterText = footer;
+            ColumnWidths = columnWidths;
+            RowNote = rowNote;
 
             HeaderVariables.Clear();
             foreach (var v in variables)
@@ -199,10 +264,6 @@ public partial class ReportPreviewViewModel : ViewModelBase
             foreach (var c in columns)
                 EventColumns.Add(c);
 
-            PreviewEvents.Clear();
-            foreach (var e in events)
-                PreviewEvents.Add(e);
-
             PreviewEventRows.Clear();
             foreach (var row in rows)
                 PreviewEventRows.Add(row);
@@ -210,76 +271,14 @@ public partial class ReportPreviewViewModel : ViewModelBase
             Statistics.Clear();
             foreach (var s in stats)
                 Statistics.Add(s);
+
+            // Сигнал вью перестроить таблицу событий (единый Grid).
+            PreviewRevision++;
         });
     }
 
     private static string FormatCellValue(object? value, string? format)
         => ReportValueFormatter.Format(value, format);
-
-    /// <summary>
-    ///     Генерирует превью данные
-    /// </summary>
-    private Task GeneratePreviewAsync1(CancellationToken cancellationToken)
-    {
-        if (Template == null || Metadata == null)
-            return Task.CompletedTask;
-
-        return Task.Run(() =>
-        {
-            // Заголовок
-            PreviewTitle = Template.Header.Title;
-            PreviewSubtitle = Template.Header.Subtitle ?? string.Empty;
-
-            // Переменные заголовка
-            HeaderVariables.Clear();
-            foreach (var variable in Template.Header.Variables.Where(v => v.IsVisible).OrderBy(v => v.DisplayOrder))
-            {
-                var value = GetVariableValue(variable);
-                HeaderVariables.Add(new PreviewVariableItem
-                {
-                    Label = variable.DisplayName,
-                    Value = value
-                });
-            }
-
-            // Столбцы событий
-            EventColumns.Clear();
-            foreach (var field in Template.Body.VisibleFields.OrderBy(f => f.Order))
-                EventColumns.Add(new PreviewColumnItem
-                {
-                    Header = field.DisplayName,
-                    PropertyPath = field.PropertyPath,
-                    Format = field.Format,
-                    Alignment = field.Alignment
-                });
-
-            // События
-            PreviewEvents.Clear();
-            foreach (var evt in Metadata.Events) PreviewEvents.Add(evt);
-
-            // Статистика
-            Statistics.Clear();
-            if (Template.Body.ShowSummary)
-            {
-                Statistics.Add(new PreviewStatItem { Label = "Total Files", Value = Metadata.Files.Count.ToString() });
-                Statistics.Add(new PreviewStatItem
-                    { Label = "Total Events (before filters)", Value = Metadata.TotalEventsCount.ToString("N0") });
-                Statistics.Add(new PreviewStatItem
-                    { Label = "Events in Report", Value = Metadata.Events.Count.ToString("N0") });
-
-                if (!string.IsNullOrWhiteSpace(Metadata.ActiveFilters))
-                    Statistics.Add(new PreviewStatItem { Label = "Active Filters", Value = Metadata.ActiveFilters });
-
-                if (!string.IsNullOrWhiteSpace(Metadata.ActiveSort))
-                    Statistics.Add(new PreviewStatItem { Label = "Active Sort", Value = Metadata.ActiveSort });
-            }
-
-            // Футер
-            FooterText = Template.Footer.Show ? Template.Footer.Text : string.Empty;
-
-            cancellationToken.ThrowIfCancellationRequested();
-        }, cancellationToken);
-    }
 
     /// <summary>
     ///     Генерирует и экспортирует отчёт
@@ -350,9 +349,10 @@ public class PreviewVariableItem
 
 public class PreviewColumnItem
 {
+    public int Index { get; init; }
     public required string Header { get; init; }
-    public required string PropertyPath { get; init; }
     public string? Format { get; init; }
+    public int? WidthPercent { get; init; }
     public TextAlignment Alignment { get; init; }
 }
 
@@ -362,9 +362,23 @@ public class PreviewStatItem
     public required string Value { get; init; }
 }
 
+/// <summary>Одна ячейка строки превью: текст + индекс колонки (для Grid.Column) + выравнивание.</summary>
+public class PreviewCell
+{
+    public int Column { get; init; }
+    public required string Text { get; init; }
+    public TextAlignment Alignment { get; init; }
+}
+
 public class PreviewEventRow
 {
-    public required IReadOnlyList<string> Cells { get; init; }
+    public required IReadOnlyList<PreviewCell> Cells { get; init; }
+
+    /// <summary>Чётность строки — для «зебры» (подсветка каждой второй строки).</summary>
+    public bool IsAlternate { get; init; }
+
+    /// <summary>Та же раскладка колонок, что и у заголовка — чтобы ячейки строки выравнивались.</summary>
+    public required string ColumnWidths { get; init; }
 }
 
 #endregion
