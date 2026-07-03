@@ -11,9 +11,10 @@
         <vm:ReportPreviewViewModel />
     </Design.DataContext>
 
-    <!-- Превью — точная визуальная копия PDF-экспорта (QuestPDF): белый лист, чёрный текст,
-         те же цвета/размеры/границы. Таблица событий строится ЕДИНЫМ Grid в code-behind, поэтому
-         заголовок и строки делят одни и те же колонки — выравнивание идентично PDF. -->
+    <!-- Превью подстраивается под выбранный формат экспорта:
+         • PDF / DOCX — «документ» (белый лист А4, точная копия PDF QuestPDF);
+         • XLSX       — лист Excel (сетка, буквы колонок, номера строк) — строится в code-behind;
+         • CSV        — plain-текст файла (моноширинный), 1:1 со строками CsvReportExporter. -->
     <Grid>
         <ScrollViewer Background="{DynamicResource AppBackgroundBrush}"
                       HorizontalScrollBarVisibility="Auto"
@@ -21,80 +22,77 @@
             <LayoutTransformControl x:Name="PageTransform" HorizontalAlignment="Center">
                 <StackPanel HorizontalAlignment="Center" Spacing="10" Margin="28">
 
-                    <!-- Лист документа -->
-                    <Border Background="White"
-                            Width="820"
-                            Padding="48,44"
-                            BoxShadow="0 6 22 0 #2A000000">
+                    <!-- ============ DOCUMENT (PDF / DOCX) ============ -->
+                    <Border Background="White" Width="820" Padding="48,44"
+                            BoxShadow="0 6 22 0 #2A000000"
+                            IsVisible="{Binding IsDocumentPreview}">
                         <StackPanel Spacing="10">
-
-                            <!-- Header -->
-                            <TextBlock Text="{Binding PreviewTitle}"
-                                       FontSize="18" FontWeight="Bold"
+                            <TextBlock Text="{Binding PreviewTitle}" FontSize="18" FontWeight="Bold"
                                        TextAlignment="Center" Foreground="#1976D2" />
-                            <TextBlock Text="{Binding PreviewSubtitle}"
-                                       FontSize="12" FontStyle="Italic"
+                            <TextBlock Text="{Binding PreviewSubtitle}" FontSize="12" FontStyle="Italic"
                                        TextAlignment="Center" Foreground="#757575"
                                        IsVisible="{Binding PreviewSubtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Text="{Binding GeneratedDateText}"
-                                       FontSize="9" TextAlignment="Right" Foreground="#757575"
+                            <TextBlock Text="{Binding GeneratedDateText}" FontSize="9" TextAlignment="Right" Foreground="#757575"
                                        IsVisible="{Binding GeneratedDateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                             <Border Height="1" Background="#BDBDBD" Margin="0,5" />
 
-                            <!-- Header variables: две равные колонки, метка жирная -->
-                            <ItemsControl ItemsSource="{Binding HeaderVariables}"
-                                          IsVisible="{Binding HeaderVariables.Count}">
+                            <ItemsControl ItemsSource="{Binding HeaderVariables}" IsVisible="{Binding HeaderVariables.Count}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="*,*" Margin="0,1">
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}"
-                                                       FontSize="9" FontWeight="Bold" Foreground="Black" />
-                                            <TextBlock Grid.Column="1" Text="{Binding Value}"
-                                                       FontSize="9" Foreground="Black" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="9" FontWeight="Bold" Foreground="Black" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="9" Foreground="Black" TextWrapping="Wrap" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!-- Events section -->
-                            <TextBlock Text="Events" FontSize="14" FontWeight="Bold"
-                                       Foreground="#1E88E5" Margin="0,6,0,0" />
-
-                            <!-- Единая таблица (header + строки), строится в code-behind -->
+                            <TextBlock Text="Events" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
                             <Grid x:Name="EventsTableGrid" />
 
-                            <!-- Statistics -->
                             <StackPanel Spacing="3" IsVisible="{Binding Statistics.Count}">
-                                <TextBlock Text="Summary Statistics" FontSize="14" FontWeight="Bold"
-                                           Foreground="#1E88E5" Margin="0,6,0,0" />
+                                <TextBlock Text="Summary Statistics" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
                                 <ItemsControl ItemsSource="{Binding Statistics}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid ColumnDefinitions="*,*" Margin="0,1">
-                                                <TextBlock Grid.Column="0" Text="{Binding Label}"
-                                                           FontSize="10" FontWeight="Bold" Foreground="Black" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Value}"
-                                                           FontSize="10" Foreground="Black" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="10" FontWeight="Bold" Foreground="Black" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="10" Foreground="Black" TextWrapping="Wrap" />
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
 
-                            <!-- Footer -->
                             <StackPanel Spacing="5" Margin="0,6,0,0"
                                         IsVisible="{Binding FooterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <Border Height="1" Background="#BDBDBD" />
                                 <TextBlock Text="{Binding FooterText}" FontSize="8" Foreground="#757575" />
                             </StackPanel>
-
                         </StackPanel>
                     </Border>
 
-                    <!-- Честное примечание об усечении — вне листа -->
-                    <TextBlock Text="{Binding RowNote}"
-                               FontSize="11"
+                    <!-- ============ SHEET (XLSX) ============ -->
+                    <Border Background="White" Padding="0"
+                            BoxShadow="0 6 22 0 #2A000000"
+                            IsVisible="{Binding IsSheetPreview}">
+                        <Grid x:Name="SheetGrid" />
+                    </Border>
+
+                    <!-- ============ TEXT (CSV) ============ -->
+                    <Border Background="White" Width="820" Padding="24"
+                            BoxShadow="0 6 22 0 #2A000000"
+                            IsVisible="{Binding IsTextPreview}">
+                        <SelectableTextBlock Text="{Binding CsvText}"
+                                             FontFamily="Cascadia Mono,Menlo,Consolas,monospace"
+                                             FontSize="12"
+                                             Foreground="Black"
+                                             TextWrapping="NoWrap" />
+                    </Border>
+
+                    <!-- Примечание об усечении (общее для всех форматов) -->
+                    <TextBlock Text="{Binding RowNote}" FontSize="11"
                                Foreground="{DynamicResource TextMutedBrush}"
                                HorizontalAlignment="Center"
                                IsVisible="{Binding RowNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -110,14 +108,11 @@
                 CornerRadius="8" Padding="4"
                 BoxShadow="0 4 14 0 #33000000">
             <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Content="−" Width="30" Height="30" Padding="0"
-                        FontSize="16" Classes="normal"
+                <Button Content="−" Width="30" Height="30" Padding="0" FontSize="16" Classes="normal"
                         Command="{Binding ZoomOutCommand}" ToolTip.Tip="Zoom out" />
-                <Button Content="{Binding ZoomPercent}" MinWidth="52" Height="30" Padding="4,0"
-                        Classes="normal"
+                <Button Content="{Binding ZoomPercent}" MinWidth="52" Height="30" Padding="4,0" Classes="normal"
                         Command="{Binding ZoomResetCommand}" ToolTip.Tip="Reset to 100%" />
-                <Button Content="+" Width="30" Height="30" Padding="0"
-                        FontSize="16" Classes="normal"
+                <Button Content="+" Width="30" Height="30" Padding="0" FontSize="16" Classes="normal"
                         Command="{Binding ZoomInCommand}" ToolTip.Tip="Zoom in" />
             </StackPanel>
         </Border>
