@@ -90,7 +90,15 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     [ObservableProperty]
     private EventDisplayStyle _displayStyle = EventDisplayStyle.Table;
 
-    public ObservableCollection<EventFieldItem> AvailableFields { get; } = new();
+    /// <summary>Палитра доступных полей событий — источник для добавления колонок кнопкой «+».</summary>
+    public ObservableCollection<FieldPaletteItem> AvailableFields { get; } = new();
+
+    /// <summary>
+    ///     Колонки отчёта. В отличие от палитры, здесь дубли РАЗРЕШЕНЫ: одно поле можно добавить
+    ///     несколько раз (напр. Execute Time × Sum/Avg/Min/Max), у каждой колонки — своя роль,
+    ///     агрегат, имя, формат, ширина и порядок.
+    /// </summary>
+    public ObservableCollection<EventFieldItem> ReportColumns { get; } = new();
 
     [ObservableProperty]
     private bool _showSummary = true;
@@ -124,7 +132,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     private EventFieldItem? _selectedSortColumn;
 
     /// <summary>Активна ли группировка (есть хотя бы одна видимая колонка-ключ группировки).</summary>
-    public bool IsGrouped => AvailableFields.Any(f => f.IsVisible && f.Kind == ColumnKind.GroupKey);
+    public bool IsGrouped => ReportColumns.Any(c => c.Kind == ColumnKind.GroupKey);
 
     [ObservableProperty]
     private int? _eventLimit;
@@ -317,57 +325,84 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             return;
         }
 
-        // Получаем ВСЕ доступные поля (объединение всех типов)
-        var allFields = _fieldDiscovery.GetAllAvailableFields(eventList);
-
-        var order = 1;
-        foreach (var field in allFields)
+        // Палитра: объединение всех доступных полей (по одному разу). Добавление в отчёт — кнопкой «+».
+        foreach (var field in _fieldDiscovery.GetAllAvailableFields(eventList))
         {
-            var item = new EventFieldItem
+            AvailableFields.Add(new FieldPaletteItem
             {
                 PropertyPath = field.PropertyPath,
                 DisplayName = field.DisplayName,
-                IsVisible = false,
-                Order = order++,
-                Alignment = TextAlignment.Left,
                 Format = field.Format
-            };
-
-            // Следим за видимостью/ролью: от них зависят список колонок для сортировки и факт группировки.
-            item.PropertyChanged += OnFieldItemChanged;
-            AvailableFields.Add(item);
+            });
         }
-
-        RefreshSortableColumns();
-        OnPropertyChanged(nameof(IsGrouped));
 
         Logger.Info("Loaded {Count} available fields for reporting", AvailableFields.Count);
     }
 
-    private void OnFieldItemChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    /// <summary>Добавляет колонку отчёта из поля палитры (можно несколько раз — дубли разрешены).</summary>
+    [RelayCommand]
+    private void AddColumn(FieldPaletteItem? field)
     {
-        if (e.PropertyName is nameof(EventFieldItem.IsVisible)
-            or nameof(EventFieldItem.Kind)
+        if (field is null)
+            return;
+
+        var column = new EventFieldItem
+        {
+            PropertyPath = field.PropertyPath,
+            DisplayName = field.DisplayName,
+            Order = ReportColumns.Count == 0 ? 1 : ReportColumns.Max(c => c.Order) + 1,
+            Alignment = TextAlignment.Left,
+            Format = field.Format,
+            Kind = ColumnKind.Field
+        };
+
+        column.PropertyChanged += OnColumnChanged;
+        ReportColumns.Add(column);
+
+        RefreshSortableColumns();
+        OnPropertyChanged(nameof(IsGrouped));
+        HasUnsavedChanges = true;
+        MarkPreviewDirty();
+    }
+
+    /// <summary>Удаляет колонку отчёта.</summary>
+    [RelayCommand]
+    private void RemoveColumn(EventFieldItem? column)
+    {
+        if (column is null)
+            return;
+
+        column.PropertyChanged -= OnColumnChanged;
+        ReportColumns.Remove(column);
+
+        RefreshSortableColumns();
+        OnPropertyChanged(nameof(IsGrouped));
+        HasUnsavedChanges = true;
+        MarkPreviewDirty();
+    }
+
+    private void OnColumnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(EventFieldItem.Kind)
             or nameof(EventFieldItem.DisplayName))
         {
             RefreshSortableColumns();
             OnPropertyChanged(nameof(IsGrouped));
         }
 
-        // Любое изменение колонки (видимость, роль, агрегат, формат, ширина, порядок, выравнивание)
-        // влияет на таблицу отчёта — перерисовываем превью.
+        // Любое изменение колонки влияет на таблицу отчёта — перерисовываем превью.
         HasUnsavedChanges = true;
         MarkPreviewDirty();
     }
 
-    /// <summary>Пересобирает список колонок-целей сортировки из видимых полей, сохраняя выбор.</summary>
+    /// <summary>Пересобирает список колонок-целей сортировки из колонок отчёта, сохраняя выбор.</summary>
     private void RefreshSortableColumns()
     {
         var previous = SelectedSortColumn?.DisplayName;
 
         SortableColumns.Clear();
-        foreach (var field in AvailableFields.Where(f => f.IsVisible).OrderBy(f => f.Order))
-            SortableColumns.Add(field);
+        foreach (var column in ReportColumns.OrderBy(c => c.Order))
+            SortableColumns.Add(column);
 
         SelectedSortColumn = SortableColumns.FirstOrDefault(c => c.DisplayName == previous);
     }
@@ -480,24 +515,33 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
                 }
             }
 
-            // Поля событий
-            foreach (var field in template.Body.VisibleFields)
+            // Колонки отчёта: строим из полей шаблона напрямую (порядок — по Order). Дубли поддержаны.
+            foreach (var column in ReportColumns)
+                column.PropertyChanged -= OnColumnChanged;
+            ReportColumns.Clear();
+
+            foreach (var field in template.Body.VisibleFields.OrderBy(f => f.Order))
             {
-                var item = AvailableFields.FirstOrDefault(f => f.PropertyPath == field.PropertyPath);
-                if (item != null)
+                var column = new EventFieldItem
                 {
-                    item.IsVisible = true;
-                    item.Order = field.Order;
-                    item.Format = field.Format;
-                    item.Alignment = field.Alignment;
-                    item.WidthPercent = field.WidthPercent;
-                    item.Kind = field.Kind;
-                    item.Aggregate = field.Aggregate ?? AggregateFunction.Count;
-                }
+                    PropertyPath = field.PropertyPath,
+                    DisplayName = field.DisplayName,
+                    Order = field.Order,
+                    Format = field.Format,
+                    Alignment = field.Alignment,
+                    WidthPercent = field.WidthPercent,
+                    Kind = field.Kind,
+                    Aggregate = field.Aggregate ?? AggregateFunction.Count
+                };
+
+                column.PropertyChanged += OnColumnChanged;
+                ReportColumns.Add(column);
             }
 
-            // Восстанавливаем колонку сортировки сгруппированного результата (после правок IsVisible/Kind
-            // выше SortableColumns уже пересобран через OnFieldItemChanged).
+            RefreshSortableColumns();
+            OnPropertyChanged(nameof(IsGrouped));
+
+            // Восстанавливаем колонку сортировки сгруппированного результата.
             if (!string.IsNullOrWhiteSpace(template.Body.SortByColumn))
             {
                 SelectedSortColumn = SortableColumns
@@ -605,9 +649,9 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
                 return;
             }
 
-            if (!AvailableFields.Any(f => f.IsVisible))
+            if (ReportColumns.Count == 0)
             {
-                StatusMessage = "At least one field must be visible";
+                StatusMessage = "Add at least one column";
                 return;
             }
 
@@ -759,8 +803,8 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     
   private ReportBody BuildReportBodyFromCurrentSettings()
     {
-        var visibleFields = AvailableFields
-            .Where(f => f.IsVisible)
+        var columns = ReportColumns
+            .OrderBy(c => c.Order)
             .ToList();
 
         return new ReportBody
@@ -768,14 +812,13 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             DisplayStyle = DisplayStyle,
             ShowSummary = ShowSummary,
             // Группируем по колонкам, помеченным как GroupKey (порядок — по Order).
-            GroupByFields = visibleFields
+            GroupByFields = columns
                 .Where(f => f.Kind == ColumnKind.GroupKey)
-                .OrderBy(f => f.Order)
                 .Select(f => f.PropertyPath)
                 .ToList(),
             // Сортировка сгруппированного результата по выбранной колонке (только при группировке).
             SortByColumn = IsGrouped ? SelectedSortColumn?.DisplayName : null,
-            VisibleFields = visibleFields
+            VisibleFields = columns
                 .Select(f => new EventField
                 {
                     Name = f.PropertyPath.Replace(".", "_"),
@@ -977,6 +1020,14 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 }
 
 #region Helper Classes
+
+/// <summary>Поле из палитры доступных полей (источник для добавления колонки отчёта кнопкой «+»).</summary>
+public sealed class FieldPaletteItem
+{
+    public required string PropertyPath { get; init; }
+    public required string DisplayName { get; init; }
+    public string? Format { get; init; }
+}
 
 public partial class ReportVariableItem : ObservableObject
 {

@@ -201,42 +201,71 @@
                                 <CheckBox Content="Show summary statistics" IsChecked="{Binding ShowSummary}" />
 
                                 <Separator />
-                                <TextBlock Classes="fieldLabel" Text="Columns *" />
-                                <TextBlock Text="Role: Field = plain column · Group key = group rows · Aggregate = Count/Sum/… per group."
+
+                                <!-- Палитра доступных полей: «+» добавляет колонку (можно несколько раз). -->
+                                <TextBlock Classes="fieldLabel" Text="Add columns" />
+                                <ItemsControl ItemsSource="{Binding AvailableFields}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Grid.Column="0" Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <Button Grid.Column="1" Classes="normal" Width="28" Height="28" Padding="0"
+                                                        FontSize="16" Content="+"
+                                                        ToolTip.Tip="Add this field as a report column"
+                                                        Command="{Binding $parent[UserControl].((vm:ReportDesignerViewModel)DataContext).AddColumnCommand}"
+                                                        CommandParameter="{Binding}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Separator />
+
+                                <!-- Колонки отчёта: дубли разрешены; у каждой имя/роль/агрегат/формат/ширина/порядок и «−». -->
+                                <TextBlock Classes="fieldLabel" Text="Report columns *" />
+                                <TextBlock Text="Role: Field = plain column · Group key = group rows · Aggregate = Count/Sum/… per group. One field can be added several times."
                                            FontSize="11" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextMutedBrush}" />
 
-                                <!-- Строка поля: имя всегда видно (первая строка, тянется).
-                                     Атрибуты (Role · Agg · Fmt · W% · Order) — второй строкой в единой
-                                     сетке фикс. ширин, поэтому выровнены в одну линию у всех полей. -->
-                                <ItemsControl ItemsSource="{Binding AvailableFields}">
+                                <TextBlock Text="No columns yet — add fields above with +."
+                                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           IsVisible="{Binding !ReportColumns.Count}" />
+
+                                <ItemsControl ItemsSource="{Binding ReportColumns}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border Padding="0,6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
                                                 <StackPanel Spacing="6">
-                                                    <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
-                                                        <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
-                                                                   Margin="10,0" TextTrimming="CharacterEllipsis" />
+                                                    <!-- Имя колонки (редактируемое) + удаление -->
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                                        <TextBox Grid.Column="0" Text="{Binding DisplayName}" FontSize="12"
+                                                                 ToolTip.Tip="Column header" />
+                                                        <Button Grid.Column="1" Classes="danger" Width="28" Height="28" Padding="0"
+                                                                FontSize="16" Content="−"
+                                                                ToolTip.Tip="Remove column"
+                                                                Command="{Binding $parent[UserControl].((vm:ReportDesignerViewModel)DataContext).RemoveColumnCommand}"
+                                                                CommandParameter="{Binding}" />
                                                     </Grid>
-                                                    <Grid ColumnDefinitions="20,Auto,Auto,Auto,Auto,*" ColumnSpacing="5"
-                                                          IsVisible="{Binding IsVisible}">
-                                                        <ComboBox Grid.Column="1" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding Kind}"
+                                                    <!-- Роль · Формат · Ширина% · Порядок -->
+                                                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="5">
+                                                        <ComboBox Grid.Column="0" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding Kind}"
                                                                   FontSize="11" Width="84" ToolTip.Tip="Role: Field / Group key / Aggregate" />
-                                                        <TextBox Grid.Column="2" Text="{Binding Format}" PlaceholderText="Fmt"
+                                                        <TextBox Grid.Column="1" Text="{Binding Format}" PlaceholderText="Fmt"
                                                                  FontSize="11" Width="50" ToolTip.Tip="Format, e.g. N0 or {}{0:N0} ms" />
-                                                        <NumericUpDown Grid.Column="3" Value="{Binding WidthPercent}" Minimum="5" Maximum="100"
+                                                        <NumericUpDown Grid.Column="2" Value="{Binding WidthPercent}" Minimum="5" Maximum="100"
                                                                        PlaceholderText="W%" ShowButtonSpinner="False" FontSize="11" Width="54"
                                                                        ToolTip.Tip="Width %" />
-                                                        <NumericUpDown Grid.Column="4" Value="{Binding Order}" Minimum="1" Maximum="100"
+                                                        <NumericUpDown Grid.Column="3" Value="{Binding Order}" Minimum="1" Maximum="100"
                                                                        PlaceholderText="Ord" ShowButtonSpinner="False" FontSize="11" Width="54"
                                                                        ToolTip.Tip="Order" />
                                                     </Grid>
-                                                    <Grid ColumnDefinitions="24,Auto,Auto,*" ColumnSpacing="6"
+                                                    <!-- Функция агрегации (только для роли Aggregate) -->
+                                                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6"
                                                           IsVisible="{Binding IsAggregate}">
-                                                        <TextBlock Grid.Column="1" Text="Func" VerticalAlignment="Center" FontSize="11"
+                                                        <TextBlock Grid.Column="0" Text="Func" VerticalAlignment="Center" FontSize="11"
                                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <ComboBox Grid.Column="2" ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding Aggregate}"
+                                                        <ComboBox Grid.Column="1" ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding Aggregate}"
                                                                   FontSize="11" Width="120" ToolTip.Tip="Aggregate function" />
                                                     </Grid>
                                                 </StackPanel>
