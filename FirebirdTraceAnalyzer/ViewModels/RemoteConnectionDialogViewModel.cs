@@ -117,6 +117,11 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         _credentialStorage = credentialStorage;
 
         LoadSavedProfiles();
+        
+        // нет смысла давать выбор когда есть один профиль
+        if (SavedProfiles.Count == 1)
+            SelectedProfile = SavedProfiles[0];
+        
     }
     
     /// <summary>
