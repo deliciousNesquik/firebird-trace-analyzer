@@ -675,11 +675,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     ///     Получает версию приложения
     /// </summary>
-    private static string GetApplicationVersion()
-    {
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        return version?.ToString() ?? "1.0.0";
-    }
+    private static string GetApplicationVersion() => Core.AppVersion.Current;
     
     /// <summary>
     /// Загружает списки шаблонов отчетов из сервиса в UI

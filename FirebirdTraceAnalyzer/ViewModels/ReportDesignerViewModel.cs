@@ -897,11 +897,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         };
     }
 
-    private static string GetApplicationVersion()
-    {
-        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        return version?.ToString() ?? "1.0.0";
-    }
+    private static string GetApplicationVersion() => Core.AppVersion.Current;
 
     #region Helper Methods
 

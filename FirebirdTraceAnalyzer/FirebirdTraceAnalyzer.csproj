@@ -4,7 +4,8 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-        <Version>1.0.0</Version>
+        <!-- Версию проставляет MinVer из git-тега vX.Y.Z (см. пакет MinVer ниже). -->
+        <MinVerTagPrefix>v</MinVerTagPrefix>
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
         <TargetFramework>net10.0</TargetFramework>
@@ -29,6 +30,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Версионирование из git-тегов (build-only) -->
+        <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
+
         <PackageReference Include="Avalonia" Version="12.0.2"/>
         <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
         <PackageReference Include="Avalonia.Desktop" Version="12.0.2"/>
