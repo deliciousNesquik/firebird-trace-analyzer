@@ -112,6 +112,11 @@
                         <Expander Header="Template" IsExpanded="True">
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="4">
+                                    <TextBlock Classes="fieldLabel" Text="Report name *" />
+                                    <TextBox Text="{Binding TemplateName}"
+                                             PlaceholderText="Enter report name..." />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
                                     <TextBlock Classes="fieldLabel" Text="Category" />
                                     <ComboBox SelectedValue="{Binding Category}"
                                               SelectedValueBinding="{Binding Tag, RelativeSource={RelativeSource Self}}"
