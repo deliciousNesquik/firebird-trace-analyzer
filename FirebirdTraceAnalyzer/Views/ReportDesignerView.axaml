@@ -1,25 +1,22 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-        xmlns:views="using:FirebirdTraceAnalyzer.Views"
-        xmlns:enums="using:FirebirdTraceAnalyzer.Enums.Reports"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
-        x:Class="FirebirdTraceAnalyzer.Views.ReportEditorWindow"
-        x:DataType="vm:ReportDesignerViewModel"
-        Title="Report Editor"
-        Width="1280"
-        Height="820"
-        MinWidth="1040"
-        MinHeight="640"
-        WindowStartupLocation="CenterOwner">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:views="using:FirebirdTraceAnalyzer.Views"
+             xmlns:uc="using:FirebirdTraceAnalyzer.UserControls"
+             xmlns:enums="using:FirebirdTraceAnalyzer.Enums.Reports"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
+             x:Class="FirebirdTraceAnalyzer.Views.ReportDesignerView"
+             x:DataType="vm:ReportDesignerViewModel"
+             Width="{Binding Bounds.Width, RelativeSource={RelativeSource AncestorType=uc:DialogHost}, Converter={StaticResource SubtractConverter}, ConverterParameter=48}"
+             Height="{Binding Bounds.Height, RelativeSource={RelativeSource AncestorType=uc:DialogHost}, Converter={StaticResource SubtractConverter}, ConverterParameter=48}">
 
     <Design.DataContext>
         <vm:ReportDesignerViewModel />
     </Design.DataContext>
 
-    <Window.Styles>
+    <UserControl.Styles>
         <!-- Метка поля инспектора -->
         <Style Selector="TextBlock.fieldLabel">
             <Setter Property="FontSize" Value="12" />
@@ -33,7 +30,7 @@
         <Style Selector="Expander /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Padding" Value="14,12" />
         </Style>
-    </Window.Styles>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
@@ -86,7 +83,7 @@
                             Padding="12,0"
                             Height="36"
                             Content="Close"
-                            Click="CancelButton_OnClick" />
+                            Command="{Binding CancelCommand}" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -427,4 +424,4 @@
         </Border>
 
     </Grid>
-</Window>
+</UserControl>

@@ -413,6 +413,7 @@
             <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
             <converters:BoolToPermissionConverter x:Key="BoolToPermissionConverter" />
             <converters:SpeedConverter x:Key="SpeedConverter" />
+            <converters:SubtractConverter x:Key="SubtractConverter" />
 
         </ResourceDictionary>
     </Application.Resources>         

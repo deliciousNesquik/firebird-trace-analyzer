@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
@@ -25,7 +26,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// <summary>
 /// ViewModel для дизайнера отчётов
 /// </summary>
-public partial class ReportDesignerViewModel : ViewModelBase
+public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -154,6 +155,13 @@ public partial class ReportDesignerViewModel : ViewModelBase
 
     /// <summary>Событие успешного сохранения шаблона</summary>
     public event EventHandler<ReportTemplate>? TemplateSaved;
+
+    /// <summary>Диалог просит закрыться (результат — сохранённый шаблон или null при отмене).</summary>
+    public event EventHandler<object?>? CloseRequested;
+
+    /// <summary>Закрыть редактор без сохранения.</summary>
+    [RelayCommand]
+    private void Cancel() => CloseRequested?.Invoke(this, null);
 
     /// <summary>
     /// Передаёт события и файлы из главного окна для превью и экспорта.
@@ -668,8 +676,9 @@ public partial class ReportDesignerViewModel : ViewModelBase
             StatusMessage = $"Template saved: {template.Name}";
             Logger.Info("Template saved: {Name} ({Id})", template.Name, template.Id);
 
-            // Уведомляем об успешном сохранении
+            // Уведомляем об успешном сохранении и закрываем диалог с результатом-шаблоном.
             TemplateSaved?.Invoke(this, template);
+            CloseRequested?.Invoke(this, template);
         }
         catch (Exception ex)
         {

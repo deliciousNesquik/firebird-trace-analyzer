@@ -6,45 +6,57 @@ namespace FirebirdTraceAnalyzer.Services.Dialogs;
 /// <inheritdoc cref="IDialogService" />
 public sealed partial class DialogService : ObservableObject, IDialogService
 {
-    /// <summary>Активный диалог-VM; биндится оверлеем <c>DialogHost</c>.</summary>
+    /// <summary>Верхний диалог-VM стека; биндится оверлеем <c>DialogHost</c>.</summary>
     [ObservableProperty]
     private object? _currentDialog;
 
-    private IDialogViewModel? _active;
-    private TaskCompletionSource<object?>? _completion;
+    // Стек открытых диалогов: диалог может открываться ПОВЕРХ другого (напр. редактор отчёта
+    // поверх окна управления шаблонами). Показывается верхний; при его закрытии возвращается
+    // предыдущий. Верх стека — последний элемент списка.
+    private readonly List<Entry> _stack = new();
+
+    private sealed record Entry(IDialogViewModel ViewModel, TaskCompletionSource<object?> Completion);
 
     public async Task<TResult?> ShowDialogAsync<TResult>(IDialogViewModel viewModel)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
 
-        // Один диалог за раз: если что-то уже открыто — отменяем.
-        if (_active is not null)
-            Cancel();
-
-        _active = viewModel;
-        _completion = new TaskCompletionSource<object?>();
+        var entry = new Entry(viewModel, new TaskCompletionSource<object?>());
         viewModel.CloseRequested += OnCloseRequested;
+
+        _stack.Add(entry);
         CurrentDialog = viewModel;
 
-        var result = await _completion.Task;
+        var result = await entry.Completion.Task;
         return result is TResult typed ? typed : default;
     }
 
-    public void Cancel() => Complete(null);
-
-    private void OnCloseRequested(object? sender, object? result) => Complete(result);
-
-    private void Complete(object? result)
+    /// <summary>Отменяет ВЕРХНИЙ диалог стека (Esc / клик по фону).</summary>
+    public void Cancel()
     {
-        if (_active is null)
+        if (_stack.Count > 0)
+            Complete(_stack[^1].ViewModel, null);
+    }
+
+    private void OnCloseRequested(object? sender, object? result)
+    {
+        if (sender is IDialogViewModel viewModel)
+            Complete(viewModel, result);
+    }
+
+    private void Complete(IDialogViewModel viewModel, object? result)
+    {
+        var index = _stack.FindIndex(e => ReferenceEquals(e.ViewModel, viewModel));
+        if (index < 0)
             return;
 
-        _active.CloseRequested -= OnCloseRequested;
-        _active = null;
-        CurrentDialog = null;
+        var entry = _stack[index];
+        _stack.RemoveAt(index);
+        entry.ViewModel.CloseRequested -= OnCloseRequested;
 
-        var completion = _completion;
-        _completion = null;
-        completion?.TrySetResult(result);
+        // Показываем новый верх стека (или ничего, если стек пуст).
+        CurrentDialog = _stack.Count > 0 ? _stack[^1].ViewModel : null;
+
+        entry.Completion.TrySetResult(result);
     }
 }

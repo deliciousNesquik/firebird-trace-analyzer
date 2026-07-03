@@ -843,10 +843,9 @@ public partial class MainWindowViewModel : ViewModelBase
         if (editTemplateId != null)
             await designerViewModel.LoadTemplateAsync(editTemplateId);
 
-        // Открываем единый редактор отчётов (превью + инспектор в одном окне).
-        var window = new ReportEditorWindow(designerViewModel);
-        var result = await window.ShowDialog<ReportTemplate?>(
-            App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+        // Открываем редактор как in-window overlay (стек диалогов: поверх окна управления шаблонами).
+        designerViewModel.MarkPreviewDirty();
+        var result = await Dialogs.ShowDialogAsync<ReportTemplate?>(designerViewModel);
 
         if (result != null)
         {
