@@ -1,7 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using Avalonia.Threading;
+using CsvHelper;
+using CsvHelper.Configuration;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
@@ -24,7 +28,10 @@ public partial class ReportPreviewViewModel : ViewModelBase
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private readonly IReportGenerationService _generationService;
-    private readonly IEventPropertyAccessor _propertyAccessor;
+
+    // Та же проекция, что рисуют экспортёры (PDF/CSV/DOCX/XLSX) — благодаря ей превью совпадает
+    // с итоговым файлом, включая группировку и агрегаты (WYSIWYG).
+    private readonly IReportProjectionService _projectionService;
 
     #region Observable Properties
 
@@ -36,9 +43,48 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     [ObservableProperty] private string _statusMessage = "Ready";
 
-    [ObservableProperty] private ReportFormat _selectedFormat = ReportFormat.PDF;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDocumentPreview))]
+    [NotifyPropertyChangedFor(nameof(IsSheetPreview))]
+    [NotifyPropertyChangedFor(nameof(IsTextPreview))]
+    private ReportFormat _selectedFormat = ReportFormat.PDF;
 
     public List<ReportFormat> AvailableFormats { get; } = Enum.GetValues<ReportFormat>().ToList();
+
+    /// <summary>PDF и DOCX рисуются как «документ» (лист А4).</summary>
+    public bool IsDocumentPreview => SelectedFormat is ReportFormat.PDF or ReportFormat.DOCX;
+
+    /// <summary>XLSX — как лист Excel (сетка с буквами колонок и номерами строк).</summary>
+    public bool IsSheetPreview => SelectedFormat == ReportFormat.XLSX;
+
+    /// <summary>CSV — как plain-текст файла.</summary>
+    public bool IsTextPreview => SelectedFormat == ReportFormat.CSV;
+
+    /// <summary>Точный текст CSV-файла (для превью формата CSV).</summary>
+    [ObservableProperty] private string _csvText = string.Empty;
+
+    /// <summary>Масштаб «листа» превью (1.0 = 100%).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercent))]
+    private double _zoom = 1.0;
+
+    public string ZoomPercent => $"{Zoom * 100:0}%";
+
+    [RelayCommand]
+    private void ZoomIn() => Zoom = Math.Min(3.0, Math.Round(Zoom + 0.1, 2));
+
+    [RelayCommand]
+    private void ZoomOut() => Zoom = Math.Max(0.5, Math.Round(Zoom - 0.1, 2));
+
+    [RelayCommand]
+    private void ZoomReset() => Zoom = 1.0;
+
+    /// <summary>
+    /// Инкрементируется после каждой перегенерации данных превью. Code-behind вью подписывается
+    /// на изменение и перестраивает таблицу событий одним Grid (гарантированное выравнивание колонок
+    /// заголовка и строк — как единая таблица в PDF).
+    /// </summary>
+    [ObservableProperty] private int _previewRevision;
 
     #endregion
 
@@ -50,11 +96,11 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>Подзаголовок отчёта</summary>
     [ObservableProperty] private string _previewSubtitle = string.Empty;
 
+    /// <summary>Строка даты генерации ("Generated: ..."), как в PDF (пусто, если отключена).</summary>
+    [ObservableProperty] private string _generatedDateText = string.Empty;
+
     /// <summary>Переменные заголовка с их значениями</summary>
     public ObservableCollection<PreviewVariableItem> HeaderVariables { get; } = new();
-
-    /// <summary>События для отображения</summary>
-    public ObservableCollection<EventBase> PreviewEvents { get; } = new();
 
     /// <summary>Строки таблицы событий (ячейки по столбцам)</summary>
     public ObservableCollection<PreviewEventRow> PreviewEventRows { get; } = new();
@@ -62,26 +108,38 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>Столбцы таблицы событий</summary>
     public ObservableCollection<PreviewColumnItem> EventColumns { get; } = new();
 
+    /// <summary>
+    /// Общая раскладка колонок ("20*,50*,30*") — одна на заголовок и все строки, чтобы столбцы
+    /// идеально выравнивались. Считается из WidthPercent колонок (равные доли, если не заданы).
+    /// </summary>
+    [ObservableProperty] private string _columnWidths = string.Empty;
+
     /// <summary>Статистика</summary>
     public ObservableCollection<PreviewStatItem> Statistics { get; } = new();
 
+    /// <summary>Примечание об усечении числа строк в превью (пусто, если не усечено).</summary>
+    [ObservableProperty] private string _rowNote = string.Empty;
+
     /// <summary>Футер</summary>
     [ObservableProperty] private string _footerText = string.Empty;
+
+    /// <summary>Максимум строк в превью — это витрина дизайна, а не полный дамп данных.</summary>
+    private const int PreviewRowLimit = 200;
 
     #endregion
 
     public ReportPreviewViewModel()
     {
         _generationService = null!;
-        _propertyAccessor = new EventPropertyAccessor();
+        _projectionService = null!;
     }
 
     public ReportPreviewViewModel(
         IReportGenerationService generationService,
-        IEventPropertyAccessor propertyAccessor)
+        IReportProjectionService projectionService)
     {
         _generationService = generationService ?? throw new ArgumentNullException(nameof(generationService));
-        _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
+        _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
     /// <summary>
@@ -125,6 +183,11 @@ public partial class ReportPreviewViewModel : ViewModelBase
         var title = Template.Header.Title;
         var subtitle = Template.Header.Subtitle ?? string.Empty;
 
+        // Как в PDF: "Generated: {date}" (только если включено в шапке).
+        var generatedDate = Template.Header.ShowGeneratedDate
+            ? $"Generated: {Metadata.GeneratedAt.ToString(Template.Header.DateFormat)}"
+            : string.Empty;
+
         var variables = Template.Header.Variables
             .Where(v => v.IsVisible)
             .OrderBy(v => v.DisplayOrder)
@@ -135,29 +198,48 @@ public partial class ReportPreviewViewModel : ViewModelBase
             })
             .ToList();
 
-        var columns = Template.Body.VisibleFields
-            .OrderBy(f => f.Order)
-            .Select(field => new PreviewColumnItem
+        // Строим ту же таблицу, что и экспортёры: группировка/агрегаты/порядок колонок — из проекции.
+        var table = _projectionService.BuildTable(Template, Metadata.Events);
+
+        var columns = table.Columns
+            .Select((col, i) => new PreviewColumnItem
             {
-                Header = field.DisplayName,
-                PropertyPath = field.PropertyPath,
-                Format = field.Format,
-                Alignment = field.Alignment
+                Index = i,
+                Header = col.DisplayName,
+                Format = col.Format,
+                WidthPercent = col.WidthPercent,
+                Alignment = col.Alignment
             })
             .ToList();
 
-        var events = Metadata.Events.ToList();
+        // Общая строка ширин колонок для заголовка и строк (равные доли, если WidthPercent не задан).
+        var columnWidths = columns.Count == 0
+            ? string.Empty
+            : string.Join(",", columns.Select(c => $"{(c.WidthPercent is > 0 ? c.WidthPercent.Value : 1)}*"));
 
-        var rows = events
-            .Select(evt => new PreviewEventRow
+        // Превью усекаем: показываем только первые PreviewRowLimit строк.
+        var totalRows = table.Rows.Count;
+
+        var rows = table.Rows
+            .Take(PreviewRowLimit)
+            .Select((cells, rowIndex) => new PreviewEventRow
             {
-                Cells = columns
-                    .Select(col => FormatCellValue(
-                        _propertyAccessor.GetValue(evt, col.PropertyPath),
-                        col.Format))
+                IsAlternate = rowIndex % 2 == 1,
+                ColumnWidths = columnWidths,
+                Cells = cells
+                    .Select((value, i) => new PreviewCell
+                    {
+                        Column = i,
+                        Text = FormatCellValue(value, columns[i].Format),
+                        Alignment = columns[i].Alignment
+                    })
                     .ToList()
             })
             .ToList();
+
+        var rowNote = totalRows > PreviewRowLimit
+            ? $"Showing first {PreviewRowLimit:N0} of {totalRows:N0} rows — export for the full report"
+            : $"{totalRows:N0} rows";
 
         var stats = new List<PreviewStatItem>();
         if (Template.Body.ShowSummary)
@@ -183,13 +265,20 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
         var footer = Template.Footer.Show ? Template.Footer.Text : string.Empty;
 
+        // Точный текст CSV-файла (для превью формата CSV) — те же строки, что пишет CsvReportExporter.
+        var csvText = BuildCsvText(columns, rows);
+
         cancellationToken.ThrowIfCancellationRequested();
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             PreviewTitle = title;
             PreviewSubtitle = subtitle;
+            GeneratedDateText = generatedDate;
             FooterText = footer;
+            ColumnWidths = columnWidths;
+            RowNote = rowNote;
+            CsvText = csvText;
 
             HeaderVariables.Clear();
             foreach (var v in variables)
@@ -199,10 +288,6 @@ public partial class ReportPreviewViewModel : ViewModelBase
             foreach (var c in columns)
                 EventColumns.Add(c);
 
-            PreviewEvents.Clear();
-            foreach (var e in events)
-                PreviewEvents.Add(e);
-
             PreviewEventRows.Clear();
             foreach (var row in rows)
                 PreviewEventRows.Add(row);
@@ -210,6 +295,9 @@ public partial class ReportPreviewViewModel : ViewModelBase
             Statistics.Clear();
             foreach (var s in stats)
                 Statistics.Add(s);
+
+            // Сигнал вью перестроить таблицу событий (единый Grid).
+            PreviewRevision++;
         });
     }
 
@@ -217,68 +305,87 @@ public partial class ReportPreviewViewModel : ViewModelBase
         => ReportValueFormatter.Format(value, format);
 
     /// <summary>
-    ///     Генерирует превью данные
+    /// Собирает точный текст CSV-файла из колонок и (усечённых) строк превью — построчно повторяет
+    /// вывод <c>CsvReportExporter</c> (метаданные с «#», заголовки, значения через запятую, summary).
     /// </summary>
-    private Task GeneratePreviewAsync1(CancellationToken cancellationToken)
+    private string BuildCsvText(IReadOnlyList<PreviewColumnItem> columns, IReadOnlyList<PreviewEventRow> rows)
     {
-        if (Template == null || Metadata == null)
-            return Task.CompletedTask;
+        if (Template is null || Metadata is null)
+            return string.Empty;
 
-        return Task.Run(() =>
+        var sb = new StringBuilder();
+        using var writer = new StringWriter(sb);
+        using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            // Заголовок
-            PreviewTitle = Template.Header.Title;
-            PreviewSubtitle = Template.Header.Subtitle ?? string.Empty;
+            Delimiter = ",",
+            HasHeaderRecord = true
+        });
 
-            // Переменные заголовка
-            HeaderVariables.Clear();
-            foreach (var variable in Template.Header.Variables.Where(v => v.IsVisible).OrderBy(v => v.DisplayOrder))
+        csv.WriteField($"# {Template.Header.Title}");
+        csv.NextRecord();
+
+        if (!string.IsNullOrWhiteSpace(Template.Header.Subtitle))
+        {
+            csv.WriteField($"# {Template.Header.Subtitle}");
+            csv.NextRecord();
+        }
+
+        csv.WriteField($"# Generated: {Metadata.GeneratedAt:yyyy-MM-dd HH:mm:ss}");
+        csv.NextRecord();
+        csv.WriteField($"# Application: Flytic v{Metadata.ApplicationVersion}");
+        csv.NextRecord();
+
+        foreach (var variable in Template.Header.Variables.Where(v => v.IsVisible).OrderBy(v => v.DisplayOrder))
+        {
+            csv.WriteField($"# {variable.DisplayName}: {GetVariableValue(variable)}");
+            csv.NextRecord();
+        }
+
+        csv.NextRecord(); // разделительная пустая строка
+
+        foreach (var column in columns)
+            csv.WriteField(column.Header);
+        csv.NextRecord();
+
+        foreach (var row in rows)
+        {
+            foreach (var cell in row.Cells)
+                csv.WriteField(cell.Text);
+            csv.NextRecord();
+        }
+
+        if (Template.Body.ShowSummary)
+        {
+            csv.NextRecord();
+            csv.WriteField("# Summary Statistics");
+            csv.NextRecord();
+            csv.WriteField("# Total Files");
+            csv.WriteField(Metadata.Files.Count);
+            csv.NextRecord();
+            csv.WriteField("# Total Events (before filters)");
+            csv.WriteField(Metadata.TotalEventsCount);
+            csv.NextRecord();
+            csv.WriteField("# Events in Report");
+            csv.WriteField(Metadata.Events.Count);
+            csv.NextRecord();
+
+            if (!string.IsNullOrWhiteSpace(Metadata.ActiveFilters))
             {
-                var value = GetVariableValue(variable);
-                HeaderVariables.Add(new PreviewVariableItem
-                {
-                    Label = variable.DisplayName,
-                    Value = value
-                });
+                csv.WriteField("# Active Filters");
+                csv.WriteField(Metadata.ActiveFilters);
+                csv.NextRecord();
             }
 
-            // Столбцы событий
-            EventColumns.Clear();
-            foreach (var field in Template.Body.VisibleFields.OrderBy(f => f.Order))
-                EventColumns.Add(new PreviewColumnItem
-                {
-                    Header = field.DisplayName,
-                    PropertyPath = field.PropertyPath,
-                    Format = field.Format,
-                    Alignment = field.Alignment
-                });
-
-            // События
-            PreviewEvents.Clear();
-            foreach (var evt in Metadata.Events) PreviewEvents.Add(evt);
-
-            // Статистика
-            Statistics.Clear();
-            if (Template.Body.ShowSummary)
+            if (!string.IsNullOrWhiteSpace(Metadata.ActiveSort))
             {
-                Statistics.Add(new PreviewStatItem { Label = "Total Files", Value = Metadata.Files.Count.ToString() });
-                Statistics.Add(new PreviewStatItem
-                    { Label = "Total Events (before filters)", Value = Metadata.TotalEventsCount.ToString("N0") });
-                Statistics.Add(new PreviewStatItem
-                    { Label = "Events in Report", Value = Metadata.Events.Count.ToString("N0") });
-
-                if (!string.IsNullOrWhiteSpace(Metadata.ActiveFilters))
-                    Statistics.Add(new PreviewStatItem { Label = "Active Filters", Value = Metadata.ActiveFilters });
-
-                if (!string.IsNullOrWhiteSpace(Metadata.ActiveSort))
-                    Statistics.Add(new PreviewStatItem { Label = "Active Sort", Value = Metadata.ActiveSort });
+                csv.WriteField("# Active Sort");
+                csv.WriteField(Metadata.ActiveSort);
+                csv.NextRecord();
             }
+        }
 
-            // Футер
-            FooterText = Template.Footer.Show ? Template.Footer.Text : string.Empty;
-
-            cancellationToken.ThrowIfCancellationRequested();
-        }, cancellationToken);
+        csv.Flush();
+        return sb.ToString();
     }
 
     /// <summary>
@@ -350,9 +457,10 @@ public class PreviewVariableItem
 
 public class PreviewColumnItem
 {
+    public int Index { get; init; }
     public required string Header { get; init; }
-    public required string PropertyPath { get; init; }
     public string? Format { get; init; }
+    public int? WidthPercent { get; init; }
     public TextAlignment Alignment { get; init; }
 }
 
@@ -362,9 +470,23 @@ public class PreviewStatItem
     public required string Value { get; init; }
 }
 
+/// <summary>Одна ячейка строки превью: текст + индекс колонки (для Grid.Column) + выравнивание.</summary>
+public class PreviewCell
+{
+    public int Column { get; init; }
+    public required string Text { get; init; }
+    public TextAlignment Alignment { get; init; }
+}
+
 public class PreviewEventRow
 {
-    public required IReadOnlyList<string> Cells { get; init; }
+    public required IReadOnlyList<PreviewCell> Cells { get; init; }
+
+    /// <summary>Чётность строки — для «зебры» (подсветка каждой второй строки).</summary>
+    public bool IsAlternate { get; init; }
+
+    /// <summary>Та же раскладка колонок, что и у заголовка — чтобы ячейки строки выравнивались.</summary>
+    public required string ColumnWidths { get; init; }
 }
 
 #endregion

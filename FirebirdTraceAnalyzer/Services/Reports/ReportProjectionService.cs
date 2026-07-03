@@ -36,10 +36,17 @@ public sealed class ReportProjectionService : IReportProjectionService
             .ToList();
 
         var groupByPaths = template.Body.GroupByFields;
+        var isGrouped = groupByPaths is { Count: > 0 };
 
-        var rows = groupByPaths is { Count: > 0 }
-            ? BuildGroupedRows(fields, groupByPaths, events, template.Body.SortByColumn, template.SortDescending)
+        var rows = isGrouped
+            ? BuildGroupedRows(fields, groupByPaths!, events, template.Body.SortByColumn, template.SortDescending)
             : BuildEventRows(fields, events);
+
+        // Для сгруппированного отчёта лимит применяется к строкам-группам ПОСЛЕ агрегации и
+        // сортировки (топ-N групп). Для негруппированного лимит уже применён к событиям выше по
+        // конвейеру (PrepareEventsForReport), поэтому здесь строки не режем.
+        if (isGrouped && template.EventLimit is > 0)
+            rows = rows.Take(template.EventLimit.Value).ToList();
 
         return new ReportTable(columns, rows);
     }
