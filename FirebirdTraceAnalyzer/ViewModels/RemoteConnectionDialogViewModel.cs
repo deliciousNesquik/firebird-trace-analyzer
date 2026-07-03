@@ -4,7 +4,6 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums;
-using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces.Window;
@@ -62,6 +61,9 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     
     [ObservableProperty]
     private bool _deleteAfterProcessingOnLocaleMachine;
+    
+    [ObservableProperty]
+    private int _connectionTimeout = 30;
 
     #endregion
 
@@ -148,6 +150,10 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
 
         try
         {
+            // обновление последнего использования
+            SavedProfiles[SavedProfiles.IndexOf(SelectedProfile)].LastUsedAt = DateTime.Now;
+            await SaveProfilesToFileAsync();
+            
             var settings = CreateConnectionSettings();
 
             if (!settings.IsValid(out var validationError))
@@ -291,7 +297,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             {
                 Name = ProfileName,
                 Settings = settings,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                LastUsedAt = DateTime.Now
             };
 
             // Удаляем старый профиль с таким именем
@@ -352,7 +359,8 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             {
                 Name = GetUniqueCopyName(profile.Name),
                 Settings = profile.Settings,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                LastUsedAt = DateTime.Now
             };
 
             SavedProfiles.Add(copy);
@@ -398,6 +406,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     [RelayCommand]
     private void TestConnection()
     {
+        
         // Простая валидация без подключения
         var settings = CreateConnectionSettings();
         
@@ -470,7 +479,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             RemoteDirectory = RemoteDirectory.Trim(),
             DeleteAfterProcessingFromServer = DeleteAfterProcessingFromServer,
             DeleteAfterProcessingOnLocaleMachine = DeleteAfterProcessingOnLocaleMachine,
-            ConnectionTimeout = 30
+            ConnectionTimeout = ConnectionTimeout
         };
     }
 
@@ -491,6 +500,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         RemoteDirectory = settings.RemoteDirectory;
         DeleteAfterProcessingFromServer = settings.DeleteAfterProcessingFromServer;
         DeleteAfterProcessingOnLocaleMachine = settings.DeleteAfterProcessingOnLocaleMachine;
+        ConnectionTimeout = settings.ConnectionTimeout;
 
         // Пытаемся загрузить сохранённый пароль (асинхронно, с маршалингом записи свойств на UI-поток)
         if (_credentialStorage != null && settings.AuthMethod == AuthenticationMethod.Password)
