@@ -258,14 +258,14 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
                 {
                     Title = "Select Private Key",
                     AllowMultiple = false,
-                    FileTypeFilter = new[]
-                    {
+                    FileTypeFilter =
+                    [
                         new FilePickerFileType("SSH Keys")
                         {
-                            Patterns = new[] { "*", "id_rsa", "id_ed25519", "*.pem" }
+                            Patterns = ["*", "id_rsa", "id_ed25519", "*.pem"]
                         },
                         FilePickerFileTypes.All
-                    }
+                    ]
                 });
 
             if (files.Count > 0)
