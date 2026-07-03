@@ -411,7 +411,7 @@
             <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
             <converters:BoolToPermissionConverter x:Key="BoolToPermissionConverter" />
             <converters:SpeedConverter x:Key="SpeedConverter" />
-            
+
         </ResourceDictionary>
     </Application.Resources>         
              

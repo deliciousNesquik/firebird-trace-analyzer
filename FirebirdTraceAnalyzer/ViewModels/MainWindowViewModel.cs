@@ -806,8 +806,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 designerViewModel.LoadAvailableSorts(VisibleEvents);
             }
 
-            // Открываем окно дизайнера
-            var window = new ReportDesignerWindow(designerViewModel);
+            // Открываем единый редактор отчётов (превью + инспектор в одном окне).
+            var window = new ReportEditorWindow(designerViewModel);
             var result = await window.ShowDialog<ReportTemplate?>(
                 App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
 
