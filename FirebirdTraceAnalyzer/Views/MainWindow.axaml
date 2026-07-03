@@ -73,20 +73,8 @@
             <NativeMenuItem Header="Reports">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Manage Templates">
-                            <NativeMenuItem.Menu>
-                                <NativeMenu>
-                                    <NativeMenuItem Header="Create New Template..."
-                                                    Command="{Binding CreateReportTemplateCommand}" />
-                                    <NativeMenuItem Header="Edit Template..."
-                                                    Command="{Binding EditReportTemplateCommand}" />
-                                    <NativeMenuItem Header="Import Template..."
-                                                    Command="{Binding ImportReportTemplateCommand}" />
-                                    <NativeMenuItem Header="Export Template..."
-                                                    Command="{Binding ExportReportTemplateCommand}" />
-                                </NativeMenu>
-                            </NativeMenuItem.Menu>
-                        </NativeMenuItem>
+                        <NativeMenuItem Header="Manage Templates..."
+                                        Command="{Binding OpenManageTemplatesCommand}" />
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="Recent Reports..."
                                         Command="{Binding OpenRecentReportsCommand}" />

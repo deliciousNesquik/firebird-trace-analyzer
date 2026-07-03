@@ -150,6 +150,20 @@ public class ReportTemplateService : IReportTemplateService
         }
     }
 
+    public Task<string?> GetCustomTemplatePathAsync(string templateId)
+    {
+        try
+        {
+            var files = Directory.GetFiles(_templatesDirectory, $"*{templateId}.json");
+            return Task.FromResult(files.FirstOrDefault());
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error resolving template file path {Id}", templateId);
+            return Task.FromResult<string?>(null);
+        }
+    }
+
     public async Task ExportTemplateAsync(ReportTemplate template, string filePath)
     {
         try

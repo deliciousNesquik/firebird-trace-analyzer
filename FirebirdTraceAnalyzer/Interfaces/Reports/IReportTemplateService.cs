@@ -24,6 +24,9 @@ public interface IReportTemplateService
     
     /// <summary>Удалить шаблон</summary>
     Task DeleteTemplateAsync(string templateId);
+
+    /// <summary>Путь к JSON-файлу пользовательского шаблона на диске (или null, если не найден).</summary>
+    Task<string?> GetCustomTemplatePathAsync(string templateId);
     
     /// <summary>Экспортировать шаблон в файл</summary>
     Task ExportTemplateAsync(ReportTemplate template, string filePath);

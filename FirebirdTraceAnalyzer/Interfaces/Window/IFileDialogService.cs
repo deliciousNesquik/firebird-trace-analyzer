@@ -21,4 +21,16 @@ public interface IFileDialogService
     /// в противном случае — <c>false</c>.
     /// </returns>
     Task<bool> RevealInFileManagerAsync(string filePath);
+
+    /// <summary>
+    /// Диалог сохранения JSON-файла (для экспорта шаблона отчёта).
+    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// </summary>
+    Task<string?> PickJsonToSaveAsync(string suggestedName);
+
+    /// <summary>
+    /// Диалог выбора JSON-файла для открытия (для импорта шаблона отчёта).
+    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// </summary>
+    Task<string?> PickJsonToOpenAsync();
 }

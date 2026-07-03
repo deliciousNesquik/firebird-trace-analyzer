@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="600"
+             x:Class="FirebirdTraceAnalyzer.Views.ManageTemplatesView"
+             x:DataType="vm:ManageTemplatesViewModel"
+             Width="760"
+             MaxHeight="640">
+
+    <Design.DataContext>
+        <vm:ManageTemplatesViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="16"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="Manage Templates" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="focused" Height="40" Padding="12,0"
+                            Command="{Binding CreateCommand}" ToolTip.Tip="Create a new template">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Svg Width="20" Height="20" Path="{DynamicResource AddIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="Create" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Classes="normal" Height="40" Padding="12,0"
+                            Command="{Binding ImportCommand}" ToolTip.Tip="Import template from file">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                            <TextBlock Text="Import" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Classes="danger" Height="40" Padding="12,0"
+                            Command="{Binding CloseCommand}" >
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Svg Width="20" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                            <TextBlock Text="Close" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Templates list -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Padding="16" ItemsSource="{Binding Templates}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="16"
+                                Margin="0,0,0,12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Description}" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               IsVisible="{Binding HasDescription}" />
+                                    <TextBlock FontSize="11">
+                                        <Run Text="DEFAULT FORMAT:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                        <Run Text="{Binding Format}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Button Classes="normal" Height="40" Padding="12,0"
+                                            ToolTip.Tip="Reveal the template file in the file manager"
+                                            Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).ViewCommand}"
+                                            CommandParameter="{Binding}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                            <TextBlock Text="View" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="normal" Height="40" Padding="12,0"
+                                            ToolTip.Tip="Open in the report editor"
+                                            Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).EditCommand}"
+                                            CommandParameter="{Binding}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource EditIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                            <TextBlock Text="Edit" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="normal" Height="40" Padding="12,0"
+                                            ToolTip.Tip="Export template to a file to share it"
+                                            Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).ExportCommand}"
+                                            CommandParameter="{Binding}">
+                                        
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                            <TextBlock Text="Export" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    
+                                    <Button Classes="danger" Height="40" Padding="12,0"
+                                            ToolTip.Tip="Delete template"
+                                            Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).DeleteCommand}"
+                                            CommandParameter="{Binding}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                            <TextBlock Text="Delete" VerticalAlignment="Center"/> 
+                                        </StackPanel>       
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Empty state -->
+        <Border Grid.Row="1" Padding="40" IsVisible="{Binding !Templates.Count}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="400">
+                <TextBlock Text="No custom templates"
+                           FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Create a template or import one to see it here."
+                           FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</UserControl>

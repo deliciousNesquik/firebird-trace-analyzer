@@ -58,6 +58,70 @@ public class FileDialogService : IFileDialogService
         }
     }
 
+    public async Task<string?> PickJsonToSaveAsync(string suggestedName)
+    {
+        var topLevel = _windowProvider.GetCurrent();
+
+        if (topLevel == null || !topLevel.StorageProvider.CanSave)
+        {
+            Logger.Warn("StorageProvider does not support saving files.");
+            return null;
+        }
+
+        try
+        {
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export report template",
+                SuggestedFileName = suggestedName,
+                DefaultExtension = "json",
+                FileTypeChoices =
+                [
+                    new FilePickerFileType("Report template") { Patterns = ["*.json"] }
+                ]
+            });
+
+            return file?.TryGetLocalPath();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening save file dialog.");
+            return null;
+        }
+    }
+
+    public async Task<string?> PickJsonToOpenAsync()
+    {
+        var topLevel = _windowProvider.GetCurrent();
+
+        if (topLevel == null || !topLevel.StorageProvider.CanOpen)
+        {
+            Logger.Warn("StorageProvider does not support opening files.");
+            return null;
+        }
+
+        try
+        {
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Import report template",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Report template") { Patterns = ["*.json"] },
+                    FilePickerFileTypes.All
+                ]
+            });
+
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening file selection dialog.");
+            return null;
+        }
+    }
+
     public Task<bool> RevealInFileManagerAsync(string filePath)
     {
         try

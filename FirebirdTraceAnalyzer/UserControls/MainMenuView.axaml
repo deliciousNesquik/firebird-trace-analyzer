@@ -99,26 +99,10 @@
 
             <Separator />
 
-            <!-- Manage Templates -->
-            <MenuItem Header="_Manage Templates">
-                <MenuItem
-                    Header="Create New Template..."
-                    Command="{Binding CreateReportTemplateCommand}" />
-
-                <MenuItem
-                    Header="Edit Template..."
-                    IsEnabled="True"
-                    Command="{Binding EditReportTemplateCommand}" />
-
-                <MenuItem
-                    Header="Import Template..."
-                    Command="{Binding ImportReportTemplateCommand}" />
-
-                <MenuItem
-                    Header="Export Template..."
-                    IsEnabled="False"
-                    Command="{Binding ExportReportTemplateCommand}" />
-            </MenuItem>
+            <!-- Manage Templates (single entry → in-window overlay) -->
+            <MenuItem
+                Header="_Manage Templates..."
+                Command="{Binding OpenManageTemplatesCommand}" />
 
             <Separator />
 

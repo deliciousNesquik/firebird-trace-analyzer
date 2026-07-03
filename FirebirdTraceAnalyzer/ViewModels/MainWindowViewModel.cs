@@ -803,154 +803,112 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Открывает единый редактор отчётов: создание нового шаблона (editTemplateId == null) или
+    /// редактирование существующего (подтягивает его параметры). Возвращает сохранённый шаблон или null.
+    /// </summary>
+    private async Task<ReportTemplate?> OpenReportEditorAsync(string? editTemplateId)
+    {
+        var designerViewModel = App.Services?.GetRequiredService<ReportDesignerViewModel>();
+
+        if (designerViewModel == null)
+        {
+            StatusMessage = "Report services not available";
+            return null;
+        }
+
+        // Для редактирования нужны события сессии: по ним восстанавливаются доступные поля/фильтры/
+        // сортировки, к которым привязывается загружаемый шаблон (иначе маппинг ничего не найдёт).
+        if (editTemplateId != null && VisibleEvents.Count == 0)
+        {
+            StatusMessage = "Load a trace file before editing a template";
+            return null;
+        }
+
+        designerViewModel.SetSessionContext(new ReportDesignSessionContext
+        {
+            SourceEvents = VisibleEvents.ToList(),
+            Files = FileCards.Select(c => c.FileInfo).ToList(),
+            TotalEventsCount = AllEvents.Count
+        });
+
+        if (VisibleEvents.Count > 0)
+        {
+            designerViewModel.LoadAvailableFields(VisibleEvents);
+            designerViewModel.LoadAvailableFilters(VisibleEvents);
+            designerViewModel.LoadAvailableSorts(VisibleEvents);
+        }
+
+        // Для редактирования подтягиваем параметры существующего шаблона.
+        if (editTemplateId != null)
+            await designerViewModel.LoadTemplateAsync(editTemplateId);
+
+        // Открываем единый редактор отчётов (превью + инспектор в одном окне).
+        var window = new ReportEditorWindow(designerViewModel);
+        var result = await window.ShowDialog<ReportTemplate?>(
+            App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
+
+        if (result != null)
+        {
+            StatusMessage = editTemplateId == null
+                ? $"Template created: {result.Name}"
+                : $"Template updated: {result.Name}";
+            Logger.Info("Report template saved: {Name}", result.Name);
+
+            await RefreshCustomReportsAsync();
+        }
+
+        return result;
+    }
+
+    /// <summary>Открывает встроенное окно управления кастомными шаблонами отчётов.</summary>
     [RelayCommand]
-    private async Task CreateReportTemplateAsync(CancellationToken cancellationToken)
+    private async Task OpenManageTemplatesAsync()
     {
         try
         {
-            var designerViewModel = App.Services?.GetRequiredService<ReportDesignerViewModel>();
+            var vm = App.Services?.GetRequiredService<ManageTemplatesViewModel>();
 
-            if (designerViewModel == null)
+            if (vm == null)
             {
                 StatusMessage = "Report services not available";
                 return;
             }
 
-            designerViewModel.SetSessionContext(new ReportDesignSessionContext
-            {
-                SourceEvents = VisibleEvents.ToList(),
-                Files = FileCards.Select(c => c.FileInfo).ToList(),
-                TotalEventsCount = AllEvents.Count
-            });
+            await vm.LoadAsync();
 
-            if (VisibleEvents.Count > 0)
+            // Create/Edit требуют сессии событий и окна редактора — обрабатываем здесь, затем
+            // перезагружаем список в окне.
+            async void OnEdit(object? _, string id)
             {
-                designerViewModel.LoadAvailableFields(VisibleEvents);
-                designerViewModel.LoadAvailableFilters(VisibleEvents);
-                designerViewModel.LoadAvailableSorts(VisibleEvents);
+                await OpenReportEditorAsync(id);
+                await vm.LoadAsync();
             }
 
-            // Открываем единый редактор отчётов (превью + инспектор в одном окне).
-            var window = new ReportEditorWindow(designerViewModel);
-            var result = await window.ShowDialog<ReportTemplate?>(
-                App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window);
-
-            if (result != null)
+            async void OnCreate(object? _, EventArgs __)
             {
-                StatusMessage = $"Template created: {result.Name}";
-                Logger.Info("Report template created: {Name}", result.Name);
-                
+                await OpenReportEditorAsync(null);
+                await vm.LoadAsync();
+            }
+
+            vm.EditRequested += OnEdit;
+            vm.CreateRequested += OnCreate;
+
+            try
+            {
+                await Dialogs.ShowDialogAsync<object>(vm);
+            }
+            finally
+            {
+                vm.EditRequested -= OnEdit;
+                vm.CreateRequested -= OnCreate;
                 await RefreshCustomReportsAsync();
             }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error creating template");
+            Logger.Error(ex, "Error opening manage templates");
             StatusMessage = $"Error: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private async Task EditReportTemplateAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var templateService = App.Services?.GetRequiredService<IReportTemplateService>();
-
-            if (templateService == null)
-            {
-                StatusMessage = "Template service not available";
-                return;
-            }
-
-            // Получаем список всех шаблонов
-            var allTemplates = await templateService.GetAllTemplatesAsync();
-            
-            Logger.Info($"All template(s) count: {allTemplates.Count}");
-
-            // TODO: Показать диалог выбора шаблона для редактирования
-            // После выбора открыть ReportDesignerWindow с загруженным шаблоном
-
-            StatusMessage = "Template editing coming soon...";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error editing template");
-            StatusMessage = $"Error: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private async Task ImportReportTemplateAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var templateService = App.Services?.GetRequiredService<IReportTemplateService>();
-
-            if (templateService == null)
-            {
-                StatusMessage = "Template service not available";
-                return;
-            }
-
-            // Открываем диалог выбора файла
-            var topLevel = App.Services?.GetRequiredService<IWindowProvider>().GetCurrent();
-            if (topLevel?.StorageProvider == null) return;
-
-            var files = await topLevel.StorageProvider.OpenFilePickerAsync(
-                new FilePickerOpenOptions
-                {
-                    Title = "Import Report Template",
-                    AllowMultiple = false,
-                    FileTypeFilter = new[]
-                    {
-                        new FilePickerFileType("Report Template")
-                        {
-                            Patterns = new[] { "*.json" }
-                        }
-                    }
-                });
-
-            if (files.Count == 0)
-                return;
-
-            var filePath = files[0].Path.LocalPath;
-            var importedTemplate = await templateService.ImportTemplateAsync(filePath);
-
-            StatusMessage = $"Template imported: {importedTemplate.Name}";
-            Logger.Info("Template imported: {Name}", importedTemplate.Name);
-            
-            await RefreshCustomReportsAsync();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error importing template");
-            StatusMessage = $"Import error: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private async Task ExportReportTemplateAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var templateService = App.Services?.GetRequiredService<IReportTemplateService>();
-
-            if (templateService == null)
-            {
-                StatusMessage = "Template service not available";
-                return;
-            }
-
-            // TODO: Показать диалог выбора шаблона для экспорта
-            // После выбора открыть диалог сохранения файла
-
-            StatusMessage = "Template export coming soon...";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error exporting template");
-            StatusMessage = $"Export error: {ex.Message}";
         }
     }
 

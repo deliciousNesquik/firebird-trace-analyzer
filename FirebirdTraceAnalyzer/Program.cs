@@ -133,6 +133,7 @@ internal sealed class Program
         services.AddTransient<ReportDesignerViewModel>();
         services.AddTransient<ReportPreviewViewModel>();
         services.AddTransient<ReportHistoryViewModel>();
+        services.AddTransient<ManageTemplatesViewModel>();
 
         
         services.AddSingleton<PdfReportExporter>();
