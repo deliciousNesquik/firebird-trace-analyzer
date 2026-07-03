@@ -1,0 +1,123 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        КОНТРАСТНАЯ ТЕМА (high-contrast dark).
+
+        Наследуется от Dark-варианта FluentTheme (см. ThemeService.Contrast), поэтому хром
+        стандартных контролов уже тёмный; здесь задаём кастомную палитру приложения.
+
+        Принципы:
+          • Многоуровневые поверхности (окно → панель → карточка) — элементы не сливаются с фоном
+            даже без ярких обводок.
+          • Максимальная читаемость текста на чёрном.
+          • Акцент — яркий синий (в стиле приложения), не кричащий жёлтый.
+        Набор ключей — один-в-один с Dark.axaml/Light.axaml (симметрия = полнота темы).
+
+        Разделы: 1. Поверхности · 2. Текст · 3. Границы · 4. Акцент · 5. Статусы ·
+                 6. Баннеры · 7. События · 8. Кнопки · 9. Иконки
+    -->
+
+    <!-- 1. Поверхности (окно самое тёмное; панели и карточки — светлее для «слоёв») -->
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#000000" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#161616" />
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#202020" />
+
+    <!-- 2. Текст -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#D4D4D4" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#9E9E9E" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#000000" />
+
+    <!-- 3. Границы (видимые, но не «режущие» белым) -->
+    <SolidColorBrush x:Key="BorderBrush" Color="#6E6E6E" />
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#333333" />
+
+    <!-- Таблица отчёта: превью-«лист» всегда белый, поэтому эти токены остаются светлыми -->
+    <SolidColorBrush x:Key="ReportHeaderRowBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="ReportAltRowBrush" Color="#FAFAFB" />
+
+    <!-- 4. Акцент (яркий синий, в стиле приложения; на нём — чёрный текст) -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#5AB2FF" />
+
+    <!-- 5. Статусы -->
+    <SolidColorBrush x:Key="SuccessBrush" Color="#66BB6A" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#EF5350" />
+
+    <!-- 6. Баннеры (ошибки / предупреждения): тёмная подложка + яркие рамка/текст -->
+    <SolidColorBrush x:Key="ErrorSurfaceBrush" Color="#2A1212" />
+    <SolidColorBrush x:Key="ErrorBorderBrush" Color="#EF5350" />
+    <SolidColorBrush x:Key="ErrorTextBrush" Color="#FF9A9A" />
+
+    <SolidColorBrush x:Key="WarningSurfaceBrush" Color="#2A2410" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#FFCA28" />
+    <SolidColorBrush x:Key="WarningTextBrush" Color="#FFD966" />
+
+    <!-- 7. Палитра событий трассировки (яркие бейджи на тёмном) -->
+    <SolidColorBrush x:Key="TraceInitEventBrush" Color="#00E676" />
+    <SolidColorBrush x:Key="TraceFiniEventBrush" Color="#FF5252" />
+
+    <SolidColorBrush x:Key="AttachDatabaseEventBrush" Color="#40C4FF" />
+    <SolidColorBrush x:Key="DetachDatabaseEventBrush" Color="#90A4AE" />
+
+    <SolidColorBrush x:Key="StatementStartEventBrush" Color="#FFA726" />
+    <SolidColorBrush x:Key="StatementRestartEventBrush" Color="#FFA726" />
+    <SolidColorBrush x:Key="StatementFinishEventBrush" Color="#FFCA28" />
+    <SolidColorBrush x:Key="FailedStatementFinishEventBrush" Color="#FF1744" />
+
+    <SolidColorBrush x:Key="ProcedureStartEventBrush" Color="#69F0AE" />
+    <SolidColorBrush x:Key="ProcedureFinishEventBrush" Color="#00E676" />
+    <SolidColorBrush x:Key="FailedProcedureFinishEventBrush" Color="#FF7043" />
+
+    <SolidColorBrush x:Key="TriggerStartEventBrush" Color="#E040FB" />
+    <SolidColorBrush x:Key="TriggerFinishEventBrush" Color="#EA80FC" />
+    <SolidColorBrush x:Key="FailedTriggerFinishEventBrush" Color="#FF4081" />
+
+    <SolidColorBrush x:Key="ErrorEventBrush" Color="#FF1744" />
+
+    <!-- 8. Кнопки: Normal (приподнятый фон + видимая обводка) -->
+    <SolidColorBrush x:Key="ButtonNormalBackgroundBrush" Color="#202020" />
+    <SolidColorBrush x:Key="ButtonNormalBorderBrush" Color="#6E6E6E" />
+    <SolidColorBrush x:Key="ButtonNormalForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonNormalHoverBackgroundBrush" Color="#2E2E2E" />
+    <SolidColorBrush x:Key="ButtonNormalHoverBorderBrush" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="ButtonNormalHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonNormalPressedBackgroundBrush" Color="#3A3A3A" />
+    <SolidColorBrush x:Key="ButtonNormalPressedBorderBrush" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="ButtonNormalDisabledBackgroundBrush" Color="#161616" />
+    <SolidColorBrush x:Key="ButtonNormalDisabledBorderBrush" Color="#3A3A3A" />
+    <SolidColorBrush x:Key="ButtonNormalDisabledForegroundBrush" Color="#666666" />
+
+    <!-- 8. Кнопки: Focused (основное действие — синий, белый текст) -->
+    <SolidColorBrush x:Key="ButtonFocusedBackgroundBrush" Color="#1976D2" />
+    <SolidColorBrush x:Key="ButtonFocusedBorderBrush" Color="#1976D2" />
+    <SolidColorBrush x:Key="ButtonFocusedForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonFocusedHoverBackgroundBrush" Color="#1E88E5" />
+    <SolidColorBrush x:Key="ButtonFocusedHoverBorderBrush" Color="#1E88E5" />
+    <SolidColorBrush x:Key="ButtonFocusedHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonFocusedPressedBackgroundBrush" Color="#0D47A1" />
+    <SolidColorBrush x:Key="ButtonFocusedPressedBorderBrush" Color="#0D47A1" />
+    <SolidColorBrush x:Key="ButtonFocusedDisabledBackgroundBrush" Color="#123049" />
+    <SolidColorBrush x:Key="ButtonFocusedDisabledBorderBrush" Color="#123049" />
+    <SolidColorBrush x:Key="ButtonFocusedDisabledForegroundBrush" Color="#5E7D96" />
+
+    <!-- 8. Кнопки: Danger (красный, белый текст) -->
+    <SolidColorBrush x:Key="ButtonDangerBackgroundBrush" Color="#E53935" />
+    <SolidColorBrush x:Key="ButtonDangerBorderBrush" Color="#E53935" />
+    <SolidColorBrush x:Key="ButtonDangerForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonDangerHoverBackgroundBrush" Color="#F05545" />
+    <SolidColorBrush x:Key="ButtonDangerHoverBorderBrush" Color="#F05545" />
+    <SolidColorBrush x:Key="ButtonDangerHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonDangerPressedBackgroundBrush" Color="#B71C1C" />
+    <SolidColorBrush x:Key="ButtonDangerPressedBorderBrush" Color="#B71C1C" />
+    <SolidColorBrush x:Key="ButtonDangerDisabledBackgroundBrush" Color="#4A1C1C" />
+    <SolidColorBrush x:Key="ButtonDangerDisabledBorderBrush" Color="#4A1C1C" />
+    <SolidColorBrush x:Key="ButtonDangerDisabledForegroundBrush" Color="#9E6B6B" />
+
+    <!-- 9. Иконки (CSS для перекраски SVG) — белые -->
+    <x:String x:Key="ThemeIconFill">.ThemeIconFill { fill:#FFFFFF; }</x:String>
+    <x:String x:Key="ThemeIconFillOnlyWhite">.ThemeIconFill { fill:#FFFFFF; }</x:String>
+    <x:String x:Key="ThemeIconStroke">.ThemeIconStroke { stroke:#FFFFFF; }</x:String>
+    <x:String x:Key="ThemeIconStrokeOnlyWhite">.ThemeIconStroke { stroke:#FFFFFF; }</x:String>
+
+</ResourceDictionary>

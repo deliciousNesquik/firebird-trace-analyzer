@@ -4,6 +4,7 @@
              xmlns:events="clr-namespace:FirebirdTraceAnalyzer.Controls.EventCards"
              xmlns:core="clr-namespace:FirebirdTraceParser.Models.Events;assembly=FirebirdTraceParser"
              xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
+             xmlns:services="clr-namespace:FirebirdTraceAnalyzer.Services"
              x:Class="FirebirdTraceAnalyzer.App"
              Name="Firebird Trace Analyzer"
              RequestedThemeVariant="Default">
@@ -378,6 +379,13 @@
                 <ResourceDictionary x:Key="Dark">
                     <ResourceDictionary.MergedDictionaries>
                         <ResourceInclude Source="avares://FirebirdTraceAnalyzer/Themes/Dark.axaml"/>
+                    </ResourceDictionary.MergedDictionaries>
+                </ResourceDictionary>
+                
+                <!-- Контрастная тема -->
+                <ResourceDictionary x:Key="{x:Static services:ThemeService.Contrast}">
+                    <ResourceDictionary.MergedDictionaries>
+                        <ResourceInclude Source="avares://FirebirdTraceAnalyzer/Themes/Contrast.axaml"/>
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
 

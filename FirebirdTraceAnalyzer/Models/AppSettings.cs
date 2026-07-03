@@ -12,7 +12,10 @@ public enum AppTheme
     Light,
 
     /// <summary>Всегда тёмная тема.</summary>
-    Dark
+    Dark,
+    
+    /// <summary>Всегда контрастная тема.</summary>
+    Contrast
 }
 
 /// <summary>

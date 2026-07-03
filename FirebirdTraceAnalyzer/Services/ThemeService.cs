@@ -14,7 +14,14 @@ namespace FirebirdTraceAnalyzer.Services;
 public sealed class ThemeService : IThemeService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
+    
+    /// <summary>
+    /// Контрастный режим оформления приложения. Наследуется от Dark, чтобы хром стандартных
+    /// контролов FluentTheme (ListBox, ComboBox, TextBox, ScrollBar, Expander) рендерился тёмным
+    /// и не «светил» поверх чёрной кастомной палитры.
+    /// </summary>
+    public static ThemeVariant Contrast { get; } = new("Contrast", ThemeVariant.Dark);
+    
     public void Apply(AppTheme theme)
     {
         var app = Application.Current;
@@ -28,6 +35,7 @@ public sealed class ThemeService : IThemeService
         {
             AppTheme.Light => ThemeVariant.Light,
             AppTheme.Dark => ThemeVariant.Dark,
+            AppTheme.Contrast => Contrast,
             _ => ThemeVariant.Default
         };
 
