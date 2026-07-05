@@ -11,3 +11,5 @@ build/icon.icns
 
 # macOS
 .DS_Store
+# Локальная (не версионируемая) копия руководства
+CLAUDE.md.local
