@@ -12,7 +12,12 @@ public partial class FilterDescriptor : ViewModelBase
     public string Id { get; }
     public string DisplayName { get; }
     public string Category { get; }
-    public int Priority { get; }
+
+    /// <summary>
+    /// Порядок в СПИСКЕ фильтров (меньше — выше). Только позиция пункта в UI-списке; к самой
+    /// фильтрации отношения не имеет.
+    /// </summary>
+    public int DisplayOrder { get; }
     public FilterType FilterType { get; }
     public string PropertyPath { get; }
 
@@ -48,7 +53,7 @@ public partial class FilterDescriptor : ViewModelBase
         string propertyPath,
         Func<EventBase, bool> filterPredicate,
         string category = "General",
-        int priority = 100)
+        int displayOrder = 100)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
@@ -56,7 +61,7 @@ public partial class FilterDescriptor : ViewModelBase
         PropertyPath = propertyPath;
         FilterPredicate = filterPredicate ?? throw new ArgumentNullException(nameof(filterPredicate));
         Category = category;
-        Priority = priority;
+        DisplayOrder = displayOrder;
     }
 
     public void UpdatePredicate(Func<EventBase, bool> newPredicate)

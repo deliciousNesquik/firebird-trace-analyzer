@@ -21,7 +21,7 @@ public class TemplateSortPlugin : ISortPlugin
     public string Author => "system";
     public string Version => "1.0.0";
 
-    /// <summary>Варианты сортировки плагина: SortDescriptor(id, displayName, comparer, isDefault, category, priority).</summary>
+    /// <summary>Варианты сортировки плагина: SortDescriptor(id, displayName, comparer, isDefault, category, displayOrder).</summary>
     public IEnumerable<SortDescriptor> GetSorts()
     {
         yield return new SortDescriptor(
@@ -59,7 +59,7 @@ public class TemplateFilterPlugin : IFilterPlugin
 
     private const int SlowThresholdMs = 1000;
 
-    /// <summary>Фильтры плагина: FilterDescriptor(id, displayName, filterType, propertyPath, predicate, category, priority).</summary>
+    /// <summary>Фильтры плагина: FilterDescriptor(id, displayName, filterType, propertyPath, predicate, category, displayOrder).</summary>
     public IEnumerable<FilterDescriptor> GetFilters()
     {
         yield return new FilterDescriptor(

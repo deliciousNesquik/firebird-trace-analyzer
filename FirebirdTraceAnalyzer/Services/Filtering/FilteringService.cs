@@ -52,7 +52,7 @@ public sealed class FilteringService : IFilteringService
         if (eventList.Count == 0)
         {
             return _customFilters.Values
-                .OrderBy(f => f.Priority)
+                .OrderBy(f => f.DisplayOrder)
                 .ToList();
         }
 
@@ -92,7 +92,7 @@ public sealed class FilteringService : IFilteringService
 
         var result = availableFilters
             .OrderBy(f => f.Category)
-            .ThenBy(f => f.Priority)
+            .ThenBy(f => f.DisplayOrder)
             .ToList();
 
         _lastGeneratedFilters = result;
@@ -184,7 +184,7 @@ public sealed class FilteringService : IFilteringService
             source.PropertyPath,
             _ => true,
             source.Category,
-            source.Priority)
+            source.DisplayOrder)
         {
             MinValue = source.MinValue,
             MaxValue = source.MaxValue,

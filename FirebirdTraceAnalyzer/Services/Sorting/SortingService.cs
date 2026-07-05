@@ -48,7 +48,7 @@ public sealed class SortingService : ISortingService
         if (eventList.Count == 0)
         {
             return _customSorts.Values
-                .OrderBy(s => s.Priority)
+                .OrderBy(s => s.DisplayOrder)
                 .ToList();
         }
 
@@ -85,7 +85,7 @@ public sealed class SortingService : ISortingService
 
         var result = availableSorts
             .OrderBy(s => s.Category)
-            .ThenBy(s => s.Priority)
+            .ThenBy(s => s.DisplayOrder)
             .ToList();
 
         _lastGeneratedSorts = result;
