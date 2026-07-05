@@ -126,9 +126,11 @@ public class FileDialogService : IFileDialogService
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            var isDirectory = Directory.Exists(filePath);
+
+            if (string.IsNullOrWhiteSpace(filePath) || (!File.Exists(filePath) && !isDirectory))
             {
-                Logger.Warn($"File does not exist or path is invalid: {filePath}");
+                Logger.Warn($"Path does not exist or is invalid: {filePath}");
                 return Task.FromResult(false);
             }
 
@@ -136,18 +138,24 @@ public class FileDialogService : IFileDialogService
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // Windows: открывает проводник и выделяет конкретный файл
-                    Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+                    // Windows: для файла — выделить в проводнике; для папки — просто открыть её.
+                    if (isDirectory)
+                        Process.Start("explorer.exe", $"\"{filePath}\"");
+                    else
+                        Process.Start("explorer.exe", $"/select,\"{filePath}\"");
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    // macOS: аргумент -R (reveal) открывает Finder и выделяет файл
-                    Process.Start("open", $"-R \"{filePath}\"");
+                    // macOS: -R (reveal) выделяет файл; для папки открываем её саму.
+                    if (isDirectory)
+                        Process.Start("open", $"\"{filePath}\"");
+                    else
+                        Process.Start("open", $"-R \"{filePath}\"");
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    // Linux: xdg-open обычно умеет открывать только директорию
-                    var directory = Path.GetDirectoryName(filePath);
+                    // Linux: xdg-open открывает директорию (для файла — его папку).
+                    var directory = isDirectory ? filePath : Path.GetDirectoryName(filePath);
                     if (directory != null)
                     {
                         Process.Start("xdg-open", $"\"{directory}\"");

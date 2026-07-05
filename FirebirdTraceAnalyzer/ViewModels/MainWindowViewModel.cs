@@ -2057,6 +2057,23 @@ public partial class MainWindowViewModel : ViewModelBase
         IsLogsSectionVisible = !IsLogsSectionVisible;
     }
 
+    /// <summary>Открывает встроенное окно управления плагинами.</summary>
+    [RelayCommand]
+    private async Task OpenPluginsAsync()
+    {
+        try
+        {
+            var vm = new PluginsViewModel(_pluginManager, _fileDialogService);
+            vm.LoadPlugins();
+            await Dialogs.ShowDialogAsync<object>(vm);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening plugins window");
+            StatusMessage = $"Error: {ex.Message}";
+        }
+    }
+
     /// <summary>Открывает окно настроек приложения.</summary>
     [RelayCommand]
     private async Task OpenSettingsAsync()

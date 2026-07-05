@@ -168,6 +168,8 @@
 
         </MenuItem>
 
+        <MenuItem Header="_Plugins [P]" Command="{Binding OpenPluginsCommand}" />
+
         <MenuItem Header="_Settings [S]" Command="{Binding OpenSettingsCommand}" />
     </Menu>
 </UserControl>

@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="600"
+             x:Class="FirebirdTraceAnalyzer.Views.PluginsView"
+             x:DataType="vm:PluginsViewModel"
+             Width="720"
+             MaxHeight="640">
+
+    <Design.DataContext>
+        <vm:PluginsViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="16"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="Plugins" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="Installed sort/filter plugins" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="normal" Height="40" Padding="12,0"
+                            Command="{Binding OpenPluginsFolderCommand}"
+                            ToolTip.Tip="Open the plugins folder">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Svg Width="20" Height="20" Path="{DynamicResource FolderIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                            <TextBlock Text="Open folder" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="danger" Height="40" Padding="14,0"
+                            Content="Close" Command="{Binding CloseCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Restart note -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource WarningSurfaceBrush}"
+                BorderBrush="{DynamicResource WarningBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10"
+                IsVisible="{Binding RestartNeeded}">
+            <TextBlock Text="Changes apply after restarting the application."
+                       FontSize="12" Foreground="{DynamicResource WarningTextBrush}" />
+        </Border>
+
+        <!-- Plugins list -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Padding="16" ItemsSource="{Binding Plugins}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="16"
+                                Margin="0,0,0,12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                                <!-- Enable toggle (нельзя включить сломанный) -->
+                                <CheckBox Grid.Column="0"
+                                          VerticalAlignment="Center"
+                                          IsChecked="{Binding IsEnabled}"
+                                          IsEnabled="{Binding !IsLoadError}"
+                                          ToolTip.Tip="Enable / disable this plugin (applies after restart)" />
+
+                                <!-- Metadata -->
+                                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <TextBlock FontSize="11">
+                                            <Run Text="AUTHOR:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{Binding Author}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11">
+                                            <Run Text="VERSION:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{Binding Version}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11">
+                                            <Run Text="PROVIDES:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{Binding KindText}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock FontSize="11">
+                                        <Run Text="Id:" Foreground="{DynamicResource TextMutedBrush}" />
+                                        <Run Text="{Binding Id}" Foreground="{DynamicResource TextMutedBrush}" />
+                                        <Run Text="  ·  " Foreground="{DynamicResource TextMutedBrush}" />
+                                        <Run Text="{Binding DirectoryName}" Foreground="{DynamicResource TextMutedBrush}" />
+                                    </TextBlock>
+                                    <!-- Status -->
+                                    <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <!-- Load error detail -->
+                                    <TextBlock Text="{Binding LoadError}" FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource ErrorTextBrush}"
+                                               IsVisible="{Binding HasLoadError}" />
+                                </StackPanel>
+
+                                <!-- Reveal file -->
+                                <Button Grid.Column="2" Classes="normal" Height="36" Width="36" Padding="0"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="Reveal the plugin DLL in the file manager"
+                                        Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).RevealCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Empty state -->
+        <Border Grid.Row="2" Padding="40" IsVisible="{Binding !Plugins.Count}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="420">
+                <TextBlock Text="No plugins installed"
+                           FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Put a plugin DLL into a subfolder of the plugins folder and restart the app."
+                           FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Content="Open plugins folder" Classes="normal" HorizontalAlignment="Center"
+                        Margin="0,6,0,0" Command="{Binding OpenPluginsFolderCommand}" />
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</UserControl>

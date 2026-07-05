@@ -118,6 +118,7 @@
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
 
+            <NativeMenuItem Header="Plugins" Command="{Binding OpenPluginsCommand}"/>
             <NativeMenuItem Header="Settings" Command="{Binding OpenSettingsCommand}"/>
 
         </NativeMenu>
