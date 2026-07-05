@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
@@ -21,24 +24,30 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
 
     private readonly PluginManagerService _pluginManager;
     private readonly IFileDialogService _fileDialogService;
+    private readonly IDialogService _dialogService;
 
-    /// <summary>Стало ли какое-то изменение (вкл/выкл), требующее перезапуска.</summary>
+    /// <summary>Стало ли какое-то изменение (вкл/выкл/установка/удаление), требующее перезапуска.</summary>
     [ObservableProperty] private bool _restartNeeded;
 
     public ObservableCollection<PluginRow> Plugins { get; } = new();
 
     public event EventHandler<object?>? CloseRequested;
 
-    public PluginsViewModel(PluginManagerService pluginManager, IFileDialogService fileDialogService)
+    public PluginsViewModel(
+        PluginManagerService pluginManager,
+        IFileDialogService fileDialogService,
+        IDialogService dialogService)
     {
         _pluginManager = pluginManager ?? throw new ArgumentNullException(nameof(pluginManager));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
     }
 
     public PluginsViewModel()
     {
         _pluginManager = null!;
         _fileDialogService = null!;
+        _dialogService = null!;
     }
 
     /// <summary>Заполняет список из текущего снимка загрузчика (загрузка была на старте).</summary>
@@ -80,6 +89,101 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
     private async Task OpenPluginsFolderAsync()
         => await _fileDialogService.RevealInFileManagerAsync(_pluginManager.PluginsDirectory);
 
+    /// <summary>
+    /// Устанавливает плагин: выбор пакета (.dll или .zip) → DLL копируется в новую подпапку,
+    /// ZIP распаковывается в подпапку по имени архива. Прочие форматы отклоняются.
+    /// </summary>
+    [RelayCommand]
+    private async Task InstallAsync()
+    {
+        var path = await _fileDialogService.PickPluginPackageAsync();
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        if (_pluginManager.InstallPlugin(path))
+        {
+            RestartNeeded = true;
+            Logger.Info("Installed plugin from '{Path}' (applies after restart)", path);
+            await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
+                "Plugin installed",
+                $"'{Path.GetFileName(path)}' has been installed. It will become available after restarting the application.",
+                confirmText: "OK",
+                cancelText: "Close"));
+        }
+        else
+        {
+            await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
+                "Install failed",
+                "Could not install the selected file. Only a plugin .dll or a .zip archive containing a plugin .dll are accepted. See the log for details.",
+                confirmText: "OK",
+                cancelText: "Close"));
+        }
+    }
+
+    /// <summary>
+    /// Удаляет пакет плагина целиком (всю подпапку). Перед удалением показывает подтверждение
+    /// со списком ВСЕХ плагинов из этой папки (в одном файле может быть несколько классов).
+    /// </summary>
+    [RelayCommand]
+    private async Task DeleteAsync(PluginRow? row)
+    {
+        if (row is null)
+            return;
+
+        // Все плагины из той же подпапки — они удалятся вместе (созависимые объекты).
+        var bundled = Plugins
+            .Where(p => string.Equals(p.FolderPath, row.FolderPath, StringComparison.OrdinalIgnoreCase))
+            .Select(p => $"{p.Name}  (Id: {p.Id}, v{p.Version})")
+            .ToList();
+
+        var confirmed = await _dialogService.ShowDialogAsync<bool>(new ConfirmDialogViewModel(
+            "Delete plugin package?",
+            $"The whole package folder '{row.DirectoryName}' will be deleted. " +
+            "The following plugins are bundled in it and will be removed together:",
+            details: bundled,
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            isDanger: true));
+
+        if (!confirmed)
+            return;
+
+        var (deletedNow, pending) = _pluginManager.DeletePackage(row.FolderPath);
+
+        if (deletedNow || pending)
+        {
+            RestartNeeded = true;
+
+            // Убираем из списка строки того же пакета (снимок загрузчика обновится на старте).
+            var toRemove = Plugins
+                .Where(p => string.Equals(p.FolderPath, row.FolderPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            foreach (var r in toRemove)
+            {
+                r.PropertyChanged -= OnRowChanged;
+                Plugins.Remove(r);
+            }
+        }
+
+        if (pending)
+        {
+            await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
+                "Deletion scheduled",
+                "The plugin is currently loaded and its files are locked. " +
+                "It will be removed automatically the next time the application starts.",
+                confirmText: "OK",
+                cancelText: "Close"));
+        }
+        else if (!deletedNow)
+        {
+            await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
+                "Delete failed",
+                "Could not delete the plugin package. See the log for details.",
+                confirmText: "OK",
+                cancelText: "Close"));
+        }
+    }
+
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this, null);
 }
@@ -103,6 +207,7 @@ public partial class PluginRow : ObservableObject
     public string Version => _info.Version;
     public string FilePath => _info.FilePath;
     public string DirectoryName => _info.DirectoryName;
+    public string FolderPath => Path.GetDirectoryName(_info.FilePath) ?? _info.FilePath;
 
     public string KindText => _info.Kind switch
     {

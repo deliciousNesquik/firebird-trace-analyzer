@@ -2063,7 +2063,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var vm = new PluginsViewModel(_pluginManager, _fileDialogService);
+            var vm = new PluginsViewModel(_pluginManager, _fileDialogService, Dialogs);
             vm.LoadPlugins();
             await Dialogs.ShowDialogAsync<object>(vm);
         }

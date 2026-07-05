@@ -30,6 +30,14 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="focused" Height="40" Padding="12,0"
+                            Command="{Binding InstallCommand}"
+                            ToolTip.Tip="Install a plugin from a .dll or .zip archive">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Svg Width="20" Height="20" Path="{DynamicResource AddIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="Install" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Classes="normal" Height="40" Padding="12,0"
                             Command="{Binding OpenPluginsFolderCommand}"
                             ToolTip.Tip="Open the plugins folder">
@@ -110,14 +118,22 @@
                                                IsVisible="{Binding HasLoadError}" />
                                 </StackPanel>
 
-                                <!-- Reveal file -->
-                                <Button Grid.Column="2" Classes="normal" Height="36" Width="36" Padding="0"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="Reveal the plugin DLL in the file manager"
-                                        Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).RevealCommand}"
-                                        CommandParameter="{Binding}">
-                                    <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
-                                </Button>
+                                <!-- Row actions -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <Button Classes="normal" Height="36" Width="36" Padding="0"
+                                            ToolTip.Tip="Reveal the plugin DLL in the file manager"
+                                            Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).RevealCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                    </Button>
+                                    <Button Classes="danger" Height="36" Width="36" Padding="0"
+                                            ToolTip.Tip="Delete this plugin package (whole folder)"
+                                            Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).DeleteCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Svg Width="18" Height="18" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </DataTemplate>

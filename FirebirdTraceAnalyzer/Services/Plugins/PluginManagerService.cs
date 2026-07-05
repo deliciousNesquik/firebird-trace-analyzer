@@ -20,6 +20,7 @@ public class PluginManagerService
 
     private readonly List<PluginInfo> _plugins = new();
     private HashSet<string> _disabledIds = new(StringComparer.OrdinalIgnoreCase);
+    private List<string> _pendingDelete = new();
 
     public PluginManagerService()
     {
@@ -41,7 +42,10 @@ public class PluginManagerService
     public IReadOnlyList<PluginInfo> LoadAllPlugins()
     {
         _plugins.Clear();
-        _disabledIds = LoadDisabledIds();
+        LoadState();
+
+        // Отложенные удаления (пакеты, которые были залочены в прошлой сессии) — до сканирования.
+        ProcessPendingDeletions();
 
         if (!Directory.Exists(_pluginsDirectory))
             return _plugins;
@@ -169,13 +173,172 @@ public class PluginManagerService
         else
             _disabledIds.Add(pluginId);
 
-        SaveDisabledIds();
+        SaveState();
     }
 
     public bool IsEnabled(string pluginId) => !_disabledIds.Contains(pluginId);
 
-    private HashSet<string> LoadDisabledIds()
+    /// <summary>
+    /// Устанавливает плагин из одиночной DLL или ZIP-архива. Для каждой установки создаётся отдельная
+    /// подпапка в каталоге плагинов (по имени файла/архива): DLL копируется туда, ZIP — распаковывается.
+    /// Другие форматы отклоняются. Вступает в силу после перезапуска. Возвращает true при успехе.
+    /// </summary>
+    public bool InstallPlugin(string sourcePath)
     {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+                return false;
+
+            var ext = Path.GetExtension(sourcePath);
+            var isDll = ext.Equals(".dll", StringComparison.OrdinalIgnoreCase);
+            var isZip = ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
+
+            if (!isDll && !isZip)
+            {
+                Logger.Warn("Rejected plugin install — unsupported file type: {Src}", sourcePath);
+                return false;
+            }
+
+            Directory.CreateDirectory(_pluginsDirectory);
+
+            // Подпапка по имени файла/архива, с защитой от коллизии имён.
+            var baseName = Path.GetFileNameWithoutExtension(sourcePath);
+            var dir = Path.Combine(_pluginsDirectory, baseName);
+            var i = 1;
+            while (Directory.Exists(dir))
+                dir = Path.Combine(_pluginsDirectory, $"{baseName}_{i++}");
+
+            Directory.CreateDirectory(dir);
+
+            if (isDll)
+            {
+                File.Copy(sourcePath, Path.Combine(dir, Path.GetFileName(sourcePath)));
+            }
+            else
+            {
+                System.IO.Compression.ZipFile.ExtractToDirectory(sourcePath, dir);
+
+                // В архиве обязана быть хотя бы одна DLL, иначе это не пакет плагина.
+                var hasDll = Directory.EnumerateFiles(dir, "*.dll", SearchOption.AllDirectories).Any();
+                if (!hasDll)
+                {
+                    Directory.Delete(dir, recursive: true);
+                    Logger.Warn("Rejected plugin install — no DLL in archive: {Src}", sourcePath);
+                    return false;
+                }
+
+                FlattenSingleRootFolder(dir);
+            }
+
+            Logger.Info("Installed plugin from {Src} -> {Dir}", sourcePath, dir);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to install plugin from {Src}", sourcePath);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Удаляет пакет плагина (всю подпапку целиком — DLL и зависимости). Если файлы залочены
+    /// текущей сессией, помечает папку на удаление при следующем старте. Возвращает
+    /// (deletedNow, pending).
+    /// </summary>
+    public (bool DeletedNow, bool Pending) DeletePackage(string folderPath)
+    {
+        // Безопасность: удаляем только внутри каталога плагинов.
+        var full = Path.GetFullPath(folderPath);
+        var root = Path.GetFullPath(_pluginsDirectory);
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(full, root, StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.Warn("Refused to delete outside plugins dir: {Path}", folderPath);
+            return (false, false);
+        }
+
+        try
+        {
+            if (Directory.Exists(full))
+                Directory.Delete(full, recursive: true);
+
+            _pendingDelete.RemoveAll(p => string.Equals(p, full, StringComparison.OrdinalIgnoreCase));
+            SaveState();
+            Logger.Info("Deleted plugin package: {Path}", full);
+            return (true, false);
+        }
+        catch (Exception ex)
+        {
+            // Скорее всего файл залочен загруженной сборкой — удалим при следующем запуске.
+            Logger.Warn(ex, "Package delete deferred (locked?): {Path}", full);
+            if (!_pendingDelete.Contains(full, StringComparer.OrdinalIgnoreCase))
+                _pendingDelete.Add(full);
+            SaveState();
+            return (false, true);
+        }
+    }
+
+    /// <summary>
+    /// Если после распаковки на верхнем уровне нет DLL, но есть единственная подпапка с содержимым
+    /// (типичный случай «заархивировали папку целиком») — поднимает её содержимое на уровень выше,
+    /// чтобы сканер, читающий только верхний уровень подпапки плагина, нашёл DLL.
+    /// </summary>
+    private static void FlattenSingleRootFolder(string dir)
+    {
+        try
+        {
+            var topDlls = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly);
+            if (topDlls.Length > 0)
+                return;
+
+            var entries = Directory.GetFileSystemEntries(dir);
+            if (entries.Length != 1 || !Directory.Exists(entries[0]))
+                return;
+
+            var inner = entries[0];
+            foreach (var file in Directory.GetFiles(inner))
+                File.Move(file, Path.Combine(dir, Path.GetFileName(file)));
+            foreach (var sub in Directory.GetDirectories(inner))
+                Directory.Move(sub, Path.Combine(dir, Path.GetFileName(sub)));
+
+            Directory.Delete(inner, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            // Не критично: если не удалось «поднять» — оставляем как есть.
+            Logger.Warn(ex, "Could not flatten extracted plugin folder {Dir}", dir);
+        }
+    }
+
+    private void ProcessPendingDeletions()
+    {
+        if (_pendingDelete.Count == 0)
+            return;
+
+        foreach (var folder in _pendingDelete.ToList())
+        {
+            try
+            {
+                if (Directory.Exists(folder))
+                    Directory.Delete(folder, recursive: true);
+                _pendingDelete.Remove(folder);
+                Logger.Info("Deleted pending plugin package: {Path}", folder);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Still cannot delete pending package: {Path}", folder);
+            }
+        }
+
+        SaveState();
+    }
+
+    private void LoadState()
+    {
+        _disabledIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _pendingDelete = new List<string>();
+
         try
         {
             if (File.Exists(_stateFile))
@@ -183,23 +346,23 @@ public class PluginManagerService
                 var json = File.ReadAllText(_stateFile);
                 var state = JsonSerializer.Deserialize<PluginsState>(json);
                 if (state?.Disabled is { Count: > 0 })
-                    return new HashSet<string>(state.Disabled, StringComparer.OrdinalIgnoreCase);
+                    _disabledIds = new HashSet<string>(state.Disabled, StringComparer.OrdinalIgnoreCase);
+                if (state?.PendingDelete is { Count: > 0 })
+                    _pendingDelete = state.PendingDelete;
             }
         }
         catch (Exception ex)
         {
             Logger.Warn(ex, "Failed to read plugins state");
         }
-
-        return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
-    private void SaveDisabledIds()
+    private void SaveState()
     {
         try
         {
             var json = JsonSerializer.Serialize(
-                new PluginsState { Disabled = _disabledIds.ToList() },
+                new PluginsState { Disabled = _disabledIds.ToList(), PendingDelete = _pendingDelete },
                 new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_stateFile, json);
         }
@@ -222,5 +385,6 @@ public class PluginManagerService
     private sealed class PluginsState
     {
         public List<string> Disabled { get; set; } = new();
+        public List<string> PendingDelete { get; set; } = new();
     }
 }

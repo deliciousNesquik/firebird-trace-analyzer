@@ -33,4 +33,10 @@ public interface IFileDialogService
     /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
     /// </summary>
     Task<string?> PickJsonToOpenAsync();
+
+    /// <summary>
+    /// Диалог выбора пакета плагина для установки: одиночная DLL или ZIP-архив.
+    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// </summary>
+    Task<string?> PickPluginPackageAsync();
 }

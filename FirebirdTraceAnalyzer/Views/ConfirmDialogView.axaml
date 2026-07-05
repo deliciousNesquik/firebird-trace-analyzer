@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="460"
+             x:Class="FirebirdTraceAnalyzer.Views.ConfirmDialogView"
+             x:DataType="vm:ConfirmDialogViewModel"
+             Width="460">
+
+    <Design.DataContext>
+        <vm:ConfirmDialogViewModel />
+    </Design.DataContext>
+
+    <Border Background="{DynamicResource AppBackgroundBrush}">
+        <StackPanel Margin="20" Spacing="14">
+            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <TextBlock Text="{Binding Message}" FontSize="13" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+
+            <!-- Детали (напр. список удаляемых плагинов) -->
+            <Border IsVisible="{Binding HasDetails}"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="12"
+                    MaxHeight="220">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Details}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontSize="12" Margin="0,2"
+                                           Foreground="{DynamicResource TextPrimaryBrush}">
+                                    <Run Text="•" Foreground="{DynamicResource AccentBrush}" />
+                                    <Run Text="{Binding}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Content="{Binding CancelText}" Classes="normal" Height="36" Padding="14,0"
+                        Command="{Binding CancelCommand}" />
+                <Button Content="{Binding ConfirmText}" Height="36" Padding="14,0"
+                        Classes="danger"
+                        IsVisible="{Binding IsDanger}"
+                        Command="{Binding ConfirmCommand}" />
+                <Button Content="{Binding ConfirmText}" Height="36" Padding="14,0"
+                        Classes="focused"
+                        IsVisible="{Binding !IsDanger}"
+                        Command="{Binding ConfirmCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

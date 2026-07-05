@@ -122,6 +122,40 @@ public class FileDialogService : IFileDialogService
         }
     }
 
+    public async Task<string?> PickPluginPackageAsync()
+    {
+        var topLevel = _windowProvider.GetCurrent();
+
+        if (topLevel == null || !topLevel.StorageProvider.CanOpen)
+        {
+            Logger.Warn("StorageProvider does not support opening files.");
+            return null;
+        }
+
+        try
+        {
+            // Только DLL или ZIP — без варианта «все файлы», чтобы нельзя было выбрать чужой файл.
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select plugin package (.dll or .zip)",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Plugin package") { Patterns = ["*.dll", "*.zip"] },
+                    new FilePickerFileType("Plugin library (.dll)") { Patterns = ["*.dll"] },
+                    new FilePickerFileType("Plugin archive (.zip)") { Patterns = ["*.zip"] }
+                ]
+            });
+
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening plugin package dialog.");
+            return null;
+        }
+    }
+
     public Task<bool> RevealInFileManagerAsync(string filePath)
     {
         try
