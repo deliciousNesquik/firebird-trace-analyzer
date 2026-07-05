@@ -30,6 +30,13 @@ public sealed class SortingService : ISortingService
 
     public void RegisterCustomSort(SortDescriptor descriptor)
     {
+        // Словарь ключуется по Id: повторная регистрация с тем же Id перезапишет прежнюю сортировку.
+        // Предупреждаем, чтобы коллизия Id (например, между плагинами) не терялась молча.
+        if (_customSorts.TryGetValue(descriptor.Id, out var existing))
+            Logger.Warn(
+                "Sort with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'",
+                descriptor.Id, existing.DisplayName, descriptor.DisplayName);
+
         _customSorts[descriptor.Id] = descriptor;
         Logger.Info("Registered sort: {DisplayName}", descriptor.DisplayName);
     }

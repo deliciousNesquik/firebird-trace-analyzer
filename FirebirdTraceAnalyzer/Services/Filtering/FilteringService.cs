@@ -34,6 +34,13 @@ public sealed class FilteringService : IFilteringService
 
     public void RegisterCustomFilter(FilterDescriptor descriptor)
     {
+        // Словарь ключуется по Id: повторная регистрация с тем же Id перезапишет прежний фильтр.
+        // Предупреждаем, чтобы коллизия Id (например, между плагинами) не терялась молча.
+        if (_customFilters.TryGetValue(descriptor.Id, out var existing))
+            Logger.Warn(
+                "Filter with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'",
+                descriptor.Id, existing.DisplayName, descriptor.DisplayName);
+
         _customFilters[descriptor.Id] = descriptor;
         Logger.Info("Register filter: {DisplayName}", descriptor.DisplayName);
     }
