@@ -1,7 +1,9 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
+using FirebirdTraceAnalyzer.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FirebirdTraceAnalyzer.Views;
@@ -22,6 +24,17 @@ public partial class MainWindow : Window
             // Сохраняем геометрию только при закрытии, а не на каждое изменение размера.
             Closing += OnWindowClosing;
         }
+
+        // После показа окна — при неразрешённых коллизиях плагинов предложить выбор (однократно).
+        Opened += OnOpenedPromptCollisions;
+    }
+
+    private async void OnOpenedPromptCollisions(object? sender, EventArgs e)
+    {
+        Opened -= OnOpenedPromptCollisions;
+
+        if (DataContext is MainWindowViewModel vm)
+            await vm.PromptUnresolvedCollisionsAsync();
     }
 
     private void ApplyWindowGeometry(WindowSettings ws)

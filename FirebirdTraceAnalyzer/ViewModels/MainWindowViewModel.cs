@@ -2077,12 +2077,16 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Открывает встроенное окно управления плагинами.</summary>
     [RelayCommand]
-    private async Task OpenPluginsAsync()
+    private async Task OpenPluginsAsync() => await ShowPluginsDialogAsync(showCollisions: false);
+
+    private async Task ShowPluginsDialogAsync(bool showCollisions)
     {
         try
         {
             var vm = new PluginsViewModel(_pluginManager, _fileDialogService, Dialogs);
             vm.LoadPlugins();
+            if (showCollisions && vm.HasCollisions)
+                vm.ShowCollisions = true;
             await Dialogs.ShowDialogAsync<object>(vm);
         }
         catch (Exception ex)
@@ -2090,6 +2094,17 @@ public partial class MainWindowViewModel : ViewModelBase
             Logger.Error(ex, "Error opening plugins window");
             StatusMessage = $"Error: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// На старте: если есть неразрешённые коллизии плагинов (включено более одного с одним Id),
+    /// открывает окно плагинов сразу на разделе коллизий, чтобы пользователь выбрал. Необязательно —
+    /// окно можно просто закрыть.
+    /// </summary>
+    public async Task PromptUnresolvedCollisionsAsync()
+    {
+        if (_pluginManager.HasUnresolvedCollisions())
+            await ShowPluginsDialogAsync(showCollisions: true);
     }
 
     /// <summary>Открывает окно настроек приложения.</summary>

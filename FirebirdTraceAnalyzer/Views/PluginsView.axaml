@@ -13,7 +13,7 @@
         <vm:PluginsViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,*" Background="{DynamicResource AppBackgroundBrush}">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
@@ -63,8 +63,32 @@
                        FontSize="12" Foreground="{DynamicResource WarningTextBrush}" />
         </Border>
 
+        <!-- Toolbar: collision filter -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Classes="danger" Height="34" Padding="12,0"
+                        Content="Problem plug (Collision)"
+                        Command="{Binding ToggleCollisionsCommand}"
+                        IsEnabled="{Binding HasCollisions}"
+                        ToolTip.Tip="Show plugins that share the same Id, grouped in pairs, so you can pick which one to keep" />
+                <TextBlock VerticalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           IsVisible="{Binding ShowCollisions}"
+                           Text="Pick which plugin to keep for each Id, or leave as-is. Click the button again to show all plugins." />
+                <TextBlock VerticalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding !HasCollisions}"
+                           Text="No Id collisions detected." />
+            </StackPanel>
+        </Border>
+
         <!-- Plugins list -->
-        <ScrollViewer Grid.Row="2"
+        <ScrollViewer Grid.Row="3"
+                      IsVisible="{Binding !ShowCollisions}"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <ItemsControl Padding="16" ItemsSource="{Binding Plugins}">
@@ -141,8 +165,8 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- Empty state -->
-        <Border Grid.Row="2" Padding="40" IsVisible="{Binding !Plugins.Count}">
+        <!-- Empty state (пусто → коллизий нет, ShowCollisions принудительно false) -->
+        <Border Grid.Row="3" Padding="40" IsVisible="{Binding !Plugins.Count}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="420">
                 <TextBlock Text="No plugins installed"
                            FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
@@ -154,6 +178,54 @@
                         Margin="0,6,0,0" Command="{Binding OpenPluginsFolderCommand}" />
             </StackPanel>
         </Border>
+
+        <!-- Collisions: plugins sharing one Id, grouped in pairs/sets -->
+        <ScrollViewer Grid.Row="3"
+                      IsVisible="{Binding ShowCollisions}"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Padding="16" ItemsSource="{Binding CollisionGroups}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CollisionGroupRow">
+                        <Border Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource WarningBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="16"
+                                Margin="0,0,0,12">
+                            <StackPanel Spacing="10">
+                                <TextBlock FontSize="12">
+                                    <Run Text="Id collision:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                    <Run Text="{Binding Id}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </TextBlock>
+
+                                <ItemsControl ItemsSource="{Binding Choices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CollisionChoiceRow">
+                                            <RadioButton Margin="0,3"
+                                                         GroupName="{Binding $parent[ItemsControl].((vm:CollisionGroupRow)DataContext).GroupName}"
+                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                                                <StackPanel Spacing="2" Margin="4,0,0,0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" />
+                                                    <TextBlock FontSize="11">
+                                                        <Run Text="v" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Run Text="{Binding Version}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Run Text="  ·  author:" Foreground="{DynamicResource TextMutedBrush}" />
+                                                        <Run Text="{Binding Author}" Foreground="{DynamicResource TextMutedBrush}" />
+                                                        <Run Text="  ·  " Foreground="{DynamicResource TextMutedBrush}" />
+                                                        <Run Text="{Binding DirectoryName}" Foreground="{DynamicResource TextMutedBrush}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
 
     </Grid>
 </UserControl>

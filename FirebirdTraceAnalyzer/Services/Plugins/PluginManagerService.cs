@@ -19,8 +19,20 @@ public class PluginManagerService
     private readonly string _stateFile;
 
     private readonly List<PluginInfo> _plugins = new();
-    private HashSet<string> _disabledIds = new(StringComparer.OrdinalIgnoreCase);
+
+    // Выключение хранится по экземпляру плагина = (путь к DLL, Id), а НЕ по файлу и НЕ по Id:
+    //  • по Id нельзя — при коллизии два плагина делят один Id;
+    //  • по файлу нельзя — одна DLL может содержать несколько плагинов (напр. и сортировку, и фильтр),
+    //    и выключение файла выключило бы их все сразу.
+    // Ключ (файл + Id) различает конкретный класс в конкретной DLL. Выбор «какой из коллизии
+    // оставить» = выключить остальные экземпляры этой же группы Id.
+    private HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
     private List<string> _pendingDelete = new();
+
+    // Разделитель для ключа экземпляра; NUL не встречается в путях/Id.
+    private const char InstanceKeySep = '\0';
+    private static string InstanceKey(string filePath, string id) => filePath + InstanceKeySep + id;
+    private static string InstanceKey(PluginInfo p) => InstanceKey(p.FilePath, p.Id);
 
     public PluginManagerService()
     {
@@ -124,8 +136,9 @@ public class PluginManagerService
     }
 
     /// <summary>
-    /// Проставляет статусы: выключенные (по сохранённому списку) → Disabled; среди оставшихся с
-    /// одинаковым plugin Id старшая версия → Active, прочие → Shadowed.
+    /// Проставляет статусы: выключенные пользователем экземпляры (по паре путь+Id) → Disabled; среди
+    /// оставшихся с одинаковым plugin Id активна старшая версия, прочие — Shadowed. Чтобы при коллизии
+    /// оставить конкретный экземпляр — выключите остальные (см. <see cref="SetEnabled"/>).
     /// </summary>
     private void ResolveVersionsAndStatuses()
     {
@@ -133,11 +146,11 @@ public class PluginManagerService
                      .Where(p => p.Status != PluginStatus.LoadError)
                      .GroupBy(p => p.Id, StringComparer.OrdinalIgnoreCase))
         {
-            // Кандидаты на «активность» — только не выключенные пользователем.
-            var enabled = group.Where(p => !_disabledIds.Contains(p.Id)).ToList();
+            // Кандидаты на «активность» — только не выключенные пользователем экземпляры (путь+Id).
+            var enabled = group.Where(p => !_disabled.Contains(InstanceKey(p))).ToList();
 
             foreach (var p in group)
-                p.Status = _disabledIds.Contains(p.Id) ? PluginStatus.Disabled : PluginStatus.Shadowed;
+                p.Status = _disabled.Contains(InstanceKey(p)) ? PluginStatus.Disabled : PluginStatus.Shadowed;
 
             // Победитель среди включённых — с наибольшей версией (нераспарсенные считаем 0.0).
             var winner = enabled
@@ -163,20 +176,40 @@ public class PluginManagerService
     public IEnumerable<IFilterPlugin> GetFilterPlugins() => EffectivePlugins().OfType<IFilterPlugin>();
 
     /// <summary>
-    /// Включает/выключает плагин по Id и сохраняет состояние на диск. Вступает в силу после
-    /// перезапуска приложения (регистрация происходит на старте).
+    /// Включает/выключает конкретный экземпляр плагина (по паре путь DLL + Id) и сохраняет состояние
+    /// на диск. Вступает в силу после перезапуска приложения (регистрация происходит на старте).
     /// </summary>
-    public void SetEnabled(string pluginId, bool enabled)
+    public void SetEnabled(string filePath, string id, bool enabled)
     {
+        var key = InstanceKey(filePath, id);
         if (enabled)
-            _disabledIds.Remove(pluginId);
+            _disabled.Remove(key);
         else
-            _disabledIds.Add(pluginId);
+            _disabled.Add(key);
 
         SaveState();
     }
 
-    public bool IsEnabled(string pluginId) => !_disabledIds.Contains(pluginId);
+    public bool IsEnabled(string filePath, string id) => !_disabled.Contains(InstanceKey(filePath, id));
+
+    /// <summary>
+    /// Группы коллизий: плагины (не сбойные) с одинаковым Id, где таких плагинов больше одного.
+    /// Каждая группа — набор конкурирующих за один Id DLL.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<PluginInfo>> GetCollisionGroups() =>
+        _plugins
+            .Where(p => p.Status != PluginStatus.LoadError)
+            .GroupBy(p => p.Id, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => (IReadOnlyList<PluginInfo>)g.ToList())
+            .ToList();
+
+    /// <summary>
+    /// Есть ли неразрешённые коллизии: группа с одним Id, где включено больше одного экземпляра
+    /// (пользователь ещё не выбрал, какой оставить). Используется, чтобы на старте предложить выбор.
+    /// </summary>
+    public bool HasUnresolvedCollisions() =>
+        GetCollisionGroups().Any(g => g.Count(p => IsEnabled(p.FilePath, p.Id)) > 1);
 
     /// <summary>
     /// Устанавливает плагин из одиночной DLL или ZIP-архива. Для каждой установки создаётся отдельная
@@ -264,6 +297,7 @@ public class PluginManagerService
                 Directory.Delete(full, recursive: true);
 
             _pendingDelete.RemoveAll(p => string.Equals(p, full, StringComparison.OrdinalIgnoreCase));
+            ForgetPluginsUnder(full);
             SaveState();
             Logger.Info("Deleted plugin package: {Path}", full);
             return (true, false);
@@ -274,9 +308,19 @@ public class PluginManagerService
             Logger.Warn(ex, "Package delete deferred (locked?): {Path}", full);
             if (!_pendingDelete.Contains(full, StringComparer.OrdinalIgnoreCase))
                 _pendingDelete.Add(full);
+            ForgetPluginsUnder(full);
             SaveState();
             return (false, true);
         }
+    }
+
+    /// <summary>Убирает из снимка (<see cref="_plugins"/>) записи, чьи DLL лежат в удаляемой папке,
+    /// чтобы окно (список и коллизии) сразу отражало удаление.</summary>
+    private void ForgetPluginsUnder(string folderFullPath)
+    {
+        var prefix = folderFullPath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        _plugins.RemoveAll(p =>
+            Path.GetFullPath(p.FilePath).StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -336,7 +380,7 @@ public class PluginManagerService
 
     private void LoadState()
     {
-        _disabledIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         _pendingDelete = new List<string>();
 
         try
@@ -346,7 +390,9 @@ public class PluginManagerService
                 var json = File.ReadAllText(_stateFile);
                 var state = JsonSerializer.Deserialize<PluginsState>(json);
                 if (state?.Disabled is { Count: > 0 })
-                    _disabledIds = new HashSet<string>(state.Disabled, StringComparer.OrdinalIgnoreCase);
+                    foreach (var d in state.Disabled)
+                        if (!string.IsNullOrEmpty(d.File) && !string.IsNullOrEmpty(d.Id))
+                            _disabled.Add(InstanceKey(d.File, d.Id));
                 if (state?.PendingDelete is { Count: > 0 })
                     _pendingDelete = state.PendingDelete;
             }
@@ -362,7 +408,11 @@ public class PluginManagerService
         try
         {
             var json = JsonSerializer.Serialize(
-                new PluginsState { Disabled = _disabledIds.ToList(), PendingDelete = _pendingDelete },
+                new PluginsState
+                {
+                    Disabled = _disabled.Select(SplitKey).ToList(),
+                    PendingDelete = _pendingDelete
+                },
                 new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_stateFile, json);
         }
@@ -382,9 +432,24 @@ public class PluginManagerService
         return Version.TryParse(core, out var v) ? v : null;
     }
 
+    /// <summary>Разбивает внутренний ключ экземпляра обратно на путь и Id для сохранения.</summary>
+    private static DisabledEntry SplitKey(string key)
+    {
+        var i = key.IndexOf(InstanceKeySep);
+        return i < 0
+            ? new DisabledEntry { File = key, Id = "" }
+            : new DisabledEntry { File = key[..i], Id = key[(i + 1)..] };
+    }
+
+    private sealed class DisabledEntry
+    {
+        public string File { get; set; } = "";
+        public string Id { get; set; } = "";
+    }
+
     private sealed class PluginsState
     {
-        public List<string> Disabled { get; set; } = new();
+        public List<DisabledEntry> Disabled { get; set; } = new();
         public List<string> PendingDelete { get; set; } = new();
     }
 }

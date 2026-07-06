@@ -29,7 +29,16 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Стало ли какое-то изменение (вкл/выкл/установка/удаление), требующее перезапуска.</summary>
     [ObservableProperty] private bool _restartNeeded;
 
+    /// <summary>Показывать ли раздел коллизий вместо обычного списка плагинов.</summary>
+    [ObservableProperty] private bool _showCollisions;
+
+    /// <summary>Есть ли вообще коллизии (несколько плагинов с одним Id).</summary>
+    [ObservableProperty] private bool _hasCollisions;
+
     public ObservableCollection<PluginRow> Plugins { get; } = new();
+
+    /// <summary>Группы коллизий: по одной на каждый конфликтующий Id (пары/наборы плагинов).</summary>
+    public ObservableCollection<CollisionGroupRow> CollisionGroups { get; } = new();
 
     public event EventHandler<object?>? CloseRequested;
 
@@ -63,17 +72,101 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
             row.PropertyChanged += OnRowChanged;
             Plugins.Add(row);
         }
+
+        BuildCollisionGroups();
     }
+
+    /// <summary>Строит группы коллизий из снимка загрузчика и предвыбор в каждой группе.</summary>
+    private void BuildCollisionGroups()
+    {
+        foreach (var group in CollisionGroups)
+            foreach (var choice in group.Choices)
+                choice.PropertyChanged -= OnCollisionChoiceChanged;
+        CollisionGroups.Clear();
+
+        foreach (var group in _pluginManager.GetCollisionGroups())
+        {
+            var id = group[0].Id;
+
+            // Новые версии — выше; так первым идёт авто-победитель «старшая версия».
+            var ordered = group
+                .OrderByDescending(p => p.ParsedVersion ?? new Version(0, 0))
+                .ToList();
+
+            // Предвыбор ставим ТОЛЬКО если коллизия реально разрешена — включён ровно один экземпляр
+            // (остальные выключены пользователем). Если включены все (выбор ещё не сделан), не
+            // отмечаем ничего: иначе радио выглядело бы как готовое решение, хотя ничего не записано.
+            // Берём актуальное состояние из менеджера (а не стартовый Status) — чтобы после выбора
+            // в этой же сессии пересборка групп отражала выбор.
+            var enabledCount = ordered.Count(p => _pluginManager.IsEnabled(p.FilePath, p.Id));
+            var choices = ordered
+                .Select(info => new CollisionChoiceRow(
+                    info,
+                    enabledCount == 1 && _pluginManager.IsEnabled(info.FilePath, info.Id)))
+                .ToList();
+
+            var groupRow = new CollisionGroupRow(id, choices);
+            foreach (var choice in choices)
+                choice.PropertyChanged += OnCollisionChoiceChanged;
+
+            CollisionGroups.Add(groupRow);
+        }
+
+        HasCollisions = CollisionGroups.Count > 0;
+        if (!HasCollisions)
+            ShowCollisions = false;
+    }
+
+    private void OnCollisionChoiceChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Реагируем только на выбор (переход в true): оставить выбранную DLL, остальные в группе —
+        // выключить. Это ровно тот же механизм «включено/выключено», что и в основном списке.
+        if (e.PropertyName != nameof(CollisionChoiceRow.IsSelected) ||
+            sender is not CollisionChoiceRow choice || !choice.IsSelected)
+            return;
+
+        var group = CollisionGroups.FirstOrDefault(g => g.Choices.Contains(choice));
+        if (group is null)
+            return;
+
+        foreach (var c in group.Choices)
+        {
+            var enabled = ReferenceEquals(c, choice);
+            // Ключ — экземпляр (путь+Id): выключаем только этот класс, а не всю DLL. Так у одной DLL
+            // можно оставить, напр., фильтр и выключить её сортировку.
+            _pluginManager.SetEnabled(c.FilePath, c.Id, enabled);
+
+            // Синхронизируем чекбокс в основном списке (совпадение по паре путь+Id).
+            var mainRow = Plugins.FirstOrDefault(p =>
+                string.Equals(p.FilePath, c.FilePath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.Id, c.Id, StringComparison.OrdinalIgnoreCase));
+            if (mainRow is not null && mainRow.IsEnabled != enabled)
+            {
+                mainRow.PropertyChanged -= OnRowChanged; // избегаем повторного SetEnabled
+                mainRow.IsEnabled = enabled;
+                mainRow.PropertyChanged += OnRowChanged;
+            }
+        }
+
+        RestartNeeded = true;
+        Logger.Info("Collision for Id '{Id}' resolved to '{File}' (others disabled, applies after restart)",
+            choice.Id, choice.FilePath);
+    }
+
+    /// <summary>Переключает отображение раздела коллизий.</summary>
+    [RelayCommand]
+    private void ToggleCollisions() => ShowCollisions = !ShowCollisions;
 
     private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(PluginRow.IsEnabled) || sender is not PluginRow row)
             return;
 
-        // Персистим выбор; фактически применится при следующем запуске.
-        _pluginManager.SetEnabled(row.Id, row.IsEnabled);
+        // Персистим выбор по экземпляру (путь+Id); фактически применится при следующем запуске.
+        _pluginManager.SetEnabled(row.FilePath, row.Id, row.IsEnabled);
         RestartNeeded = true;
-        Logger.Info("Plugin '{Id}' set enabled={Enabled} (applies after restart)", row.Id, row.IsEnabled);
+        Logger.Info("Plugin '{Id}' ({File}) set enabled={Enabled} (applies after restart)",
+            row.Id, row.FilePath, row.IsEnabled);
     }
 
     /// <summary>Открывает папку с DLL плагина (выделяет файл).</summary>
@@ -163,6 +256,9 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
                 r.PropertyChanged -= OnRowChanged;
                 Plugins.Remove(r);
             }
+
+            // Удалённый пакет мог участвовать в коллизии — пересобираем группы.
+            BuildCollisionGroups();
         }
 
         if (pending)
@@ -230,4 +326,42 @@ public partial class PluginRow : ObservableObject
     public bool IsShadowed => _info.Status == PluginStatus.Shadowed;
     public string? LoadError => _info.LoadError;
     public bool HasLoadError => !string.IsNullOrWhiteSpace(_info.LoadError);
+}
+
+/// <summary>Группа коллизии: один конфликтующий Id и конкурирующие за него плагины (пара/набор).</summary>
+public sealed class CollisionGroupRow
+{
+    public CollisionGroupRow(string id, IReadOnlyList<CollisionChoiceRow> choices)
+    {
+        Id = id;
+        Choices = choices;
+    }
+
+    public string Id { get; }
+    public IReadOnlyList<CollisionChoiceRow> Choices { get; }
+
+    /// <summary>Имя группы для взаимоисключающих radio-кнопок (уникально по Id).</summary>
+    public string GroupName => $"collision::{Id}";
+}
+
+/// <summary>Один вариант в группе коллизии: конкретная DLL, которую можно выбрать активной.</summary>
+public partial class CollisionChoiceRow : ObservableObject
+{
+    private readonly PluginInfo _info;
+
+    public CollisionChoiceRow(PluginInfo info, bool isSelected)
+    {
+        _info = info;
+        _isSelected = isSelected;
+    }
+
+    /// <summary>Выбран ли этот вариант как активный для своего Id.</summary>
+    [ObservableProperty] private bool _isSelected;
+
+    public string Id => _info.Id;
+    public string Name => _info.Name;
+    public string Author => _info.Author;
+    public string Version => _info.Version;
+    public string FilePath => _info.FilePath;
+    public string DirectoryName => _info.DirectoryName;
 }
