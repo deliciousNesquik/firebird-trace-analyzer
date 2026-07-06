@@ -14,8 +14,8 @@
         WindowStartupLocation="CenterOwner">
 
     <Window.Styles>
-        <!-- Кнопка «⋯» карточки не нужна внутри инспектора — навигация уже здесь. -->
-        <Style Selector="Button.card-action">
+        <!-- Кнопка открытия инспектора не нужна внутри самого инспектора — прячем её. -->
+        <Style Selector="Button.open-inspector">
             <Setter Property="IsVisible" Value="False" />
         </Style>
     </Window.Styles>

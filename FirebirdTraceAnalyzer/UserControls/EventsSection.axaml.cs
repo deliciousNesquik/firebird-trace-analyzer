@@ -15,16 +15,17 @@ public partial class EventsSection : UserControl
     {
         InitializeComponent();
 
-        // Клик по кнопке действий (Classes="card-action") в шапке любой карточки всплывает сюда.
-        // Одна подписка на всю секцию — карточек 15 типов и они переиспользуются при прокрутке.
+        // Клик по кнопке открытия инспектора (Classes="open-inspector") в шапке любой карточки
+        // всплывает сюда. Одна подписка на всю секцию — карточек 15 типов и они переиспользуются
+        // при прокрутке.
         AddHandler(Button.ClickEvent, OnCardActionClick, RoutingStrategies.Bubble);
     }
 
-    /// <summary>Кнопка «⋯» в шапке карточки события.</summary>
+    /// <summary>Кнопка открытия инспектора в шапке карточки события.</summary>
     private void OnCardActionClick(object? sender, RoutedEventArgs e)
     {
         if (e.Source is Button button
-            && button.Classes.Contains("card-action")
+            && button.Classes.Contains("open-inspector")
             && button.DataContext is EventBase evt)
         {
             OpenInspectorFor(evt);

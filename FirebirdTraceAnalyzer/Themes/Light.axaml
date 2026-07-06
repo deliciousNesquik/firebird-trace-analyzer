@@ -119,7 +119,9 @@
 
     <!-- 9. Иконки (CSS для перекраски SVG) -->
     <x:String x:Key="ThemeIconFill">.ThemeIconFill { fill:#141414; }</x:String>
+    <x:String x:Key="ThemeIconFillAndStroke">.ThemeIconFill { fill:#141414; } .ThemeIconStroke { stroke:#141414; }</x:String>
     <x:String x:Key="ThemeIconFillOnlyWhite">.ThemeIconFill { fill:#FFFFFF; }</x:String>
+    <x:String x:Key="ThemeIconFillAndStrokeOnlyWhite">.ThemeIconFill { fill:#FFFFFF; } .ThemeIconStroke { stroke:#FFFFFF; }</x:String>
     <x:String x:Key="ThemeIconStroke">.ThemeIconStroke { stroke:#141414; }</x:String>
     <x:String x:Key="ThemeIconStrokeOnlyWhite">.ThemeIconStroke { stroke:#FFFFFF; }</x:String>
 
