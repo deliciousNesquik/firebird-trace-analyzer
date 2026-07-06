@@ -5,10 +5,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
-
+    
     <ItemGroup>
-      <ProjectReference Include="..\FirebirdTraceAnalyzer\FirebirdTraceAnalyzer.csproj" />
-      <ProjectReference Include="..\FirebirdTraceParser\FirebirdTraceParser.csproj" />
+      <ProjectReference Private="false" PrivateAssets="all" Include="..\FirebirdTraceAnalyzer\FirebirdTraceAnalyzer.csproj" />
+      <ProjectReference Private="false" PrivateAssets="all" Include="..\FirebirdTraceParser\FirebirdTraceParser.csproj" />
     </ItemGroup>
 
 </Project>
