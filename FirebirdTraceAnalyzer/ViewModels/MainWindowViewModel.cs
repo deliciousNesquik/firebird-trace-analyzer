@@ -349,13 +349,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var plugin in sortPlugins)
         {
-            foreach (var sortDescriptor in plugin.GetSorts())
+            try
             {
-                _sortingService.RegisterCustomSort(sortDescriptor);
-                loadedSortsCount++;
+                // GetSorts() — код плагина; изолируем его, чтобы исключение не роняло запуск приложения.
+                foreach (var sortDescriptor in plugin.GetSorts())
+                {
+                    _sortingService.RegisterCustomSort(sortDescriptor);
+                    loadedSortsCount++;
+                }
+
+                Logger.Info($"Loaded sorts from plugin: {plugin.Name} (v{plugin.Version})");
             }
-            
-            Logger.Info($"Loaded sorts from plugin: {plugin.Name} (v{plugin.Version})");
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Plugin '{Name}' (v{Version}) failed in GetSorts() — skipped",
+                    plugin.Name, plugin.Version);
+            }
         }
 
         Logger.Info($"Total custom sorts registered from plugins: {loadedSortsCount}");
@@ -372,13 +381,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var plugin in filterPlugins)
         {
-            foreach (var filterDescriptor in plugin.GetFilters())
+            try
             {
-                _filteringService.RegisterCustomFilter(filterDescriptor);
-                loadedFiltersCount++;
-            }
+                // GetFilters() — код плагина; изолируем его, чтобы исключение не роняло запуск приложения.
+                foreach (var filterDescriptor in plugin.GetFilters())
+                {
+                    _filteringService.RegisterCustomFilter(filterDescriptor);
+                    loadedFiltersCount++;
+                }
 
-            Logger.Info($"Loaded filters from plugin: {plugin.Name} (v{plugin.Version})");
+                Logger.Info($"Loaded filters from plugin: {plugin.Name} (v{plugin.Version})");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Plugin '{Name}' (v{Version}) failed in GetFilters() — skipped",
+                    plugin.Name, plugin.Version);
+            }
         }
 
         Logger.Info($"Total custom filters registered from plugins: {loadedFiltersCount}");
