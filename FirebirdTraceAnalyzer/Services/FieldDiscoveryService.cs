@@ -166,12 +166,22 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
 
         foreach (var prop in properties)
         {
-            var sortableAttr = prop.GetCustomAttribute<SortableFieldAttribute>();
-            var filterableAttr = prop.GetCustomAttribute<FilterableFieldAttribute>();
-
             var path = string.IsNullOrEmpty(pathPrefix)
                 ? prop.Name
                 : $"{pathPrefix}.{prop.Name}";
+
+            // Контейнерный тип (модель парсера, напр. AttachmentInfo) сам по себе не поле: как колонка
+            // он отобразился бы через ToString() ("...AttachmentInfo"). Разворачиваем его в под-поля и
+            // НЕ добавляем сам контейнер. Листья — примитивы, строки, enum и generic-коллекции с
+            // осмысленным ToString (напр. Errors/"Codes") — добавляем как обычно.
+            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType) && depth < MaxScanDepth)
+            {
+                ScanProperties(prop.PropertyType, path, results, depth + 1);
+                continue;
+            }
+
+            var sortableAttr = prop.GetCustomAttribute<SortableFieldAttribute>();
+            var filterableAttr = prop.GetCustomAttribute<FilterableFieldAttribute>();
 
             // Определяем  категорию
             var category = sortableAttr?.Category ?? filterableAttr?.Category ?? "General";
@@ -192,12 +202,6 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
             };
 
             results.Add(field);
-
-            // Сканируем вложенные типы
-            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
-            {
-                ScanProperties(prop.PropertyType, path, results, depth + 1);
-            }
         }
     }
     
