@@ -9,6 +9,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Events;
 using NLog;
@@ -110,7 +111,7 @@ public class DocxReportExporter : IReportExporter
         {
             var dateParagraph = body.AppendChild(new Paragraph());
             var dateRun = dateParagraph.AppendChild(new Run());
-            dateRun.AppendChild(new Text($"Generated: {metadata.GeneratedAt.ToString(template.Header.DateFormat)}"));
+            dateRun.AppendChild(new Text(string.Format(Loc.Tr("Report.Export.Generated"), metadata.GeneratedAt.ToString(template.Header.DateFormat))));
             
             var dateProps = dateParagraph.AppendChild(new ParagraphProperties());
             dateProps.AppendChild(new Justification { Val = JustificationValues.Right });
@@ -234,18 +235,18 @@ public class DocxReportExporter : IReportExporter
     {
         body.AppendChild(new Paragraph(new Run(new Break())));
 
-        AddStatLine(body, "Total Files:", metadata.Files.Count.ToString());
-        AddStatLine(body, "Total Events (before filters):", metadata.TotalEventsCount.ToString("N0"));
-        AddStatLine(body, "Events in Report:", metadata.Events.Count.ToString("N0"));
+        AddStatLine(body, Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString());
+        AddStatLine(body, Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0"));
+        AddStatLine(body, Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0"));
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
         {
-            AddStatLine(body, "Active Filters:", metadata.ActiveFilters);
+            AddStatLine(body, Loc.Tr("Report.Export.ActiveFilters"), metadata.ActiveFilters);
         }
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
         {
-            AddStatLine(body, "Active Sort:", metadata.ActiveSort);
+            AddStatLine(body, Loc.Tr("Report.Export.ActiveSort"), metadata.ActiveSort);
         }
     }
 

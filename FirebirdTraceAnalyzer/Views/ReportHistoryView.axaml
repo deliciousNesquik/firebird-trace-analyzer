@@ -3,6 +3,7 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="FirebirdTraceAnalyzer.Views.ReportHistoryView"
              x:DataType="vm:ReportHistoryViewModel"
@@ -25,7 +26,7 @@
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBox Grid.Column="0"
                          Text="{Binding SearchText}"
-                         PlaceholderText="Search reports..."
+                         PlaceholderText="{loc:Tr ReportHistory.SearchPlaceholder}"
                          VerticalContentAlignment="Center">
                     <TextBox.InnerLeftContent>
                         <Svg Path="{DynamicResource SearchIcon}"
@@ -46,7 +47,7 @@
                 </Button>
 
                 <Button Grid.Column="2"
-                        Content="Close"
+                        Content="{loc:Tr ReportHistory.Close}"
                         Command="{Binding CloseCommand}"
                         Margin="8,0,0,0"
                         Classes="danger"
@@ -78,17 +79,17 @@
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="16">
                                         <TextBlock FontSize="11">
-                                            <Run Text="FORMAT:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{loc:Tr ReportHistory.Format}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                                             <Run Text="{Binding Format}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
 
                                         <TextBlock FontSize="11">
-                                            <Run Text="SIZE:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{loc:Tr ReportHistory.Size}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                                             <Run Text="{Binding FormattedSize}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
 
                                         <TextBlock FontSize="11">
-                                            <Run Text="CREATED:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <Run Text="{loc:Tr ReportHistory.Created}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
                                             <Run Text="{Binding FormattedDate}" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </TextBlock>
                                     </StackPanel>
@@ -137,12 +138,12 @@
                         VerticalAlignment="Center"
                         Spacing="8"
                         MaxWidth="400">
-                <TextBlock Text="No generated reports"
+                <TextBlock Text="{loc:Tr ReportHistory.EmptyTitle}"
                            FontSize="16"
                            FontWeight="SemiBold"
                            HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Reports you generate will appear here."
+                <TextBlock Text="{loc:Tr ReportHistory.EmptyDescription}"
                            FontSize="12"
                            TextAlignment="Center"
                            TextWrapping="Wrap"

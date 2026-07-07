@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Services.Plugins;
 using NLog;
 
@@ -198,18 +199,18 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
             RestartNeeded = true;
             Logger.Info("Installed plugin from '{Path}' (applies after restart)", path);
             await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
-                "Plugin installed",
-                $"'{Path.GetFileName(path)}' has been installed. It will become available after restarting the application.",
-                confirmText: "OK",
-                cancelText: "Close"));
+                Loc.Tr("Dialog.Plugins.InstalledTitle"),
+                string.Format(Loc.Tr("Dialog.Plugins.InstalledMessage"), Path.GetFileName(path)),
+                confirmText: Loc.Tr("Dialog.Plugins.OK"),
+                cancelText: Loc.Tr("Dialog.Plugins.Close")));
         }
         else
         {
             await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
-                "Install failed",
-                "Could not install the selected file. Only a plugin .dll or a .zip archive containing a plugin .dll are accepted. See the log for details.",
-                confirmText: "OK",
-                cancelText: "Close"));
+                Loc.Tr("Dialog.Plugins.InstallFailedTitle"),
+                Loc.Tr("Dialog.Plugins.InstallFailedMessage"),
+                confirmText: Loc.Tr("Dialog.Plugins.OK"),
+                cancelText: Loc.Tr("Dialog.Plugins.Close")));
         }
     }
 
@@ -230,12 +231,11 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
             .ToList();
 
         var confirmed = await _dialogService.ShowDialogAsync<bool>(new ConfirmDialogViewModel(
-            "Delete plugin package?",
-            $"The whole package folder '{row.DirectoryName}' will be deleted. " +
-            "The following plugins are bundled in it and will be removed together:",
+            Loc.Tr("Dialog.Plugins.DeleteTitle"),
+            string.Format(Loc.Tr("Dialog.Plugins.DeleteMessage"), row.DirectoryName),
             details: bundled,
-            confirmText: "Delete",
-            cancelText: "Cancel",
+            confirmText: Loc.Tr("Dialog.Plugins.Delete"),
+            cancelText: Loc.Tr("Dialog.Plugins.Cancel"),
             isDanger: true));
 
         if (!confirmed)
@@ -264,19 +264,18 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
         if (pending)
         {
             await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
-                "Deletion scheduled",
-                "The plugin is currently loaded and its files are locked. " +
-                "It will be removed automatically the next time the application starts.",
-                confirmText: "OK",
-                cancelText: "Close"));
+                Loc.Tr("Dialog.Plugins.DeletionScheduledTitle"),
+                Loc.Tr("Dialog.Plugins.DeletionScheduledMessage"),
+                confirmText: Loc.Tr("Dialog.Plugins.OK"),
+                cancelText: Loc.Tr("Dialog.Plugins.Close")));
         }
         else if (!deletedNow)
         {
             await _dialogService.ShowDialogAsync<object>(new ConfirmDialogViewModel(
-                "Delete failed",
-                "Could not delete the plugin package. See the log for details.",
-                confirmText: "OK",
-                cancelText: "Close"));
+                Loc.Tr("Dialog.Plugins.DeleteFailedTitle"),
+                Loc.Tr("Dialog.Plugins.DeleteFailedMessage"),
+                confirmText: Loc.Tr("Dialog.Plugins.OK"),
+                cancelText: Loc.Tr("Dialog.Plugins.Close")));
         }
     }
 

@@ -3,6 +3,7 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="150"
              x:Class="FirebirdTraceAnalyzer.Views.DownloadDockView"
              x:DataType="vm:DownloadProgressViewModel">
@@ -30,7 +31,7 @@
                            FontWeight="SemiBold"
                            FontSize="13"
                            Foreground="{DynamicResource TextPrimaryBrush}">
-                    <Run Text="Downloading" />
+                    <Run Text="{loc:Tr DownloadDock.Downloading}" />
                     <Run Text="{Binding CurrentFileIndex}" />
                     <Run Text="/" />
                     <Run Text="{Binding TotalFiles}" />
@@ -40,7 +41,7 @@
                         Classes="normal"
                         Height="32" Width="32"
                         Padding="0"
-                        ToolTip.Tip="Open in a separate window"
+                        ToolTip.Tip="{loc:Tr DownloadDock.PopOut}"
                         Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PopOutDownloadCommand}">
                     <Svg Width="18" Height="18" Path="{DynamicResource ExportIcon}"
                          Css="{DynamicResource ThemeIconStroke}" />
@@ -50,7 +51,7 @@
                         Classes="danger"
                         Height="32"
                         Padding="10,0"
-                        Content="Cancel"
+                        Content="{loc:Tr DownloadDock.Cancel}"
                         Command="{Binding CancelCommand}" />
             </Grid>
 

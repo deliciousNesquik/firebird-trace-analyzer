@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports;
@@ -41,7 +42,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isLoading;
 
-    [ObservableProperty] private string _statusMessage = "Ready";
+    [ObservableProperty] private string _statusMessage = Loc.Tr("Status.ReportPreview.Ready");
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDocumentPreview))]
@@ -153,7 +154,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
         try
         {
             IsLoading = true;
-            StatusMessage = "Generating preview...";
+            StatusMessage = Loc.Tr("Status.ReportPreview.Generating");
 
             Template = template;
             Metadata = metadata;
@@ -161,13 +162,13 @@ public partial class ReportPreviewViewModel : ViewModelBase
             // Генерируем превью
             await GeneratePreviewAsync(cancellationToken);
 
-            StatusMessage = "Preview ready";
+            StatusMessage = Loc.Tr("Status.ReportPreview.PreviewReady");
             Logger.Info("Preview initialized for template: {Name}", template.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error initializing preview");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportPreview.Error"), ex.Message);
         }
         finally
         {
@@ -396,14 +397,14 @@ public partial class ReportPreviewViewModel : ViewModelBase
     {
         if (Template == null || Metadata == null)
         {
-            StatusMessage = "No template or metadata available";
+            StatusMessage = Loc.Tr("Status.ReportPreview.NoTemplate");
             return;
         }
 
         try
         {
             IsLoading = true;
-            StatusMessage = $"Exporting to {SelectedFormat}...";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportPreview.Exporting"), SelectedFormat);
 
             var generatedReport = await _generationService.GenerateReportAsync(
                 Template,
@@ -412,7 +413,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
                 null,
                 cancellationToken);
 
-            StatusMessage = $"Report exported: {generatedReport.FilePath}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportPreview.Exported"), generatedReport.FilePath);
             Logger.Info("Report exported: {Path}", generatedReport.FilePath);
 
             // Открываем файл
@@ -432,7 +433,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting report");
-            StatusMessage = $"Export error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportPreview.ExportError"), ex.Message);
         }
         finally
         {

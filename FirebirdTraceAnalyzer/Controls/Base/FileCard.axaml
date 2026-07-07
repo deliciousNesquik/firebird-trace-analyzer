@@ -1,7 +1,8 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls"
-        xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters">
+        xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization">
     <Design.PreviewWith>
         <controls:FileCard FileName="2026_05_07__00_00_01.log" 
                            FileSize="234567860" 
@@ -27,7 +28,7 @@
                                     Grid.Column="0"
                                     Spacing="2">
 
-                            <TextBlock Text="FIREBIRD TRACE FILE"
+                            <TextBlock Text="{loc:Tr FileCard.Header}"
                                        FontSize="10"
                                        FontWeight="Bold"
                                        Foreground="{DynamicResource AccentBrush}" />
@@ -45,7 +46,7 @@
                                 Height="30" 
                                 Padding="5"
                                 Classes="normal"
-                                ToolTip.Tip="Opens the log file in the default system viewer"
+                                ToolTip.Tip="{loc:Tr FileCard.OpenTooltip}"
                                 Command="{TemplateBinding OpenFileCommand}">
                             <Button.Content>
                                 <Svg Path="{DynamicResource FolderIcon}" 
@@ -60,7 +61,7 @@
                                 Padding="5"
                                 Classes="danger"
                                 Command="{TemplateBinding RemoveFileCommand}"
-                                ToolTip.Tip="Deletes the trace log and its associated events">
+                                ToolTip.Tip="{loc:Tr FileCard.RemoveTooltip}">
                             <Button.Content>
                                 <Svg Path="{DynamicResource ClearIcon}" 
                                      Css="{DynamicResource ThemeIconFillOnlyWhite}" />
@@ -81,7 +82,7 @@
 
                                 <StackPanel Orientation="Vertical"
                                             Spacing="5">
-                                    <TextBlock Text="START"
+                                    <TextBlock Text="{loc:Tr FileCard.Start}"
                                                Foreground="{DynamicResource AccentBrush}"
                                                FontSize="10"
                                                FontWeight="Bold"/>
@@ -92,7 +93,7 @@
                                 
                                 <StackPanel Orientation="Vertical"
                                             Spacing="5">
-                                    <TextBlock Text="END"
+                                    <TextBlock Text="{loc:Tr FileCard.End}"
                                                Foreground="{DynamicResource AccentBrush}"
                                                FontSize="10"
                                                FontWeight="Bold"/>
@@ -108,7 +109,7 @@
                                         VerticalAlignment="Bottom"
                                         Spacing="5">
 
-                                <TextBlock Text="SIZE"
+                                <TextBlock Text="{loc:Tr FileCard.Size}"
                                            Foreground="{DynamicResource AccentBrush}"
                                            FontSize="10"
                                            FontWeight="Bold"/>
@@ -123,7 +124,7 @@
                                         VerticalAlignment="Bottom"
                                         Spacing="5">
 
-                                <TextBlock Text="EVENTS"
+                                <TextBlock Text="{loc:Tr FileCard.Events}"
                                            Foreground="{DynamicResource AccentBrush}"
                                            FontSize="10"
                                            FontWeight="Bold"/>

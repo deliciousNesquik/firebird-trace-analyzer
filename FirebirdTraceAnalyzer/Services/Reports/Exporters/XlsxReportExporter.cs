@@ -2,6 +2,7 @@
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Events;
 using NLog;
@@ -34,7 +35,7 @@ public class XlsxReportExporter : IReportExporter
             using var workbook = new XLWorkbook();
             
             // Создаём лист с данными
-            var worksheet = workbook.Worksheets.Add("Report");
+            var worksheet = workbook.Worksheets.Add(Loc.Tr("Report.Export.WorksheetName"));
 
             var currentRow = 1;
 
@@ -102,7 +103,7 @@ public class XlsxReportExporter : IReportExporter
         // Дата генерации
         if (template.Header.ShowGeneratedDate)
         {
-            worksheet.Cell(row, 1).Value = $"Generated: {metadata.GeneratedAt.ToString(template.Header.DateFormat)}";
+            worksheet.Cell(row, 1).Value = string.Format(Loc.Tr("Report.Export.Generated"), metadata.GeneratedAt.ToString(template.Header.DateFormat));
             worksheet.Cell(row, 1).Style
                 .Font.SetFontSize(9)
                 .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
@@ -248,18 +249,18 @@ public class XlsxReportExporter : IReportExporter
     {
         var row = startRow;
 
-        AddStatRow(worksheet, ref row, "Total Files:", metadata.Files.Count.ToString());
-        AddStatRow(worksheet, ref row, "Total Events (before filters):", metadata.TotalEventsCount.ToString("N0"));
-        AddStatRow(worksheet, ref row, "Events in Report:", metadata.Events.Count.ToString("N0"));
+        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString());
+        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0"));
+        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0"));
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
         {
-            AddStatRow(worksheet, ref row, "Active Filters:", metadata.ActiveFilters);
+            AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.ActiveFilters"), metadata.ActiveFilters);
         }
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
         {
-            AddStatRow(worksheet, ref row, "Active Sort:", metadata.ActiveSort);
+            AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.ActiveSort"), metadata.ActiveSort);
         }
 
         return row;

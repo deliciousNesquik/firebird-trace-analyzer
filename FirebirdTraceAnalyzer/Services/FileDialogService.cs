@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Avalonia.Platform.Storage;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.Services;
@@ -39,11 +40,11 @@ public class FileDialogService : IFileDialogService
             return await topLevel.StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions
                 {
-                    Title = "Select trace log files",
+                    Title = Loc.Tr("FileDialog.PickTraceTitle"),
                     AllowMultiple = true,
                     FileTypeFilter =
                     [
-                        new FilePickerFileType("Trace Logs")
+                        new FilePickerFileType(Loc.Tr("FileDialog.TraceLogsType"))
                         {
                             Patterns = ["*.log", "*.txt"]
                         },
@@ -72,12 +73,12 @@ public class FileDialogService : IFileDialogService
         {
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "Export report template",
+                Title = Loc.Tr("FileDialog.ExportTemplateTitle"),
                 SuggestedFileName = suggestedName,
                 DefaultExtension = "json",
                 FileTypeChoices =
                 [
-                    new FilePickerFileType("Report template") { Patterns = ["*.json"] }
+                    new FilePickerFileType(Loc.Tr("FileDialog.ReportTemplateType")) { Patterns = ["*.json"] }
                 ]
             });
 
@@ -104,11 +105,11 @@ public class FileDialogService : IFileDialogService
         {
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Import report template",
+                Title = Loc.Tr("FileDialog.ImportTemplateTitle"),
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Report template") { Patterns = ["*.json"] },
+                    new FilePickerFileType(Loc.Tr("FileDialog.ReportTemplateType")) { Patterns = ["*.json"] },
                     FilePickerFileTypes.All
                 ]
             });
@@ -137,13 +138,13 @@ public class FileDialogService : IFileDialogService
             // Только DLL или ZIP — без варианта «все файлы», чтобы нельзя было выбрать чужой файл.
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Select plugin package (.dll or .zip)",
+                Title = Loc.Tr("FileDialog.PickPluginTitle"),
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Plugin package") { Patterns = ["*.dll", "*.zip"] },
-                    new FilePickerFileType("Plugin library (.dll)") { Patterns = ["*.dll"] },
-                    new FilePickerFileType("Plugin archive (.zip)") { Patterns = ["*.zip"] }
+                    new FilePickerFileType(Loc.Tr("FileDialog.PluginPackageType")) { Patterns = ["*.dll", "*.zip"] },
+                    new FilePickerFileType(Loc.Tr("FileDialog.PluginLibraryType")) { Patterns = ["*.dll"] },
+                    new FilePickerFileType(Loc.Tr("FileDialog.PluginArchiveType")) { Patterns = ["*.zip"] }
                 ]
             });
 

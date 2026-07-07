@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:reports="clr-namespace:FirebirdTraceAnalyzer.Models.Reports"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="1100"
              x:Class="FirebirdTraceAnalyzer.UserControls.MainMenuView"
              x:DataType="vm:MainWindowViewModel">
@@ -12,52 +13,52 @@
          списки отчётов). DataContext наследуется от хост-окна (MainWindowViewModel). -->
     <Menu>
 
-        <MenuItem Header="_Open [O]">
+        <MenuItem Header="{loc:Tr Menu.Open}">
             <MenuItem
-                Header="_Local File [L]"
+                Header="{loc:Tr Menu.Open.Local}"
                 InputGesture="Ctrl+O"
                 HotKey="Ctrl+O"
                 Command="{Binding OpenLocalFileCommand}" />
 
             <MenuItem
-                Header="_Remote File [R]"
+                Header="{loc:Tr Menu.Open.Remote}"
                 InputGesture="Ctrl+Alt+O"
                 HotKey="Ctrl+Alt+O"
                 Command="{Binding OpenRemoteFileCommand}" />
 
             <MenuItem
-                Header="_Cancel Loading [C]"
+                Header="{loc:Tr Menu.Open.Cancel}"
                 InputGesture="Ctrl+C"
                 HotKey="Ctrl+C"
                 Command="{Binding CancelLoadingCommand}" />
 
         </MenuItem>
 
-        <MenuItem Header="_Edit [E]">
+        <MenuItem Header="{loc:Tr Menu.Edit}">
 
-            <MenuItem Header="_Reparse [R]">
+            <MenuItem Header="{loc:Tr Menu.Edit.Reparse}">
                 <MenuItem
-                    Header="_All Files [A]"
+                    Header="{loc:Tr Menu.Common.AllFiles}"
                     InputGesture="Ctrl+R"
                     HotKey="Ctrl+R"
                     Command="{Binding ReparseAllFilesCommand}" />
 
                 <MenuItem
-                    Header="_Selected Files [S]"
+                    Header="{loc:Tr Menu.Common.SelectedFiles}"
                     InputGesture="Ctrl+Alt+R"
                     HotKey="Ctrl+Alt+R"
                     Command="{Binding ReparseSelectedFilesCommand}" />
             </MenuItem>
 
-            <MenuItem Header="_Close [C]">
+            <MenuItem Header="{loc:Tr Menu.Edit.Close}">
                 <MenuItem
-                    Header="_All Files [A]"
+                    Header="{loc:Tr Menu.Common.AllFiles}"
                     InputGesture="Ctrl+W"
                     HotKey="Ctrl+W"
                     Command="{Binding CloseAllFilesCommand}" />
 
                 <MenuItem
-                    Header="_Selected Files [S]"
+                    Header="{loc:Tr Menu.Common.SelectedFiles}"
                     InputGesture="Ctrl+Alt+W"
                     HotKey="Ctrl+Alt+W"
                     Command="{Binding CloseSelectedFilesCommand}" />
@@ -65,10 +66,10 @@
 
         </MenuItem>
 
-        <MenuItem Header="_Reports [E]">
+        <MenuItem Header="{loc:Tr Menu.Reports}">
 
             <!-- Динамические встроенные отчеты (Quick Reports) -->
-            <MenuItem Header="_Quick Reports" ItemsSource="{Binding BuiltInReports}">
+            <MenuItem Header="{loc:Tr Menu.Reports.Quick}" ItemsSource="{Binding BuiltInReports}">
                 <MenuItem.Styles>
                     <!-- Этот стиль применяется ко всем сгенерированным дочерним элементам -->
                     <Style Selector="MenuItem" x:DataType="reports:ReportTemplate">
@@ -83,7 +84,7 @@
             </MenuItem>
 
             <!-- Динамические пользовательские отчеты (Custom Reports) -->
-            <MenuItem Header="_Custom Reports"
+            <MenuItem Header="{loc:Tr Menu.Reports.Custom}"
                       ItemsSource="{Binding CustomReports}"
                       IsVisible="{Binding CustomReports.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <!-- Показываем это меню только если есть хотя бы один кастомный отчет -->
@@ -101,21 +102,21 @@
 
             <!-- Manage Templates (single entry → in-window overlay) -->
             <MenuItem
-                Header="_Manage Templates..."
+                Header="{loc:Tr Menu.Reports.Manage}"
                 Command="{Binding OpenManageTemplatesCommand}" />
 
             <Separator />
 
             <!-- History -->
             <MenuItem
-                Header="_Recent Reports..."
+                Header="{loc:Tr Menu.Reports.Recent}"
                 Command="{Binding OpenRecentReportsCommand}" />
 
         </MenuItem>
 
-        <MenuItem Header="_Window [W]">
+        <MenuItem Header="{loc:Tr Menu.Window}">
             <MenuItem
-                Header="_Files [F]"
+                Header="{loc:Tr Menu.Window.Files}"
                 InputGesture="Ctrl+Shift+F1"
                 HotKey="Ctrl+Shift+F1"
                 Command="{Binding SwitchVisibleTraceFilesSectionCommand}"
@@ -124,7 +125,7 @@
                 StaysOpenOnClick="True" />
 
             <MenuItem
-                Header="_Search, Sort and Filters [S]"
+                Header="{loc:Tr Menu.Window.Search}"
                 InputGesture="Ctrl+Shift+F2"
                 HotKey="Ctrl+Shift+F2"
                 Command="{Binding SwitchVisibleSearchSectionCommand}"
@@ -133,7 +134,7 @@
                 StaysOpenOnClick="True" />
 
             <MenuItem
-                Header="_Events [E]"
+                Header="{loc:Tr Menu.Window.Events}"
                 InputGesture="Ctrl+Shift+F3"
                 HotKey="Ctrl+Shift+F3"
                 IsChecked="{Binding IsEventsSectionVisible}"
@@ -142,7 +143,7 @@
                 StaysOpenOnClick="True" />
 
             <MenuItem
-                Header="_Statistics [S]"
+                Header="{loc:Tr Menu.Window.Statistics}"
                 InputGesture="Ctrl+Shift+F4"
                 HotKey="Ctrl+Shift+F4"
                 IsChecked="{Binding IsStatisticsSectionVisible}"
@@ -151,7 +152,7 @@
                 StaysOpenOnClick="True" />
 
             <MenuItem
-                Header="_Logs [L]"
+                Header="{loc:Tr Menu.Window.Logs}"
                 InputGesture="Ctrl+Shift+F5"
                 HotKey="Ctrl+Shift+F5"
                 IsChecked="{Binding IsLogsSectionVisible}"
@@ -161,15 +162,15 @@
 
             <Separator />
             <MenuItem
-                Header="_Reset [R]"
+                Header="{loc:Tr Menu.Window.Reset}"
                 InputGesture="Ctrl+Shift+F12"
                 HotKey="Ctrl+Shift+F12"
                 Command="{Binding GoToFactorySettingsSectionCommand}" />
 
         </MenuItem>
 
-        <MenuItem Header="_Plugins [P]" Command="{Binding OpenPluginsCommand}" />
+        <MenuItem Header="{loc:Tr Menu.Plugins}" Command="{Binding OpenPluginsCommand}" />
 
-        <MenuItem Header="_Settings [S]" Command="{Binding OpenSettingsCommand}" />
+        <MenuItem Header="{loc:Tr Menu.Settings}" Command="{Binding OpenSettingsCommand}" />
     </Menu>
 </UserControl>

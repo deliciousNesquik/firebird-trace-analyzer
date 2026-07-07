@@ -4,6 +4,7 @@
         xmlns:models="using:FirebirdTraceAnalyzer.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="580"
         x:Class="FirebirdTraceAnalyzer.Views.DownloadProgressWindow"
         x:DataType="vm:DownloadProgressViewModel"
@@ -36,7 +37,7 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Spacing="4">
-                <TextBlock Text="Downloading files"
+                <TextBlock Text="{loc:Tr Download.Title}"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -52,7 +53,7 @@
             <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0"
-                               Text="Overall progress"
+                               Text="{loc:Tr Download.OverallProgress}"
                                FontSize="13"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -60,9 +61,9 @@
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}">
                         <Run Text="{Binding CurrentFileIndex}" FontWeight="SemiBold" />
-                        <Run Text="of" />
+                        <Run Text="{loc:Tr Download.Of}" />
                         <Run Text="{Binding TotalFiles}" FontWeight="SemiBold" />
-                        <Run Text="files" />
+                        <Run Text="{loc:Tr Download.Files}" />
                     </TextBlock>
                 </Grid>
 
@@ -78,7 +79,7 @@
                         <Run Text="{Binding TotalBytesOverall, Converter={StaticResource BytesToReadableSizeConverter}}" />
                         <Run Text="•" />
                         <Run Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" />
-                        <Run Text="• Remaining:" />
+                        <Run Text="{loc:Tr Download.Remaining}" />
                         <Run Text="{Binding EstimatedTimeRemaining, Converter={StaticResource TimeSpanToStringConverter}}" />
                     </TextBlock>
                     <TextBlock Grid.Column="1"
@@ -93,7 +94,7 @@
         <!-- Files list -->
         <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="20,4,20,12">
             <TextBlock Grid.Row="0"
-                       Text="Files"
+                       Text="{loc:Tr Download.FilesHeader}"
                        FontSize="13"
                        FontWeight="SemiBold"
                        Margin="0,0,0,8"
@@ -137,16 +138,16 @@
 
                                         <!-- Status label (одна видима) -->
                                         <Panel Grid.Column="2" VerticalAlignment="Center">
-                                            <TextBlock Text="Pending" FontSize="11"
+                                            <TextBlock Text="{loc:Tr Download.Status.Pending}" FontSize="11"
                                                        IsVisible="{Binding IsPending}"
                                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            <TextBlock Text="Downloading…" FontSize="11" FontWeight="SemiBold"
+                                            <TextBlock Text="{loc:Tr Download.Status.Downloading}" FontSize="11" FontWeight="SemiBold"
                                                        IsVisible="{Binding IsDownloading}"
                                                        Foreground="{DynamicResource AccentBrush}" />
-                                            <TextBlock Text="Done" FontSize="11"
+                                            <TextBlock Text="{loc:Tr Download.Status.Done}" FontSize="11"
                                                        IsVisible="{Binding IsCompleted}"
                                                        Foreground="{DynamicResource SuccessBrush}" />
-                                            <TextBlock Text="Failed" FontSize="11" FontWeight="SemiBold"
+                                            <TextBlock Text="{loc:Tr Download.Status.Failed}" FontSize="11" FontWeight="SemiBold"
                                                        IsVisible="{Binding IsFailed}"
                                                        Foreground="{DynamicResource ErrorTextBrush}" />
                                         </Panel>
@@ -171,16 +172,16 @@
                            FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            IsVisible="{Binding IsDownloading}"
-                           Text="Closing this window keeps the download running in the corner panel." />
+                           Text="{loc:Tr Download.CloseHint}" />
 
                 <Button Grid.Column="1"
-                        Content="Cancel"
+                        Content="{loc:Tr Download.Cancel}"
                         Classes="danger"
                         IsVisible="{Binding IsDownloading}"
                         Command="{Binding CancelCommand}" />
 
                 <Button Grid.Column="1"
-                        Content="Close"
+                        Content="{loc:Tr Download.Close}"
                         Classes="normal"
                         IsVisible="{Binding IsCompleted}"
                         Click="CloseButton_OnClick" />

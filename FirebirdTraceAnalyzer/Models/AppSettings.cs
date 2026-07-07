@@ -36,6 +36,12 @@ public class AppSettings
     public AppTheme Theme { get; set; } = AppTheme.Auto;
 
     /// <summary>
+    /// Код языка интерфейса (например, "en", "ru"). Строкой, а не enum: добавление языка = новый
+    /// файл переводов Assets/i18n/{code}.json + строка в манифесте, без изменений кода.
+    /// </summary>
+    public string Language { get; set; } = "en";
+
+    /// <summary>
     /// Папка, в которую сохраняются скачанные с сервера файлы (когда удаление после обработки
     /// выключено). Пусто — используется папка по умолчанию (%AppData%/FirebirdTraceAnalyzer/RemoteDownloads).
     /// </summary>

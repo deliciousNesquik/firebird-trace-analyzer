@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
 
@@ -71,7 +72,7 @@ public partial class DownloadProgressViewModel : ViewModelBase
     private bool _isCompleted;
 
     [ObservableProperty]
-    private string _statusMessage = "Preparing download...";
+    private string _statusMessage = Loc.Tr("Status.Download.Preparing");
 
     #endregion
 
@@ -105,7 +106,7 @@ public partial class DownloadProgressViewModel : ViewModelBase
         foreach (var f in filesToDownload)
             Files.Add(new DownloadFileItem { FileName = f.FileName });
 
-        StatusMessage = $"Ready to download {TotalFiles} file(s)";
+        StatusMessage = string.Format(Loc.Tr("Status.Download.ReadyToDownload"), TotalFiles);
         Logger.Info("Download initialized: {Count} files, total size: {Size} bytes", 
             TotalFiles, TotalBytesOverall);
     }
@@ -165,7 +166,7 @@ public partial class DownloadProgressViewModel : ViewModelBase
         if (item is not null)
             item.Status = DownloadItemStatus.Downloading;
 
-        StatusMessage = $"Downloading {fileName}...";
+        StatusMessage = string.Format(Loc.Tr("Status.Download.DownloadingFile"), fileName);
         Logger.Debug("File started: {FileName}", fileName);
     }
 
@@ -175,7 +176,7 @@ public partial class DownloadProgressViewModel : ViewModelBase
         IsCompleted = true;
         CurrentFileProgress = 100;
         OverallProgress = 100;
-        StatusMessage = $"✓ Download completed: {TotalFiles} file(s)";
+        StatusMessage = string.Format(Loc.Tr("Status.Download.Completed"), TotalFiles);
         
         Logger.Info("Download completed successfully");
         Completed?.Invoke(this, EventArgs.Empty);
@@ -189,7 +190,7 @@ public partial class DownloadProgressViewModel : ViewModelBase
         if (item is not null)
             item.Status = DownloadItemStatus.Failed;
 
-        StatusMessage = $"✗ Download failed: {errorMessage}";
+        StatusMessage = string.Format(Loc.Tr("Status.Download.Failed"), errorMessage);
 
         Logger.Error("Download failed: {Error}", errorMessage);
     }
@@ -208,9 +209,8 @@ public partial class DownloadProgressViewModel : ViewModelBase
             ? $"{EstimatedTimeRemaining:mm\\:ss}" 
             : "--:--";
 
-        StatusMessage = $"Downloading {CurrentFileIndex}/{TotalFiles} • " +
-                       $"{speedMBps:F2} MB/s • " +
-                       $"Remaining: {remaining}";
+        StatusMessage = string.Format(Loc.Tr("Status.Download.Progress"),
+            CurrentFileIndex, TotalFiles, speedMBps, remaining);
     }
 
     public string GetFormattedSpeed()

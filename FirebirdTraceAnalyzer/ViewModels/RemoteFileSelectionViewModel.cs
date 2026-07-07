@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.ViewModels;
 using NLog;
@@ -89,8 +90,8 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         }
 
         UpdateStatistics();
-        StatusMessage = $"Found {AllFiles.Count} file(s)";
-        
+        StatusMessage = string.Format(Loc.Tr("Status.RemoteFiles.FilesFound"), AllFiles.Count);
+
         Logger.Info("Initialized with {Count} files", AllFiles.Count);
     }
     
@@ -125,7 +126,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         ApplySearch();
         
         UpdateStatistics();
-        StatusMessage = $"Refreshed: {AllFiles.Count} file(s) found";
+        StatusMessage = string.Format(Loc.Tr("Status.RemoteFiles.Refreshed"), AllFiles.Count);
         
         Logger.Info("File list updated with {Count} files", AllFiles.Count);
     }
@@ -172,8 +173,8 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
                 file.FileName.Contains(SearchText, StringComparison.CurrentCultureIgnoreCase)));
 
         StatusMessage = string.IsNullOrWhiteSpace(SearchText)
-            ? $"Showing all {FilteredFiles.Count} file(s)"
-            : $"Found {FilteredFiles.Count} file(s) matching '{SearchText}'";
+            ? string.Format(Loc.Tr("Status.RemoteFiles.ShowingAll"), FilteredFiles.Count)
+            : string.Format(Loc.Tr("Status.RemoteFiles.FilesMatching"), FilteredFiles.Count, SearchText);
 
         Logger.Debug("Search applied: '{Search}', results: {Count}", SearchText, FilteredFiles.Count);
     }
@@ -201,7 +202,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         FilteredFiles.ReplaceRange(AllFiles.Where(file => 
             file.LastModified >= startDate && file.LastModified <= now));
 
-        StatusMessage = $"Showing {FilteredFiles.Count} file(s) from {period}";
+        StatusMessage = string.Format(Loc.Tr("Status.RemoteFiles.ShowingFromPeriod"), FilteredFiles.Count, period);
         Logger.Debug("Date filter applied: {Period}, results: {Count}", period, FilteredFiles.Count);
     }
 
@@ -212,7 +213,7 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
             return;
 
         IsLoading = true;
-        StatusMessage = "Refreshing file list...";
+        StatusMessage = Loc.Tr("Status.RemoteFiles.RefreshingList");
         Logger.Info("Refresh requested");
 
         try
@@ -222,13 +223,13 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Refresh cancelled";
+            StatusMessage = Loc.Tr("Status.RemoteFiles.RefreshCancelled");
             Logger.Info("Refresh cancelled");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error refreshing file list");
-            StatusMessage = $"Refresh failed: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.RemoteFiles.RefreshFailed"), ex.Message);
         }
         finally
         {
@@ -247,9 +248,10 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
 
         if (freeBytes >= 0 && freeBytes < requiredBytes + FreeSpaceMarginBytes)
         {
-            StatusMessage =
-                $"Not enough space for download: needed~{ByteSizeFormatter.FormatBytes(requiredBytes)}, " +
-                $"free {ByteSizeFormatter.FormatBytes(freeBytes)}. Please free up some space or deselect some files.";
+            StatusMessage = string.Format(
+                Loc.Tr("Status.RemoteFiles.NotEnoughSpace"),
+                ByteSizeFormatter.FormatBytes(requiredBytes),
+                ByteSizeFormatter.FormatBytes(freeBytes));
 
             Logger.Warn("Not enough disk space in {Dir}: need {Need} bytes, free {Free} bytes",
                 TargetDownloadDirectory, requiredBytes, freeBytes);

@@ -3,6 +3,7 @@
         xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
         x:Class="FirebirdTraceAnalyzer.Views.EventInspectorWindow"
         x:DataType="vm:EventInspectorViewModel"
@@ -31,7 +32,7 @@
 
             <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="Event Inspector"
+                    <TextBlock Text="{loc:Tr Inspector.Title}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
@@ -41,14 +42,14 @@
                             CornerRadius="4"
                             Padding="6,2"
                             VerticalAlignment="Center"
-                            ToolTip.Tip="This feature is experimental: events are grouped into a connection lifecycle (attach → detach) by shared attachment id and time. Connection boundaries can be imperfect if the trace lacks attach/detach records.">
-                        <TextBlock Text="EXPERIMENTAL"
+                            ToolTip.Tip="{loc:Tr Inspector.ExperimentalTooltip}">
+                        <TextBlock Text="{loc:Tr Inspector.Experimental}"
                                    FontSize="10"
                                    FontWeight="Bold"
                                    Foreground="White" />
                     </Border>
                 </StackPanel>
-                <TextBlock Text="If the trace lacks attach/detach records, the chain may be incomplete."
+                <TextBlock Text="{loc:Tr Inspector.IncompleteWarning}"
                            FontSize="12"
                            FontWeight="Bold"
                            TextWrapping="Wrap"
@@ -65,12 +66,12 @@
             <StackPanel Spacing="16" Margin="20">
                 <!-- Lifecycle chain -->
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Lifecycle chain"
+                    <TextBlock Text="{loc:Tr Inspector.LifecycleChain}"
                                FontWeight="SemiBold"
                                FontSize="13"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                    <TextBlock Text="All events of the selected event's connection (attach → detach), with trace-session bookends. The selected event is highlighted."
+                    <TextBlock Text="{loc:Tr Inspector.LifecycleChainDescription}"
                                FontSize="11"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -105,7 +106,7 @@
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
 
-            <Button Content="Close"
+            <Button Content="{loc:Tr Inspector.Close}"
                     Classes="danger"
                     HorizontalAlignment="Right"
                     Click="CloseButton_OnClick" />

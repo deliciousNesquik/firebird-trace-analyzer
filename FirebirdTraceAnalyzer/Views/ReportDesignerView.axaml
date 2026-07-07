@@ -3,6 +3,7 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:views="using:FirebirdTraceAnalyzer.Views"
              xmlns:uc="using:FirebirdTraceAnalyzer.UserControls"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
@@ -47,7 +48,7 @@
                              BorderThickness="0"
                              Padding="0"
                              Background="Transparent"
-                             PlaceholderText="Report name" />
+                             PlaceholderText="{loc:Tr ReportDesigner.ReportNamePlaceholder}" />
                     <TextBlock Text="{Binding StatusMessage}"
                                FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -58,30 +59,30 @@
                     <ComboBox ItemsSource="{Binding Preview.AvailableFormats}"
                               SelectedItem="{Binding Preview.SelectedFormat}"
                               MinWidth="120"
-                              ToolTip.Tip="Format used by Export" />
+                              ToolTip.Tip="{loc:Tr ReportDesigner.FormatUsedByExportTooltip}" />
 
                     <Button Classes="normal"
                             Padding="12,0"
                             Height="36"
                             Command="{Binding Preview.ExportReportCommand}"
-                            ToolTip.Tip="Generate and open the report file">
+                            ToolTip.Tip="{loc:Tr ReportDesigner.ExportButtonTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <Svg Width="16" Height="16" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
-                            <TextBlock Text="Export" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Tr ReportDesigner.Export}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <Button Classes="focused"
                             Padding="14,0"
                             Height="36"
-                            Content="Save"
+                            Content="{loc:Tr ReportDesigner.Save}"
                             Command="{Binding SaveTemplateCommand}"
-                            ToolTip.Tip="Save this template" />
+                            ToolTip.Tip="{loc:Tr ReportDesigner.SaveTemplateTooltip}" />
 
                     <Button Classes="normal"
                             Padding="12,0"
                             Height="36"
-                            Content="Close"
+                            Content="{loc:Tr ReportDesigner.Close}"
                             Command="{Binding CancelCommand}" />
                 </StackPanel>
             </Grid>
@@ -115,17 +116,17 @@
                     <StackPanel Margin="14,14,14,32">
 
                         <!-- Template -->
-                        <Expander Header="Template" IsExpanded="True">
+                        <Expander Header="{loc:Tr ReportDesigner.TemplateSection}" IsExpanded="True">
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Report name *" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.ReportNameLabel}" />
                                     <TextBox Text="{Binding TemplateName}"
-                                             PlaceholderText="Enter report name..." />
+                                             PlaceholderText="{loc:Tr ReportDesigner.EnterReportNamePlaceholder}" />
                                 </StackPanel>
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Description" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.Description}" />
                                     <TextBox Text="{Binding TemplateDescription}"
-                                             PlaceholderText="Optional description..."
+                                             PlaceholderText="{loc:Tr ReportDesigner.OptionalDescriptionPlaceholder}"
                                              AcceptsReturn="True"
                                              Height="56" />
                                 </StackPanel>
@@ -133,20 +134,20 @@
                         </Expander>
 
                         <!-- Header -->
-                        <Expander Header="Header" IsExpanded="True">
+                        <Expander Header="{loc:Tr ReportDesigner.HeaderSection}" IsExpanded="True">
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Title *" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.TitleLabel}" />
                                     <TextBox Text="{Binding ReportTitle}" />
                                 </StackPanel>
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Subtitle" />
-                                    <TextBox Text="{Binding ReportSubtitle}" PlaceholderText="Optional..." />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.Subtitle}" />
+                                    <TextBox Text="{Binding ReportSubtitle}" PlaceholderText="{loc:Tr ReportDesigner.OptionalPlaceholder}" />
                                 </StackPanel>
-                                <CheckBox Content="Show generated date" IsChecked="{Binding ShowGeneratedDate}" />
+                                <CheckBox Content="{loc:Tr ReportDesigner.ShowGeneratedDate}" IsChecked="{Binding ShowGeneratedDate}" />
 
                                 <Separator />
-                                <TextBlock Classes="fieldLabel" Text="Header variables" />
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.HeaderVariables}" />
                                 <ItemsControl ItemsSource="{Binding AvailableVariables}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -166,22 +167,22 @@
                         </Expander>
 
                         <!-- Columns -->
-                        <Expander Header="Columns" IsExpanded="True">
+                        <Expander Header="{loc:Tr ReportDesigner.ColumnsSection}" IsExpanded="True">
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Event limit" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.EventLimit}" />
                                     <NumericUpDown Value="{Binding EventLimit}"
                                                    Minimum="1" Maximum="10000"
-                                                   PlaceholderText="No limit"
+                                                   PlaceholderText="{loc:Tr ReportDesigner.NoLimitPlaceholder}"
                                                    AllowSpin="True" Increment="5" />
                                 </StackPanel>
 
-                                <CheckBox Content="Show summary statistics" IsChecked="{Binding ShowSummary}" />
+                                <CheckBox Content="{loc:Tr ReportDesigner.ShowSummaryStatistics}" IsChecked="{Binding ShowSummary}" />
 
                                 <Separator />
 
                                 <!-- Палитра доступных полей: «+» добавляет колонку (можно несколько раз). -->
-                                <TextBlock Classes="fieldLabel" Text="Add columns" />
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.AddColumns}" />
                                 <ItemsControl ItemsSource="{Binding AvailableFields}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -190,7 +191,7 @@
                                                            TextTrimming="CharacterEllipsis" />
                                                 <Button Grid.Column="1" Classes="normal" Width="28" Height="28" Padding="0"
                                                         FontSize="16" Content="+"
-                                                        ToolTip.Tip="Add this field as a report column"
+                                                        ToolTip.Tip="{loc:Tr ReportDesigner.AddFieldTooltip}"
                                                         Command="{Binding $parent[UserControl].((vm:ReportDesignerViewModel)DataContext).AddColumnCommand}"
                                                         CommandParameter="{Binding}" />
                                             </Grid>
@@ -201,12 +202,12 @@
                                 <Separator />
 
                                 <!-- Колонки отчёта: дубли разрешены; у каждой имя/роль/агрегат/формат/ширина/порядок и «−». -->
-                                <TextBlock Classes="fieldLabel" Text="Report columns *" />
-                                <TextBlock Text="Role: Field = plain column · Group key = group rows · Aggregate = Count/Sum/… per group. One field can be added several times."
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.ReportColumnsLabel}" />
+                                <TextBlock Text="{loc:Tr ReportDesigner.ColumnsRoleHint}"
                                            FontSize="11" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextMutedBrush}" />
 
-                                <TextBlock Text="No columns yet — add fields above with +."
+                                <TextBlock Text="{loc:Tr ReportDesigner.NoColumnsYet}"
                                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                                            IsVisible="{Binding !ReportColumns.Count}" />
 
@@ -218,33 +219,33 @@
                                                     <!-- Имя колонки (редактируемое) + удаление -->
                                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                                         <TextBox Grid.Column="0" Text="{Binding DisplayName}" FontSize="12"
-                                                                 ToolTip.Tip="Column header" />
+                                                                 ToolTip.Tip="{loc:Tr ReportDesigner.ColumnHeaderTooltip}" />
                                                         <Button Grid.Column="1" Classes="danger" Width="28" Height="28" Padding="0"
                                                                 FontSize="16" Content="−"
-                                                                ToolTip.Tip="Remove column"
+                                                                ToolTip.Tip="{loc:Tr ReportDesigner.RemoveColumnTooltip}"
                                                                 Command="{Binding $parent[UserControl].((vm:ReportDesignerViewModel)DataContext).RemoveColumnCommand}"
                                                                 CommandParameter="{Binding}" />
                                                     </Grid>
                                                     <!-- Роль · Формат · Ширина% · Порядок -->
                                                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="5">
                                                         <ComboBox Grid.Column="0" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding Kind}"
-                                                                  FontSize="11" Width="84" ToolTip.Tip="Role: Field / Group key / Aggregate" />
-                                                        <TextBox Grid.Column="1" Text="{Binding Format}" PlaceholderText="Fmt"
-                                                                 FontSize="11" Width="50" ToolTip.Tip="Format, e.g. N0 or {}{0:N0} ms" />
+                                                                  FontSize="11" Width="84" ToolTip.Tip="{loc:Tr ReportDesigner.RoleTooltip}" />
+                                                        <TextBox Grid.Column="1" Text="{Binding Format}" PlaceholderText="{loc:Tr ReportDesigner.FormatPlaceholder}"
+                                                                 FontSize="11" Width="50" ToolTip.Tip="{loc:Tr ReportDesigner.FormatTooltip}" />
                                                         <NumericUpDown Grid.Column="2" Value="{Binding WidthPercent}" Minimum="5" Maximum="100"
-                                                                       PlaceholderText="W%" ShowButtonSpinner="False" FontSize="11" Width="54"
-                                                                       ToolTip.Tip="Width %" />
+                                                                       PlaceholderText="{loc:Tr ReportDesigner.WidthPercentPlaceholder}" ShowButtonSpinner="False" FontSize="11" Width="54"
+                                                                       ToolTip.Tip="{loc:Tr ReportDesigner.WidthPercentTooltip}" />
                                                         <NumericUpDown Grid.Column="3" Value="{Binding Order}" Minimum="1" Maximum="100"
-                                                                       PlaceholderText="Ord" ShowButtonSpinner="False" FontSize="11" Width="54"
-                                                                       ToolTip.Tip="Order" />
+                                                                       PlaceholderText="{loc:Tr ReportDesigner.OrderPlaceholder}" ShowButtonSpinner="False" FontSize="11" Width="54"
+                                                                       ToolTip.Tip="{loc:Tr ReportDesigner.OrderTooltip}" />
                                                     </Grid>
                                                     <!-- Функция агрегации (только для роли Aggregate) -->
                                                     <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6"
                                                           IsVisible="{Binding IsAggregate}">
-                                                        <TextBlock Grid.Column="0" Text="Func" VerticalAlignment="Center" FontSize="11"
+                                                        <TextBlock Grid.Column="0" Text="{loc:Tr ReportDesigner.Func}" VerticalAlignment="Center" FontSize="11"
                                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <ComboBox Grid.Column="1" ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding Aggregate}"
-                                                                  FontSize="11" Width="120" ToolTip.Tip="Aggregate function" />
+                                                                  FontSize="11" Width="120" ToolTip.Tip="{loc:Tr ReportDesigner.AggregateFunctionTooltip}" />
                                                     </Grid>
                                                 </StackPanel>
                                             </Border>
@@ -255,10 +256,10 @@
                         </Expander>
 
                         <!-- Grouping & sort -->
-                        <Expander Header="Grouping &amp; sort">
+                        <Expander Header="{loc:Tr ReportDesigner.GroupingAndSortSection}">
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="6" IsVisible="{Binding !IsGrouped}">
-                                    <TextBlock Classes="fieldLabel" Text="Sort by" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.SortBy}" />
                                     <ComboBox ItemsSource="{Binding AvailableSorts}"
                                               SelectedItem="{Binding SelectedSort}"
                                               HorizontalAlignment="Stretch">
@@ -268,16 +269,16 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
-                                    <CheckBox Content="Descending"
+                                    <CheckBox Content="{loc:Tr ReportDesigner.Descending}"
                                               IsChecked="{Binding SortDescending}"
                                               IsEnabled="{Binding SelectedSort, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="6" IsVisible="{Binding IsGrouped}">
-                                    <TextBlock Classes="fieldLabel" Text="Sort grouped result by column" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.SortGroupedResultByColumn}" />
                                     <ComboBox ItemsSource="{Binding SortableColumns}"
                                               SelectedItem="{Binding SelectedSortColumn}"
-                                              PlaceholderText="Group order"
+                                              PlaceholderText="{loc:Tr ReportDesigner.GroupOrderPlaceholder}"
                                               HorizontalAlignment="Stretch">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
@@ -285,7 +286,7 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
-                                    <CheckBox Content="Descending"
+                                    <CheckBox Content="{loc:Tr ReportDesigner.Descending}"
                                               IsChecked="{Binding SortDescending}"
                                               IsEnabled="{Binding SelectedSortColumn, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                 </StackPanel>
@@ -293,11 +294,11 @@
                         </Expander>
 
                         <!-- Filters -->
-                        <Expander Header="Filters">
+                        <Expander Header="{loc:Tr ReportDesigner.FiltersSection}">
                             <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Active filters" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Content="Reset" Classes="danger" Padding="10,4"
+                                    <TextBlock Grid.Column="0" Classes="fieldLabel" Text="{loc:Tr ReportDesigner.ActiveFilters}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Content="{loc:Tr ReportDesigner.Reset}" Classes="danger" Padding="10,4"
                                             Command="{Binding FiltersPanel.ResetAllFiltersCommand}" />
                                 </Grid>
 
@@ -315,7 +316,7 @@
                                                                     <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsActive}"
                                                                               FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
                                                                     <StackPanel IsVisible="{Binding IsActive}" Margin="26,6,0,0">
-                                                                        <TextBox PlaceholderText="Type to find..."
+                                                                        <TextBox PlaceholderText="{loc:Tr ReportDesigner.TypeToFindPlaceholder}"
                                                                                  Text="{Binding ValueSearchText, Mode=TwoWay}"
                                                                                  IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"
                                                                                  Margin="0,0,0,6" />
@@ -329,14 +330,14 @@
                                                                             <ItemsControl.ItemTemplate>
                                                                                 <DataTemplate>
                                                                                     <CheckBox Margin="0,3" IsThreeState="True"
-                                                                                              ToolTip.Tip="Unselected → included → excluded"
+                                                                                              ToolTip.Tip="{loc:Tr ReportDesigner.FilterValueTooltip}"
                                                                                               IsChecked="{Binding IsChecked, Mode=TwoWay}">
                                                                                         <CheckBox.Content>
                                                                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                                                                 <TextBlock Text="{Binding DisplayName}" />
                                                                                                 <TextBlock Text="{Binding Count, StringFormat='({0})'}"
                                                                                                            Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
-                                                                                                <TextBlock Text="excluded" FontSize="10" VerticalAlignment="Center"
+                                                                                                <TextBlock Text="{loc:Tr ReportDesigner.Excluded}" FontSize="10" VerticalAlignment="Center"
                                                                                                            Foreground="{DynamicResource ErrorTextBrush}"
                                                                                                            IsVisible="{Binding IsExcluded}" />
                                                                                             </StackPanel>
@@ -348,9 +349,9 @@
                                                                         <StackPanel Spacing="6" Margin="0,4,0,0"
                                                                                     IsVisible="{Binding MinValue, Converter={x:Static ObjectConverters.IsNotNull}}">
                                                                             <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
-                                                                                <TextBlock Grid.Column="0" Text="From" VerticalAlignment="Center" FontSize="11" />
+                                                                                <TextBlock Grid.Column="0" Text="{loc:Tr ReportDesigner.From}" VerticalAlignment="Center" FontSize="11" />
                                                                                 <TextBox Grid.Column="1" FontSize="11" Padding="6,4" Text="{Binding CurrentMinValue, Mode=TwoWay}" />
-                                                                                <TextBlock Grid.Column="2" Text="To" VerticalAlignment="Center" FontSize="11" />
+                                                                                <TextBlock Grid.Column="2" Text="{loc:Tr ReportDesigner.To}" VerticalAlignment="Center" FontSize="11" />
                                                                                 <TextBox Grid.Column="3" FontSize="11" Padding="6,4" Text="{Binding CurrentMaxValue, Mode=TwoWay}" />
                                                                             </Grid>
                                                                         </StackPanel>
@@ -364,20 +365,20 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                <TextBlock Text="No available filters"
+                                <TextBlock Text="{loc:Tr ReportDesigner.NoAvailableFilters}"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            IsVisible="{Binding !FiltersPanel.FiltersByCategory.Count}" />
 
-                                <Button Content="Apply filters" Classes="focused"
+                                <Button Content="{loc:Tr ReportDesigner.ApplyFilters}" Classes="focused"
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                         Command="{Binding FiltersPanel.ApplyFiltersCommand}" />
                             </StackPanel>
                         </Expander>
 
                         <!-- Export -->
-                        <Expander Header="Export">
+                        <Expander Header="{loc:Tr ReportDesigner.ExportSection}">
                             <StackPanel Spacing="10">
-                                <TextBlock Classes="fieldLabel" Text="Supported formats" />
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.SupportedFormats}" />
                                 <ItemsControl ItemsSource="{Binding SupportedFormats}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -392,7 +393,7 @@
                                 </ItemsControl>
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Default format" />
+                                    <TextBlock Classes="fieldLabel" Text="{loc:Tr ReportDesigner.DefaultFormat}" />
                                     <ComboBox ItemsSource="{Binding Preview.AvailableFormats}"
                                               SelectedItem="{Binding DefaultFormat}"
                                               HorizontalAlignment="Stretch" />
@@ -414,11 +415,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <TextBlock Text="●" Foreground="{DynamicResource WarningTextBrush}" FontSize="14"
                            IsVisible="{Binding HasUnsavedChanges}" />
-                <TextBlock Text="Unsaved changes"
+                <TextBlock Text="{loc:Tr ReportDesigner.UnsavedChanges}"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            FontSize="12"
                            IsVisible="{Binding HasUnsavedChanges}" />
-                <TextBlock Text="Live preview updates as you edit · changes match the exported file"
+                <TextBlock Text="{loc:Tr ReportDesigner.LivePreviewHint}"
                            Foreground="{DynamicResource TextMutedBrush}"
                            FontSize="12"
                            IsVisible="{Binding !HasUnsavedChanges}" />

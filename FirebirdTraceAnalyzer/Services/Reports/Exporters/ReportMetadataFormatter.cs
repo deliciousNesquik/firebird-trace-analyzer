@@ -1,5 +1,6 @@
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Enums.Reports;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
@@ -28,20 +29,20 @@ public static class ReportMetadataFormatter
 
             ReportVariableType.TraceStartTime => metadata.Files.Count > 0
                 ? metadata.Files.Min(f => f.StartTrace).ToString("yyyy-MM-dd HH:mm:ss")
-                : "N/A",
+                : Loc.Tr("Report.Export.NotAvailable"),
             ReportVariableType.TraceEndTime => metadata.Files.Count > 0
                 ? metadata.Files.Max(f => f.EndTrace).ToString("yyyy-MM-dd HH:mm:ss")
-                : "N/A",
+                : Loc.Tr("Report.Export.NotAvailable"),
             ReportVariableType.TraceDuration => GetTraceDuration(metadata),
 
-            ReportVariableType.ActiveFilters => metadata.ActiveFilters ?? "None",
-            ReportVariableType.ActiveSort => metadata.ActiveSort ?? "None",
+            ReportVariableType.ActiveFilters => metadata.ActiveFilters ?? Loc.Tr("Report.Export.None"),
+            ReportVariableType.ActiveSort => metadata.ActiveSort ?? Loc.Tr("Report.Export.None"),
 
             ReportVariableType.GeneratedDate => metadata.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss"),
             ReportVariableType.GeneratedBy => Environment.UserName,
             ReportVariableType.ApplicationVersion => metadata.ApplicationVersion,
 
-            _ => "N/A"
+            _ => Loc.Tr("Report.Export.NotAvailable")
         };
     }
 
@@ -49,12 +50,12 @@ public static class ReportMetadataFormatter
     public static string GetTraceDuration(ReportMetadata metadata)
     {
         if (metadata.Files.Count == 0)
-            return "N/A";
+            return Loc.Tr("Report.Export.NotAvailable");
 
         var start = metadata.Files.Min(f => f.StartTrace);
         var end = metadata.Files.Max(f => f.EndTrace);
         var duration = end - start;
 
-        return $"{duration.TotalHours:F2} hours";
+        return string.Format(Loc.Tr("Report.Export.DurationHours"), duration.TotalHours.ToString("F2"));
     }
 }

@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using NLog;
 
@@ -27,7 +28,7 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
     private readonly IFileDialogService _fileDialogService;
 
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private string _statusMessage = "Ready";
+    [ObservableProperty] private string _statusMessage = Loc.Tr("Status.Templates.Ready");
 
     public ObservableCollection<TemplateItem> Templates { get; } = new();
 
@@ -71,13 +72,13 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
             }
 
             StatusMessage = Templates.Count == 0
-                ? "No custom templates yet"
-                : $"{Templates.Count} template(s)";
+                ? Loc.Tr("Status.Templates.NoTemplates")
+                : string.Format(Loc.Tr("Status.Templates.Count"), Templates.Count);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading custom templates");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.Error"), ex.Message);
         }
         finally
         {
@@ -97,7 +98,7 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
 
         if (string.IsNullOrWhiteSpace(item.FilePath))
         {
-            StatusMessage = "Template file not found on disk";
+            StatusMessage = Loc.Tr("Status.Templates.FileNotFound");
             return;
         }
 
@@ -114,13 +115,13 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
         {
             await _templateService.DeleteTemplateAsync(item.Template.Id);
             Templates.Remove(item);
-            StatusMessage = $"Deleted: {item.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.Deleted"), item.Name);
             Logger.Info("Deleted custom template: {Name}", item.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error deleting template {Name}", item.Name);
-            StatusMessage = $"Error deleting: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.DeleteError"), ex.Message);
         }
     }
 
@@ -138,13 +139,13 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             await _templateService.ExportTemplateAsync(item.Template, path);
-            StatusMessage = $"Exported: {item.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.Exported"), item.Name);
             Logger.Info("Exported template {Name} to {Path}", item.Name, path);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting template {Name}", item.Name);
-            StatusMessage = $"Export error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.ExportError"), ex.Message);
         }
     }
 
@@ -159,7 +160,7 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             var imported = await _templateService.ImportTemplateAsync(path);
-            StatusMessage = $"Imported: {imported.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.Imported"), imported.Name);
             Logger.Info("Imported template: {Name}", imported.Name);
 
             await LoadAsync();
@@ -167,7 +168,7 @@ public partial class ManageTemplatesViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error importing template");
-            StatusMessage = $"Import error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Templates.ImportError"), ex.Message);
         }
     }
 

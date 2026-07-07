@@ -7,6 +7,7 @@ using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
 
@@ -79,7 +80,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     private bool _isConnecting;
 
     [ObservableProperty]
-    private string _statusMessage = "Ready to connect";
+    private string _statusMessage = Loc.Tr("Status.Remote.ReadyToConnect");
 
     [ObservableProperty]
     private string? _errorMessage;
@@ -146,7 +147,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     {
         ErrorMessage = null;
         IsConnecting = true;
-        StatusMessage = "Validating settings...";
+        StatusMessage = Loc.Tr("Status.Remote.ValidatingSettings");
 
         try
         {
@@ -160,31 +161,31 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             if (!settings.IsValid(out var validationError))
             {
                 ErrorMessage = validationError;
-                StatusMessage = "Validation failed";
+                StatusMessage = Loc.Tr("Status.Remote.ValidationFailed");
                 return;
             }
 
-            StatusMessage = $"Connecting to {Hostname}:{Port}...";
+            StatusMessage = string.Format(Loc.Tr("Status.Remote.Connecting"), Hostname, Port);
             Logger.Info("Attempting connection to {Hostname}:{Port}", Hostname, Port);
 
             // Подключаемся
             await _sshService.ConnectAsync(settings, cancellationToken);
 
             // Проверяем существование директории
-            StatusMessage = "Checking remote directory...";
+            StatusMessage = Loc.Tr("Status.Remote.CheckingDirectory");
             
             if (!await _sshService.DirectoryExistsAsync(RemoteDirectory, cancellationToken))
             {
-                ErrorMessage = $"Directory not found: {RemoteDirectory}";
-                StatusMessage = "Directory not found";
+                ErrorMessage = string.Format(Loc.Tr("Status.Remote.DirectoryNotFound"), RemoteDirectory);
+                StatusMessage = Loc.Tr("Status.Remote.DirectoryNotFoundStatus");
                 _sshService.Disconnect();
                 return;
             }
 
             if (!await _sshService.CanReadAsync(RemoteDirectory, cancellationToken))
             {
-                ErrorMessage = $"No read permissions for: {RemoteDirectory}";
-                StatusMessage = "Access denied";
+                ErrorMessage = string.Format(Loc.Tr("Status.Remote.NoReadPermissions"), RemoteDirectory);
+                StatusMessage = Loc.Tr("Status.Remote.AccessDenied");
                 _sshService.Disconnect();
                 return;
             }
@@ -197,7 +198,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
                 Logger.Info("Password saved for {Username}@{Hostname}", Username, Hostname);
             }
 
-            StatusMessage = "Connected successfully!";
+            StatusMessage = Loc.Tr("Status.Remote.ConnectedSuccessfully");
             Logger.Info("Connection established successfully");
 
             // Уведомляем об успешном подключении (результат диалога — true)
@@ -205,14 +206,14 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Connection cancelled";
+            StatusMessage = Loc.Tr("Status.Remote.ConnectionCancelled");
             Logger.Info("Connection cancelled by user");
             _sshService.Disconnect();
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
-            StatusMessage = "Connection failed";
+            StatusMessage = Loc.Tr("Status.Remote.ConnectionFailed");
             Logger.Error(ex, "Connection failed");
             _sshService.Disconnect();
         }
@@ -256,7 +257,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions
                 {
-                    Title = "Select Private Key",
+                    Title = Loc.Tr("Status.Remote.SelectPrivateKeyTitle"),
                     AllowMultiple = false,
                     FileTypeFilter =
                     [
@@ -277,7 +278,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         catch (Exception ex)
         {
             Logger.Error(ex, "Error selecting private key");
-            ErrorMessage = $"Error selecting file: {ex.Message}";
+            ErrorMessage = string.Format(Loc.Tr("Status.Remote.ErrorSelectingFile"), ex.Message);
         }
     }
 
@@ -286,7 +287,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     {
         if (string.IsNullOrWhiteSpace(ProfileName))
         {
-            ErrorMessage = "Profile name is required";
+            ErrorMessage = Loc.Tr("Status.Remote.ProfileNameRequired");
             return;
         }
 
@@ -314,13 +315,13 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             // Держим выбор на сохранённом профиле: после upsert старый объект в списке заменён новым.
             SelectedProfile = profile;
 
-            StatusMessage = $"Profile '{profile.Name}' saved";
+            StatusMessage = string.Format(Loc.Tr("Status.Remote.ProfileSaved"), profile.Name);
             Logger.Info("Profile saved: {Name}", profile.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error saving profile");
-            ErrorMessage = $"Error saving profile: {ex.Message}";
+            ErrorMessage = string.Format(Loc.Tr("Status.Remote.ErrorSavingProfile"), ex.Message);
         }
     }
 
@@ -338,13 +339,13 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             if (string.Equals(ProfileName, profile.Name, StringComparison.Ordinal))
                 ProfileName = string.Empty;
 
-            StatusMessage = $"Profile '{profile.Name}' deleted";
+            StatusMessage = string.Format(Loc.Tr("Status.Remote.ProfileDeleted"), profile.Name);
             Logger.Info("Profile deleted: {Name}", profile.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error deleting profile");
-            ErrorMessage = $"Error deleting profile: {ex.Message}";
+            ErrorMessage = string.Format(Loc.Tr("Status.Remote.ErrorDeletingProfile"), ex.Message);
         }
     }
 
@@ -370,13 +371,13 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
             // Выбираем дубликат: его имя подставится в поле, пользователь может переименовать.
             SelectedProfile = copy;
 
-            StatusMessage = $"Profile duplicated: {copy.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.Remote.ProfileDuplicated"), copy.Name);
             Logger.Info("Profile duplicated: {Source} -> {Copy}", profile.Name, copy.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error duplicating profile");
-            ErrorMessage = $"Error duplicating profile: {ex.Message}";
+            ErrorMessage = string.Format(Loc.Tr("Status.Remote.ErrorDuplicatingProfile"), ex.Message);
         }
     }
 
@@ -389,7 +390,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         var revealed = await _fileDialogService.RevealInFileManagerAsync(GetProfilesFilePath());
 
         if (!revealed)
-            StatusMessage = "Profiles file not found yet — save a profile first";
+            StatusMessage = Loc.Tr("Status.Remote.ProfilesFileNotFound");
     }
 
     /// <summary>Имя для дубликата: base_copy, при коллизии — base_copy2, base_copy3, …</summary>
@@ -413,13 +414,13 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         
         if (settings.IsValid(out var error))
         {
-            StatusMessage = "Settings are valid";
+            StatusMessage = Loc.Tr("Status.Remote.SettingsValid");
             ErrorMessage = null;
         }
         else
         {
             ErrorMessage = error;
-            StatusMessage = "Settings validation failed";
+            StatusMessage = Loc.Tr("Status.Remote.SettingsValidationFailed");
         }
     }
 
@@ -457,7 +458,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         if (value == null) return;
 
         LoadProfileSettings(value);
-        StatusMessage = $"Profile '{value.Name}' loaded";
+        StatusMessage = string.Format(Loc.Tr("Status.Remote.ProfileLoaded"), value.Name);
     }
 
     #endregion

@@ -185,6 +185,7 @@ public sealed class SettingsService : ISettingsService
         target.IsClassicSearch = source.IsClassicSearch;
         target.AllowConcurrentProcessing = source.AllowConcurrentProcessing;
         target.Theme = source.Theme;
+        target.Language = source.Language;
         target.RemoteDownloadPath = source.RemoteDownloadPath;
         target.ReportsPath = source.ReportsPath;
         target.AppLogPath = source.AppLogPath;

@@ -3,6 +3,7 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="820" d:DesignHeight="900"
              x:Class="FirebirdTraceAnalyzer.Views.ReportPreviewView"
              x:CompileBindings="False">
@@ -48,11 +49,11 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <TextBlock Text="Events" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
+                            <TextBlock Text="{loc:Tr ReportPreview.Events}" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
                             <Grid x:Name="EventsTableGrid" />
 
                             <StackPanel Spacing="3" IsVisible="{Binding Statistics.Count}">
-                                <TextBlock Text="Summary Statistics" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
+                                <TextBlock Text="{loc:Tr ReportPreview.SummaryStatistics}" FontSize="14" FontWeight="Bold" Foreground="#1E88E5" Margin="0,6,0,0" />
                                 <ItemsControl ItemsSource="{Binding Statistics}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -109,11 +110,11 @@
                 BoxShadow="0 4 14 0 #33000000">
             <StackPanel Orientation="Horizontal" Spacing="2">
                 <Button Content="−" Width="30" Height="30" Padding="0" FontSize="16" Classes="normal"
-                        Command="{Binding ZoomOutCommand}" ToolTip.Tip="Zoom out" />
+                        Command="{Binding ZoomOutCommand}" ToolTip.Tip="{loc:Tr ReportPreview.ZoomOut}" />
                 <Button Content="{Binding ZoomPercent}" MinWidth="52" Height="30" Padding="4,0" Classes="normal"
-                        Command="{Binding ZoomResetCommand}" ToolTip.Tip="Reset to 100%" />
+                        Command="{Binding ZoomResetCommand}" ToolTip.Tip="{loc:Tr ReportPreview.ZoomReset}" />
                 <Button Content="+" Width="30" Height="30" Padding="0" FontSize="16" Classes="normal"
-                        Command="{Binding ZoomInCommand}" ToolTip.Tip="Zoom in" />
+                        Command="{Binding ZoomInCommand}" ToolTip.Tip="{loc:Tr ReportPreview.ZoomIn}" />
             </StackPanel>
         </Border>
     </Grid>

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:usercontrols="clr-namespace:FirebirdTraceAnalyzer.UserControls"
         xmlns:views="clr-namespace:FirebirdTraceAnalyzer.Views"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
         x:Class="FirebirdTraceAnalyzer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -21,43 +22,43 @@
     <NativeMenu.Menu>
         <NativeMenu>
 
-            <NativeMenuItem Header="Open">
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Open}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Local File"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Open.Local}"
                                         Gesture="Cmd+O"
                                         Command="{Binding OpenLocalFileCommand}" />
-                        <NativeMenuItem Header="Remote File"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Open.Remote}"
                                         Gesture="Cmd+Alt+O"
                                         Command="{Binding OpenRemoteFileCommand}" />
-                        <NativeMenuItem Header="Cancel Loading"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Open.Cancel}"
                                         Command="{Binding CancelLoadingCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
 
-            <NativeMenuItem Header="Edit">
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Edit}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Reparse">
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Edit.Reparse}">
                             <NativeMenuItem.Menu>
                                 <NativeMenu>
-                                    <NativeMenuItem Header="All Files"
+                                    <NativeMenuItem Header="{loc:Tr NativeMenu.Common.AllFiles}"
                                                     Gesture="Cmd+R"
                                                     Command="{Binding ReparseAllFilesCommand}" />
-                                    <NativeMenuItem Header="Selected Files"
+                                    <NativeMenuItem Header="{loc:Tr NativeMenu.Common.SelectedFiles}"
                                                     Gesture="Cmd+Alt+R"
                                                     Command="{Binding ReparseSelectedFilesCommand}" />
                                 </NativeMenu>
                             </NativeMenuItem.Menu>
                         </NativeMenuItem>
-                        <NativeMenuItem Header="Close">
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Edit.Close}">
                             <NativeMenuItem.Menu>
                                 <NativeMenu>
-                                    <NativeMenuItem Header="All Files"
+                                    <NativeMenuItem Header="{loc:Tr NativeMenu.Common.AllFiles}"
                                                     Gesture="Cmd+W"
                                                     Command="{Binding CloseAllFilesCommand}" />
-                                    <NativeMenuItem Header="Selected Files"
+                                    <NativeMenuItem Header="{loc:Tr NativeMenu.Common.SelectedFiles}"
                                                     Gesture="Cmd+Alt+W"
                                                     Command="{Binding CloseSelectedFilesCommand}" />
                                 </NativeMenu>
@@ -70,56 +71,56 @@
             <!-- Reports: только статические пункты. Динамические Quick/Custom Reports
                  (ItemsSource + стили) остаются в in-window Menu — NativeMenu не поддерживает
                  шаблонизированные списки из коллекции. -->
-            <NativeMenuItem Header="Reports">
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Reports}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Manage Templates..."
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Reports.Manage}"
                                         Command="{Binding OpenManageTemplatesCommand}" />
                         <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="Recent Reports..."
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Reports.Recent}"
                                         Command="{Binding OpenRecentReportsCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
 
-            <NativeMenuItem Header="Window">
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Window}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Files"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Files}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsTraceFilesSectionVisible}"
                                         Gesture="Cmd+Shift+F1"
                                         Command="{Binding SwitchVisibleTraceFilesSectionCommand}" />
-                        <NativeMenuItem Header="Search, Sort and Filters"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Search}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsSearchSectionVisible}"
                                         Gesture="Cmd+Shift+F2"
                                         Command="{Binding SwitchVisibleSearchSectionCommand}" />
-                        <NativeMenuItem Header="Events"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Events}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsEventsSectionVisible}"
                                         Gesture="Cmd+Shift+F3"
                                         Command="{Binding SwitchEventsSectionVisibleCommand}" />
-                        <NativeMenuItem Header="Statistics"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Statistics}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsStatisticsSectionVisible}"
                                         Gesture="Cmd+Shift+F4"
                                         Command="{Binding SwitchStatisticsSectionVisibleCommand}" />
-                        <NativeMenuItem Header="Logs"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Logs}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsLogsSectionVisible}"
                                         Gesture="Cmd+Shift+F5"
                                         Command="{Binding SwitchLogsSectionVisibleCommand}" />
                         <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="Reset"
+                        <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Reset}"
                                         Gesture="Cmd+Shift+F12"
                                         Command="{Binding GoToFactorySettingsSectionCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
 
-            <NativeMenuItem Header="Plugins" Command="{Binding OpenPluginsCommand}"/>
-            <NativeMenuItem Header="Settings" Command="{Binding OpenSettingsCommand}"/>
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Plugins}" Command="{Binding OpenPluginsCommand}"/>
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Settings}" Command="{Binding OpenSettingsCommand}"/>
 
         </NativeMenu>
     </NativeMenu.Menu>
@@ -141,7 +142,7 @@
             <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
                          Background="{DynamicResource SurfaceBrush}"
-                         PlaceholderText="Search by SQL text or procedure and trigger name..."
+                         PlaceholderText="{loc:Tr Main.SearchPlaceholder}"
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText, Mode=TwoWay}">
                     
@@ -154,7 +155,7 @@
                         Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding ExecuteSearchCommand}"
-                        ToolTip.Tip="Execute search (Enter)">
+                        ToolTip.Tip="{loc:Tr Main.ExecuteSearch}">
 
                     <Button.Content>
                         <Grid>
@@ -176,7 +177,7 @@
                         Height="40" Width="40"
                         Classes="normal"
                         Command="{Binding ChangeSearchTypeCommand}"
-                        ToolTip.Tip="Change search mode. States: [Classic/Regex]">
+                        ToolTip.Tip="{loc:Tr Main.ChangeSearchMode}">
                     
                     <Grid>
                         <Svg IsVisible="{Binding IsClassicSearch}" Width="40" Path="{DynamicResource ClassicSearchIcon}"
@@ -193,7 +194,7 @@
                         Classes="normal"
                         Height="40" 
                         Width="40"
-                        ToolTip.Tip="Sort events">
+                        ToolTip.Tip="{loc:Tr Main.SortEvents}">
                     
                     <Button.Flyout>
                         <Flyout FlyoutPresenterClasses="NoPadding" 
@@ -226,7 +227,7 @@
                         Classes="normal"
                         Height="40" 
                         Width="40"
-                        ToolTip.Tip="Filter events">
+                        ToolTip.Tip="{loc:Tr Main.FilterEvents}">
 
                     <Button.Flyout>
                         <Flyout FlyoutPresenterClasses="NoPadding"

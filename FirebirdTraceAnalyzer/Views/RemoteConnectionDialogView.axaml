@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:enums="using:FirebirdTraceAnalyzer.Enums"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="700"
              x:Class="FirebirdTraceAnalyzer.Views.RemoteConnectionDialogView"
              x:DataType="vm:RemoteConnectionDialogViewModel"
@@ -54,12 +55,12 @@
                 BorderThickness="0,0,0,1">
 
             <StackPanel Spacing="6">
-                <TextBlock Text="Connect to a remote server"
+                <TextBlock Text="{loc:Tr Remote.Connection.Title}"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                <TextBlock Text="Download Firebird trace logs over SSH. Fields marked * are required."
+                <TextBlock Text="{loc:Tr Remote.Connection.Subtitle}"
                            FontSize="12"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -77,16 +78,16 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="2">
-                            <TextBlock Classes="sectionTitle" Text="Profiles" />
+                            <TextBlock Classes="sectionTitle" Text="{loc:Tr Remote.Connection.Profiles.Title}" />
                             <TextBlock Classes="sectionHint"
-                                       Text="Load a saved connection, duplicate or delete it, or save the current settings (without the password) as a profile." />
+                                       Text="{loc:Tr Remote.Connection.Profiles.Hint}" />
                         </StackPanel>
 
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="fieldLabel" Text="Load a saved profile" />
+                            <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Profiles.LoadLabel}" />
                             <ComboBox ItemsSource="{Binding SavedProfiles}"
                                       SelectedItem="{Binding SelectedProfile}"
-                                      PlaceholderText="No profile selected"
+                                      PlaceholderText="{loc:Tr Remote.Connection.Profiles.NoProfileSelected}"
                                       HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
@@ -104,7 +105,7 @@
                                             <Button Grid.Column="1"
                                                     Padding="5,5"
                                                     VerticalAlignment="Center"
-                                                    ToolTip.Tip="Open profiles file"
+                                                    ToolTip.Tip="{loc:Tr Remote.Connection.Profiles.OpenFile}"
                                                     IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                     Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).OpenProfileFileCommand}">
                                                 <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}"
@@ -114,7 +115,7 @@
                                             <Button Grid.Column="2"
                                                     Padding="5,5"
                                                     VerticalAlignment="Center"
-                                                    ToolTip.Tip="Duplicate profile"
+                                                    ToolTip.Tip="{loc:Tr Remote.Connection.Profiles.Duplicate}"
                                                     IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                     Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DuplicateProfileCommand}"
                                                     CommandParameter="{Binding}" >
@@ -127,7 +128,7 @@
                                                     Classes="danger"
                                                     Padding="5,5"
                                                     VerticalAlignment="Center"
-                                                    ToolTip.Tip="Delete profile"
+                                                    ToolTip.Tip="{loc:Tr Remote.Connection.Profiles.Delete}"
                                                     IsVisible="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                     Command="{Binding $parent[ComboBox].((vm:RemoteConnectionDialogViewModel)DataContext).DeleteProfileCommand}"
                                                     CommandParameter="{Binding}">
@@ -142,15 +143,15 @@
                         </StackPanel>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="fieldLabel" Text="Save current settings as" />
+                            <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Profiles.SaveAsLabel}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <TextBox Grid.Column="0"
                                          Text="{Binding ProfileName}"
-                                         PlaceholderText="Profile name..."
+                                         PlaceholderText="{loc:Tr Remote.Connection.Profiles.NamePlaceholder}"
                                          IsEnabled="{Binding !IsConnecting}" />
 
                                 <Button Grid.Column="1"
-                                        Content="Save"
+                                        Content="{loc:Tr Remote.Connection.Profiles.Save}"
                                         Classes="focused"
                                         Command="{Binding SaveProfileCommand}"
                                         IsEnabled="{Binding !IsConnecting}" />
@@ -163,27 +164,27 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="2">
-                            <TextBlock Classes="sectionTitle" Text="Server" />
-                            <TextBlock Classes="sectionHint" Text="Address and account used to log in over SSH." />
+                            <TextBlock Classes="sectionTitle" Text="{loc:Tr Remote.Connection.Server.Title}" />
+                            <TextBlock Classes="sectionHint" Text="{loc:Tr Remote.Connection.Server.Hint}" />
                         </StackPanel>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="fieldLabel" Text="Hostname or IP address *" />
+                            <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Server.HostnameLabel}" />
                             <TextBox Text="{Binding Hostname}"
-                                     PlaceholderText="192.168.1.100 or server.example.com"
+                                     PlaceholderText="{loc:Tr Remote.Connection.Server.HostnamePlaceholder}"
                                      IsEnabled="{Binding !IsConnecting}" />
                         </StackPanel>
 
                         <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
                             <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Classes="fieldLabel" Text="Username *" />
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Server.UsernameLabel}" />
                                 <TextBox Text="{Binding Username}"
-                                         PlaceholderText="root"
+                                         PlaceholderText="{loc:Tr Remote.Connection.Server.UsernamePlaceholder}"
                                          IsEnabled="{Binding !IsConnecting}" />
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="4">
-                                <TextBlock Classes="fieldLabel" Text="Port *" />
+                                <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Server.PortLabel}" />
                                 <NumericUpDown Value="{Binding Port}"
                                                Minimum="1"
                                                Maximum="65535"
@@ -197,12 +198,12 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="2">
-                            <TextBlock Classes="sectionTitle" Text="Authentication" />
-                            <TextBlock Classes="sectionHint" Text="Choose how to prove your identity to the server." />
+                            <TextBlock Classes="sectionTitle" Text="{loc:Tr Remote.Connection.Auth.Title}" />
+                            <TextBlock Classes="sectionHint" Text="{loc:Tr Remote.Connection.Auth.Hint}" />
                         </StackPanel>
 
                         <StackPanel Spacing="10">
-                            <RadioButton Content="Password"
+                            <RadioButton Content="{loc:Tr Remote.Connection.Auth.PasswordOption}"
                                          IsChecked="{Binding IsPasswordAuthSelected}"
                                          Command="{Binding ChangeAuthMethodCommand}"
                                          GroupName="AuthMethod"
@@ -213,24 +214,24 @@
                                     Padding="24,0,0,0">
                                 <StackPanel Spacing="8">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Classes="fieldLabel" Text="Password *" />
+                                        <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Auth.PasswordLabel}" />
                                         <TextBox Text="{Binding Password}"
                                                  PasswordChar="{Binding ShowPassword, Converter={StaticResource BoolToPasswordCharConverter}}"
-                                                 PlaceholderText="Enter password"
+                                                 PlaceholderText="{loc:Tr Remote.Connection.Auth.PasswordPlaceholder}"
                                                  IsEnabled="{Binding !IsConnecting}" />
                                     </StackPanel>
 
-                                    <CheckBox Content="Show password"
+                                    <CheckBox Content="{loc:Tr Remote.Connection.Auth.ShowPassword}"
                                               IsChecked="{Binding ShowPassword}"
                                               FontSize="11" />
 
-                                    <CheckBox Content="Remember password (stored securely)"
+                                    <CheckBox Content="{loc:Tr Remote.Connection.Auth.RememberPassword}"
                                               IsChecked="{Binding RememberPassword}"
                                               FontSize="11" />
                                 </StackPanel>
                             </Border>
 
-                            <RadioButton Content="Private key"
+                            <RadioButton Content="{loc:Tr Remote.Connection.Auth.PrivateKeyOption}"
                                          IsChecked="{Binding IsPrivateKeyAuthSelected}"
                                          Command="{Binding ChangeAuthMethodCommand}"
                                          GroupName="AuthMethod"
@@ -241,15 +242,15 @@
                                     Padding="24,0,0,0">
                                 <StackPanel Spacing="8">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Classes="fieldLabel" Text="Private key file *" />
+                                        <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Auth.PrivateKeyFileLabel}" />
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBox Grid.Column="0"
                                                      Text="{Binding PrivateKeyPath}"
-                                                     PlaceholderText="/absolute/path/to/private_key"
+                                                     PlaceholderText="{loc:Tr Remote.Connection.Auth.PrivateKeyFilePlaceholder}"
                                                      IsEnabled="{Binding !IsConnecting}" />
 
                                             <Button Grid.Column="1"
-                                                    Content="Browse..."
+                                                    Content="{loc:Tr Remote.Connection.Auth.Browse}"
                                                     Classes="focused"
                                                     Command="{Binding BrowsePrivateKeyCommand}"
                                                     IsEnabled="{Binding !IsConnecting}"
@@ -258,15 +259,15 @@
                                     </StackPanel>
 
                                     <StackPanel Spacing="4">
-                                        <TextBlock Classes="fieldLabel" Text="Key passphrase (optional)" />
-                                        <TextBlock Classes="sectionHint" Text="If you do not need to save the passphrase, then save the profile while the phrase is entered." />
+                                        <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.Auth.PassphraseLabel}" />
+                                        <TextBlock Classes="sectionHint" Text="{loc:Tr Remote.Connection.Auth.PassphraseHint}" />
                                         <TextBox Text="{Binding KeyPassphrase}"
                                                  PasswordChar="{Binding ShowKeyPassphrase, Converter={StaticResource BoolToPasswordCharConverter}}"
-                                                 PlaceholderText="Leave empty if the key has no passphrase"
+                                                 PlaceholderText="{loc:Tr Remote.Connection.Auth.PassphrasePlaceholder}"
                                                  IsEnabled="{Binding !IsConnecting}" />
                                     </StackPanel>
 
-                                    <CheckBox Content="Show passphrase"
+                                    <CheckBox Content="{loc:Tr Remote.Connection.Auth.ShowPassphrase}"
                                               IsChecked="{Binding ShowKeyPassphrase}"
                                               FontSize="11" />
                                 </StackPanel>
@@ -279,14 +280,14 @@
                 <Border Classes="card">
                     <StackPanel Spacing="8">
                         <StackPanel Spacing="2">
-                            <TextBlock Classes="sectionTitle" Text="Trace files" />
-                            <TextBlock Classes="sectionHint" Text="Folder on the server that contains the trace logs." />
+                            <TextBlock Classes="sectionTitle" Text="{loc:Tr Remote.Connection.TraceFiles.Title}" />
+                            <TextBlock Classes="sectionHint" Text="{loc:Tr Remote.Connection.TraceFiles.Hint}" />
                         </StackPanel>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="fieldLabel" Text="Remote directory *" />
+                            <TextBlock Classes="fieldLabel" Text="{loc:Tr Remote.Connection.TraceFiles.DirectoryLabel}" />
                             <TextBox Text="{Binding RemoteDirectory}"
-                                     PlaceholderText="/var/log/firebird/trace"
+                                     PlaceholderText="{loc:Tr Remote.Connection.TraceFiles.DirectoryPlaceholder}"
                                      IsEnabled="{Binding !IsConnecting}" />
                         </StackPanel>
                     </StackPanel>
@@ -296,12 +297,12 @@
                 <Border Classes="card">
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="2">
-                            <TextBlock Classes="sectionTitle" Text="After processing" />
-                            <TextBlock Classes="sectionHint" Text="What to do with the files once they are downloaded and parsed." />
+                            <TextBlock Classes="sectionTitle" Text="{loc:Tr Remote.Connection.AfterProcessing.Title}" />
+                            <TextBlock Classes="sectionHint" Text="{loc:Tr Remote.Connection.AfterProcessing.Hint}" />
                         </StackPanel>
 
                         <StackPanel Spacing="4">
-                            <CheckBox Content="Delete files from the server"
+                            <CheckBox Content="{loc:Tr Remote.Connection.AfterProcessing.DeleteFromServer}"
                                       IsChecked="{Binding DeleteAfterProcessingFromServer}"
                                       FontWeight="Medium">
                                 <CheckBox.Styles>
@@ -312,7 +313,7 @@
                             </CheckBox>
                             <TextBlock Classes="fieldHint"
                                        Margin="28,0,0,0"
-                                       Text="Permanently removes the trace files from the remote server." />
+                                       Text="{loc:Tr Remote.Connection.AfterProcessing.DeleteFromServerHint}" />
                         </StackPanel>
 
                         <Border Background="{DynamicResource WarningSurfaceBrush}"
@@ -322,10 +323,10 @@
                                 Padding="12"
                                 IsVisible="{Binding DeleteAfterProcessingFromServer}">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="This cannot be undone"
+                                <TextBlock Text="{loc:Tr Remote.Connection.AfterProcessing.WarningTitle}"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource WarningTextBrush}" />
-                                <TextBlock Text="Files will be permanently deleted from the remote server after processing."
+                                <TextBlock Text="{loc:Tr Remote.Connection.AfterProcessing.WarningBody}"
                                            TextWrapping="Wrap"
                                            FontSize="11"
                                            Foreground="{DynamicResource WarningTextBrush}" />
@@ -333,12 +334,12 @@
                         </Border>
 
                         <StackPanel Spacing="4">
-                            <CheckBox Content="Delete downloaded copies from this computer"
+                            <CheckBox Content="{loc:Tr Remote.Connection.AfterProcessing.DeleteLocalCopies}"
                                       IsChecked="{Binding DeleteAfterProcessingOnLocaleMachine}"
                                       FontWeight="Medium" />
                             <TextBlock Classes="fieldHint"
                                        Margin="28,0,0,0"
-                                       Text="Leave unchecked to keep the downloaded files locally (in your configured downloads folder)." />
+                                       Text="{loc:Tr Remote.Connection.AfterProcessing.DeleteLocalCopiesHint}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -386,19 +387,19 @@
                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
 
                     <Button Grid.Column="0"
-                            Content="Validate parameters"
+                            Content="{loc:Tr Remote.Connection.ValidateParameters}"
                             Classes="normal"
                             Command="{Binding TestConnectionCommand}"
                             IsEnabled="{Binding !IsConnecting}"
-                            ToolTip.Tip="Validate the connection parameters without actually connection."/>
+                            ToolTip.Tip="{loc:Tr Remote.Connection.ValidateParametersTooltip}"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                        <Button Content="Connect"
+                        <Button Content="{loc:Tr Remote.Connection.Connect}"
                                 Classes="focused"
                                 Command="{Binding ConnectCommand}"
                                 IsEnabled="{Binding !IsConnecting}" />
 
-                        <Button Content="Cancel"
+                        <Button Content="{loc:Tr Remote.Connection.Cancel}"
                                 Classes="danger"
                                 Command="{Binding CancelCommand}"
                                 IsEnabled="{Binding !IsConnecting}" />

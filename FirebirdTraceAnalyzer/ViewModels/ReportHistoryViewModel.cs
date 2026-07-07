@@ -9,6 +9,7 @@ using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -29,7 +30,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
     private bool _isLoading;
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    private string _statusMessage = Loc.Tr("Status.ReportHistory.Ready");
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -86,7 +87,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         try
         {
             IsLoading = true;
-            StatusMessage = "Loading reports...";
+            StatusMessage = Loc.Tr("Status.ReportHistory.Loading");
 
             AllReports.Clear();
 
@@ -122,13 +123,13 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 
             ApplyFilter();
 
-            StatusMessage = $"Loaded {AllReports.Count} report(s)";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.Loaded"), AllReports.Count);
             Logger.Info("Loaded {Count} reports from history", AllReports.Count);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading reports");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.Error"), ex.Message);
         }
         finally
         {
@@ -183,7 +184,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening report: {Path}", report.FilePath);
-            StatusMessage = $"Error opening report: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.OpenError"), ex.Message);
         }
     }
 
@@ -204,7 +205,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening folder");
-            StatusMessage = $"Error opening folder: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.OpenFolderError"), ex.Message);
         }
         
         return false;
@@ -226,7 +227,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
             AllReports.Remove(report);
             FilteredReports.Remove(report);
 
-            StatusMessage = $"Deleted: {report.FileName}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.Deleted"), report.FileName);
             Logger.Info("Deleted report: {Path}", report.FilePath);
 
             await Task.CompletedTask;
@@ -234,7 +235,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error deleting report: {Path}", report.FilePath);
-            StatusMessage = $"Error deleting report: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.DeleteError"), ex.Message);
         }
     }
 

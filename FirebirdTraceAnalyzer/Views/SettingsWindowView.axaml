@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="640"
@@ -53,40 +54,40 @@
 
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="5">
-                    <TextBlock Text="Application Settings"
+                    <TextBlock Text="{loc:Tr Settings.Title}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="Values are applied after you press Save"
+                    <TextBlock Text="{loc:Tr Settings.Subtitle}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                
+
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
                     <Button Height="40"
                             Classes="normal"
-                            ToolTip.Tip="Importing settings from a file will overwrite all current settings. Use with caution."
+                            ToolTip.Tip="{loc:Tr Settings.Import.Tip}"
                             Command="{Binding ImportCommand}">
-                        
+
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStroke}" />
-                            <TextBlock Text="Import" />
+                            <TextBlock Text="{loc:Tr Settings.Import}" />
                         </StackPanel>
-                        
+
                     </Button>
 
                     <Button Height="40"
                             Classes="normal"
                             Command="{Binding ExportCommand}"
-                            ToolTip.Tip="Export current settings to a file.">
+                            ToolTip.Tip="{loc:Tr Settings.Export.Tip}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <Svg Height="20" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
-                            <TextBlock Text="Export" />
+                            <TextBlock Text="{loc:Tr Settings.Export}" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </Grid>
-            
+
         </Border>
 
         <!-- Content -->
@@ -96,13 +97,13 @@
             <StackPanel Margin="20" Spacing="4">
 
                 <!-- General -->
-                <TextBlock Classes="sectionHeader" Text="General" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.General}" />
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Search mode" />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SearchMode}" />
                         <TextBlock Classes="desc"
-                                   Text="Classic — plain substring search. Regex — regular expressions." />
+                                   Text="{loc:Tr Settings.SearchMode.Desc}" />
                     </StackPanel>
                     <!-- Сегмент из двух кнопок: слева Classic, справа Regex. Клик всегда выставляет
                          нужный режим (Command), IsChecked отражает состояние в одну сторону. -->
@@ -110,13 +111,13 @@
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Classic"
+                        <ToggleButton Content="{loc:Tr Settings.Search.Classic}"
                                       MinWidth="84"
                                         CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding IsClassicSearch, Mode=OneWay}"
                                       Command="{Binding SelectClassicCommand}" />
-                        <ToggleButton Content="Regex"
+                        <ToggleButton Content="{loc:Tr Settings.Search.Regex}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -127,9 +128,9 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Theme" />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.Theme}" />
                         <TextBlock Classes="desc"
-                                   Text="Application color theme." />
+                                   Text="{loc:Tr Settings.Theme.Desc}" />
                     </StackPanel>
                     <ComboBox Grid.Column="1"
                               HorizontalAlignment="Stretch"
@@ -137,40 +138,58 @@
                               SelectedItem="{Binding Theme}" />
                 </Grid>
 
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.Language}" />
+                        <TextBlock Classes="desc"
+                                   Text="{loc:Tr Settings.Language.Desc}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="1"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{Binding AvailableLanguages}"
+                              SelectedItem="{Binding SelectedLanguage}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="loc:LanguageOption">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+
                 <Separator Margin="0,6,0,16" />
 
                 <!-- Advanced -->
-                <TextBlock Classes="sectionHeader" Text="Advanced" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Advanced}" />
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Grid.Column="0" Classes="label">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Classes="title" Text="Process while downloading" />
+                            <TextBlock Classes="title" Text="{loc:Tr Settings.Concurrent}" />
                             <Border Background="{DynamicResource WarningSurfaceBrush}"
                                     BorderBrush="{DynamicResource WarningBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="3"
                                     Padding="6,1"
                                     VerticalAlignment="Center">
-                                <TextBlock Text="Advanced"
+                                <TextBlock Text="{loc:Tr Settings.Badge.Advanced}"
                                            FontSize="9"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource WarningTextBrush}" />
                             </Border>
                         </StackPanel>
                         <TextBlock Classes="desc"
-                                   Text="Allow processing of the downloaded file while another is downloading. Cuts total time on large batches, but is not recommended unless you understand the trade-offs." />
+                                   Text="{loc:Tr Settings.Concurrent.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Enabled"
+                        <ToggleButton Content="{loc:Tr Common.Enabled}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding AllowConcurrentProcessing}"/>
-                        <ToggleButton Content="Disabled"
+                        <ToggleButton Content="{loc:Tr Common.Disabled}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -181,18 +200,18 @@
                 <Separator Margin="0,6,0,16" />
 
                 <!-- Remote files -->
-                <TextBlock Classes="sectionHeader" Text="Remote files" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.RemoteFiles}" />
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Download folder" />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.DownloadFolder}" />
                         <TextBlock Classes="desc"
-                                   Text="Folder where downloaded remote files are kept (when 'delete after processing' is off). Empty = default app folder." />
+                                   Text="{loc:Tr Settings.DownloadFolder.Desc}" />
                     </StackPanel>
                     <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
                         <TextBox Grid.Column="0"
                                  Text="{Binding RemoteDownloadPath}"
-                                 PlaceholderText="Default (AppData)" />
+                                 PlaceholderText="{loc:Tr Settings.Placeholder.DefaultAppData}" />
                         <Button Grid.Column="1"
                                 Content="..."
                                 Width="40"
@@ -206,19 +225,19 @@
                 <Separator Margin="0,6,0,16" />
 
                 <!-- Reports -->
-                <TextBlock Classes="sectionHeader" Text="Reports" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Reports}" />
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Reports folder" />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.ReportsFolder}" />
                         <TextBlock Classes="desc"
-                                   Text="Folder where generated reports are saved. Empty = default app folder." />
+                                   Text="{loc:Tr Settings.ReportsFolder.Desc}" />
                     </StackPanel>
                     <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
                         <TextBox Grid.Column="0"
                                  Text="{Binding ReportsPath}"
-                                 PlaceholderText="Default (AppData)" />
-                        
+                                 PlaceholderText="{loc:Tr Settings.Placeholder.DefaultAppData}" />
+
                         <Button Grid.Column="1"
                                 Content="..."
                                 Width="40"
@@ -232,7 +251,7 @@
                 <Separator Margin="0,6,0,16" />
 
                 <!-- Logs -->
-                <TextBlock Classes="sectionHeader" Text="Logs" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Logs}" />
 
                 <!-- Предупреждение: смена путей логов требует перезапуска -->
                 <Border Background="{DynamicResource WarningSurfaceBrush}"
@@ -241,7 +260,7 @@
                         CornerRadius="4"
                         Padding="12"
                         Margin="0,0,0,12">
-                    <TextBlock Text="Changing log file paths takes full effect only after restarting the application (the parser log is initialized at startup)."
+                    <TextBlock Text="{loc:Tr Settings.Logs.RestartWarning}"
                                TextWrapping="Wrap"
                                FontSize="11"
                                Foreground="{DynamicResource WarningTextBrush}" />
@@ -249,19 +268,19 @@
 
                 <!-- Application log -->
                 <StackPanel Spacing="6" Margin="0,0,0,12">
-                    <TextBlock Text="Application log file"
+                    <TextBlock Text="{loc:Tr Settings.AppLogFile}"
                                FontSize="12"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
                         <TextBox Grid.Column="0"
                                  Text="{Binding AppLogPath}"
-                                 PlaceholderText="Default (logs/application.log)" />
+                                 PlaceholderText="{loc:Tr Settings.Placeholder.AppLog}" />
                         <Button Grid.Column="1" Width="40" Height="40" Padding="0" Content="..." Classes="focused" Command="{Binding BrowseAppLogPathCommand}" />
-                        
+
                         <Button Grid.Column="2" Width="40" Height="40" Classes="normal" Command="{Binding OpenAppLogFolderCommand}">
                             <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                         </Button>
-                        
+
                         <Button Grid.Column="3" Width="40" Height="40" Classes="danger" Command="{Binding ClearAppLogsCommand}">
                             <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                         </Button>
@@ -270,20 +289,20 @@
 
                 <!-- Parser log -->
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Parser log file"
+                    <TextBlock Text="{loc:Tr Settings.ParserLogFile}"
                                FontSize="12"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
                         <TextBox Grid.Column="0"
                                  Text="{Binding ParserLogPath}"
-                                 PlaceholderText="Default (logs/parser.log)" />
-                        
+                                 PlaceholderText="{loc:Tr Settings.Placeholder.ParserLog}" />
+
                         <Button Grid.Column="1" Content="..." Width="40" Height="40" Padding="0" Classes="focused" Command="{Binding BrowseParserLogPathCommand}" />
-                        
+
                         <Button Grid.Column="2" Width="40" Height="40" Classes="normal" Command="{Binding OpenParserLogFolderCommand}">
                             <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                         </Button>
-                        
+
                         <Button Grid.Column="3" Width="40" Height="40" Classes="danger" Command="{Binding ClearAppLogsCommand}">
                             <Svg Width="20" Height="20" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
                         </Button>
@@ -293,38 +312,38 @@
                 <Separator Margin="0,6,0,16" />
 
                 <!-- Parser rules -->
-                <TextBlock Classes="sectionHeader" Text="Parser rules" />
-                
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.ParserRules}" />
+
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <StackPanel Grid.Column="0" Spacing="8">
-                        <TextBlock Text="rules.json defines how trace lines are parsed. It lives in the app data folder — import a custom file or open the folder to edit it."
+                        <TextBlock Text="{loc:Tr Settings.ParserRules.Desc}"
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
-                    
+
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Spacing="8">
                         <Button Height="40"
                                 Classes="focused"
-                                ToolTip.Tip="Import rules.json"
+                                ToolTip.Tip="{loc:Tr Settings.ParserRules.ImportTip}"
                                 Command="{Binding ImportRulesFileCommand}">
-                            
+
                             <StackPanel Orientation="Horizontal" Spacing="5">
                                 <Svg Width="20" Height="20" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
-                                <TextBlock Text="Import" />
+                                <TextBlock Text="{loc:Tr Settings.Import}" />
                             </StackPanel>
                         </Button>
 
                         <Button Height="40"
                                 Classes="normal"
-                                ToolTip.Tip="Open rules folder"
+                                ToolTip.Tip="{loc:Tr Settings.ParserRules.OpenTip}"
                                 Command="{Binding OpenRulesFolderCommand}">
-                            
+
                             <StackPanel Orientation="Horizontal" Spacing="5">
                                 <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
-                                <TextBlock Text="Open Folder" />
+                                <TextBlock Text="{loc:Tr Settings.OpenFolder}" />
                             </StackPanel>
-                            
+
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -334,36 +353,36 @@
                         CornerRadius="4"
                         Margin="0 15 0 0"
                         Padding="12">
-                    <TextBlock Text="Importing rules takes effect after restarting the application."
+                    <TextBlock Text="{loc:Tr Settings.ParserRules.RestartWarning}"
                                TextWrapping="Wrap"
                                FontSize="11"
                                Foreground="{DynamicResource WarningTextBrush}" />
                 </Border>
-                
+
                 <StackPanel Spacing="8">
-                    
+
                 </StackPanel>
 
                 <Separator Margin="0,6,0,16" />
 
                 <!-- UI sections visibility -->
-                <TextBlock Classes="sectionHeader" Text="Sections visibility" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Sections}" />
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Grid.Column="0" Classes="label">
-                        <TextBlock Classes="title" Text="Files" />
-                        <TextBlock Classes="desc" Text="Show the loaded trace files section." />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SectionVis.Files}" />
+                        <TextBlock Classes="desc" Text="{loc:Tr Settings.SectionVis.Files.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Show"
+                        <ToggleButton Content="{loc:Tr Common.Show}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding SectionFiles}"/>
-                        <ToggleButton Content="Hidden"
+                        <ToggleButton Content="{loc:Tr Common.Hidden}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -373,19 +392,19 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Search, Sort and Filters" />
-                        <TextBlock Classes="desc" Text="Show the search / sort / filters section." />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SectionVis.Search}" />
+                        <TextBlock Classes="desc" Text="{loc:Tr Settings.SectionVis.Search.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Show"
+                        <ToggleButton Content="{loc:Tr Common.Show}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding SectionSearch}"/>
-                        <ToggleButton Content="Hidden"
+                        <ToggleButton Content="{loc:Tr Common.Hidden}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -395,19 +414,19 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Events" />
-                        <TextBlock Classes="desc" Text="Show the events list section." />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SectionVis.Events}" />
+                        <TextBlock Classes="desc" Text="{loc:Tr Settings.SectionVis.Events.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Show"
+                        <ToggleButton Content="{loc:Tr Common.Show}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding SectionEvents}"/>
-                        <ToggleButton Content="Hidden"
+                        <ToggleButton Content="{loc:Tr Common.Hidden}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -417,19 +436,19 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Statistics" />
-                        <TextBlock Classes="desc" Text="Show the statistics section." />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SectionVis.Statistics}" />
+                        <TextBlock Classes="desc" Text="{loc:Tr Settings.SectionVis.Statistics.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Show"
+                        <ToggleButton Content="{loc:Tr Common.Show}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding SectionStatistics}"/>
-                        <ToggleButton Content="Hidden"
+                        <ToggleButton Content="{loc:Tr Common.Hidden}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -439,19 +458,19 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Classes="label">
-                        <TextBlock Classes="title" Text="Logs" />
-                        <TextBlock Classes="desc" Text="Show the logs section." />
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.SectionVis.Logs}" />
+                        <TextBlock Classes="desc" Text="{loc:Tr Settings.SectionVis.Logs.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <ToggleButton Content="Show"
+                        <ToggleButton Content="{loc:Tr Common.Show}"
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
                                       IsChecked="{Binding SectionLogs}"/>
-                        <ToggleButton Content="Hidden"
+                        <ToggleButton Content="{loc:Tr Common.Hidden}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
@@ -477,26 +496,26 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
-                    
+
                     <Button Grid.Column="0"
                             Classes="normal"
                             Command="{Binding ResetToDefaultsCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <Svg Width="20" Height="20" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFill}" />
-                            <TextBlock Text="Reset to defaults" />
+                            <TextBlock Text="{loc:Tr Settings.ResetDefaults}" />
                         </StackPanel>
                     </Button>
-                    
+
 
                     <Button Grid.Column="2"
                             Height="40"
                             Classes="focused"
                             Command="{Binding SaveCommand}" >
-                        
+
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <Svg Path="{DynamicResource SaveIcon}"
                                  Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
-                            <TextBlock Text="Save" />
+                            <TextBlock Text="{loc:Tr Common.Save}" />
                         </StackPanel>
                     </Button>
 
@@ -507,7 +526,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <Svg Path="{DynamicResource ClearIcon}"
                                  Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
-                            <TextBlock Text="Cancel" />
+                            <TextBlock Text="{loc:Tr Common.Cancel}" />
                         </StackPanel>
                     </Button>
                 </Grid>

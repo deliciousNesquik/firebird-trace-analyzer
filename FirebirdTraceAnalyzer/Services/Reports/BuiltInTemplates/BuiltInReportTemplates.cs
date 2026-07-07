@@ -1,4 +1,5 @@
 ﻿using FirebirdTraceAnalyzer.Enums.Reports;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Enums;
 
@@ -32,8 +33,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_top5_statements",
-            Name = "Top 5 Slowest Statements",
-            Description = "Report showing the 5 slowest SQL statements",
+            Name = Loc.Tr("Report.BuiltIn.Top5Statements.Name"),
+            Description = Loc.Tr("Report.BuiltIn.Top5Statements.Description"),
             Author = "System",
             IsBuiltIn = true,
             
@@ -222,8 +223,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_top10_procedures",
-            Name = "Top 10 Slowest Procedures",
-            Description = "Report showing the 10 slowest stored procedures",
+            Name = Loc.Tr("Report.BuiltIn.Top10Procedures.Name"),
+            Description = Loc.Tr("Report.BuiltIn.Top10Procedures.Description"),
             Author = "System",
             IsBuiltIn = true,
             
@@ -394,8 +395,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_error_report",
-            Name = "First 10 Errors",
-            Description = "First 10 errors occurred during trace",
+            Name = Loc.Tr("Report.BuiltIn.FirstErrors.Name"),
+            Description = Loc.Tr("Report.BuiltIn.FirstErrors.Description"),
             Author = "System",
             IsBuiltIn = true,
             
@@ -517,8 +518,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_errors_by_user",
-            Name = "Errors by User",
-            Description = "Number of errors grouped by user",
+            Name = Loc.Tr("Report.BuiltIn.ErrorsByUser.Name"),
+            Description = Loc.Tr("Report.BuiltIn.ErrorsByUser.Description"),
             Author = "System",
             IsBuiltIn = true,
 
@@ -638,8 +639,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_sql_sum_execute_time",
-            Name = "SQL by Total Execution Time",
-            Description = "Total execution time grouped by SQL statement",
+            Name = Loc.Tr("Report.BuiltIn.SqlSumExecuteTime.Name"),
+            Description = Loc.Tr("Report.BuiltIn.SqlSumExecuteTime.Description"),
             Author = "System",
             IsBuiltIn = true,
 
@@ -748,8 +749,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_procedure_sum_execute_time",
-            Name = "Procedures by Total Execution Time",
-            Description = "Total execution time grouped by stored procedure",
+            Name = Loc.Tr("Report.BuiltIn.ProcedureSumExecuteTime.Name"),
+            Description = Loc.Tr("Report.BuiltIn.ProcedureSumExecuteTime.Description"),
             Author = "System",
             IsBuiltIn = true,
 
@@ -858,8 +859,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_sql_call_count",
-            Name = "SQL by Call Count",
-            Description = "Number of calls grouped by SQL statement",
+            Name = Loc.Tr("Report.BuiltIn.SqlCallCount.Name"),
+            Description = Loc.Tr("Report.BuiltIn.SqlCallCount.Description"),
             Author = "System",
             IsBuiltIn = true,
 
@@ -967,8 +968,8 @@ public static class BuiltInReportTemplates
         return new ReportTemplate
         {
             Id = "builtin_procedure_call_count",
-            Name = "Procedures by Call Count",
-            Description = "Number of calls grouped by stored procedure",
+            Name = Loc.Tr("Report.BuiltIn.ProcedureCallCount.Name"),
+            Description = Loc.Tr("Report.BuiltIn.ProcedureCallCount.Description"),
             Author = "System",
             IsBuiltIn = true,
 

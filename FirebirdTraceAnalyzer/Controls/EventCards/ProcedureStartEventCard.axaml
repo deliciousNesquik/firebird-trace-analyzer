@@ -1,5 +1,6 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         xmlns:events="using:FirebirdTraceAnalyzer.Controls.EventCards"
         xmlns:models="clr-namespace:FirebirdTraceParser.Models.ValueObjects;assembly=FirebirdTraceParser"
         xmlns:controls="using:FirebirdTraceAnalyzer.Controls">
@@ -45,7 +46,7 @@
                                     CornerRadius="5"
                                     Padding="16, 8, 16, 12">
 
-                                <TextBlock Text="PROCEDURE START"
+                                <TextBlock Text="{loc:Tr EventCard.Type.ProcedureStart}"
                                            Foreground="{DynamicResource TextOnAccentBrush}"
                                            FontWeight="Bold"
                                            FontSize="16" />
@@ -68,11 +69,11 @@
                                   ColumnSpacing="30">
                                 <StackPanel Grid.Column="0" Spacing="4">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="TRACE ID"
+                                        <TextBlock Text="{loc:Tr EventCard.TraceId}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
-                                            Text="Unique identifier of trace event thread/session inside Firebird trace engine."/>
+                                            Text="{loc:Tr EventCard.Info.TraceId}"/>
                                     </StackPanel>
                                     <TextBlock Text="{TemplateBinding TraceId}"
                                                FontWeight="Bold"
@@ -83,11 +84,11 @@
                                             Spacing="4">
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="HEX"
+                                        <TextBlock Text="{loc:Tr EventCard.Hex}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
-                                            Text="Unique thread/session identifier in the hex tracing event system within the Firebird tracing mechanism."/>
+                                            Text="{loc:Tr EventCard.Info.Hex}"/>
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding HexTraceId}"
@@ -99,11 +100,11 @@
                                             Spacing="4">
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="TRANSACTION ID"
+                                        <TextBlock Text="{loc:Tr EventCard.TransactionId}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
-                                            Text="Identifies a database transaction that groups multiple SQL statements into a single unit of work."/>
+                                            Text="{loc:Tr EventCard.Info.TransactionId}"/>
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding TransactionId}"
@@ -115,11 +116,11 @@
                                             Spacing="4">
                                     
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="ATTACHMENT ID"
+                                        <TextBlock Text="{loc:Tr EventCard.AttachmentId}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                         <controls:InfoTip
-                                            Text="Identifies a client connection/session to the database. One attachment can contain multiple transactions and statements."/>
+                                            Text="{loc:Tr EventCard.Info.AttachmentId}"/>
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding AttachmentId}"
@@ -198,10 +199,10 @@
                                     HorizontalAlignment="Right"
                                     Height="30"
                                     Padding="12,0"
-                                    ToolTip.Tip="Open event inspector">
+                                    ToolTip.Tip="{loc:Tr EventCard.OpenInspectorTooltip}">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Svg Width="18" Height="18" Path="{DynamicResource HistoryIcon}" Css="{DynamicResource ThemeIconFillAndStrokeOnlyWhite}" />
-                                    <TextBlock Text="Inspect" VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Tr EventCard.Inspect}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </Border>

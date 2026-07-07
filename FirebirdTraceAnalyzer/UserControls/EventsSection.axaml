@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="450"
              x:Class="FirebirdTraceAnalyzer.UserControls.EventsSection"
              x:DataType="vm:MainWindowViewModel">
@@ -21,7 +22,7 @@
                         <ContentControl Content="{Binding}">
                             <ContentControl.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Open event inspector"
+                                    <MenuItem Header="{loc:Tr Events.OpenInspector}"
                                               Click="OnOpenInspectorClick" />
                                 </ContextMenu>
                             </ContentControl.ContextMenu>
@@ -43,14 +44,14 @@
                 MaxWidth="400">
 
                 <TextBlock
-                    Text="No data"
+                    Text="{loc:Tr Events.NoData}"
                     FontSize="16"
                     FontWeight="SemiBold"
                     HorizontalAlignment="Center"
                     Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <TextBlock
-                    Text="After processing the file(s), the data will appear here."
+                    Text="{loc:Tr Events.NoDataHint}"
                     FontSize="12"
                     TextAlignment="Center"
                     TextWrapping="Wrap"

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="600"
@@ -23,31 +24,31 @@
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                    <TextBlock Text="Plugins" FontSize="16" FontWeight="SemiBold"
+                    <TextBlock Text="{loc:Tr Plugins.Title}" FontSize="16" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="Installed sort/filter plugins" FontSize="11"
+                    <TextBlock Text="{loc:Tr Plugins.Subtitle}" FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button Classes="focused" Height="40" Padding="12,0"
                             Command="{Binding InstallCommand}"
-                            ToolTip.Tip="Install a plugin from a .dll or .zip archive">
+                            ToolTip.Tip="{loc:Tr Plugins.InstallTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <Svg Width="20" Height="20" Path="{DynamicResource AddIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
-                            <TextBlock Text="Install" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Tr Plugins.Install}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button Classes="normal" Height="40" Padding="12,0"
                             Command="{Binding OpenPluginsFolderCommand}"
-                            ToolTip.Tip="Open the plugins folder">
+                            ToolTip.Tip="{loc:Tr Plugins.OpenFolderTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <Svg Width="20" Height="20" Path="{DynamicResource FolderIcon}" Css="{DynamicResource ThemeIconStroke}" />
-                            <TextBlock Text="Open folder" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Tr Plugins.OpenFolder}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button Classes="danger" Height="40" Padding="14,0"
-                            Content="Close" Command="{Binding CloseCommand}" />
+                            Content="{loc:Tr Plugins.Close}" Command="{Binding CloseCommand}" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -59,7 +60,7 @@
                 BorderThickness="0,0,0,1"
                 Padding="16,10"
                 IsVisible="{Binding RestartNeeded}">
-            <TextBlock Text="Changes apply after restarting the application."
+            <TextBlock Text="{loc:Tr Plugins.RestartNote}"
                        FontSize="12" Foreground="{DynamicResource WarningTextBrush}" />
         </Border>
 
@@ -71,18 +72,18 @@
                 Padding="16,10">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <Button Classes="danger" Height="34" Padding="12,0"
-                        Content="Problem plug (Collision)"
+                        Content="{loc:Tr Plugins.ProblemPlug}"
                         Command="{Binding ToggleCollisionsCommand}"
                         IsEnabled="{Binding HasCollisions}"
-                        ToolTip.Tip="Show plugins that share the same Id, grouped in pairs, so you can pick which one to keep" />
+                        ToolTip.Tip="{loc:Tr Plugins.CollisionTooltip}" />
                 <TextBlock VerticalAlignment="Center" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            IsVisible="{Binding ShowCollisions}"
-                           Text="Pick which plugin to keep for each Id, or leave as-is. Click the button again to show all plugins." />
+                           Text="{loc:Tr Plugins.CollisionHint}" />
                 <TextBlock VerticalAlignment="Center" FontSize="11"
                            Foreground="{DynamicResource TextMutedBrush}"
                            IsVisible="{Binding !HasCollisions}"
-                           Text="No Id collisions detected." />
+                           Text="{loc:Tr Plugins.NoCollisions}" />
             </StackPanel>
         </Border>
 
@@ -107,7 +108,7 @@
                                           VerticalAlignment="Center"
                                           IsChecked="{Binding IsEnabled}"
                                           IsEnabled="{Binding !IsLoadError}"
-                                          ToolTip.Tip="Enable / disable this plugin (applies after restart)" />
+                                          ToolTip.Tip="{loc:Tr Plugins.EnableTooltip}" />
 
                                 <!-- Metadata -->
                                 <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
@@ -115,20 +116,20 @@
                                                TextTrimming="CharacterEllipsis" />
                                     <StackPanel Orientation="Horizontal" Spacing="16">
                                         <TextBlock FontSize="11">
-                                            <Run Text="AUTHOR:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{loc:Tr Plugins.LabelAuthor}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
                                             <Run Text="{Binding Author}" Foreground="{DynamicResource TextSecondaryBrush}" />
                                         </TextBlock>
                                         <TextBlock FontSize="11">
-                                            <Run Text="VERSION:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{loc:Tr Plugins.LabelVersion}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
                                             <Run Text="{Binding Version}" Foreground="{DynamicResource TextSecondaryBrush}" />
                                         </TextBlock>
                                         <TextBlock FontSize="11">
-                                            <Run Text="PROVIDES:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                            <Run Text="{loc:Tr Plugins.LabelProvides}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
                                             <Run Text="{Binding KindText}" Foreground="{DynamicResource TextSecondaryBrush}" />
                                         </TextBlock>
                                     </StackPanel>
                                     <TextBlock FontSize="11">
-                                        <Run Text="Id:" Foreground="{DynamicResource TextMutedBrush}" />
+                                        <Run Text="{loc:Tr Plugins.LabelId}" Foreground="{DynamicResource TextMutedBrush}" />
                                         <Run Text="{Binding Id}" Foreground="{DynamicResource TextMutedBrush}" />
                                         <Run Text="  ·  " Foreground="{DynamicResource TextMutedBrush}" />
                                         <Run Text="{Binding DirectoryName}" Foreground="{DynamicResource TextMutedBrush}" />
@@ -146,13 +147,13 @@
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
                                             VerticalAlignment="Center">
                                     <Button Classes="normal" Height="36" Width="36" Padding="0"
-                                            ToolTip.Tip="Reveal the plugin DLL in the file manager"
+                                            ToolTip.Tip="{loc:Tr Plugins.RevealTooltip}"
                                             Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).RevealCommand}"
                                             CommandParameter="{Binding}">
                                         <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
                                     </Button>
                                     <Button Classes="danger" Height="36" Width="36" Padding="0"
-                                            ToolTip.Tip="Delete this plugin package (whole folder)"
+                                            ToolTip.Tip="{loc:Tr Plugins.DeleteTooltip}"
                                             Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).DeleteCommand}"
                                             CommandParameter="{Binding}">
                                         <Svg Width="18" Height="18" Path="{DynamicResource TrashIcon}" Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
@@ -168,13 +169,13 @@
         <!-- Empty state (пусто → коллизий нет, ShowCollisions принудительно false) -->
         <Border Grid.Row="3" Padding="40" IsVisible="{Binding !Plugins.Count}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="420">
-                <TextBlock Text="No plugins installed"
+                <TextBlock Text="{loc:Tr Plugins.EmptyTitle}"
                            FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Put a plugin DLL into a subfolder of the plugins folder and restart the app."
+                <TextBlock Text="{loc:Tr Plugins.EmptyHint}"
                            FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <Button Content="Open plugins folder" Classes="normal" HorizontalAlignment="Center"
+                <Button Content="{loc:Tr Plugins.OpenPluginsFolder}" Classes="normal" HorizontalAlignment="Center"
                         Margin="0,6,0,0" Command="{Binding OpenPluginsFolderCommand}" />
             </StackPanel>
         </Border>
@@ -195,7 +196,7 @@
                                 Margin="0,0,0,12">
                             <StackPanel Spacing="10">
                                 <TextBlock FontSize="12">
-                                    <Run Text="Id collision:" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                    <Run Text="{loc:Tr Plugins.IdCollision}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
                                     <Run Text="{Binding Id}" Foreground="{DynamicResource TextPrimaryBrush}" />
                                 </TextBlock>
 
@@ -210,7 +211,7 @@
                                                     <TextBlock FontSize="11">
                                                         <Run Text="v" Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <Run Text="{Binding Version}" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <Run Text="  ·  author:" Foreground="{DynamicResource TextMutedBrush}" />
+                                                        <Run Text="{loc:Tr Plugins.AuthorInline}" Foreground="{DynamicResource TextMutedBrush}" />
                                                         <Run Text="{Binding Author}" Foreground="{DynamicResource TextMutedBrush}" />
                                                         <Run Text="  ·  " Foreground="{DynamicResource TextMutedBrush}" />
                                                         <Run Text="{Binding DirectoryName}" Foreground="{DynamicResource TextMutedBrush}" />

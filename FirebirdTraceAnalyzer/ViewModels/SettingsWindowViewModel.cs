@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
 using NLog;
@@ -23,6 +24,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private readonly ISettingsService _settingsService;
     private readonly IWindowProvider _windowProvider;
     private readonly IThemeService _themeService;
+    private readonly ILocalizationService _localizationService;
     private readonly IFileDialogService? _fileDialogService;
 
     #region General
@@ -37,6 +39,12 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     [ObservableProperty] private AppTheme _theme = AppTheme.Auto;
 
     public IReadOnlyList<AppTheme> AvailableThemes { get; } = Enum.GetValues<AppTheme>();
+
+    /// <summary>Выбранный язык интерфейса (элемент из <see cref="AvailableLanguages"/>).</summary>
+    [ObservableProperty] private LanguageOption? _selectedLanguage;
+
+    /// <summary>Доступные языки (из манифеста переводов).</summary>
+    public IReadOnlyList<LanguageOption> AvailableLanguages { get; }
 
     #endregion
 
@@ -84,19 +92,25 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         _settingsService = null!;
         _windowProvider = null!;
         _themeService = null!;
+        _localizationService = null!;
         _fileDialogService = null;
+        AvailableLanguages = new[] { new LanguageOption("en", "English") };
     }
 
     public SettingsWindowViewModel(
         ISettingsService settingsService,
         IWindowProvider windowProvider,
         IThemeService themeService,
+        ILocalizationService localizationService,
         IFileDialogService fileDialogService)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+
+        AvailableLanguages = _localizationService.AvailableLanguages;
 
         LoadFrom(_settingsService.App, _settingsService.Ui);
     }
@@ -116,6 +130,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         app.IsClassicSearch = IsClassicSearch;
         app.AllowConcurrentProcessing = AllowConcurrentProcessing;
         app.Theme = Theme;
+        app.Language = SelectedLanguage?.Code ?? "en";
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
         app.ReportsPath = ReportsPath?.Trim() ?? string.Empty;
         app.AppLogPath = AppLogPath?.Trim() ?? string.Empty;
@@ -130,8 +145,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
         _settingsService.Save();
 
-        // Применяем тему сразу, чтобы изменение вступило в силу без перезапуска.
+        // Применяем тему и язык сразу, чтобы изменения вступили в силу без перезапуска.
         _themeService.Apply(Theme);
+        _localizationService.SetLanguage(app.Language);
 
         // Применяем пути логов: File-таргеты NLog переключатся на новый путь со следующей записи.
         LogConfiguration.Apply(app.AppLogPath, app.ParserLogPath);
@@ -148,7 +164,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     {
         var defaults = _settingsService.GetDefaults();
         LoadFrom(defaults.App, defaults.Ui);
-        StatusMessage = "Restored factory defaults. Press Save to apply.";
+        StatusMessage = Loc.Tr("Status.Settings.RestoredDefaults");
     }
 
     [RelayCommand]
@@ -162,12 +178,12 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         {
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "Export Settings",
+                Title = Loc.Tr("FileDialog.ExportSettings"),
                 SuggestedFileName = "firebird-trace-settings.json",
                 DefaultExtension = "json",
                 FileTypeChoices = new[]
                 {
-                    new FilePickerFileType("Settings file") { Patterns = new[] { "*.json" } }
+                    new FilePickerFileType(Loc.Tr("FileDialog.SettingsFileType")) { Patterns = new[] { "*.json" } }
                 }
             });
 
@@ -175,12 +191,12 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             await _settingsService.ExportAsync(file.Path.LocalPath, BuildWorkingSettings());
-            StatusMessage = $"Exported to {file.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.ExportedTo"), file.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting settings");
-            StatusMessage = $"Export failed: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.ExportFailed"), ex.Message);
         }
     }
 
@@ -195,11 +211,11 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         {
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Import Settings",
+                Title = Loc.Tr("FileDialog.ImportSettings"),
                 AllowMultiple = false,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("Settings file") { Patterns = new[] { "*.json" } }
+                    new FilePickerFileType(Loc.Tr("FileDialog.SettingsFileType")) { Patterns = new[] { "*.json" } }
                 }
             });
 
@@ -208,33 +224,33 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
             var imported = await _settingsService.ReadFromFileAsync(files[0].Path.LocalPath);
             LoadFrom(imported.App, imported.Ui);
-            StatusMessage = "Settings imported. Review and press Save to apply.";
+            StatusMessage = Loc.Tr("Status.Settings.SettingsImported");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error importing settings");
-            StatusMessage = $"Import failed: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
         }
     }
 
     [RelayCommand]
     private Task BrowseDownloadPathAsync() => PickFolderIntoAsync(
-        "Select Download Folder",
+        Loc.Tr("FileDialog.SelectDownloadFolder"),
         path => RemoteDownloadPath = path);
 
     [RelayCommand]
     private Task BrowseReportsPathAsync() => PickFolderIntoAsync(
-        "Select Reports Folder",
+        Loc.Tr("FileDialog.SelectReportsFolder"),
         path => ReportsPath = path);
 
     [RelayCommand]
     private Task BrowseAppLogPathAsync() => PickFolderIntoAsync(
-        "Select Application Log Folder",
+        Loc.Tr("FileDialog.SelectAppLogFolder"),
         folder => AppLogPath = Path.Combine(folder, "application.log"));
 
     [RelayCommand]
     private Task BrowseParserLogPathAsync() => PickFolderIntoAsync(
-        "Select Parser Log Folder",
+        Loc.Tr("FileDialog.SelectParserLogFolder"),
         folder => ParserLogPath = Path.Combine(folder, "parser.log"));
 
     [RelayCommand]
@@ -263,11 +279,11 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         {
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Import rules.json",
+                Title = Loc.Tr("FileDialog.ImportRules"),
                 AllowMultiple = false,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("Rules file") { Patterns = new[] { "*.json" } }
+                    new FilePickerFileType(Loc.Tr("FileDialog.RulesFileType")) { Patterns = new[] { "*.json" } }
                 }
             });
 
@@ -275,12 +291,12 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             RulesConfiguration.ImportRules(files[0].Path.LocalPath);
-            StatusMessage = "Rules imported. Restart the application to apply.";
+            StatusMessage = Loc.Tr("Status.Settings.RulesImported");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error importing rules");
-            StatusMessage = $"Import failed: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
         }
     }
 
@@ -291,15 +307,15 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
         var revealed = await _fileDialogService.RevealInFileManagerAsync(filePath);
         if (!revealed)
-            StatusMessage = "File does not exist yet";
+            StatusMessage = Loc.Tr("Status.Settings.FileNotExistYet");
     }
 
     private void ClearLogs(string logFile, string kind)
     {
         var deleted = LogConfiguration.ClearLogs(logFile);
         StatusMessage = deleted > 0
-            ? $"Cleared {deleted} {kind} log file(s)"
-            : $"No {kind} log files to clear";
+            ? string.Format(Loc.Tr("Status.Settings.ClearedLogs"), deleted, kind)
+            : string.Format(Loc.Tr("Status.Settings.NoLogsToClear"), kind);
         Logger.Info("Cleared {Count} {Kind} log file(s)", deleted, kind);
     }
 
@@ -323,7 +339,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error selecting folder");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.Error"), ex.Message);
         }
     }
 
@@ -340,6 +356,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         IsClassicSearch = app.IsClassicSearch;
         AllowConcurrentProcessing = app.AllowConcurrentProcessing;
         Theme = app.Theme;
+        var code = string.IsNullOrWhiteSpace(app.Language) ? "en" : app.Language;
+        SelectedLanguage = AvailableLanguages.FirstOrDefault(l => string.Equals(l.Code, code, StringComparison.OrdinalIgnoreCase))
+                           ?? AvailableLanguages.FirstOrDefault();
         RemoteDownloadPath = app.RemoteDownloadPath;
         ReportsPath = app.ReportsPath;
         AppLogPath = app.AppLogPath;
@@ -359,6 +378,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
             IsClassicSearch = IsClassicSearch,
             AllowConcurrentProcessing = AllowConcurrentProcessing,
             Theme = Theme,
+            Language = SelectedLanguage?.Code ?? "en",
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
             ReportsPath = ReportsPath?.Trim() ?? string.Empty,
             AppLogPath = AppLogPath?.Trim() ?? string.Empty,

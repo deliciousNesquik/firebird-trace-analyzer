@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using FirebirdTraceAnalyzer;
 using FirebirdTraceAnalyzer.Interfaces;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.ViewModels;
 using FirebirdTraceAnalyzer.Views;
@@ -24,9 +25,10 @@ public partial class App : Application
         // Configure services HERE
         Services = Program.ConfigureServices();
 
-        // Применяем сохранённую тему до создания окна (Auto = следовать ОС)
+        // Применяем сохранённую тему и язык до создания окна (Auto = следовать ОС).
         var settings = Services.GetRequiredService<ISettingsService>();
         Services.GetRequiredService<IThemeService>().Apply(settings.App.Theme);
+        Services.GetRequiredService<ILocalizationService>().SetLanguage(settings.App.Language);
 
         // Применяем пользовательские пути логов (если заданы) — File-таргеты подхватят на следующей записи
         LogConfiguration.Apply(settings.App.AppLogPath, settings.App.ParserLogPath);

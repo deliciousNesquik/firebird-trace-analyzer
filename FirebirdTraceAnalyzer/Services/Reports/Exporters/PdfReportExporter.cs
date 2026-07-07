@@ -1,6 +1,7 @@
 ﻿using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Events;
 using NLog;
@@ -99,7 +100,7 @@ public class PdfReportExporter : IReportExporter
             // Дата генерации
             if (template.Header.ShowGeneratedDate)
             {
-                column.Item().AlignRight().Text($"Generated: {metadata.GeneratedAt.ToString(template.Header.DateFormat)}")
+                column.Item().AlignRight().Text(string.Format(Loc.Tr("Report.Export.Generated"), metadata.GeneratedAt.ToString(template.Header.DateFormat)))
                     .FontSize(9)
                     .FontColor(Colors.Grey.Darken1);
             }
@@ -241,19 +242,19 @@ public class PdfReportExporter : IReportExporter
 
             column.Item().Row(row =>
             {
-                row.RelativeItem().Text("Total Files:").Bold();
+                row.RelativeItem().Text(Loc.Tr("Report.Export.TotalFiles")).Bold();
                 row.RelativeItem().Text(metadata.Files.Count.ToString());
             });
 
             column.Item().Row(row =>
             {
-                row.RelativeItem().Text("Total Events (before filters):").Bold();
+                row.RelativeItem().Text(Loc.Tr("Report.Export.TotalEventsBeforeFilters")).Bold();
                 row.RelativeItem().Text(metadata.TotalEventsCount.ToString("N0"));
             });
 
             column.Item().Row(row =>
             {
-                row.RelativeItem().Text("Events in Report:").Bold();
+                row.RelativeItem().Text(Loc.Tr("Report.Export.EventsInReport")).Bold();
                 row.RelativeItem().Text(metadata.Events.Count.ToString("N0"));
             });
 
@@ -261,7 +262,7 @@ public class PdfReportExporter : IReportExporter
             {
                 column.Item().Row(row =>
                 {
-                    row.RelativeItem().Text("Active Filters:").Bold();
+                    row.RelativeItem().Text(Loc.Tr("Report.Export.ActiveFilters")).Bold();
                     row.RelativeItem().Text(metadata.ActiveFilters);
                 });
             }
@@ -270,7 +271,7 @@ public class PdfReportExporter : IReportExporter
             {
                 column.Item().Row(row =>
                 {
-                    row.RelativeItem().Text("Active Sort:").Bold();
+                    row.RelativeItem().Text(Loc.Tr("Report.Export.ActiveSort")).Bold();
                     row.RelativeItem().Text(metadata.ActiveSort);
                 });
             }
@@ -302,9 +303,9 @@ public class PdfReportExporter : IReportExporter
                         {
                             // Задаем базовый стиль для всего текстового блока внутри
                             text.DefaultTextStyle(x => x.FontSize(8).FontColor(Colors.Grey.Darken1));
-                            text.Span("Page ");
+                            text.Span(Loc.Tr("Report.Export.Page"));
                             text.CurrentPageNumber();
-                            text.Span(" of ");
+                            text.Span(Loc.Tr("Report.Export.PageOf"));
                             text.TotalPages();
                         });
                 }

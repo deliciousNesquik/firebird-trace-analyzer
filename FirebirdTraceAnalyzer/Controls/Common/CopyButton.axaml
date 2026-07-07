@@ -1,6 +1,7 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:FirebirdTraceAnalyzer.Controls">
+        xmlns:controls="using:FirebirdTraceAnalyzer.Controls"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization">
     <Design.PreviewWith>
         <StackPanel Margin="100" Spacing="10" Orientation="Horizontal">
             <controls:CopyButton />    
@@ -47,8 +48,8 @@
                                   IsVisible="False" />
                         </Panel>
                         
-                        <TextBlock Name="PART_Text" 
-                                   Text="Copied!" 
+                        <TextBlock Name="PART_Text"
+                                   Text="{loc:Tr CopyButton.Copied}"
                                    Opacity="0"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"

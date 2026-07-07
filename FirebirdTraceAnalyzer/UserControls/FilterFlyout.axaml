@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="500"
              x:Class="FirebirdTraceAnalyzer.UserControls.FilterFlyout"
              x:DataType="vm:MainWindowViewModel">
@@ -10,7 +11,7 @@
     <Grid RowDefinitions="Auto, *, Auto" MaxHeight="600" Width="380">
 
         <Border Grid.Row="0" Padding="16,20,16,20">
-            <TextBlock Text="Filter by"
+            <TextBlock Text="{loc:Tr Filter.Title}"
                        FontWeight="SemiBold"
                        FontSize="16" />
         </Border>
@@ -48,7 +49,7 @@
                                                         Margin="28,8,0,0">
 
                                                 <TextBox
-                                                    PlaceholderText="Type to find filter..."
+                                                    PlaceholderText="{loc:Tr Filter.SearchPlaceholder}"
                                                     Text="{Binding ValueSearchText, Mode=TwoWay}"
                                                     IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"
                                                     Margin="0,0,0,12" />
@@ -80,7 +81,7 @@
                                                                             Foreground="{DynamicResource TextSecondaryBrush}"
                                                                             FontSize="11" />
                                                                         <TextBlock
-                                                                            Text="excluded"
+                                                                            Text="{loc:Tr Filter.Excluded}"
                                                                             FontSize="10"
                                                                             VerticalAlignment="Center"
                                                                             Foreground="{DynamicResource ErrorTextBrush}"
@@ -101,13 +102,13 @@
                                                             Margin="0,4,0,0"
                                                             IsVisible="{Binding MinValue, Converter={x:Static ObjectConverters.IsNotNull}}">
                                                     
-                                                    <TextBlock Text="Range:"
+                                                    <TextBlock Text="{loc:Tr Filter.Range}"
                                                                FontSize="11"
                                                                Foreground="{DynamicResource TextSecondaryBrush}" />
 
                                                     <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
                                                         <TextBlock Grid.Column="0"
-                                                                   Text="From:"
+                                                                   Text="{loc:Tr Filter.From}"
                                                                    VerticalAlignment="Center"
                                                                    FontSize="11" />
                                                         <TextBox Grid.Column="1"
@@ -116,7 +117,7 @@
                                                                  Text="{Binding CurrentMinValue, Mode=TwoWay}" />
 
                                                         <TextBlock Grid.Column="2"
-                                                                   Text="To:"
+                                                                   Text="{loc:Tr Filter.To}"
                                                                    VerticalAlignment="Center"
                                                                    FontSize="11" />
                                                         <TextBox Grid.Column="3"
@@ -127,9 +128,9 @@
 
                                                     <TextBlock FontSize="10"
                                                                Foreground="{DynamicResource TextSecondaryBrush}">
-                                                        <Run Text="Min:" />
+                                                        <Run Text="{loc:Tr Filter.Min}" />
                                                         <Run Text="{Binding MinValue}" />
-                                                        <Run Text=" | Max:" />
+                                                        <Run Text="{loc:Tr Filter.Max}" />
                                                         <Run Text="{Binding MaxValue}" />
                                                     </TextBlock>
                                                 </StackPanel>
@@ -152,7 +153,7 @@
                 Padding="16" 
                 IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.FiltersByCategory.Count}">
             
-            <TextBlock Text="No available filters" 
+            <TextBlock Text="{loc:Tr Filter.NoFilters}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" 
                        VerticalAlignment="Center"/>
@@ -165,15 +166,15 @@
             
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
                 <Button Grid.Column="0"
-                        Content="Apply"
+                        Content="{loc:Tr Filter.Apply}"
                         Classes="focused"
                         HorizontalContentAlignment="Center"
                         Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ApplyFiltersCommand}"
                         HorizontalAlignment="Stretch"
                         IsEnabled="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.HasUnappliedChanges}" />
                 
-                <Button Grid.Column="1" 
-                        Content="Reset All"
+                <Button Grid.Column="1"
+                        Content="{loc:Tr Filter.ResetAll}"
                         Classes="danger"
                         Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ResetAllFiltersCommand}" />
             </Grid>

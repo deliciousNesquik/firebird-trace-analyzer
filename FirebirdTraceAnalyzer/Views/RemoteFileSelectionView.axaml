@@ -3,6 +3,7 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="FirebirdTraceAnalyzer.Views.RemoteFileSelectionView"
              x:DataType="vm:RemoteFileSelectionViewModel"
@@ -23,18 +24,18 @@
                 BorderThickness="0,0,0,1">
 
             <StackPanel Spacing="4">
-                <TextBlock Text="Select Files for Download"
+                <TextBlock Text="{loc:Tr Remote.Files.Title}"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                    <Run Text="Server:" />
+                    <Run Text="{loc:Tr Remote.Files.ServerLabel}" />
                     <Run Text="{Binding ServerInfo}" FontWeight="Medium" />
                 </TextBlock>
 
                 <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                    <Run Text="Directory:" />
+                    <Run Text="{loc:Tr Remote.Files.DirectoryLabel}" />
                     <Run Text="{Binding RemoteDirectory}" FontWeight="Medium" />
                 </TextBlock>
             </StackPanel>
@@ -52,7 +53,7 @@
                 <!-- Search -->
                 <TextBox Grid.Column="0"
                          Text="{Binding SearchText}"
-                         PlaceholderText="Search files..."
+                         PlaceholderText="{loc:Tr Remote.Files.SearchPlaceholder}"
                          VerticalContentAlignment="Center">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Enter" Command="{Binding ApplySearchCommand}" />
@@ -65,7 +66,7 @@
                         Command="{Binding ClearSearchCommand}"
                         IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                         Height="40" Width="40"
-                        ToolTip.Tip="Clear search" >
+                        ToolTip.Tip="{loc:Tr Remote.Files.ClearSearch}" >
                     <Button.Content>
                         <Svg Width="40" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                     </Button.Content>
@@ -79,12 +80,12 @@
                     </Button.Content>
                     <Button.Flyout>
                         <MenuFlyout Placement="Bottom">
-                            <MenuItem Header="Today" Command="{Binding FilterByDateCommand}" CommandParameter="today" />
-                            <MenuItem Header="Yesterday" Command="{Binding FilterByDateCommand}" CommandParameter="yesterday" />
-                            <MenuItem Header="Last 7 days" Command="{Binding FilterByDateCommand}" CommandParameter="week" />
-                            <MenuItem Header="Last 30 days" Command="{Binding FilterByDateCommand}" CommandParameter="month" />
+                            <MenuItem Header="{loc:Tr Remote.Files.Filter.Today}" Command="{Binding FilterByDateCommand}" CommandParameter="today" />
+                            <MenuItem Header="{loc:Tr Remote.Files.Filter.Yesterday}" Command="{Binding FilterByDateCommand}" CommandParameter="yesterday" />
+                            <MenuItem Header="{loc:Tr Remote.Files.Filter.Last7Days}" Command="{Binding FilterByDateCommand}" CommandParameter="week" />
+                            <MenuItem Header="{loc:Tr Remote.Files.Filter.Last30Days}" Command="{Binding FilterByDateCommand}" CommandParameter="month" />
                             <Separator />
-                            <MenuItem Header="All files" Command="{Binding ClearSearchCommand}" />
+                            <MenuItem Header="{loc:Tr Remote.Files.Filter.AllFiles}" Command="{Binding ClearSearchCommand}" />
                         </MenuFlyout>
                     </Button.Flyout>
 
@@ -95,7 +96,7 @@
                         Classes="normal"
                         Height="40" Width="40"
                         Command="{Binding RefreshCommand}"
-                        ToolTip.Tip="Refresh file list" >
+                        ToolTip.Tip="{loc:Tr Remote.Files.RefreshList}" >
                     <Button.Content>
                         <Svg Width="40" Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFill}" />
                     </Button.Content>
@@ -120,10 +121,10 @@
                         Margin="0,0,0,12"
                         IsVisible="{Binding DeleteAfterProcessing}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Delete from server is enabled"
+                        <TextBlock Text="{loc:Tr Remote.Files.DeleteWarning.Title}"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource WarningTextBrush}" />
-                        <TextBlock Text="Downloaded files will be permanently removed from the server after processing. To turn this off, uncheck “Delete files from the server” in the connection dialog."
+                        <TextBlock Text="{loc:Tr Remote.Files.DeleteWarning.Body}"
                                    TextWrapping="Wrap"
                                    FontSize="11"
                                    Foreground="{DynamicResource WarningTextBrush}" />
@@ -133,12 +134,12 @@
                 <!-- Selection Controls -->
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5" Margin="0,0,0,12">
                     <Button Grid.Column="0"
-                            Content="Select All"
+                            Content="{loc:Tr Remote.Files.SelectAll}"
                             Classes="focused"
                             Command="{Binding SelectAllCommand}"/>
 
                     <Button Grid.Column="1"
-                            Content="Deselect All"
+                            Content="{loc:Tr Remote.Files.DeselectAll}"
                             Classes="danger"
                             Command="{Binding DeselectAllCommand}"/>
                 </Grid>
@@ -172,7 +173,7 @@
                                                        FontSize="13" />
 
                                             <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                                                <Run Text="Modified:" />
+                                                <Run Text="{loc:Tr Remote.Files.Modified}" />
                                                 <Run Text="{Binding FormattedDate}" />
                                                 <Run Text=" • " />
                                                 <Run Text="{Binding FormattedSize}" />
@@ -238,14 +239,14 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                            <TextBlock Text="Selected"
+                            <TextBlock Text="{loc:Tr Remote.Files.Selected}"
                                        FontSize="10"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}">
                                 <Run Text="{Binding SelectedCount}" />
-                                <Run Text="file(s)" />
+                                <Run Text="{loc:Tr Remote.Files.FilesUnit}" />
                             </TextBlock>
                         </StackPanel>
 
@@ -255,7 +256,7 @@
                                 Margin="0,2" />
 
                         <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="1">
-                            <TextBlock Text="Total size"
+                            <TextBlock Text="{loc:Tr Remote.Files.TotalSize}"
                                        FontSize="10"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock FontSize="16"
@@ -270,13 +271,13 @@
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
 
                     <Button Grid.Column="1"
-                            Content="Download and Process"
+                            Content="{loc:Tr Remote.Files.DownloadAndProcess}"
                             Classes="focused"
                             MinWidth="190"
                             Command="{Binding ConfirmCommand}"/>
 
                     <Button Grid.Column="2"
-                            Content="Cancel"
+                            Content="{loc:Tr Remote.Files.Cancel}"
                             Classes="danger"
                             Command="{Binding CancelCommand}"/>
                 </Grid>

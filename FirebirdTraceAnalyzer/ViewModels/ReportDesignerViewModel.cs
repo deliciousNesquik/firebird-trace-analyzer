@@ -10,6 +10,7 @@ using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;
@@ -149,7 +150,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     private bool _isLoading;
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    private string _statusMessage = Loc.Tr("Status.ReportDesigner.Ready");
 
     [ObservableProperty]
     private bool _hasUnsavedChanges;
@@ -265,7 +266,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         // Обновляем счётчики значений фильтров под отфильтрованный набор.
         FiltersPanel.UpdateFilterCounts(filtered);
 
-        StatusMessage = $"Filters applied: {filtered.Count} of {_sessionContext.SourceEvents.Count} events";
+        StatusMessage = string.Format(Loc.Tr("Status.ReportDesigner.FiltersApplied"), filtered.Count, _sessionContext.SourceEvents.Count);
 
         // Фильтры изменили выборку — перерисовываем превью.
         MarkPreviewDirty();
@@ -493,13 +494,13 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         try
         {
             IsLoading = true;
-            StatusMessage = "Loading template...";
+            StatusMessage = Loc.Tr("Status.ReportDesigner.LoadingTemplate");
 
             var template = await _templateService.GetTemplateByIdAsync(templateId);
 
             if (template == null)
             {
-                StatusMessage = "Template not found";
+                StatusMessage = Loc.Tr("Status.ReportDesigner.TemplateNotFound");
                 Logger.Error("Template not found: {TemplateId}", templateId);
                 return;
             }
@@ -628,13 +629,13 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             }
 
             HasUnsavedChanges = false;
-            StatusMessage = $"Template loaded: {template.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportDesigner.TemplateLoaded"), template.Name);
             Logger.Info("Template loaded for editing: {Name}", template.Name);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading template");
-            StatusMessage = $"Error loading template: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportDesigner.LoadError"), ex.Message);
         }
         finally
         {
@@ -651,18 +652,18 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         try
         {
             IsLoading = true;
-            StatusMessage = "Saving template...";
+            StatusMessage = Loc.Tr("Status.ReportDesigner.SavingTemplate");
 
             // Валидация
             if (string.IsNullOrWhiteSpace(TemplateName))
             {
-                StatusMessage = "Template name is required";
+                StatusMessage = Loc.Tr("Status.ReportDesigner.NameRequired");
                 return;
             }
 
             if (ReportColumns.Count == 0)
             {
-                StatusMessage = "Add at least one column";
+                StatusMessage = Loc.Tr("Status.ReportDesigner.AddColumn");
                 return;
             }
 
@@ -727,7 +728,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             await _templateService.SaveTemplateAsync(template);
 
             HasUnsavedChanges = false;
-            StatusMessage = $"Template saved: {template.Name}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportDesigner.TemplateSaved"), template.Name);
             Logger.Info("Template saved: {Name} ({Id})", template.Name, template.Id);
 
             // Уведомляем об успешном сохранении и закрываем диалог с результатом-шаблоном.
@@ -737,7 +738,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error saving template");
-            StatusMessage = $"Error saving template: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.ReportDesigner.SaveError"), ex.Message);
         }
         finally
         {
@@ -780,7 +781,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     {
         if (_sessionContext == null || _sessionContext.SourceEvents.Count == 0)
         {
-            StatusMessage = "Load trace files in the main window before preview";
+            StatusMessage = Loc.Tr("Status.ReportDesigner.LoadTraceFirst");
             return;
         }
 
@@ -797,8 +798,8 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             await Preview.InitializeAsync(template, metadata, cancellationToken);
 
             StatusMessage = preparedEvents.Count == 0
-                ? "No events match the current filters"
-                : $"Preview: {preparedEvents.Count:N0} of {_sessionContext.SourceEvents.Count:N0} events";
+                ? Loc.Tr("Status.ReportDesigner.NoEventsMatch")
+                : string.Format(Loc.Tr("Status.ReportDesigner.PreviewCount"), preparedEvents.Count, _sessionContext.SourceEvents.Count);
         }
         catch (OperationCanceledException)
         {
@@ -807,7 +808,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to refresh preview");
-            StatusMessage = "Preview failed";
+            StatusMessage = Loc.Tr("Status.ReportDesigner.PreviewFailed");
         }
     }
     

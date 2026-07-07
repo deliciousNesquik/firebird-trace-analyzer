@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="150"
              x:Class="FirebirdTraceAnalyzer.UserControls.FileCardsSection"
              x:DataType="vm:MainWindowViewModel">
@@ -52,7 +53,7 @@
 
                 <!-- Заголовок -->
                 <TextBlock
-                    Text="No trace files loaded"
+                    Text="{loc:Tr FileCards.NoFiles}"
                     FontSize="16"
                     FontWeight="SemiBold"
                     HorizontalAlignment="Center"
@@ -60,7 +61,7 @@
 
                 <!-- Описание -->
                 <TextBlock
-                    Text="Start by opening Firebird trace log files to analyze database events, performance metrics, and SQL queries."
+                    Text="{loc:Tr FileCards.NoFilesHint}"
                     FontSize="12"
                     TextAlignment="Center"
                     TextWrapping="Wrap"

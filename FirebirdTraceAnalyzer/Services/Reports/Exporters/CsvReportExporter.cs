@@ -3,6 +3,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceParser.Models.Events;
 using NLog;
@@ -86,10 +87,10 @@ public class CsvReportExporter : IReportExporter
             await csv.NextRecordAsync();
         }
 
-        csv.WriteField($"# Generated: {metadata.GeneratedAt:yyyy-MM-dd HH:mm:ss}");
+        csv.WriteField($"# {string.Format(Loc.Tr("Report.Export.Generated"), metadata.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss"))}");
         await csv.NextRecordAsync();
 
-        csv.WriteField($"# Application: Flytic v{metadata.ApplicationVersion}");
+        csv.WriteField($"# {string.Format(Loc.Tr("Report.Export.Application"), metadata.ApplicationVersion)}");
         await csv.NextRecordAsync();
 
         // Записываем переменные заголовка
@@ -140,31 +141,31 @@ public class CsvReportExporter : IReportExporter
         ReportMetadata metadata,
         CancellationToken cancellationToken)
     {
-        csv.WriteField("# Summary Statistics");
+        csv.WriteField($"# {Loc.Tr("Report.Export.SummaryStatistics")}");
         await csv.NextRecordAsync();
 
-        csv.WriteField("# Total Files");
+        csv.WriteField($"# {Loc.Tr("Report.Export.CsvTotalFiles")}");
         csv.WriteField(metadata.Files.Count);
         await csv.NextRecordAsync();
 
-        csv.WriteField("# Total Events (before filters)");
+        csv.WriteField($"# {Loc.Tr("Report.Export.CsvTotalEventsBeforeFilters")}");
         csv.WriteField(metadata.TotalEventsCount);
         await csv.NextRecordAsync();
 
-        csv.WriteField("# Events in Report");
+        csv.WriteField($"# {Loc.Tr("Report.Export.CsvEventsInReport")}");
         csv.WriteField(metadata.Events.Count);
         await csv.NextRecordAsync();
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
         {
-            csv.WriteField("# Active Filters");
+            csv.WriteField($"# {Loc.Tr("Report.Export.CsvActiveFilters")}");
             csv.WriteField(metadata.ActiveFilters);
             await csv.NextRecordAsync();
         }
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
         {
-            csv.WriteField("# Active Sort");
+            csv.WriteField($"# {Loc.Tr("Report.Export.CsvActiveSort")}");
             csv.WriteField(metadata.ActiveSort);
             await csv.NextRecordAsync();
         }

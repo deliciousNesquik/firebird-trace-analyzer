@@ -1,5 +1,6 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         xmlns:events="using:FirebirdTraceAnalyzer.Controls.EventCards">
     <Design.PreviewWith>
         <Border Padding="20">
@@ -24,7 +25,7 @@
                                     CornerRadius="5"
                                     Padding="16, 8, 16, 12">
 
-                                <TextBlock Text="TRACE FINISH"
+                                <TextBlock Text="{loc:Tr EventCard.Type.TraceFinish}"
                                            Foreground="{DynamicResource TextOnAccentBrush}"
                                            FontWeight="Bold"
                                            FontSize="16" />
@@ -45,7 +46,7 @@
                             <Grid ColumnDefinitions="Auto,Auto,Auto"
                                   ColumnSpacing="30">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="TRACE ID"
+                                    <TextBlock Text="{loc:Tr EventCard.TraceId}"
                                                FontSize="11"
                                                Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding TraceId}"
@@ -55,7 +56,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1"
                                             Spacing="4">
-                                    <TextBlock Text="HEX"
+                                    <TextBlock Text="{loc:Tr EventCard.Hex}"
                                                FontSize="11"
                                                Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding HexTraceId}"
@@ -64,7 +65,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2"
                                             Spacing="4">
-                                    <TextBlock Text="SESSION ID"
+                                    <TextBlock Text="{loc:Tr EventCard.SessionId}"
                                                FontSize="11"
                                                Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="{TemplateBinding SessionId}"
@@ -79,10 +80,10 @@
                                     HorizontalAlignment="Right"
                                     Height="30"
                                     Padding="12,0"
-                                    ToolTip.Tip="Open event inspector">
+                                    ToolTip.Tip="{loc:Tr EventCard.OpenInspectorTooltip}">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Svg Width="18" Height="18" Path="{DynamicResource HistoryIcon}" Css="{DynamicResource ThemeIconFillAndStrokeOnlyWhite}" />
-                                    <TextBlock Text="Inspect" VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Tr EventCard.Inspect}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </Border>

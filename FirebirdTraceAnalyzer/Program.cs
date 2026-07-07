@@ -11,6 +11,7 @@ using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Interfaces.Searching;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.Dialogs;
@@ -100,6 +101,7 @@ internal sealed class Program
         // сохранение изменений — в %AppData%/FirebirdTraceAnalyzer/settings.json
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(

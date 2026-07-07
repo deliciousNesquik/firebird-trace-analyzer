@@ -20,6 +20,7 @@ using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Searching;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Interfaces.Window;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Mocks;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
@@ -179,14 +180,14 @@ public partial class MainWindowViewModel : ViewModelBase
         FiltersPanelViewModel = new FiltersPanelViewModel(ApplyAllFilters, _propertyAccessor);
 
         StatisticInfoModels.UpdateStatistics([
-            new StatisticInfoModel("Files:", FileCards.Count.ToString()),
-            new StatisticInfoModel("All Events:", AllEvents.Count.ToString()),
-            new StatisticInfoModel("Visible Events:", VisibleEvents.Count.ToString()),
-            new StatisticInfoModel("Filtered Events:", AllEvents.Count.ToString())
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatFiles"), FileCards.Count.ToString()),
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatAllEvents"), AllEvents.Count.ToString()),
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatVisibleEvents"), VisibleEvents.Count.ToString()),
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatFilteredEvents"), AllEvents.Count.ToString())
         ]);
 
         LoadSettings();
-        StatusMessage = "Ready to go (Design Time).";
+        StatusMessage = Loc.Tr("Status.Main.ReadyDesignTime");
         
         // Загрузка шаблонов отчетов
         _ = LoadReportTemplatesAsync();
@@ -246,7 +247,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // С этого момента изменения секций/поиска можно сохранять
         _settingsLoaded = true;
 
-        StatusMessage = "Ready to go!";
+        StatusMessage = Loc.Tr("Status.Main.Ready");
         Logger.Info("MainWindowViewModel initialized.");
         
         // Загрузка шаблонов отчетов
@@ -296,7 +297,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IsClassicSearch = _appSettings.IsClassicSearch;
 
         Logger.Info("Application settings loaded.");
-        StatusMessage = "Application settings loaded.";
+        StatusMessage = Loc.Tr("Status.Main.SettingsLoaded");
     }
 
     /// <summary>
@@ -456,8 +457,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         VisibleEvents.ReplaceRange(sorted);
 
-        StatusMessage =
-            $"Sorted by: {SelectedSort.DisplayName} ({(IsSortDescending ? "desc" : "asc")})";
+        StatusMessage = string.Format(
+            Loc.Tr("Status.Main.SortedBy"),
+            SelectedSort.DisplayName,
+            IsSortDescending ? "desc" : "asc");
 
         Logger.Info(
             "Applied sort: {SortName}, descending={Descending}",
@@ -543,7 +546,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         FiltersPanelViewModel.LoadFilters(filters);
 
-        StatusMessage = $"Available filters: {filters.Count}";
+        StatusMessage = string.Format(Loc.Tr("Status.Main.AvailableFilters"), filters.Count);
         Logger.Info("Available filters updated: {Count}", filters.Count);
     }
 
@@ -622,16 +625,16 @@ public partial class MainWindowViewModel : ViewModelBase
             var statusParts = new List<string>();
 
             if (IsSearchActive)
-                statusParts.Add($"Search: '{SearchText}'");
+                statusParts.Add(string.Format(Loc.Tr("Status.Main.SearchLabel"), SearchText));
 
-            statusParts.Add($"{filteredList.Count:N0} of {AllEvents.Count:N0}");
+            statusParts.Add(string.Format(Loc.Tr("Status.Main.EventsCount"), filteredList.Count, AllEvents.Count));
 
             StatusMessage = string.Join(" • ", statusParts);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error applying filters");
-            StatusMessage = $"Filtering error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.FilteringError"), ex.Message);
         }
         finally
         {
@@ -749,7 +752,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsFileLoading = true;
-            StatusMessage = "Generating report...";
+            StatusMessage = Loc.Tr("Status.Main.GeneratingReport");
             Logger.Info("Quick report requested: {TemplateId}", templateId);
 
             // Получаем сервисы
@@ -758,7 +761,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (templateService == null || generationService == null)
             {
-                StatusMessage = "Report services not available";
+                StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
                 Logger.Error("Report services not registered in DI");
                 return;
             }
@@ -767,7 +770,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var template = await templateService.GetTemplateByIdAsync(templateId);
             if (template == null)
             {
-                StatusMessage = $"Template not found: {templateId}";
+                StatusMessage = string.Format(Loc.Tr("Status.Main.TemplateNotFound"), templateId);
                 Logger.Warn("Template not found: {TemplateId}", templateId);
                 return;
             }
@@ -779,7 +782,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (preparedEvents.Count == 0)
             {
-                StatusMessage = "No events to include in report";
+                StatusMessage = Loc.Tr("Status.Main.NoEventsForReport");
                 Logger.Warn("No events match report criteria");
                 return;
             }
@@ -795,7 +798,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 null,
                 cancellationToken);
 
-            StatusMessage = $"Report generated: {generatedReport.FilePath}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReportGenerated"), generatedReport.FilePath);
             Logger.Info("Report generated successfully: {Path}", generatedReport.FilePath);
 
             // Показываем уведомление с предложением открыть
@@ -803,12 +806,12 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Report generation cancelled";
+            StatusMessage = Loc.Tr("Status.Main.ReportGenerationCancelled");
             Logger.Info("Report generation cancelled by user");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Report generation error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReportGenerationError"), ex.Message);
             Logger.Error(ex, "Error generating report");
         }
         finally
@@ -827,7 +830,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (designerViewModel == null)
         {
-            StatusMessage = "Report services not available";
+            StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
             return null;
         }
 
@@ -835,7 +838,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // сортировки, к которым привязывается загружаемый шаблон (иначе маппинг ничего не найдёт).
         if (editTemplateId != null && VisibleEvents.Count == 0)
         {
-            StatusMessage = "Load a trace file before editing a template";
+            StatusMessage = Loc.Tr("Status.Main.LoadTraceBeforeEdit");
             return null;
         }
 
@@ -864,8 +867,8 @@ public partial class MainWindowViewModel : ViewModelBase
         if (result != null)
         {
             StatusMessage = editTemplateId == null
-                ? $"Template created: {result.Name}"
-                : $"Template updated: {result.Name}";
+                ? string.Format(Loc.Tr("Status.Main.TemplateCreated"), result.Name)
+                : string.Format(Loc.Tr("Status.Main.TemplateUpdated"), result.Name);
             Logger.Info("Report template saved: {Name}", result.Name);
 
             await RefreshCustomReportsAsync();
@@ -884,7 +887,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (vm == null)
             {
-                StatusMessage = "Report services not available";
+                StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
                 return;
             }
 
@@ -921,7 +924,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening manage templates");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
         }
     }
 
@@ -938,7 +941,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening recent reports");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
         }
     }
 
@@ -946,7 +949,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private Task OpenReportDesignerAsync(CancellationToken cancellationToken)
     {
         // TODO: Открыть окно дизайнера отчётов
-        StatusMessage = "Report designer coming soon...";
+        StatusMessage = Loc.Tr("Status.Main.ReportDesignerComingSoon");
         Logger.Info("Report designer requested");
         return Task.CompletedTask;
     }
@@ -986,7 +989,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (!IsSearchActive)
         {
-            StatusMessage = "Search query is empty";
+            StatusMessage = Loc.Tr("Status.Main.SearchQueryEmpty");
             Logger.Warn("Attempted search with empty query");
         }
 
@@ -1010,7 +1013,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IsSearchActive = false;
         ApplyAllFilters();
 
-        StatusMessage = "Search reset";
+        StatusMessage = Loc.Tr("Status.Main.SearchReset");
         Logger.Info("Search reset");
     }
 
@@ -1041,7 +1044,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (files.Count == 0)
             {
-                StatusMessage = "No files selected.";
+                StatusMessage = Loc.Tr("Status.Main.NoFilesSelected");
                 return;
             }
 
@@ -1049,13 +1052,13 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "File loading cancelled.";
+            StatusMessage = Loc.Tr("Status.Main.FileLoadingCancelled");
             Logger.Info("File loading cancelled by user.");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading files");
-            StatusMessage = $"Loading error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingError"), ex.Message);
         }
         finally
         {
@@ -1110,7 +1113,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     continue;
                 }
 
-                StatusMessage = $"Processing {i + 1}/{files.Count}: {Path.GetFileName(path)}";
+                StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessingFileProgress"), i + 1, files.Count, Path.GetFileName(path));
                 LoadProgress = (double)(i + 1) / files.Count * 100;
 
                 var fileHash = await CalculateFileHashAsync(path, cancellationToken);
@@ -1148,7 +1151,7 @@ public partial class MainWindowViewModel : ViewModelBase
         string fileHash,
         CancellationToken cancellationToken)
     {
-        StatusMessage = $"Parsing: {fileInfo.Name}";
+        StatusMessage = string.Format(Loc.Tr("Status.Main.Parsing"), fileInfo.Name);
 
         Logger.Info("Streaming parse started: {FileName}", fileInfo.Name);
 
@@ -1212,7 +1215,7 @@ public partial class MainWindowViewModel : ViewModelBase
             RemoveFileEvents(card.FileInfo.FileHash);
             FileCards.Remove(card);
 
-            StatusMessage = $"File removed: {card.FileInfo.FileName}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.FileRemoved"), card.FileInfo.FileName);
             Logger.Info("File removed: {FileName}", card.FileInfo.FileName);
         }
         finally
@@ -1346,18 +1349,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (!connectionResult)
             {
-                StatusMessage = "Connection cancelled.";
+                StatusMessage = Loc.Tr("Status.Main.ConnectionCancelled");
                 return;
             }
 
             var settings = _sshConnectionService.CurrentSettings;
             if (settings == null)
             {
-                StatusMessage = "No connection settings available.";
+                StatusMessage = Loc.Tr("Status.Main.NoConnectionSettings");
                 return;
             }
 
-            StatusMessage = "Fetching file list from server...";
+            StatusMessage = Loc.Tr("Status.Main.FetchingFileList");
             Logger.Info("Fetching files from {Directory}", settings.RemoteDirectory);
 
             // Получаем список файлов
@@ -1367,7 +1370,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (remoteFiles.Count == 0)
             {
-                StatusMessage = "No trace files found on server.";
+                StatusMessage = Loc.Tr("Status.Main.NoTraceFilesOnServer");
                 Logger.Warn("No files found in {Directory}", settings.RemoteDirectory);
                 return;
             }
@@ -1390,7 +1393,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (selectedFiles == null || selectedFiles.Count == 0)
             {
-                StatusMessage = "No files selected.";
+                StatusMessage = Loc.Tr("Status.Main.NoFilesSelected");
                 _sshConnectionService.Disconnect();
                 return;
             }
@@ -1441,18 +1444,18 @@ public partial class MainWindowViewModel : ViewModelBase
                     cts.Token);
             }
 
-            StatusMessage = $"Successfully processed {processedCount} remote file(s).";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.SuccessfullyProcessedRemote"), processedCount);
             Logger.Info("Remote files processed: {Count}", processedCount);
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Remote file loading cancelled.";
+            StatusMessage = Loc.Tr("Status.Main.RemoteLoadingCancelled");
             Logger.Info("Remote file loading cancelled by user.");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading remote files");
-            StatusMessage = $"Remote loading error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.RemoteLoadingError"), ex.Message);
         }
         finally
         {
@@ -1601,7 +1604,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // Удаляем с сервера если нужно
             if (deleteAfterDownload)
             {
-                StatusMessage = "Deleting files from server...";
+                StatusMessage = Loc.Tr("Status.Main.DeletingFromServer");
                 var remotePaths = files.Select(f => f.FullPath).ToList();
                 await _remoteFileService.DeleteFilesAsync(remotePaths, cancellationToken);
                 Logger.Info("Deleted {Count} files from server", remotePaths.Count);
@@ -1678,7 +1681,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (addedCount > 0) ApplyAllFilters();
 
-        StatusMessage = $"Processed {addedCount} remote file(s).";
+        StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
 
         return addedCount;
     }
@@ -1717,7 +1720,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(ApplyAllFilters);
         }
 
-        StatusMessage = $"Processed {addedCount} remote file(s).";
+        StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
 
         return addedCount;
     }
@@ -1742,7 +1745,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return false;
         }
 
-        StatusMessage = $"Processing: {fileInfo.Name}";
+        StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessingFile"), fileInfo.Name);
 
         var fileHash = await CalculateFileHashAsync(path, cancellationToken);
 
@@ -1803,7 +1806,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (FileCards.Count == 0)
         {
-            StatusMessage = "No files to reprocess.";
+            StatusMessage = Loc.Tr("Status.Main.NoFilesToReprocess");
             return;
         }
 
@@ -1815,30 +1818,30 @@ public partial class MainWindowViewModel : ViewModelBase
             _isBatchUpdate = true;
 
             var allCards = FileCards.ToList();
-            StatusMessage = $"Reprocessing all files: 0/{allCards.Count}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingAllStart"), allCards.Count);
 
             for (var i = 0; i < allCards.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var card = allCards[i];
-                StatusMessage = $"Reprocessing {i + 1}/{allCards.Count}: {card.FileInfo.FileName}";
+                StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingProgress"), i + 1, allCards.Count, card.FileInfo.FileName);
 
                 await ReparseTraceFileAsync(card, cancellationToken);
             }
 
-            StatusMessage = $"All files reprocessed: {allCards.Count} file(s).";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.AllFilesReprocessed"), allCards.Count);
             Logger.Info("Reprocessing completed: {Count} files", allCards.Count);
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Reprocessing cancelled.";
+            StatusMessage = Loc.Tr("Status.Main.ReprocessingCancelled");
             Logger.Info("Reprocessing cancelled.");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error during reprocessing");
-            StatusMessage = $"Reprocessing error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
         }
         finally
         {
@@ -1857,7 +1860,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedFileCards.Count == 0)
         {
-            StatusMessage = "No files selected for reprocessing.";
+            StatusMessage = Loc.Tr("Status.Main.NoFilesSelectedForReprocessing");
             return;
         }
 
@@ -1869,30 +1872,30 @@ public partial class MainWindowViewModel : ViewModelBase
             _isBatchUpdate = true;
 
             var selectedCards = SelectedFileCards.ToList();
-            StatusMessage = $"Reprocessing selected files: 0/{selectedCards.Count}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingSelectedStart"), selectedCards.Count);
 
             for (var i = 0; i < selectedCards.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var card = selectedCards[i];
-                StatusMessage = $"Reprocessing {i + 1}/{selectedCards.Count}: {card.FileInfo.FileName}";
+                StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingProgress"), i + 1, selectedCards.Count, card.FileInfo.FileName);
 
                 await ReparseTraceFileAsync(card, cancellationToken);
             }
 
-            StatusMessage = $"Selected files reprocessed: {selectedCards.Count} file(s).";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.SelectedFilesReprocessed"), selectedCards.Count);
             Logger.Info("Selected files reprocessed: {Count}", selectedCards.Count);
         }
         catch (OperationCanceledException)
         {
-            StatusMessage = "Reprocessing cancelled.";
+            StatusMessage = Loc.Tr("Status.Main.ReprocessingCancelled");
             Logger.Info("Selected files reprocessing cancelled.");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error reprocessing selected files");
-            StatusMessage = $"Reprocessing error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
         }
         finally
         {
@@ -1915,7 +1918,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (!fileInfo.Exists)
             {
-                StatusMessage = $"File not found: {card.FileInfo.FileName}";
+                StatusMessage = string.Format(Loc.Tr("Status.Main.FileNotFound"), card.FileInfo.FileName);
                 Logger.Warn("File not found for reparse: {Path}", card.FileInfo.FilePath);
                 return;
             }
@@ -1935,7 +1938,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error reparsing file: {FileName}", card.FileInfo.FileName);
-            StatusMessage = $"Reparse error: {card.FileInfo.FileName}: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ReparseError"), card.FileInfo.FileName, ex.Message);
         }
     }
 
@@ -1959,7 +1962,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (FileCards.Count == 0)
         {
-            StatusMessage = "No files to close.";
+            StatusMessage = Loc.Tr("Status.Main.NoFilesToClose");
             return;
         }
 
@@ -1978,7 +1981,7 @@ public partial class MainWindowViewModel : ViewModelBase
             VisibleEvents.Clear();
             _eventsByFileHash.Clear();
 
-            StatusMessage = $"Closed all files: {count} file(s).";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
             Logger.Info("All files closed: {Count}", count);
 
             // ✅ Принудительная сборка мусора
@@ -2002,7 +2005,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedFileCards.Count == 0)
         {
-            StatusMessage = "No files selected to close.";
+            StatusMessage = Loc.Tr("Status.Main.NoFilesSelectedToClose");
             return;
         }
 
@@ -2019,7 +2022,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // Удаляем карточки
             foreach (var card in selectedCards) FileCards.Remove(card);
 
-            StatusMessage = $"Closed selected files: {selectedCards.Count} file(s).";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedSelectedFiles"), selectedCards.Count);
             Logger.Info("Selected files closed: {Count}", selectedCards.Count);
         }
         finally
@@ -2092,7 +2095,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening plugins window");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
         }
     }
 
@@ -2116,7 +2119,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var viewModel = App.Services?.GetRequiredService<SettingsWindowViewModel>();
             if (viewModel == null)
             {
-                StatusMessage = "Settings service not available";
+                StatusMessage = Loc.Tr("Status.Main.SettingsServiceNotAvailable");
                 return;
             }
 
@@ -2134,13 +2137,13 @@ public partial class MainWindowViewModel : ViewModelBase
             IsLogsSectionVisible = _uiSettings.Logs;
             IsClassicSearch = _appSettings.IsClassicSearch;
 
-            StatusMessage = "Settings updated";
+            StatusMessage = Loc.Tr("Status.Main.SettingsUpdated");
             Logger.Info("Settings updated from settings window");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening settings window");
-            StatusMessage = $"Error: {ex.Message}";
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
         }
     }
 
@@ -2154,7 +2157,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IsLogsSectionVisible = _uiSettings.Logs;
 
         Logger.Info("Factory settings restored.");
-        StatusMessage = "Factory settings restored.";
+        StatusMessage = Loc.Tr("Status.Main.FactorySettingsRestored");
     }
 
     #endregion
@@ -2181,9 +2184,9 @@ public partial class MainWindowViewModel : ViewModelBase
         var totalEvents = FileCards.Sum(f => f.FileInfo.EventCount);
 
         StatisticInfoModels.UpdateStatistics([
-            new StatisticInfoModel("Files:", FileCards.Count.ToString()),
-            new StatisticInfoModel("All Events:", totalEvents.ToString("N0")),
-            new StatisticInfoModel("Visible Events:", VisibleEvents.Count.ToString("N0"))
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatFiles"), FileCards.Count.ToString()),
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatAllEvents"), totalEvents.ToString("N0")),
+            new StatisticInfoModel(Loc.Tr("Status.Main.StatVisibleEvents"), VisibleEvents.Count.ToString("N0"))
         ]);
     }
 
@@ -2206,10 +2209,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         return (addedCount, duplicateCount) switch
         {
-            (> 0, > 0) => $"Loaded: {addedCount} file(s). Skipped duplicates: {duplicateCount}.",
-            (> 0, 0) => $"Loaded: {addedCount} file(s).",
-            (0, > 0) => "No files loaded: all files are duplicates.",
-            _ => "No files selected."
+            (> 0, > 0) => string.Format(Loc.Tr("Status.Main.LoadedWithDuplicates"), addedCount, duplicateCount),
+            (> 0, 0) => string.Format(Loc.Tr("Status.Main.Loaded"), addedCount),
+            (0, > 0) => Loc.Tr("Status.Main.NoFilesLoadedAllDuplicates"),
+            _ => Loc.Tr("Status.Main.NoFilesSelected")
         };
     }
 

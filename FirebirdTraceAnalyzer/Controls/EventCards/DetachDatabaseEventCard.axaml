@@ -1,5 +1,6 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         xmlns:events="using:FirebirdTraceAnalyzer.Controls.EventCards">
     <Design.PreviewWith>
         
@@ -35,7 +36,7 @@
                             <StackPanel Orientation="Horizontal"
                                         Spacing="8">
 
-                                <TextBlock Text="DETACH DATABASE"
+                                <TextBlock Text="{loc:Tr EventCard.Type.DetachDatabase}"
                                            FontWeight="Bold"
                                            FontSize="15"
                                            Foreground="{DynamicResource TextOnAccentBrush}"/>
@@ -59,7 +60,7 @@
                         <Grid ColumnDefinitions="Auto,Auto,Auto"
                               ColumnSpacing="30">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="TRACE ID"
+                                <TextBlock Text="{loc:Tr EventCard.TraceId}"
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding TraceId}"
@@ -69,7 +70,7 @@
                             </StackPanel>
                             <StackPanel Grid.Column="1"
                                         Spacing="4">
-                                <TextBlock Text="HEX"
+                                <TextBlock Text="{loc:Tr EventCard.Hex}"
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding HexTraceId}"
@@ -78,7 +79,7 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2"
                                         Spacing="4">
-                                <TextBlock Text="ATTACHEMENT ID"
+                                <TextBlock Text="{loc:Tr EventCard.AttachmentId}"
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding AttachmentId}"
@@ -95,7 +96,7 @@
                           Margin="0 20 0 0">
 
                         <!-- USER -->
-                        <TextBlock Grid.Column="0" Grid.Row="0" Text="USER / ROLE"
+                        <TextBlock Grid.Column="0" Grid.Row="0" Text="{loc:Tr EventCard.UserRole}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
 
@@ -115,7 +116,7 @@
 
                         <!-- CLIENT -->
                         <TextBlock Grid.Column="0" Grid.Row="1"
-                                   Text="ADDRESS"
+                                   Text="{loc:Tr EventCard.Address}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
 
@@ -141,7 +142,7 @@
 
                         <!-- APP -->
                         <TextBlock Grid.Column="0" Grid.Row="2"
-                                   Text="APPLICATION"
+                                   Text="{loc:Tr EventCard.Application}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
 
@@ -164,7 +165,7 @@
 
                         <!-- CHARSET -->
                         <TextBlock Grid.Column="0" Grid.Row="3"
-                                   Text="CHARSET"
+                                   Text="{loc:Tr EventCard.Charset}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
 
@@ -175,7 +176,7 @@
                         
                         <!-- DATABASE -->
                         <TextBlock Grid.Column="0" Grid.Row="4"
-                                   Text="DATABASE"
+                                   Text="{loc:Tr EventCard.Database}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
 
@@ -192,10 +193,10 @@
                                     HorizontalAlignment="Right"
                                     Height="30"
                                     Padding="12,0"
-                                    ToolTip.Tip="Open event inspector">
+                                    ToolTip.Tip="{loc:Tr EventCard.OpenInspectorTooltip}">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Svg Width="18" Height="18" Path="{DynamicResource HistoryIcon}" Css="{DynamicResource ThemeIconFillAndStrokeOnlyWhite}" />
-                                    <TextBlock Text="Inspect" VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Tr EventCard.Inspect}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </Border>
