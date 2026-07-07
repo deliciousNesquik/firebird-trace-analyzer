@@ -7,9 +7,6 @@ namespace FirebirdTraceAnalyzer.Models.Reports;
 /// </summary>
 public sealed class ReportBody
 {
-    /// <summary>Стиль отображения событий</summary>
-    public EventDisplayStyle DisplayStyle { get; init; } = EventDisplayStyle.Table;
-    
     /// <summary>Поля событий для отображения</summary>
     public List<EventField> VisibleFields { get; init; } = new();
 

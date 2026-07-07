@@ -85,7 +85,6 @@ public static class BuiltInReportTemplates
             
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 VisibleFields = new List<EventField>
                 {
                     new()
@@ -269,7 +268,6 @@ public static class BuiltInReportTemplates
             
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 VisibleFields = new List<EventField>
                 {
                     new()
@@ -434,7 +432,6 @@ public static class BuiltInReportTemplates
             
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.DetailedList,
                 VisibleFields = new List<EventField>
                 {
                     new()
@@ -559,7 +556,6 @@ public static class BuiltInReportTemplates
 
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 // Группировка по пользователю — таблица строится "строка на группу".
                 GroupByFields = new List<string> { "Attachment.User" },
                 // Сортируем результат по числу ошибок (см. SortDescending = true ниже).
@@ -673,7 +669,6 @@ public static class BuiltInReportTemplates
 
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 GroupByFields = new List<string> { "Sql" },
                 SortByColumn = "Total time (ms)",
                 VisibleFields = new List<EventField>
@@ -785,7 +780,6 @@ public static class BuiltInReportTemplates
 
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 GroupByFields = new List<string> { "ProcedureName" },
                 SortByColumn = "Total time (ms)",
                 VisibleFields = new List<EventField>
@@ -897,7 +891,6 @@ public static class BuiltInReportTemplates
 
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 GroupByFields = new List<string> { "Sql" },
                 SortByColumn = "Call count",
                 VisibleFields = new List<EventField>
@@ -1008,7 +1001,6 @@ public static class BuiltInReportTemplates
 
             Body = new ReportBody
             {
-                DisplayStyle = EventDisplayStyle.Table,
                 GroupByFields = new List<string> { "ProcedureName" },
                 SortByColumn = "Call count",
                 VisibleFields = new List<EventField>

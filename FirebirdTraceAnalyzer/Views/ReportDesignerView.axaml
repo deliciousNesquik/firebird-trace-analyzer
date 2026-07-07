@@ -178,25 +178,13 @@
                         <!-- Columns -->
                         <Expander Header="Columns" IsExpanded="True">
                             <StackPanel Spacing="10">
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                                    <StackPanel Grid.Column="0" Spacing="4">
-                                        <TextBlock Classes="fieldLabel" Text="Display style" />
-                                        <ComboBox SelectedValue="{Binding DisplayStyle}"
-                                                  SelectedValueBinding="{Binding Tag, RelativeSource={RelativeSource Self}}"
-                                                  HorizontalAlignment="Stretch">
-                                            <ComboBoxItem Content="Table" Tag="{x:Static enums:EventDisplayStyle.Table}" />
-                                            <ComboBoxItem Content="Detailed List" Tag="{x:Static enums:EventDisplayStyle.DetailedList}" />
-                                            <ComboBoxItem Content="Compact" Tag="{x:Static enums:EventDisplayStyle.Compact}" />
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Classes="fieldLabel" Text="Event limit" />
-                                        <NumericUpDown Value="{Binding EventLimit}"
-                                                       Minimum="1" Maximum="10000"
-                                                       PlaceholderText="No limit"
-                                                       AllowSpin="True" Increment="5" />
-                                    </StackPanel>
-                                </Grid>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="fieldLabel" Text="Event limit" />
+                                    <NumericUpDown Value="{Binding EventLimit}"
+                                                   Minimum="1" Maximum="10000"
+                                                   PlaceholderText="No limit"
+                                                   AllowSpin="True" Increment="5" />
+                                </StackPanel>
 
                                 <CheckBox Content="Show summary statistics" IsChecked="{Binding ShowSummary}" />
 

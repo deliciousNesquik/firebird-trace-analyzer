@@ -87,9 +87,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
     #region Observable Properties - Body
 
-    [ObservableProperty]
-    private EventDisplayStyle _displayStyle = EventDisplayStyle.Table;
-
     /// <summary>Палитра доступных полей событий — источник для добавления колонок кнопкой «+».</summary>
     public ObservableCollection<FieldPaletteItem> AvailableFields { get; } = new();
 
@@ -620,7 +617,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             }
 
             EventLimit = template.EventLimit;
-            DisplayStyle = template.Body.DisplayStyle;
             ShowSummary = template.Body.ShowSummary;
             DefaultFormat = template.DefaultFormat;
 
@@ -827,7 +823,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
         return new ReportBody
         {
-            DisplayStyle = DisplayStyle,
             ShowSummary = ShowSummary,
             // Группируем по колонкам, помеченным как GroupKey (порядок — по Order).
             GroupByFields = columns
@@ -1014,7 +1009,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     partial void OnReportSubtitleChanged(string value) => MarkChangedAndPreview();
     partial void OnShowLogoChanged(bool value) => MarkChangedAndPreview();
     partial void OnShowGeneratedDateChanged(bool value) => MarkChangedAndPreview();
-    partial void OnDisplayStyleChanged(EventDisplayStyle value) => MarkChangedAndPreview();
     partial void OnShowSummaryChanged(bool value) => MarkChangedAndPreview();
     partial void OnSelectedSortChanged(SortOptionItem? value) => MarkChangedAndPreview();
     partial void OnSortDescendingChanged(bool value) => MarkChangedAndPreview();
