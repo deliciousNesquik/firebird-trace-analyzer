@@ -35,7 +35,6 @@ public static class BuiltInReportTemplates
             Name = "Top 5 Slowest Statements",
             Description = "Report showing the 5 slowest SQL statements",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
             
             Header = new ReportHeader
@@ -226,7 +225,6 @@ public static class BuiltInReportTemplates
             Name = "Top 10 Slowest Procedures",
             Description = "Report showing the 10 slowest stored procedures",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
             
             Header = new ReportHeader
@@ -399,7 +397,6 @@ public static class BuiltInReportTemplates
             Name = "First 10 Errors",
             Description = "First 10 errors occurred during trace",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
             
             Header = new ReportHeader
@@ -523,7 +520,6 @@ public static class BuiltInReportTemplates
             Name = "Errors by User",
             Description = "Number of errors grouped by user",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
 
             Header = new ReportHeader
@@ -645,7 +641,6 @@ public static class BuiltInReportTemplates
             Name = "SQL by Total Execution Time",
             Description = "Total execution time grouped by SQL statement",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
 
             Header = new ReportHeader
@@ -756,7 +751,6 @@ public static class BuiltInReportTemplates
             Name = "Procedures by Total Execution Time",
             Description = "Total execution time grouped by stored procedure",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
 
             Header = new ReportHeader
@@ -867,7 +861,6 @@ public static class BuiltInReportTemplates
             Name = "SQL by Call Count",
             Description = "Number of calls grouped by SQL statement",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
 
             Header = new ReportHeader
@@ -977,7 +970,6 @@ public static class BuiltInReportTemplates
             Name = "Procedures by Call Count",
             Description = "Number of calls grouped by stored procedure",
             Author = "System",
-            Category = ReportCategory.Quick,
             IsBuiltIn = true,
 
             Header = new ReportHeader

@@ -56,11 +56,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     [ObservableProperty]
     private string _templateDescription = string.Empty;
 
-    [ObservableProperty]
-    private ReportCategory _category = ReportCategory.Custom;
-
-    /// <summary>Категории для выпадающего списка.</summary>
-    public ReportCategory[] Categories { get; } = { ReportCategory.Quick, ReportCategory.Custom };
 
     [ObservableProperty]
     private bool _isEditingExisting;
@@ -515,7 +510,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
             TemplateName = template.Name;
             TemplateDescription = template.Description;
-            Category = template.Category;
 
             ReportTitle = template.Header.Title;
             ReportSubtitle = template.Header.Subtitle ?? string.Empty;
@@ -680,7 +674,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
                     : Guid.NewGuid().ToString(),
                 Name = TemplateName,
                 Description = TemplateDescription,
-                Category = Category,
                 IsBuiltIn = false,
                 CreatedAt = IsEditingExisting ? DateTime.Now : DateTime.Now,
                 ModifiedAt = DateTime.Now,

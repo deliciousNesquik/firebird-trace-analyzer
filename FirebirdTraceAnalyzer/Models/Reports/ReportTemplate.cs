@@ -28,9 +28,6 @@ public sealed class ReportTemplate
     /// <summary>Версия шаблона</summary>
     public string Version { get; init; } = "1.0";
     
-    /// <summary>Категория (Quick/Custom)</summary>
-    public ReportCategory Category { get; init; } = ReportCategory.Custom;
-    
     /// <summary>Настройки заголовка отчёта</summary>
     public ReportHeader Header { get; init; } = new();
     

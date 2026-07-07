@@ -201,7 +201,6 @@ public class ReportTemplateService : IReportTemplateService
                 CreatedAt = DateTime.Now,
                 ModifiedAt = DateTime.Now,
                 Version = template.Version,
-                Category = template.Category,
                 IsBuiltIn = false, // Импортированный шаблон не может быть встроенным
             
                 Header = template.Header,

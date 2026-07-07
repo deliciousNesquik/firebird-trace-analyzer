@@ -123,12 +123,6 @@
                                              PlaceholderText="Enter report name..." />
                                 </StackPanel>
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="fieldLabel" Text="Category" />
-                                    <ComboBox ItemsSource="{Binding Categories}"
-                                              SelectedItem="{Binding Category}"
-                                              HorizontalAlignment="Stretch" />
-                                </StackPanel>
-                                <StackPanel Spacing="4">
                                     <TextBlock Classes="fieldLabel" Text="Description" />
                                     <TextBox Text="{Binding TemplateDescription}"
                                              PlaceholderText="Optional description..."
