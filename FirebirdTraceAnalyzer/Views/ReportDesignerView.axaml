@@ -3,7 +3,6 @@
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:views="using:FirebirdTraceAnalyzer.Views"
              xmlns:uc="using:FirebirdTraceAnalyzer.UserControls"
-             xmlns:enums="using:FirebirdTraceAnalyzer.Enums.Reports"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
@@ -125,12 +124,9 @@
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="fieldLabel" Text="Category" />
-                                    <ComboBox SelectedValue="{Binding Category}"
-                                              SelectedValueBinding="{Binding Tag, RelativeSource={RelativeSource Self}}"
-                                              HorizontalAlignment="Stretch">
-                                        <ComboBoxItem Content="Quick Report" Tag="{x:Static enums:ReportCategory.Quick}" />
-                                        <ComboBoxItem Content="Custom Report" Tag="{x:Static enums:ReportCategory.Custom}" />
-                                    </ComboBox>
+                                    <ComboBox ItemsSource="{Binding Categories}"
+                                              SelectedItem="{Binding Category}"
+                                              HorizontalAlignment="Stretch" />
                                 </StackPanel>
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="fieldLabel" Text="Description" />
@@ -403,14 +399,9 @@
 
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="fieldLabel" Text="Default format" />
-                                    <ComboBox SelectedValue="{Binding DefaultFormat}"
-                                              SelectedValueBinding="{Binding Tag, RelativeSource={RelativeSource Self}}"
-                                              HorizontalAlignment="Stretch">
-                                        <ComboBoxItem Content="PDF" Tag="{x:Static enums:ReportFormat.PDF}" />
-                                        <ComboBoxItem Content="Word (DOCX)" Tag="{x:Static enums:ReportFormat.DOCX}" />
-                                        <ComboBoxItem Content="Excel (XLSX)" Tag="{x:Static enums:ReportFormat.XLSX}" />
-                                        <ComboBoxItem Content="CSV" Tag="{x:Static enums:ReportFormat.CSV}" />
-                                    </ComboBox>
+                                    <ComboBox ItemsSource="{Binding Preview.AvailableFormats}"
+                                              SelectedItem="{Binding DefaultFormat}"
+                                              HorizontalAlignment="Stretch" />
                                 </StackPanel>
                             </StackPanel>
                         </Expander>

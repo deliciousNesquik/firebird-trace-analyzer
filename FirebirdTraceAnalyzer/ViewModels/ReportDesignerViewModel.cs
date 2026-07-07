@@ -59,6 +59,9 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     [ObservableProperty]
     private ReportCategory _category = ReportCategory.Custom;
 
+    /// <summary>Категории для выпадающего списка.</summary>
+    public ReportCategory[] Categories { get; } = { ReportCategory.Quick, ReportCategory.Custom };
+
     [ObservableProperty]
     private bool _isEditingExisting;
 
