@@ -255,6 +255,10 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             .ApplyFilters(_sessionContext.SourceEvents, FiltersPanel.AvailableFilters)
             .ToList();
 
+        // Пересобираем палитру полей под отфильтрованные типы: при фильтре по типу события
+        // пересечение схлопывается и появляются его специфичные поля (Sql, Plan и т.п.).
+        LoadAvailableFields(filtered);
+
         // Пересобираем сортировки под отфильтрованные типы событий (с сохранением выбора).
         LoadAvailableSorts(filtered);
 
@@ -336,8 +340,11 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             return;
         }
 
-        // Палитра: объединение всех доступных полей (по одному разу). Добавление в отчёт — кнопкой «+».
-        foreach (var field in _fieldDiscovery.GetAllAvailableFields(eventList))
+        // Палитра: ПЕРЕСЕЧЕНИЕ полей всех присутствующих типов событий. Без фильтрации (смешанные
+        // типы) остаются только общие поля — специфичные поля одного типа пусты в остальных, поэтому
+        // их не предлагаем. После фильтрации по типу пересечение схлопывается до полей этого типа,
+        // и специфичные поля появляются (см. ApplyDesignerFilters, где палитра пересобирается).
+        foreach (var field in _fieldDiscovery.GetCommonFields(eventList))
         {
             AvailableFields.Add(new FieldPaletteItem
             {
