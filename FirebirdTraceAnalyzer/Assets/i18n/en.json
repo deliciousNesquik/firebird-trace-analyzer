@@ -545,6 +545,7 @@
   "Status.Main.LoadingError": "Loading error: {0}",
   "Status.Main.ProcessingFileProgress": "Processing {0}/{1}: {2}",
   "Status.Main.Parsing": "Parsing: {0}",
+  "Status.Main.LoadingFromStore": "Loading from store: {0}",
   "Status.Main.FileRemoved": "File removed: {0}",
   "Status.Main.ConnectionCancelled": "Connection cancelled.",
   "Status.Main.NoConnectionSettings": "No connection settings available.",

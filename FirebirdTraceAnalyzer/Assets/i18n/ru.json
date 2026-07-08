@@ -545,6 +545,7 @@
   "Status.Main.LoadingError": "Ошибка загрузки: {0}",
   "Status.Main.ProcessingFileProgress": "Обработка {0}/{1}: {2}",
   "Status.Main.Parsing": "Разбор: {0}",
+  "Status.Main.LoadingFromStore": "Загрузка из хранилища: {0}",
   "Status.Main.FileRemoved": "Файл удалён: {0}",
   "Status.Main.ConnectionCancelled": "Подключение отменено.",
   "Status.Main.NoConnectionSettings": "Настройки подключения недоступны.",

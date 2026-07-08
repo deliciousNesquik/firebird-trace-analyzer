@@ -1127,7 +1127,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
 
                 var fileInfo = new FileInfo(path);
-                var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken);
+
+                // Кэш переоткрытия: если файл с этим хэшем уже в хранилище — читаем события с диска
+                // вместо повторного парсинга (мгновенное переоткрытие / восстановление после падения).
+                var store = StoreIfEnabled();
+                var traceModel = store is not null && await ContainsInStoreAsync(store, fileHash, cancellationToken)
+                    ? await LoadFromStoreAsync(fileInfo, fileHash, store, cancellationToken)
+                    : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
                     FileCards.Add(CreateFileCardViewModel(traceModel)));
@@ -1242,6 +1248,74 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _storeGate.Release();
         }
+    }
+
+    /// <summary>Проверяет наличие файла в хранилище (сериализованно через шлюз — соединение однопоточное).</summary>
+    private async Task<bool> ContainsInStoreAsync(IEventStore store, string fileHash, CancellationToken ct)
+    {
+        await _storeGate.WaitAsync(ct);
+        try
+        {
+            return await Task.Run(() => store.ContainsFile(fileHash), ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "EventStore: ContainsFile failed for {Hash}", fileHash);
+            return false; // при сбое проверки просто парсим как обычно
+        }
+        finally
+        {
+            _storeGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Читает события файла из хранилища и заполняет рабочий набор — зеркально <see cref="ParseFileAsync"/>,
+    /// но без парсинга и без повторной записи в стор. Диапазон времени берём из первого/последнего события
+    /// (порядок записи = порядок разбора).
+    /// </summary>
+    private async Task<TraceFileInfoModel> LoadFromStoreAsync(
+        FileInfo fileInfo,
+        string fileHash,
+        IEventStore store,
+        CancellationToken cancellationToken)
+    {
+        StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingFromStore"), fileInfo.Name);
+        Logger.Info("Loading from store (cache hit): {FileName}", fileInfo.Name);
+
+        await _storeGate.WaitAsync(cancellationToken);
+        IReadOnlyList<EventBase> restored;
+        try
+        {
+            restored = await Task.Run(() => store.ReadFile(fileHash), cancellationToken);
+        }
+        finally
+        {
+            _storeGate.Release();
+        }
+
+        var events = restored as List<EventBase> ?? restored.ToList();
+
+        _eventsByFileHash[fileHash] = events;
+        AllEvents.AddRange(events);
+
+        var startTrace = events.Count > 0 ? events[0].Timestamp : DateTime.MinValue;
+        var endTrace = events.Count > 0 ? events[^1].Timestamp : DateTime.MinValue;
+
+        Logger.Info("Loaded {Count} event(s) from store: {FileName}", events.Count, fileInfo.Name);
+
+        return new TraceFileInfoModel(
+            fileInfo.Name,
+            fileInfo.FullName,
+            fileInfo.Length,
+            startTrace,
+            endTrace,
+            events.Count,
+            fileHash);
     }
 
     /// <summary>
