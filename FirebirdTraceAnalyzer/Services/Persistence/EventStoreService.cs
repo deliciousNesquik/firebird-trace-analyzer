@@ -528,6 +528,7 @@ RETURNING seq;");
     {
         var result = new List<EventBase>();
         var attCache = new Dictionary<long, AttachmentInfo>();
+        var sqlCache = new Dictionary<long, string>();
 
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM event WHERE file_hash=$h ORDER BY seq;";
@@ -548,7 +549,7 @@ RETURNING seq;");
         var perfBySeq = LoadPerfItems(fileHash);
 
         foreach (var row in rows)
-            result.Add(BuildEvent(row, attCache,
+            result.Add(BuildEvent(row, attCache, sqlCache,
                 paramsBySeq.GetValueOrDefault(row.Seq),
                 errorsBySeq.GetValueOrDefault(row.Seq),
                 perfBySeq.GetValueOrDefault(row.Seq)));
@@ -559,6 +560,7 @@ RETURNING seq;");
     public IEnumerable<EventBase> Query(DateTime? from = null, DateTime? to = null)
     {
         var attCache = new Dictionary<long, AttachmentInfo>();
+        var sqlCache = new Dictionary<long, string>();
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM event WHERE ($f IS NULL OR ts>=$f) AND ($t IS NULL OR ts<=$t) ORDER BY ts, seq;";
         cmd.Parameters.AddWithValue("$f", (object?)from?.Ticks ?? DBNull.Value);
@@ -567,7 +569,7 @@ RETURNING seq;");
         while (reader.Read())
         {
             var row = ReadRow(reader);
-            yield return BuildEvent(row, attCache,
+            yield return BuildEvent(row, attCache, sqlCache,
                 LoadParametersFor(row.Seq), LoadErrorLinesFor(row.Seq), LoadPerfItemsFor(row.Seq));
         }
     }
@@ -662,12 +664,13 @@ RETURNING seq;");
             I("perf_read"), I("perf_write"), I("perf_mark"), r.GetInt32(O("perf_table_state")));
     }
 
-    private EventBase BuildEvent(Row row, Dictionary<long, AttachmentInfo> attCache,
+    private EventBase BuildEvent(Row row, Dictionary<long, AttachmentInfo> attCache, Dictionary<long, string> sqlCache,
         List<SqlParameters>? parameters, List<ErrorLines>? errors, List<PerformanceTableItem>? perfItems)
     {
         var type = (EventType)row.Type;
         var ts = new DateTime(row.Ts);
         AttachmentInfo Att() => LoadAttachment(row.AttRef!.Value, attCache);
+        string Sql() => LoadSql(row.SqlRef!.Value, sqlCache);
         TransactionInfo? Txn() => row.TxnPresent == 1
             ? new TransactionInfo { TransactionId = row.TxnId, IsolationLevel = row.TxIso, ConsistencyMode = row.TxCons, LockMode = row.TxLock, AccessMode = row.TxAcc }
             : null;
@@ -686,10 +689,10 @@ RETURNING seq;");
             EventType.TraceFinish => new TraceFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Session = new TraceSessionInfo { SessionId = row.SessionId!.Value } },
             EventType.AttachDatabase => new AttachDatabaseEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att() },
             EventType.DetachDatabase => new DetachDatabaseEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att() },
-            EventType.ExecuteStatementStart => new StatementStartEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = LoadSql(row.SqlRef!.Value), Parameters = prm },
-            EventType.ExecuteStatementRestart => new StatementRestartEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = LoadSql(row.SqlRef!.Value), Parameters = prm, RestartCount = row.Restart },
-            EventType.ExecuteStatementFinish => new StatementFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = LoadSql(row.SqlRef!.Value), Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
-            EventType.FailedExecuteStatementFinish => new FailedStatementFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = LoadSql(row.SqlRef!.Value), Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
+            EventType.ExecuteStatementStart => new StatementStartEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = Sql(), Parameters = prm },
+            EventType.ExecuteStatementRestart => new StatementRestartEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = Sql(), Parameters = prm, RestartCount = row.Restart },
+            EventType.ExecuteStatementFinish => new StatementFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = Sql(), Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
+            EventType.FailedExecuteStatementFinish => new FailedStatementFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn(), StatementId = row.StatementId, Sql = Sql(), Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
             EventType.ExecuteProcedureStart => new ProcedureStartEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn()!, ProcedureName = row.Proc!, Parameters = prm },
             EventType.ExecuteProcedureFinish => new ProcedureFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn()!, ProcedureName = row.Proc!, Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
             EventType.FailedExecuteProcedureFinish => new FailedProcedureFinishEvent { Timestamp = ts, TraceId = row.TraceId, HexTraceId = row.Hex, EventType = type, Attachment = Att(), Transaction = Txn()!, ProcedureName = row.Proc!, Parameters = prm, Performance = Perf(), PerformanceTable = PerfTable() },
@@ -703,12 +706,18 @@ RETURNING seq;");
 
     // ---------------------------------------------------------------- loaders
 
-    private string LoadSql(long id)
+    private string LoadSql(long id, Dictionary<long, string> cache)
     {
+        // SQL сильно дедуплицирован (один и тот же текст на тысячи событий), поэтому мемоизируем по id:
+        // без кэша это был бы запрос-на-событие (N+1) — главная стоимость чтения файла.
+        if (cache.TryGetValue(id, out var cached)) return cached;
+
         using var c = _connection.CreateCommand();
         c.CommandText = "SELECT text FROM sql_text WHERE id=$id;";
         c.Parameters.AddWithValue("$id", id);
-        return (string)c.ExecuteScalar()!;
+        var text = (string)c.ExecuteScalar()!;
+        cache[id] = text;
+        return text;
     }
 
     private AttachmentInfo LoadAttachment(long id, Dictionary<long, AttachmentInfo> cache)
