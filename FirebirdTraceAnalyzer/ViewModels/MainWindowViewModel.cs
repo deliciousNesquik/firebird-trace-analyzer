@@ -26,6 +26,7 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Searching;
@@ -1184,13 +1185,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _eventsByFileHash[fileHash] = events;
         AllEvents.AddRange(events);
-        
+
         Logger.Info(
             "Streaming parse completed: {FileName}, events: {Count}",
             fileInfo.Name,
             events.Count);
 
-        return new TraceFileInfoModel(
+        var model = new TraceFileInfoModel(
             fileInfo.Name,
             fileInfo.FullName,
             fileInfo.Length,
@@ -1198,6 +1199,114 @@ public partial class MainWindowViewModel : ViewModelBase
             endTrace,
             events.Count,
             fileHash);
+
+        // Хранилище: пишем распарсенные события на диск (аддитивно, за флагом StorageMode,
+        // вне UI-потока, не фатально). WriteFile заменяет данные файла по хэшу — корректно для reparse.
+        await WriteToStoreAsync(model, events, cancellationToken);
+
+        return model;
+    }
+
+    // Единый шлюз доступа к стору: SQLite-соединение однопоточное, поэтому все операции с хранилищем
+    // (запись при парсинге, удаление при закрытии) сериализуются здесь, даже если идут с фоновых потоков.
+    private readonly SemaphoreSlim _storeGate = new(1, 1);
+
+    /// <summary>Хранилище событий, если режим не Off; иначе null (и БД не создаётся).</summary>
+    private IEventStore? StoreIfEnabled()
+        => _appSettings.StorageMode == StorageMode.Off ? null : App.Services?.GetService<IEventStore>();
+
+    /// <summary>
+    /// Пишет события файла в дисковое хранилище на фоне, сериализованно через <see cref="_storeGate"/>.
+    /// Ошибка записи не рушит парсинг/UI.
+    /// </summary>
+    private async Task WriteToStoreAsync(TraceFileInfoModel file, List<EventBase> events, CancellationToken ct)
+    {
+        var store = StoreIfEnabled();
+        if (store is null)
+            return;
+
+        await _storeGate.WaitAsync(ct);
+        try
+        {
+            await Task.Run(() => store.WriteFile(file, events), ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "EventStore: failed to persist file {File}", file.FileName);
+        }
+        finally
+        {
+            _storeGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Режим Session — «зеркало сессии»: при закрытии/удалении файлов убираем их и из хранилища,
+    /// чтобы стор всегда отражал загруженный набор. В Accumulate ничего не удаляем (архив хранит всё).
+    /// Удаление идёт на фоне и сериализовано тем же шлюзом, что и запись.
+    /// </summary>
+    private void RemoveFromStoreIfSession(IEnumerable<string> fileHashes)
+    {
+        if (_appSettings.StorageMode != StorageMode.Session)
+            return;
+
+        var store = App.Services?.GetService<IEventStore>();
+        if (store is null)
+            return;
+
+        var hashes = fileHashes.ToList();
+        if (hashes.Count == 0)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            await _storeGate.WaitAsync();
+            try
+            {
+                foreach (var hash in hashes)
+                    store.DeleteFile(hash);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "EventStore: failed to delete {Count} file(s) on close", hashes.Count);
+            }
+            finally
+            {
+                _storeGate.Release();
+            }
+        });
+    }
+
+    /// <summary>Режим Session: полностью очищает хранилище (закрытие всех файлов = пустая сессия).</summary>
+    private void ClearStoreIfSession()
+    {
+        if (_appSettings.StorageMode != StorageMode.Session)
+            return;
+
+        var store = App.Services?.GetService<IEventStore>();
+        if (store is null)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            await _storeGate.WaitAsync();
+            try
+            {
+                store.Clear();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "EventStore: failed to clear on close-all");
+            }
+            finally
+            {
+                _storeGate.Release();
+            }
+        });
     }
 
     private async Task<bool> OpenFileInStorageAsync(FileCardViewModel card)
@@ -1231,10 +1340,14 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     ///     ⚡ ОПТИМИЗИРОВАННОЕ удаление событий файла БЕЗ утечек памяти
     /// </summary>
-    private void RemoveFileEvents(string fileHash)
+    private void RemoveFileEvents(string fileHash, bool removeFromStore = true)
     {
         if (!_eventsByFileHash.TryGetValue(fileHash, out var eventsToRemove))
             return;
+
+        // Зеркало сессии: убираем файл из хранилища (кроме внутреннего reparse, который тут же перезапишет).
+        if (removeFromStore)
+            RemoveFromStoreIfSession(new[] { fileHash });
 
         var sw = Stopwatch.StartNew();
 
@@ -1274,6 +1387,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (hashList.Count == 0)
             return;
+
+        // Зеркало сессии: убираем закрытые файлы и из хранилища.
+        RemoveFromStoreIfSession(hashList);
 
         var sw = Stopwatch.StartNew();
 
@@ -1923,7 +2039,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            RemoveFileEvents(card.FileInfo.FileHash);
+            // reparse: не удаляем из стора — ParseFileAsync тут же перезапишет файл (иначе гонка «удаление после записи»).
+            RemoveFileEvents(card.FileInfo.FileHash, removeFromStore: false);
 
             var updatedModel = await ParseFileAsync(fileInfo, card.FileInfo.FileHash, cancellationToken);
 
@@ -1980,6 +2097,9 @@ public partial class MainWindowViewModel : ViewModelBase
             AllEvents.Clear();
             VisibleEvents.Clear();
             _eventsByFileHash.Clear();
+
+            // Зеркало сессии: пустая сессия → пустое хранилище.
+            ClearStoreIfSession();
 
             StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
             Logger.Info("All files closed: {Count}", count);
