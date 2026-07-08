@@ -1,0 +1,187 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:diag="using:FirebirdTraceAnalyzer.Services.Diagnostics"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="640"
+             x:Class="FirebirdTraceAnalyzer.Views.ParserStatisticsView"
+             x:DataType="vm:ParserStatisticsViewModel"
+             Width="900"
+             MaxHeight="720">
+
+    <Design.DataContext>
+        <vm:ParserStatisticsViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.statLabel">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.statValue">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.colHead">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.cell">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.num">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontFamily" Value="Consolas,Courier New,monospace" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Stats.Title}"
+                           FontSize="18" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Tr Stats.Subtitle}"
+                           FontSize="12" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Summary -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20,14"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Files}" Classes="statLabel" />
+                    <TextBlock Text="{Binding FileCount}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Events}" Classes="statLabel" />
+                    <TextBlock Text="{Binding TotalEvents, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="2" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.TotalSize}" Classes="statLabel" />
+                    <TextBlock Text="{Binding TotalSizeText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="3" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.PerEvent}" Classes="statLabel" />
+                    <TextBlock Text="{Binding PerEventText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="4" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Throughput}" Classes="statLabel" />
+                    <TextBlock Text="{Binding ThroughputText}" Classes="statValue" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Phase.Download}" Classes="statLabel" />
+                    <TextBlock Text="{Binding DownloadText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Phase.Produce}" Classes="statLabel" />
+                    <TextBlock Text="{Binding ProduceText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Phase.Write}" Classes="statLabel" />
+                    <TextBlock Text="{Binding StoreWriteText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="3" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Phase.Ui}" Classes="statLabel" />
+                    <TextBlock Text="{Binding UiText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="4" Spacing="1">
+                    <TextBlock Text="{loc:Tr Stats.Phase.Finalize}" Classes="statLabel" />
+                    <TextBlock Text="{Binding FinalizeText}" Classes="statValue" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Per-file table -->
+        <Border Grid.Row="2" Background="{DynamicResource AppBackgroundBrush}" Padding="20,12">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                <Grid RowDefinitions="Auto,*" MinWidth="820">
+                    <!-- Column header -->
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="*,60,90,80,90,90,80,60,90"
+                          Margin="0,0,0,6">
+                        <TextBlock Grid.Column="0" Classes="colHead" Text="{loc:Tr Stats.Col.File}" />
+                        <TextBlock Grid.Column="1" Classes="colHead" Text="{loc:Tr Stats.Col.Source}" />
+                        <TextBlock Grid.Column="2" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Events}" />
+                        <TextBlock Grid.Column="3" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Size}" />
+                        <TextBlock Grid.Column="4" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Download}" />
+                        <TextBlock Grid.Column="5" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Produce}" />
+                        <TextBlock Grid.Column="6" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Write}" />
+                        <TextBlock Grid.Column="7" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.Ui}" />
+                        <TextBlock Grid.Column="8" Classes="colHead" TextAlignment="Right" Text="{loc:Tr Stats.Col.EventsPerSec}" />
+                    </Grid>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="diag:FileParseMetric">
+                                <Border BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="0,5">
+                                    <Grid ColumnDefinitions="*,60,90,80,90,90,80,60,90">
+                                        <TextBlock Grid.Column="0" Classes="cell" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Classes="cell" Text="{Binding SourceShort}" />
+                                        <TextBlock Grid.Column="2" Classes="num" Text="{Binding EventCount, StringFormat='{}{0:N0}'}" />
+                                        <TextBlock Grid.Column="3" Classes="num" Text="{Binding SizeBytes, Converter={StaticResource BytesToReadableSizeConverter}}" />
+                                        <TextBlock Grid.Column="4" Classes="num" Text="{Binding DownloadMs}" />
+                                        <TextBlock Grid.Column="5" Classes="num" Text="{Binding ProduceMs}" />
+                                        <TextBlock Grid.Column="6" Classes="num" Text="{Binding StoreWriteMs}" />
+                                        <TextBlock Grid.Column="7" Classes="num" Text="{Binding UiMs}" />
+                                        <TextBlock Grid.Column="8" Classes="num" Text="{Binding EventsPerSec, StringFormat='{}{0:N0}'}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Summary}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Grid.Column="1"
+                        Content="{loc:Tr Stats.Refresh}"
+                        Classes="normal"
+                        Command="{Binding RefreshCommand}" />
+                <Button Grid.Column="2"
+                        Content="{loc:Tr Stats.Clear}"
+                        Classes="danger"
+                        Command="{Binding ClearStatsCommand}" />
+                <Button Grid.Column="3"
+                        Content="{loc:Tr Stats.Close}"
+                        Classes="focused"
+                        MinWidth="120"
+                        Command="{Binding CloseCommand}" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</UserControl>

@@ -24,6 +24,7 @@ using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Mocks;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
+using FirebirdTraceAnalyzer.Services.Diagnostics;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
 using FirebirdTraceAnalyzer.Services.Persistence;
@@ -115,6 +116,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isLogsSectionVisible;
     
     [ObservableProperty] private bool _isClassicSearch;
+
+    /// <summary>Режим разработчика включён — показывать диагностические пункты меню («Статистика парсера»).</summary>
+    [ObservableProperty] private bool _isDeveloperMode;
 
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isFileLoading;
@@ -296,6 +300,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Search Type
         IsClassicSearch = _appSettings.IsClassicSearch;
+
+        IsDeveloperMode = _appSettings.DeveloperMode;
 
         Logger.Info("Application settings loaded.");
         StatusMessage = Loc.Tr("Status.Main.SettingsLoaded");
@@ -1135,8 +1141,14 @@ public partial class MainWindowViewModel : ViewModelBase
                     ? await LoadFromStoreAsync(fileInfo, fileHash, dispatcher)
                     : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
+                var cardName = traceModel.FileName;
                 await Dispatcher.UIThread.InvokeAsync(() =>
-                    FileCards.Add(CreateFileCardViewModel(traceModel)));
+                {
+                    var sw = Stopwatch.StartNew();
+                    FileCards.Add(CreateFileCardViewModel(traceModel));
+                    sw.Stop();
+                    Telemetry?.AddUi(cardName, sw.ElapsedMilliseconds);
+                });
 
                 addedCount++;
             }
@@ -1147,7 +1159,13 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // После загрузки всех файлов — ОДНО обновление
-        if (addedCount > 0) ApplyAllFilters(); // ← Применяет фильтры + обновляет сортировки + статистику
+        if (addedCount > 0)
+        {
+            var finalizeSw = Stopwatch.StartNew();
+            ApplyAllFilters(); // ← Применяет фильтры + обновляет сортировки + статистику
+            finalizeSw.Stop();
+            Telemetry?.AddFinalize(finalizeSw.ElapsedMilliseconds);
+        }
 
         StatusMessage = BuildFileAddingStatusMessage(addedCount, duplicateCount);
     }
@@ -1156,7 +1174,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task<TraceFileInfoModel> ParseFileAsync(
         FileInfo fileInfo,
         string fileHash,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ParseSource source = ParseSource.LocalParse)
     {
         StatusMessage = string.Format(Loc.Tr("Status.Main.Parsing"), fileInfo.Name);
 
@@ -1166,6 +1185,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var startTrace = DateTime.MinValue;
         var endTrace = DateTime.MinValue;
+
+        var parseSw = Stopwatch.StartNew();
 
         await using var stream = new FileStream(
             fileInfo.FullName,
@@ -1189,8 +1210,16 @@ public partial class MainWindowViewModel : ViewModelBase
             events.Add(evt);
         }
 
+        parseSw.Stop();
+
         _eventsByFileHash[fileHash] = events;
+
+        var ingestSw = Stopwatch.StartNew();
         AllEvents.AddRange(events);
+        ingestSw.Stop();
+
+        Telemetry?.RecordProduce(fileInfo.Name, parseSw.ElapsedMilliseconds, events.Count, fileInfo.Length, source, fromCache: false);
+        Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
 
         Logger.Info(
             "Streaming parse completed: {FileName}, events: {Count}",
@@ -1221,6 +1250,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private EventStoreDispatcher? StoreDispatcher()
         => _appSettings.StorageMode == StorageMode.Off ? null : App.Services?.GetService<EventStoreDispatcher>();
 
+    /// <summary>Сбор таймингов конвейера (для окна «Статистика парсера»). Всегда доступен, накладные копеечные.</summary>
+    private IParseTelemetry? Telemetry => App.Services?.GetService<IParseTelemetry>();
+
     /// <summary>
     /// Ставит запись событий файла в фоновую очередь и сразу возвращается. Диск больше не на критическом
     /// пути: карточка файла показывается сразу после парсинга, а запись драйнится в фоне по очереди.
@@ -1237,7 +1269,15 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var snapshot = new List<EventBase>(events);
-        dispatcher.Post(store => store.WriteFile(file, snapshot));
+        var telemetry = Telemetry;
+        var name = file.FileName;
+        dispatcher.Post(store =>
+        {
+            var sw = Stopwatch.StartNew();
+            store.WriteFile(file, snapshot);
+            sw.Stop();
+            telemetry?.AddStoreWrite(name, sw.ElapsedMilliseconds);
+        });
     }
 
     /// <summary>Проверяет наличие файла в хранилище (через очередь диспетчера — соединение однопоточное).</summary>
@@ -1267,11 +1307,20 @@ public partial class MainWindowViewModel : ViewModelBase
         StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingFromStore"), fileInfo.Name);
         Logger.Info("Loading from store (cache hit): {FileName}", fileInfo.Name);
 
+        var readSw = Stopwatch.StartNew();
         var restored = await dispatcher.RunAsync(store => store.ReadFile(fileHash));
+        readSw.Stop();
+
         var events = restored as List<EventBase> ?? restored.ToList();
 
         _eventsByFileHash[fileHash] = events;
+
+        var ingestSw = Stopwatch.StartNew();
         AllEvents.AddRange(events);
+        ingestSw.Stop();
+
+        Telemetry?.RecordProduce(fileInfo.Name, readSw.ElapsedMilliseconds, events.Count, fileInfo.Length, ParseSource.StoreCache, fromCache: true);
+        Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
 
         var startTrace = events.Count > 0 ? events[0].Timestamp : DateTime.MinValue;
         var endTrace = events.Count > 0 ? events[^1].Timestamp : DateTime.MinValue;
@@ -1714,13 +1763,18 @@ public partial class MainWindowViewModel : ViewModelBase
                     progress.Report((i, files.Count, p.BytesTransferred, p.TotalBytes));
                 });
 
+                var downloadSw = Stopwatch.StartNew();
                 var localPath = await _remoteFileService.DownloadFileAsync(
                     file,
                     downloadDirectory,
                     fileProgress,
                     cancellationToken);
+                downloadSw.Stop();
 
                 downloadedPaths.Add(localPath);
+
+                var downloadedBytes = TryGetFileSize(localPath);
+                Telemetry?.RecordDownload(Path.GetFileName(localPath), downloadSw.ElapsedMilliseconds, downloadedBytes);
 
                 await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.FileCompleted(file.FileName); });
 
@@ -1846,7 +1900,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 continue;
 
             addedCount++;
-            await Dispatcher.UIThread.InvokeAsync(ApplyAllFilters);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var sw = Stopwatch.StartNew();
+                ApplyAllFilters();
+                sw.Stop();
+                Telemetry?.AddFinalize(sw.ElapsedMilliseconds);
+            });
         }
 
         StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
@@ -1898,10 +1958,16 @@ public partial class MainWindowViewModel : ViewModelBase
             return false;
         }
 
-        var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken);
+        var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken, ParseSource.RemoteParse);
 
+        var cardName = traceModel.FileName;
         await Dispatcher.UIThread.InvokeAsync(() =>
-            FileCards.Add(CreateFileCardViewModel(traceModel)));
+        {
+            var sw = Stopwatch.StartNew();
+            FileCards.Add(CreateFileCardViewModel(traceModel));
+            sw.Stop();
+            Telemetry?.AddUi(cardName, sw.ElapsedMilliseconds);
+        });
 
         // Удаляем локальный файл после обработки только если пользователь это выбрал
         if (deleteAfterProcessing)
@@ -2240,6 +2306,27 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Открывает окно «Статистика парсера» (только при включённом режиме разработчика).</summary>
+    [RelayCommand]
+    private async Task OpenParserStatisticsAsync()
+    {
+        try
+        {
+            var telemetry = App.Services?.GetService<IParseTelemetry>();
+            if (telemetry is null)
+                return;
+
+            var vm = new ParserStatisticsViewModel(telemetry);
+            vm.Load();
+            await Dialogs.ShowDialogAsync<object>(vm);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening parser statistics window");
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+        }
+    }
+
     private async Task ShowPluginsDialogAsync(bool showCollisions)
     {
         try
@@ -2387,6 +2474,7 @@ public partial class MainWindowViewModel : ViewModelBase
             IsStatisticsSectionVisible = _uiSettings.Statistics;
             IsLogsSectionVisible = _uiSettings.Logs;
             IsClassicSearch = _appSettings.IsClassicSearch;
+            IsDeveloperMode = _appSettings.DeveloperMode;
 
             StatusMessage = Loc.Tr("Status.Main.SettingsUpdated");
             Logger.Info("Settings updated from settings window");
@@ -2454,6 +2542,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var hashBytes = await SHA256.HashDataAsync(stream, cancellationToken);
         return Convert.ToHexString(hashBytes);
+    }
+
+    /// <summary>Размер файла в байтах или 0, если недоступен (для телеметрии — не критично).</summary>
+    private static long TryGetFileSize(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch { return 0; }
     }
 
     private static string BuildFileAddingStatusMessage(int addedCount, int duplicateCount)

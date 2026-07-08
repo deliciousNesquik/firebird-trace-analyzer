@@ -120,6 +120,8 @@
             </NativeMenuItem>
 
             <NativeMenuItem Header="{loc:Tr NativeMenu.Storage}" Command="{Binding OpenStoreManagementCommand}"/>
+            <NativeMenuItem Header="{loc:Tr NativeMenu.ParserStats}" Command="{Binding OpenParserStatisticsCommand}"
+                            IsVisible="{Binding IsDeveloperMode}"/>
             <NativeMenuItem Header="{loc:Tr NativeMenu.Plugins}" Command="{Binding OpenPluginsCommand}"/>
             <NativeMenuItem Header="{loc:Tr NativeMenu.Settings}" Command="{Binding OpenSettingsCommand}"/>
 

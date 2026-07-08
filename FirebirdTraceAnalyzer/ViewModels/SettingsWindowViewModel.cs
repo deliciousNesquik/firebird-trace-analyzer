@@ -53,6 +53,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     /// <summary>(Advanced) Парсить уже скачанный файл, пока качается следующий.</summary>
     [ObservableProperty] private bool _allowConcurrentProcessing;
 
+    /// <summary>(Advanced) Режим разработчика: показывает диагностические инструменты (статистика парсера).</summary>
+    [ObservableProperty] private bool _developerMode;
+
     #endregion
 
     #region Paths
@@ -146,6 +149,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         var app = _settingsService.App;
         app.IsClassicSearch = IsClassicSearch;
         app.AllowConcurrentProcessing = AllowConcurrentProcessing;
+        app.DeveloperMode = DeveloperMode;
         app.Theme = Theme;
         app.Language = SelectedLanguage?.Code ?? "en";
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
@@ -379,6 +383,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     {
         IsClassicSearch = app.IsClassicSearch;
         AllowConcurrentProcessing = app.AllowConcurrentProcessing;
+        DeveloperMode = app.DeveloperMode;
         Theme = app.Theme;
         var code = string.IsNullOrWhiteSpace(app.Language) ? "en" : app.Language;
         SelectedLanguage = AvailableLanguages.FirstOrDefault(l => string.Equals(l.Code, code, StringComparison.OrdinalIgnoreCase))
@@ -404,6 +409,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         {
             IsClassicSearch = IsClassicSearch,
             AllowConcurrentProcessing = AllowConcurrentProcessing,
+            DeveloperMode = DeveloperMode,
             Theme = Theme,
             Language = SelectedLanguage?.Code ?? "en",
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,

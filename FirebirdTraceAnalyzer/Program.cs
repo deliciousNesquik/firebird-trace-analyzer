@@ -14,6 +14,7 @@ using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using FirebirdTraceAnalyzer.Services.Diagnostics;
 using FirebirdTraceAnalyzer.Services.Dialogs;
 using FirebirdTraceAnalyzer.Services.EventLinking;
 using FirebirdTraceAnalyzer.Services.EventProperties;
@@ -103,6 +104,9 @@ internal sealed class Program
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+
+        // Сбор таймингов конвейера (скачивание/парсинг/запись/UI) за сессию — для окна «Статистика парсера».
+        services.AddSingleton<IParseTelemetry, ParseTelemetryService>();
 
         // Хранилище распарсенных событий (SQLite). Создаётся лениво при первом обращении;
         // пока никто не резолвит — файл БД не создаётся. Путь — из настроек.

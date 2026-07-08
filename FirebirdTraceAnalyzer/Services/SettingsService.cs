@@ -201,6 +201,7 @@ public sealed class SettingsService : ISettingsService
         target.ParserLogPath = source.ParserLogPath;
         target.StorageMode = source.StorageMode;
         target.StoragePath = source.StoragePath;
+        target.DeveloperMode = source.DeveloperMode;
     }
 
     private static void CopyWindow(WindowSettings source, WindowSettings target)

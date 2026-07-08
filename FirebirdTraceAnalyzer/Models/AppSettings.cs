@@ -87,6 +87,12 @@ public class AppSettings
     /// (%AppData%/FirebirdTraceAnalyzer/EventStore).
     /// </summary>
     public string StoragePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Режим разработчика: открывает доступ к диагностическим инструментам (напр. «Статистика парсера»).
+    /// По умолчанию выключен — обычным пользователям эти пункты не показываются.
+    /// </summary>
+    public bool DeveloperMode { get; set; }
 }
 
 /// <summary>

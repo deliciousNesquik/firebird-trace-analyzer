@@ -171,6 +171,10 @@
 
         <MenuItem Header="{loc:Tr Menu.Storage}" Command="{Binding OpenStoreManagementCommand}" />
 
+        <MenuItem Header="{loc:Tr Menu.ParserStats}"
+                  Command="{Binding OpenParserStatisticsCommand}"
+                  IsVisible="{Binding IsDeveloperMode}" />
+
         <MenuItem Header="{loc:Tr Menu.Plugins}" Command="{Binding OpenPluginsCommand}" />
 
         <MenuItem Header="{loc:Tr Menu.Settings}" Command="{Binding OpenSettingsCommand}" />
