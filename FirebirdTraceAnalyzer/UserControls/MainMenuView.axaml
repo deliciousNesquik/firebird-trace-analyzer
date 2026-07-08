@@ -169,6 +169,8 @@
 
         </MenuItem>
 
+        <MenuItem Header="{loc:Tr Menu.Storage}" Command="{Binding OpenStoreManagementCommand}" />
+
         <MenuItem Header="{loc:Tr Menu.Plugins}" Command="{Binding OpenPluginsCommand}" />
 
         <MenuItem Header="{loc:Tr Menu.Settings}" Command="{Binding OpenSettingsCommand}" />

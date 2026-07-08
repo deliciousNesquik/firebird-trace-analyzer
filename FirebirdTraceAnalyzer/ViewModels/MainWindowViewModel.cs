@@ -2276,6 +2276,30 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenPluginsAsync() => await ShowPluginsDialogAsync(showCollisions: false);
 
+    /// <summary>Открывает окно управления хранилищем событий (статистика + удаление/очистка).</summary>
+    [RelayCommand]
+    private async Task OpenStoreManagementAsync()
+    {
+        try
+        {
+            var store = App.Services?.GetService<IEventStore>();
+            if (store is null)
+            {
+                StatusMessage = Loc.Tr("Store.Manage.Unavailable");
+                return;
+            }
+
+            var vm = new StoreManagementViewModel(store, _storeGate);
+            await vm.LoadAsync();
+            await Dialogs.ShowDialogAsync<object>(vm);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening store management window");
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+        }
+    }
+
     private async Task ShowPluginsDialogAsync(bool showCollisions)
     {
         try

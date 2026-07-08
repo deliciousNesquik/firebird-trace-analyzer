@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:models="using:FirebirdTraceAnalyzer.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             mc:Ignorable="d" d:DesignWidth="820" d:DesignHeight="640"
+             x:Class="FirebirdTraceAnalyzer.Views.StoreManagementView"
+             x:DataType="vm:StoreManagementViewModel"
+             Width="820"
+             MaxHeight="720">
+
+    <Design.DataContext>
+        <vm:StoreManagementViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.statLabel">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.statValue">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Store.Manage.Title}"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Tr Store.Manage.Subtitle}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Statistics -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20,14"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12">
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.DbSize}" Classes="statLabel" />
+                    <TextBlock Text="{Binding DbSizeText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.RawSize}" Classes="statLabel" />
+                    <TextBlock Text="{Binding RawSizeText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="2" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Compression}" Classes="statLabel" />
+                    <TextBlock Text="{Binding CompressionText}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="3" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Files}" Classes="statLabel" />
+                    <TextBlock Text="{Binding FileCount}" Classes="statValue" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Events}" Classes="statLabel" />
+                    <TextBlock Text="{Binding EventCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueSql}" Classes="statLabel" />
+                    <TextBlock Text="{Binding UniqueSqlCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueAttachments}" Classes="statLabel" />
+                    <TextBlock Text="{Binding UniqueAttachmentCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="3" Spacing="1">
+                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Range}" Classes="statLabel" />
+                    <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="11" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- File list -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource AppBackgroundBrush}"
+                Padding="20">
+            <Grid RowDefinitions="Auto,*">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="5" Margin="0,0,0,12">
+                    <Button Grid.Column="0"
+                            Content="{loc:Tr Store.Manage.SelectAll}"
+                            Classes="focused"
+                            Command="{Binding SelectAllCommand}" />
+                    <Button Grid.Column="1"
+                            Content="{loc:Tr Store.Manage.DeselectAll}"
+                            Classes="danger"
+                            Command="{Binding DeselectAllCommand}" />
+                    <Button Grid.Column="3"
+                            Content="{loc:Tr Store.Manage.Refresh}"
+                            Classes="normal"
+                            Command="{Binding RefreshCommand}" />
+                </Grid>
+
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:RestorableFileInfo">
+                                <Border Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium" FontSize="13" />
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                                                <Run Text="{Binding TimeRange}" />
+                                                <Run Text=" • " />
+                                                <Run Text="{Binding FormattedSize}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{loc:Tr Store.Manage.Stat.Events}"
+                                                       FontSize="10"
+                                                       HorizontalAlignment="Right"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding EventCount, StringFormat='{}{0:N0}'}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       HorizontalAlignment="Right"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                <TextBlock Grid.Row="0"
+                           Text="{Binding StatusMessage}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                    <Button Grid.Column="0"
+                            Content="{loc:Tr Store.Manage.DeleteSelected}"
+                            Classes="danger"
+                            Command="{Binding DeleteSelectedCommand}" />
+                    <Button Grid.Column="1"
+                            Content="{loc:Tr Store.Manage.ClearAll}"
+                            Classes="danger"
+                            Command="{Binding ClearAllCommand}" />
+                    <Button Grid.Column="3"
+                            Content="{loc:Tr Store.Manage.Close}"
+                            Classes="focused"
+                            MinWidth="120"
+                            Command="{Binding CloseCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+    </Grid>
+</UserControl>

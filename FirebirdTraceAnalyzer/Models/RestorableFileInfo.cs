@@ -11,14 +11,18 @@ namespace FirebirdTraceAnalyzer.Models;
 /// </summary>
 public partial class RestorableFileInfo : ViewModelBase
 {
-    public RestorableFileInfo(TraceFileInfoModel file) => File = file;
+    public RestorableFileInfo(TraceFileInfoModel file, bool selected = true)
+    {
+        File = file;
+        IsSelected = selected;
+    }
 
     /// <summary>Исходная запись манифеста хранилища.</summary>
     public TraceFileInfoModel File { get; }
 
-    /// <summary>Выбран ли файл для восстановления (по умолчанию — да).</summary>
+    /// <summary>Выбран ли файл (для восстановления — по умолчанию да; для удаления — задаётся явно).</summary>
     [ObservableProperty]
-    public partial bool IsSelected { get; set; } = true;
+    public partial bool IsSelected { get; set; }
 
     public string FileName => File.FileName;
     public long EventCount => File.EventCount;
