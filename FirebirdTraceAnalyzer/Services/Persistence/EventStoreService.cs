@@ -35,6 +35,7 @@ public sealed class EventStoreService : IEventStore
         _connection.Open();
 
         Exec("PRAGMA journal_mode=WAL;");
+        Exec("PRAGMA synchronous=NORMAL;"); // безопасно при WAL, заметно ускоряет пакетную запись
         Exec("PRAGMA foreign_keys=ON;");
         EnsureSchema();
     }
@@ -129,15 +130,13 @@ CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
         }
 
         long count = 0;
-        // Кэш дедупа в пределах записи (плюс UNIQUE в БД обеспечивает кросс-файловый дедуп).
-        var sqlCache = new Dictionary<string, long>(StringComparer.Ordinal);
-        var attCache = new Dictionary<string, long>(StringComparer.Ordinal);
-
-        foreach (var ev in events)
+        using (var writer = new BatchWriter(_connection, tx, file.FileHash))
         {
-            var seq = InsertEvent(tx, file.FileHash, ev, sqlCache, attCache);
-            InsertChildren(tx, seq, ev);
-            count++;
+            foreach (var ev in events)
+            {
+                writer.Write(ev);
+                count++;
+            }
         }
 
         using (var upd = _connection.CreateCommand())
@@ -153,12 +152,25 @@ CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
         Logger.Info("EventStore: wrote {Count} event(s) for file {Name}", count, file.FileName);
     }
 
-    private long InsertEvent(SqliteTransaction tx, string fileHash, EventBase ev,
-        Dictionary<string, long> sqlCache, Dictionary<string, long> attCache)
+    /// <summary>
+    /// Пакетный писатель на переиспользуемых prepared-командах (создаются один раз на файл).
+    /// Устраняет аллокацию SqliteCommand/параметров на каждое событие/строку — главный перф-выигрыш.
+    /// Дедуп-кэши ключуются строкой (дешёвый hash); SHA-256 считается только для новых уникальных
+    /// значений (для UNIQUE-колонки и кросс-файлового дедупа).
+    /// </summary>
+    private sealed class BatchWriter : IDisposable
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.Transaction = tx;
-        cmd.CommandText = @"
+        private readonly string _fileHash;
+        private readonly SqliteCommand _ev, _sqlIns, _sqlSel, _attIns, _attSel, _param, _err, _perfItem;
+        private readonly Dictionary<string, SqliteParameter> _evp = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, long> _sqlCache = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, long> _attCache = new(StringComparer.Ordinal);
+
+        public BatchWriter(SqliteConnection c, SqliteTransaction tx, string fileHash)
+        {
+            _fileHash = fileHash;
+
+            _ev = Cmd(c, tx, @"
 INSERT INTO event(file_hash,ts,trace_id,hex_trace_id,event_type,attachment_ref,session_id,sql_ref,statement_id,
     txn_present,txn_id,txn_isolation,txn_consistency,txn_lock,txn_access,restart_count,procedure_name,
     trigger_name,trigger_table,trigger_timing,trigger_event,component,
@@ -166,209 +178,224 @@ INSERT INTO event(file_hash,ts,trace_id,hex_trace_id,event_type,attachment_ref,s
 VALUES($file,$ts,$tid,$hex,$type,$att,$sess,$sql,$stmt,
     $txp,$txid,$txiso,$txcons,$txlock,$txacc,$rc,$proc,
     $trn,$trt,$trtm,$tre,$comp,
-    $pp,$pe,$pf,$pr,$pw,$pm,$pts);";
+    $pp,$pe,$pf,$pr,$pw,$pm,$pts)
+RETURNING seq;");
+            foreach (var n in new[]
+                     {
+                         "$file", "$ts", "$tid", "$hex", "$type", "$att", "$sess", "$sql", "$stmt", "$txp", "$txid",
+                         "$txiso", "$txcons", "$txlock", "$txacc", "$rc", "$proc", "$trn", "$trt", "$trtm", "$tre",
+                         "$comp", "$pp", "$pe", "$pf", "$pr", "$pw", "$pm", "$pts"
+                     })
+            {
+                var p = _ev.CreateParameter();
+                p.ParameterName = n;
+                _ev.Parameters.Add(p);
+                _evp[n] = p;
+            }
+            _ev.Prepare();
 
-        void P(string n, object? v) => cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
-
-        P("$file", fileHash);
-        P("$ts", ev.Timestamp.Ticks);
-        P("$tid", ev.TraceId);
-        P("$hex", ev.HexTraceId);
-        P("$type", (int)ev.EventType);
-
-        // attachment / session / sql / statement / transaction / type-specific
-        long? attRef = null; int? sessionId = null; long? sqlRef = null; long? statementId = null;
-        int? txnPresent = null; long? txnId = null;
-        string? txIso = null, txCons = null, txLock = null, txAcc = null;
-        int? restart = null; string? procName = null;
-        string? trName = null, trTable = null, trTiming = null, trEvent = null, component = null;
-        int? perfPresent = null; int? pe = null, pf = null, pr = null, pw = null, pm = null;
-        int perfTableState = 0;
-
-        switch (ev)
-        {
-            case TraceInitEvent e: sessionId = e.Session.SessionId; break;
-            case TraceFinishEvent e: sessionId = e.Session.SessionId; break;
-            case AttachDatabaseEvent e: attRef = InternAttachment(tx, e.Attachment, attCache); break;
-            case DetachDatabaseEvent e: attRef = InternAttachment(tx, e.Attachment, attCache); break;
-
-            case StatementEventBase e:
-                attRef = InternAttachment(tx, e.Attachment, attCache);
-                sqlRef = InternSql(tx, e.Sql, sqlCache);
-                statementId = e.StatementId;
-                (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
-                if (e is StatementRestartEvent r) restart = r.RestartCount;
-                (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
-                break;
-
-            case ProcedureEventBase e:
-                attRef = InternAttachment(tx, e.Attachment, attCache);
-                procName = e.ProcedureName;
-                (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
-                (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
-                break;
-
-            case TriggerEventBase e:
-                attRef = InternAttachment(tx, e.Attachment, attCache);
-                trName = e.TriggerName; trTable = e.Table; trTiming = e.Timing; trEvent = e.Event;
-                (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
-                (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
-                break;
-
-            case ErrorEvent e:
-                attRef = InternAttachment(tx, e.Attachment, attCache);
-                component = e.Component;
-                break;
-
-            default:
-                throw new NotSupportedException($"Event type {ev.GetType().Name} is not supported by the store.");
-        }
-
-        P("$att", attRef); P("$sess", sessionId); P("$sql", sqlRef); P("$stmt", statementId);
-        P("$txp", txnPresent); P("$txid", txnId); P("$txiso", txIso); P("$txcons", txCons);
-        P("$txlock", txLock); P("$txacc", txAcc); P("$rc", restart); P("$proc", procName);
-        P("$trn", trName); P("$trt", trTable); P("$trtm", trTiming); P("$tre", trEvent); P("$comp", component);
-        P("$pp", perfPresent); P("$pe", pe); P("$pf", pf); P("$pr", pr); P("$pw", pw); P("$pm", pm);
-        P("$pts", perfTableState);
-
-        cmd.ExecuteNonQuery();
-        return LastRowId(tx);
-    }
-
-    private long LastRowId(SqliteTransaction tx)
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.Transaction = tx;
-        cmd.CommandText = "SELECT last_insert_rowid();";
-        return (long)cmd.ExecuteScalar()!;
-    }
-
-    private void InsertChildren(SqliteTransaction tx, long seq, EventBase ev)
-    {
-        switch (ev)
-        {
-            case StatementEventBase e: InsertParameters(tx, seq, e.Parameters); InsertPerfTable(tx, seq, e); break;
-            case ProcedureEventBase e: InsertParameters(tx, seq, e.Parameters); InsertPerfTable(tx, seq, e); break;
-            case TriggerEventBase e: InsertPerfTable(tx, seq, e); break;
-            case ErrorEvent e: InsertErrorLines(tx, seq, e.Errors); break;
-        }
-    }
-
-    private void InsertParameters(SqliteTransaction tx, long seq, IReadOnlyList<SqlParameters> parameters)
-    {
-        for (var i = 0; i < parameters.Count; i++)
-        {
-            var p = parameters[i];
-            using var cmd = _connection.CreateCommand();
-            cmd.Transaction = tx;
-            cmd.CommandText = "INSERT INTO sql_parameter(event_seq,ord,name,dtype,value) VALUES($s,$o,$n,$d,$v);";
-            cmd.Parameters.AddWithValue("$s", seq);
-            cmd.Parameters.AddWithValue("$o", i);
-            cmd.Parameters.AddWithValue("$n", p.Name);
-            cmd.Parameters.AddWithValue("$d", p.Dtype);
-            cmd.Parameters.AddWithValue("$v", p.Value);
-            cmd.ExecuteNonQuery();
-        }
-    }
-
-    private void InsertErrorLines(SqliteTransaction tx, long seq, IReadOnlyList<ErrorLines> errors)
-    {
-        for (var i = 0; i < errors.Count; i++)
-        {
-            var e = errors[i];
-            using var cmd = _connection.CreateCommand();
-            cmd.Transaction = tx;
-            cmd.CommandText = "INSERT INTO error_line(event_seq,ord,code,message) VALUES($s,$o,$c,$m);";
-            cmd.Parameters.AddWithValue("$s", seq);
-            cmd.Parameters.AddWithValue("$o", i);
-            cmd.Parameters.AddWithValue("$c", e.ErrorCode);
-            cmd.Parameters.AddWithValue("$m", e.Message);
-            cmd.ExecuteNonQuery();
-        }
-    }
-
-    private void InsertPerfTable(SqliteTransaction tx, long seq, EventBase ev)
-    {
-        var items = GetPerfTable(ev)?.Items;
-        if (items is null) return;
-        for (var i = 0; i < items.Count; i++)
-        {
-            var it = items[i];
-            using var cmd = _connection.CreateCommand();
-            cmd.Transaction = tx;
-            cmd.CommandText = @"INSERT INTO perf_table_item(event_seq,ord,table_name,natural_count,index_count,
+            _sqlIns = Cmd(c, tx, "INSERT OR IGNORE INTO sql_text(sha,text) VALUES($sha,$t);", "$sha", "$t");
+            _sqlSel = Cmd(c, tx, "SELECT id FROM sql_text WHERE sha=$sha;", "$sha");
+            _attIns = Cmd(c, tx, @"INSERT OR IGNORE INTO attachment(sha,att_id,db_path,user,role,charset,protocol,address,port,process_path,process_id)
+                                   VALUES($sha,$ai,$db,$u,$r,$c,$pr,$ad,$po,$pp,$pi);",
+                "$sha", "$ai", "$db", "$u", "$r", "$c", "$pr", "$ad", "$po", "$pp", "$pi");
+            _attSel = Cmd(c, tx, "SELECT id FROM attachment WHERE sha=$sha;", "$sha");
+            _param = Cmd(c, tx, "INSERT INTO sql_parameter(event_seq,ord,name,dtype,value) VALUES($s,$o,$n,$d,$v);",
+                "$s", "$o", "$n", "$d", "$v");
+            _err = Cmd(c, tx, "INSERT INTO error_line(event_seq,ord,code,message) VALUES($s,$o,$c,$m);",
+                "$s", "$o", "$c", "$m");
+            _perfItem = Cmd(c, tx, @"INSERT INTO perf_table_item(event_seq,ord,table_name,natural_count,index_count,
                 update_count,insert_count,delete_count,backout_count,purge_count,expunge_count)
-                VALUES($s,$o,$tn,$na,$ix,$up,$in,$de,$ba,$pu,$ex);";
-            cmd.Parameters.AddWithValue("$s", seq);
-            cmd.Parameters.AddWithValue("$o", i);
-            cmd.Parameters.AddWithValue("$tn", it.TableName);
-            cmd.Parameters.AddWithValue("$na", it.NaturalCount);
-            cmd.Parameters.AddWithValue("$ix", it.IndexCount);
-            cmd.Parameters.AddWithValue("$up", it.UpdateCount);
-            cmd.Parameters.AddWithValue("$in", it.InsertCount);
-            cmd.Parameters.AddWithValue("$de", it.DeleteCount);
-            cmd.Parameters.AddWithValue("$ba", it.BackoutCount);
-            cmd.Parameters.AddWithValue("$pu", it.PurgeCount);
-            cmd.Parameters.AddWithValue("$ex", it.ExpungeCount);
-            cmd.ExecuteNonQuery();
+                VALUES($s,$o,$tn,$na,$ix,$up,$in,$de,$ba,$pu,$ex);",
+                "$s", "$o", "$tn", "$na", "$ix", "$up", "$in", "$de", "$ba", "$pu", "$ex");
         }
-    }
 
-    private long InternSql(SqliteTransaction tx, string sql, Dictionary<string, long> cache)
-    {
-        var sha = Sha(sql);
-        if (cache.TryGetValue(sha, out var cached)) return cached;
-
-        using (var ins = _connection.CreateCommand())
+        public void Write(EventBase ev)
         {
-            ins.Transaction = tx;
-            ins.CommandText = "INSERT OR IGNORE INTO sql_text(sha,text) VALUES($sha,$t);";
-            ins.Parameters.AddWithValue("$sha", sha);
-            ins.Parameters.AddWithValue("$t", sql);
-            ins.ExecuteNonQuery();
+            void S(string n, object? v) => _evp[n].Value = v ?? DBNull.Value;
+
+            S("$file", _fileHash);
+            S("$ts", ev.Timestamp.Ticks);
+            S("$tid", ev.TraceId);
+            S("$hex", ev.HexTraceId);
+            S("$type", (int)ev.EventType);
+
+            long? attRef = null; int? sessionId = null; long? sqlRef = null; long? statementId = null;
+            int? txnPresent = null; long? txnId = null;
+            string? txIso = null, txCons = null, txLock = null, txAcc = null;
+            int? restart = null; string? procName = null;
+            string? trName = null, trTable = null, trTiming = null, trEvent = null, component = null;
+            int? perfPresent = null; int? pe = null, pf = null, pr = null, pw = null, pm = null;
+            var perfTableState = 0;
+
+            switch (ev)
+            {
+                case TraceInitEvent e: sessionId = e.Session.SessionId; break;
+                case TraceFinishEvent e: sessionId = e.Session.SessionId; break;
+                case AttachDatabaseEvent e: attRef = InternAttachment(e.Attachment); break;
+                case DetachDatabaseEvent e: attRef = InternAttachment(e.Attachment); break;
+
+                case StatementEventBase e:
+                    attRef = InternAttachment(e.Attachment);
+                    sqlRef = InternSql(e.Sql);
+                    statementId = e.StatementId;
+                    (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
+                    if (e is StatementRestartEvent r) restart = r.RestartCount;
+                    (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
+                    break;
+
+                case ProcedureEventBase e:
+                    attRef = InternAttachment(e.Attachment);
+                    procName = e.ProcedureName;
+                    (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
+                    (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
+                    break;
+
+                case TriggerEventBase e:
+                    attRef = InternAttachment(e.Attachment);
+                    trName = e.TriggerName; trTable = e.Table; trTiming = e.Timing; trEvent = e.Event;
+                    (txnPresent, txnId, txIso, txCons, txLock, txAcc) = Txn(e.Transaction);
+                    (perfPresent, pe, pf, pr, pw, pm, perfTableState) = Perf(e);
+                    break;
+
+                case ErrorEvent e:
+                    attRef = InternAttachment(e.Attachment);
+                    component = e.Component;
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Event type {ev.GetType().Name} is not supported by the store.");
+            }
+
+            S("$att", attRef); S("$sess", sessionId); S("$sql", sqlRef); S("$stmt", statementId);
+            S("$txp", txnPresent); S("$txid", txnId); S("$txiso", txIso); S("$txcons", txCons);
+            S("$txlock", txLock); S("$txacc", txAcc); S("$rc", restart); S("$proc", procName);
+            S("$trn", trName); S("$trt", trTable); S("$trtm", trTiming); S("$tre", trEvent); S("$comp", component);
+            S("$pp", perfPresent); S("$pe", pe); S("$pf", pf); S("$pr", pr); S("$pw", pw); S("$pm", pm);
+            S("$pts", perfTableState);
+
+            var seq = (long)_ev.ExecuteScalar()!;
+            WriteChildren(seq, ev);
         }
 
-        using var sel = _connection.CreateCommand();
-        sel.Transaction = tx;
-        sel.CommandText = "SELECT id FROM sql_text WHERE sha=$sha;";
-        sel.Parameters.AddWithValue("$sha", sha);
-        var id = (long)sel.ExecuteScalar()!;
-        cache[sha] = id;
-        return id;
-    }
-
-    private long InternAttachment(SqliteTransaction tx, AttachmentInfo a, Dictionary<string, long> cache)
-    {
-        var key = $"{a.AttachmentId}{a.DatabasePath}{a.User}{a.Role}{a.Charset}{a.Protocol}{a.Address}{a.Port}{a.ProcessPath}{a.ProcessId}";
-        var sha = Sha(key);
-        if (cache.TryGetValue(sha, out var cached)) return cached;
-
-        using (var ins = _connection.CreateCommand())
+        private void WriteChildren(long seq, EventBase ev)
         {
-            ins.Transaction = tx;
-            ins.CommandText = @"INSERT OR IGNORE INTO attachment(sha,att_id,db_path,user,role,charset,protocol,address,port,process_path,process_id)
-                                VALUES($sha,$ai,$db,$u,$r,$c,$pr,$ad,$po,$pp,$pi);";
-            ins.Parameters.AddWithValue("$sha", sha);
-            ins.Parameters.AddWithValue("$ai", a.AttachmentId);
-            ins.Parameters.AddWithValue("$db", a.DatabasePath);
-            ins.Parameters.AddWithValue("$u", a.User);
-            ins.Parameters.AddWithValue("$r", a.Role);
-            ins.Parameters.AddWithValue("$c", a.Charset);
-            ins.Parameters.AddWithValue("$pr", a.Protocol);
-            ins.Parameters.AddWithValue("$ad", a.Address);
-            ins.Parameters.AddWithValue("$po", a.Port);
-            ins.Parameters.AddWithValue("$pp", (object?)a.ProcessPath ?? DBNull.Value);
-            ins.Parameters.AddWithValue("$pi", (object?)a.ProcessId ?? DBNull.Value);
-            ins.ExecuteNonQuery();
+            switch (ev)
+            {
+                case StatementEventBase e: WriteParameters(seq, e.Parameters); WritePerfTable(seq, ev); break;
+                case ProcedureEventBase e: WriteParameters(seq, e.Parameters); WritePerfTable(seq, ev); break;
+                case TriggerEventBase: WritePerfTable(seq, ev); break;
+                case ErrorEvent e: WriteErrorLines(seq, e.Errors); break;
+            }
         }
 
-        using var sel = _connection.CreateCommand();
-        sel.Transaction = tx;
-        sel.CommandText = "SELECT id FROM attachment WHERE sha=$sha;";
-        sel.Parameters.AddWithValue("$sha", sha);
-        var id = (long)sel.ExecuteScalar()!;
-        cache[sha] = id;
-        return id;
+        private void WriteParameters(long seq, IReadOnlyList<SqlParameters> parameters)
+        {
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                var p = parameters[i];
+                _param.Parameters["$s"].Value = seq;
+                _param.Parameters["$o"].Value = i;
+                _param.Parameters["$n"].Value = p.Name;
+                _param.Parameters["$d"].Value = p.Dtype;
+                _param.Parameters["$v"].Value = p.Value;
+                _param.ExecuteNonQuery();
+            }
+        }
+
+        private void WriteErrorLines(long seq, IReadOnlyList<ErrorLines> errors)
+        {
+            for (var i = 0; i < errors.Count; i++)
+            {
+                var e = errors[i];
+                _err.Parameters["$s"].Value = seq;
+                _err.Parameters["$o"].Value = i;
+                _err.Parameters["$c"].Value = e.ErrorCode;
+                _err.Parameters["$m"].Value = e.Message;
+                _err.ExecuteNonQuery();
+            }
+        }
+
+        private void WritePerfTable(long seq, EventBase ev)
+        {
+            var items = GetPerfTable(ev)?.Items;
+            if (items is null) return;
+            for (var i = 0; i < items.Count; i++)
+            {
+                var it = items[i];
+                _perfItem.Parameters["$s"].Value = seq;
+                _perfItem.Parameters["$o"].Value = i;
+                _perfItem.Parameters["$tn"].Value = it.TableName;
+                _perfItem.Parameters["$na"].Value = it.NaturalCount;
+                _perfItem.Parameters["$ix"].Value = it.IndexCount;
+                _perfItem.Parameters["$up"].Value = it.UpdateCount;
+                _perfItem.Parameters["$in"].Value = it.InsertCount;
+                _perfItem.Parameters["$de"].Value = it.DeleteCount;
+                _perfItem.Parameters["$ba"].Value = it.BackoutCount;
+                _perfItem.Parameters["$pu"].Value = it.PurgeCount;
+                _perfItem.Parameters["$ex"].Value = it.ExpungeCount;
+                _perfItem.ExecuteNonQuery();
+            }
+        }
+
+        private long InternSql(string sql)
+        {
+            if (_sqlCache.TryGetValue(sql, out var cached)) return cached;
+
+            var sha = Sha(sql);
+            _sqlIns.Parameters["$sha"].Value = sha;
+            _sqlIns.Parameters["$t"].Value = sql;
+            _sqlIns.ExecuteNonQuery();
+            _sqlSel.Parameters["$sha"].Value = sha;
+            var id = (long)_sqlSel.ExecuteScalar()!;
+            _sqlCache[sql] = id;
+            return id;
+        }
+
+        private long InternAttachment(AttachmentInfo a)
+        {
+            var key = $"{a.AttachmentId} {a.DatabasePath} {a.User} {a.Role} {a.Charset} {a.Protocol} {a.Address} {a.Port} {a.ProcessPath} {a.ProcessId}";
+            if (_attCache.TryGetValue(key, out var cached)) return cached;
+
+            var sha = Sha(key);
+            _attIns.Parameters["$sha"].Value = sha;
+            _attIns.Parameters["$ai"].Value = a.AttachmentId;
+            _attIns.Parameters["$db"].Value = a.DatabasePath;
+            _attIns.Parameters["$u"].Value = a.User;
+            _attIns.Parameters["$r"].Value = a.Role;
+            _attIns.Parameters["$c"].Value = a.Charset;
+            _attIns.Parameters["$pr"].Value = a.Protocol;
+            _attIns.Parameters["$ad"].Value = a.Address;
+            _attIns.Parameters["$po"].Value = a.Port;
+            _attIns.Parameters["$pp"].Value = (object?)a.ProcessPath ?? DBNull.Value;
+            _attIns.Parameters["$pi"].Value = (object?)a.ProcessId ?? DBNull.Value;
+            _attIns.ExecuteNonQuery();
+            _attSel.Parameters["$sha"].Value = sha;
+            var id = (long)_attSel.ExecuteScalar()!;
+            _attCache[key] = id;
+            return id;
+        }
+
+        private static SqliteCommand Cmd(SqliteConnection c, SqliteTransaction tx, string sql, params string[] names)
+        {
+            var cmd = c.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = sql;
+            foreach (var n in names)
+            {
+                var p = cmd.CreateParameter();
+                p.ParameterName = n;
+                cmd.Parameters.Add(p);
+            }
+            if (names.Length > 0) cmd.Prepare();
+            return cmd;
+        }
+
+        public void Dispose()
+        {
+            _ev.Dispose(); _sqlIns.Dispose(); _sqlSel.Dispose(); _attIns.Dispose(); _attSel.Dispose();
+            _param.Dispose(); _err.Dispose(); _perfItem.Dispose();
+        }
     }
 
     private static (int present, long? id, string? iso, string? cons, string? lockm, string? acc) Txn(TransactionInfo? t)
