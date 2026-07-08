@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
+using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services.Persistence;
@@ -22,6 +24,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
 
     private readonly IEventStore _store;
     private readonly SemaphoreSlim _gate;
+    private readonly IWindowProvider _windowProvider;
 
     public event EventHandler<object?>? CloseRequested;
 
@@ -46,12 +49,14 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     {
         _store = null!;
         _gate = null!;
+        _windowProvider = null!;
     }
 
-    public StoreManagementViewModel(IEventStore store, SemaphoreSlim gate)
+    public StoreManagementViewModel(IEventStore store, SemaphoreSlim gate, IWindowProvider windowProvider)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _gate = gate ?? throw new ArgumentNullException(nameof(gate));
+        _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
     }
 
     /// <summary>Первичная загрузка статистики и списка файлов (вызывать до показа диалога).</summary>
@@ -162,6 +167,108 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Store management: clear failed");
+            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        await RefreshAsync();
+    }
+
+    /// <summary>Экспортирует выбранные файлы (или все, если ничего не выбрано) в отдельный файл-хранилище.</summary>
+    [RelayCommand]
+    private async Task ExportAsync()
+    {
+        if (Files.Count == 0)
+        {
+            StatusMessage = Loc.Tr("Store.Manage.NothingToExport");
+            return;
+        }
+
+        var topLevel = _windowProvider.GetCurrent();
+        if (topLevel?.StorageProvider is null)
+            return;
+
+        var picked = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = Loc.Tr("Store.Manage.ExportTitle"),
+            SuggestedFileName = "events-export.db",
+            DefaultExtension = "db",
+            FileTypeChoices = [new FilePickerFileType(Loc.Tr("Store.Manage.StoreFileType")) { Patterns = ["*.db"] }]
+        });
+        if (picked is null)
+            return;
+
+        var selected = Files.Where(f => f.IsSelected).Select(f => f.File).ToList();
+        var toExport = selected.Count > 0 ? selected : Files.Select(f => f.File).ToList();
+        var path = picked.Path.LocalPath;
+
+        IsBusy = true;
+        try
+        {
+            await _gate.WaitAsync();
+            try
+            {
+                await Task.Run(() => _store.ExportTo(path, toExport));
+            }
+            finally
+            {
+                _gate.Release();
+            }
+
+            StatusMessage = string.Format(Loc.Tr("Store.Manage.Exported"), toExport.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Store management: export failed");
+            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>Импортирует файлы из другого файла-хранилища (файлы с существующим хэшем пропускаются).</summary>
+    [RelayCommand]
+    private async Task ImportAsync()
+    {
+        var topLevel = _windowProvider.GetCurrent();
+        if (topLevel?.StorageProvider is null)
+            return;
+
+        var picked = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Loc.Tr("Store.Manage.ImportTitle"),
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(Loc.Tr("Store.Manage.StoreFileType")) { Patterns = ["*.db"] }]
+        });
+        if (picked.Count == 0)
+            return;
+
+        var path = picked[0].Path.LocalPath;
+        var imported = 0;
+
+        IsBusy = true;
+        try
+        {
+            await _gate.WaitAsync();
+            try
+            {
+                imported = await Task.Run(() => _store.ImportFrom(path));
+            }
+            finally
+            {
+                _gate.Release();
+            }
+
+            StatusMessage = string.Format(Loc.Tr("Store.Manage.Imported"), imported);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Store management: import failed");
             StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
         }
         finally

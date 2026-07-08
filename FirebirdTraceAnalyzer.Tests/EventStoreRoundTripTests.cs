@@ -233,6 +233,70 @@ public sealed class EventStoreRoundTripTests
         finally { TryDelete(db); }
     }
 
+    [Fact]
+    public void ExportThenImport_RoundTripsFilesAndDedups()
+    {
+        var srcDb = TempDb();
+        var exportDb = TempDb();
+        var destDb = TempDb();
+        try
+        {
+            // Источник: два файла с общими SQL/подключениями (дедуп внутри источника).
+            using (var src = new EventStoreService(srcDb))
+            {
+                src.WriteFile(File("H1", "1.log"), SampleEvents());
+                src.WriteFile(File("H2", "2.log"), SampleEvents());
+                src.ExportTo(exportDb, src.ListFiles());
+            }
+
+            // Приёмник: пустой, импортируем из экспортированного файла.
+            using var dest = new EventStoreService(destDb);
+            var imported = dest.ImportFrom(exportDb);
+
+            Assert.Equal(2, imported);
+            var stats = dest.GetStatistics();
+            Assert.Equal(2, stats.FileCount);
+            Assert.Equal(32, stats.EventCount);
+            // Дедуп сохраняется после переноса: те же 2 уникальных SQL и 2 подключения.
+            Assert.Equal(2, stats.UniqueSqlCount);
+            Assert.Equal(2, stats.UniqueAttachmentCount);
+
+            // Содержимое идентично исходному по одному из файлов.
+            var original = SampleEvents();
+            var read = dest.ReadFile("H1");
+            Assert.Equal(original.Count, read.Count);
+            for (var i = 0; i < original.Count; i++)
+                Assert.Equal(Dump(original[i]), Dump(read[i]));
+        }
+        finally { TryDelete(srcDb); TryDelete(exportDb); TryDelete(destDb); }
+    }
+
+    [Fact]
+    public void Import_SkipsFilesAlreadyPresent()
+    {
+        var srcDb = TempDb();
+        var destDb = TempDb();
+        try
+        {
+            using (var src = new EventStoreService(srcDb))
+            {
+                src.WriteFile(File("H1", "1.log"), SampleEvents());
+                src.WriteFile(File("H2", "2.log"), SampleEvents());
+            }
+
+            using var dest = new EventStoreService(destDb);
+            dest.WriteFile(File("H1", "1.log"), SampleEvents()); // H1 уже есть в приёмнике
+
+            var imported = dest.ImportFrom(srcDb);
+
+            Assert.Equal(1, imported); // импортирован только H2
+            Assert.Equal(2, dest.GetStatistics().FileCount);
+            Assert.True(dest.ContainsFile("H1"));
+            Assert.True(dest.ContainsFile("H2"));
+        }
+        finally { TryDelete(srcDb); TryDelete(destDb); }
+    }
+
     private static void TryDelete(string db)
     {
         foreach (var p in new[] { db, db + "-wal", db + "-shm" })

@@ -35,6 +35,18 @@ public interface IEventStore : IDisposable
     /// <summary>Полностью очищает хранилище (для сессионного режима — в начале нового парсинга).</summary>
     void Clear();
 
+    /// <summary>
+    /// Импортирует файлы из другого файла-хранилища (перенос между пользователями). Файлы с уже
+    /// существующим хэшем пропускаются; SQL/подключения дедуплицируются. Возвращает число импортированных файлов.
+    /// </summary>
+    int ImportFrom(string sourceDbPath);
+
+    /// <summary>
+    /// Экспортирует указанные файлы в новый самодостаточный файл-хранилище (для передачи другому
+    /// пользователю). Существующий целевой файл перезаписывается.
+    /// </summary>
+    void ExportTo(string targetDbPath, IEnumerable<TraceFileInfoModel> files);
+
     /// <summary>Сводная статистика хранилища.</summary>
     EventStoreStatistics GetStatistics();
 }

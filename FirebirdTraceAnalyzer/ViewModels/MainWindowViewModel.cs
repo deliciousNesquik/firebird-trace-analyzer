@@ -2283,13 +2283,14 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var store = App.Services?.GetService<IEventStore>();
-            if (store is null)
+            var windowProvider = App.Services?.GetService<IWindowProvider>();
+            if (store is null || windowProvider is null)
             {
                 StatusMessage = Loc.Tr("Store.Manage.Unavailable");
                 return;
             }
 
-            var vm = new StoreManagementViewModel(store, _storeGate);
+            var vm = new StoreManagementViewModel(store, _storeGate, windowProvider);
             await vm.LoadAsync();
             await Dialogs.ShowDialogAsync<object>(vm);
         }

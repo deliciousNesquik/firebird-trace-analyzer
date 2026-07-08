@@ -23,21 +23,38 @@ public sealed class EventStoreService : IEventStore
     private readonly string _dbPath;
     private readonly SqliteConnection _connection;
 
-    public EventStoreService(string dbPath)
+    public EventStoreService(string dbPath) : this(dbPath, writable: true)
+    {
+    }
+
+    /// <param name="writable">
+    /// true — обычное открытие (WAL, схема создаётся при отсутствии). false — только чтение
+    /// (для импорта чужого файла): не мутируем источник (ни pragma, ни создание схемы).
+    /// </param>
+    private EventStoreService(string dbPath, bool writable)
     {
         _dbPath = dbPath ?? throw new ArgumentNullException(nameof(dbPath));
 
-        var dir = Path.GetDirectoryName(_dbPath);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
+        if (writable)
+        {
+            var dir = Path.GetDirectoryName(_dbPath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
 
-        _connection = new SqliteConnection($"Data Source={_dbPath}");
-        _connection.Open();
+            _connection = new SqliteConnection($"Data Source={_dbPath}");
+            _connection.Open();
 
-        Exec("PRAGMA journal_mode=WAL;");
-        Exec("PRAGMA synchronous=NORMAL;"); // безопасно при WAL, заметно ускоряет пакетную запись
-        Exec("PRAGMA foreign_keys=ON;");
-        EnsureSchema();
+            Exec("PRAGMA journal_mode=WAL;");
+            Exec("PRAGMA synchronous=NORMAL;"); // безопасно при WAL, заметно ускоряет пакетную запись
+            Exec("PRAGMA foreign_keys=ON;");
+            EnsureSchema();
+        }
+        else
+        {
+            // Открываем источник только на чтение: файл пользователя не трогаем.
+            _connection = new SqliteConnection($"Data Source={_dbPath};Mode=ReadOnly");
+            _connection.Open();
+        }
     }
 
     // ---------------------------------------------------------------- schema
@@ -434,6 +451,68 @@ RETURNING seq;");
         FailedTriggerFinishEvent e => e.PerformanceTable,
         _ => null
     };
+
+    // ---------------------------------------------------------------- transfer
+
+    public int ImportFrom(string sourceDbPath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceDbPath))
+            throw new ArgumentException("Source path is empty.", nameof(sourceDbPath));
+        if (!File.Exists(sourceDbPath))
+            throw new FileNotFoundException("Source store not found.", sourceDbPath);
+
+        // Источник открываем только на чтение — файл пользователя не мутируем.
+        using var source = new EventStoreService(sourceDbPath, writable: false);
+
+        var imported = 0;
+        foreach (var file in source.ListFiles())
+        {
+            // Уже есть файл с таким хэшем — пропускаем (контент идентичен, дублировать незачем).
+            if (ContainsFile(file.FileHash))
+                continue;
+
+            // ReadFile→WriteFile: дедуп SQL/подключений происходит на уровне БД (UNIQUE(sha) + INSERT OR IGNORE),
+            // поэтому переносимые словари сливаются с существующими без дублей.
+            WriteFile(file, source.ReadFile(file.FileHash));
+            imported++;
+        }
+
+        Logger.Info("EventStore: imported {Count} file(s) from {Path}", imported, sourceDbPath);
+        return imported;
+    }
+
+    public void ExportTo(string targetDbPath, IEnumerable<TraceFileInfoModel> files)
+    {
+        if (string.IsNullOrWhiteSpace(targetDbPath))
+            throw new ArgumentException("Target path is empty.", nameof(targetDbPath));
+
+        // Чистый экспорт: если файл существует — удаляем его (и WAL-спутники), чтобы получить
+        // самодостаточную БД ровно с выбранными файлами.
+        DeleteDbFiles(targetDbPath);
+
+        var exported = 0;
+        using (var target = new EventStoreService(targetDbPath))
+        {
+            foreach (var file in files)
+            {
+                if (!ContainsFile(file.FileHash))
+                    continue;
+
+                target.WriteFile(file, ReadFile(file.FileHash));
+                exported++;
+            }
+        }
+        // Dispose закрывает соединение → WAL чекпойнтится в основной файл: экспорт — один .db.
+
+        Logger.Info("EventStore: exported {Count} file(s) to {Path}", exported, targetDbPath);
+    }
+
+    private static void DeleteDbFiles(string dbPath)
+    {
+        foreach (var path in new[] { dbPath, dbPath + "-wal", dbPath + "-shm" })
+            if (File.Exists(path))
+                File.Delete(path);
+    }
 
     // ---------------------------------------------------------------- read
 
