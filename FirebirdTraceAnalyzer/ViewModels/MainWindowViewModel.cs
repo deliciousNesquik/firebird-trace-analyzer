@@ -2294,6 +2294,109 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// На старте (только режим Session — «зеркало сессии»): если в хранилище остались файлы прошлой
+    /// сессии (например, после падения/зависания), предлагает выбрать и восстановить их из хранилища
+    /// без повторного парсинга. В Accumulate архив может быть огромным — там восстановление не к месту
+    /// (доступ к архиву — через отдельное окно управления/анализа).
+    /// </summary>
+    public async Task PromptSessionRecoveryAsync()
+    {
+        // Только зеркало сессии: восстанавливаем рабочий набор, а не весь накопительный архив.
+        if (_appSettings.StorageMode != StorageMode.Session)
+            return;
+
+        var store = StoreIfEnabled();
+        if (store is null)
+            return;
+
+        // Уже есть открытые файлы — не мешаем начатой работе.
+        if (FileCards.Count > 0)
+            return;
+
+        List<TraceFileInfoModel> manifest;
+        await _storeGate.WaitAsync();
+        try
+        {
+            manifest = (await Task.Run(() => store.ListFiles())).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "EventStore: ListFiles failed on startup");
+            return;
+        }
+        finally
+        {
+            _storeGate.Release();
+        }
+
+        if (manifest.Count == 0)
+            return;
+
+        var recoveryViewModel = new SessionRecoveryViewModel();
+        recoveryViewModel.Initialize(manifest);
+
+        var selected = await Dialogs.ShowDialogAsync<IReadOnlyList<TraceFileInfoModel>>(recoveryViewModel);
+        if (selected is null || selected.Count == 0)
+            return;
+
+        await RestoreFilesAsync(selected, store);
+    }
+
+    /// <summary>
+    /// Загружает выбранные при восстановлении файлы из хранилища в рабочий набор. Чтение с диска
+    /// (без парсинга и без повторной записи в стор), карточки добавляются на UI-потоке.
+    /// </summary>
+    private async Task RestoreFilesAsync(IReadOnlyList<TraceFileInfoModel> files, IEventStore store)
+    {
+        var restored = 0;
+
+        try
+        {
+            _isBatchUpdate = true;
+
+            foreach (var model in files)
+            {
+                if (IsDuplicate(model.FileHash))
+                    continue;
+
+                IReadOnlyList<EventBase> events;
+                await _storeGate.WaitAsync();
+                try
+                {
+                    events = await Task.Run(() => store.ReadFile(model.FileHash));
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "EventStore: failed to restore file {Hash}", model.FileHash);
+                    continue;
+                }
+                finally
+                {
+                    _storeGate.Release();
+                }
+
+                var list = events as List<EventBase> ?? events.ToList();
+                _eventsByFileHash[model.FileHash] = list;
+                AllEvents.AddRange(list);
+
+                var card = model;
+                await Dispatcher.UIThread.InvokeAsync(() => FileCards.Add(CreateFileCardViewModel(card)));
+                restored++;
+            }
+        }
+        finally
+        {
+            _isBatchUpdate = false;
+        }
+
+        if (restored > 0)
+            ApplyAllFilters();
+
+        StatusMessage = string.Format(Loc.Tr("Status.Main.SessionRestored"), restored);
+        Logger.Info("Session recovery: restored {Count} file(s) from store", restored);
+    }
+
+    /// <summary>
     /// На старте: если есть неразрешённые коллизии плагинов (включено более одного с одним Id),
     /// открывает окно плагинов сразу на разделе коллизий, чтобы пользователь выбрал. Необязательно —
     /// окно можно просто закрыть.

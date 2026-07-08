@@ -25,16 +25,20 @@ public partial class MainWindow : Window
             Closing += OnWindowClosing;
         }
 
-        // После показа окна — при неразрешённых коллизиях плагинов предложить выбор (однократно).
-        Opened += OnOpenedPromptCollisions;
+        // После показа окна — однократные стартовые подсказки: восстановление прошлой сессии из
+        // хранилища (режим Session), затем выбор при неразрешённых коллизиях плагинов.
+        Opened += OnOpenedStartupPrompts;
     }
 
-    private async void OnOpenedPromptCollisions(object? sender, EventArgs e)
+    private async void OnOpenedStartupPrompts(object? sender, EventArgs e)
     {
-        Opened -= OnOpenedPromptCollisions;
+        Opened -= OnOpenedStartupPrompts;
 
-        if (DataContext is MainWindowViewModel vm)
-            await vm.PromptUnresolvedCollisionsAsync();
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        await vm.PromptSessionRecoveryAsync();
+        await vm.PromptUnresolvedCollisionsAsync();
     }
 
     private void ApplyWindowGeometry(WindowSettings ws)

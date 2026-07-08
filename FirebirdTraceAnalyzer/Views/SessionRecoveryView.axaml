@@ -1,0 +1,175 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:models="using:FirebirdTraceAnalyzer.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="560"
+             x:Class="FirebirdTraceAnalyzer.Views.SessionRecoveryView"
+             x:DataType="vm:SessionRecoveryViewModel"
+             Width="760"
+             MaxHeight="640">
+
+    <Design.DataContext>
+        <vm:SessionRecoveryViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Tr Recovery.Title}"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Tr Recovery.Subtitle}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- File List -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource AppBackgroundBrush}"
+                Padding="20">
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Selection Controls -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5" Margin="0,0,0,12">
+                    <Button Grid.Column="0"
+                            Content="{loc:Tr Recovery.SelectAll}"
+                            Classes="focused"
+                            Command="{Binding SelectAllCommand}" />
+                    <Button Grid.Column="1"
+                            Content="{loc:Tr Recovery.DeselectAll}"
+                            Classes="danger"
+                            Command="{Binding DeselectAllCommand}" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Summary}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Grid>
+
+                <!-- Files -->
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:RestorableFileInfo">
+                                <Border Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,12,0" />
+
+                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding FileName}"
+                                                       FontWeight="Medium"
+                                                       FontSize="13" />
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                                                <Run Text="{Binding TimeRange}" />
+                                                <Run Text=" • " />
+                                                <Run Text="{Binding FormattedSize}" />
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{loc:Tr Recovery.EventsLabel}"
+                                                       FontSize="10"
+                                                       HorizontalAlignment="Right"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding EventCount, StringFormat='{}{0:N0}'}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       HorizontalAlignment="Right"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+
+                <!-- Selection summary -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource AppBackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="14,10">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="24">
+                        <TextBlock Grid.Column="0"
+                                   Text="{loc:Tr Recovery.FooterHint}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="{loc:Tr Recovery.SelectedLabel}"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}">
+                                <Run Text="{Binding SelectedCount}" />
+                                <Run Text="{loc:Tr Recovery.FilesUnit}" />
+                            </TextBlock>
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Width="1" Background="{DynamicResource BorderBrush}" Margin="0,2" />
+
+                        <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="{loc:Tr Recovery.EventsLabel}"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Text="{Binding TotalEvents, StringFormat='{}{0:N0}'}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Buttons -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                    <Button Grid.Column="1"
+                            Content="{loc:Tr Recovery.Restore}"
+                            Classes="focused"
+                            MinWidth="190"
+                            Command="{Binding RestoreCommand}" />
+                    <Button Grid.Column="2"
+                            Content="{loc:Tr Recovery.Skip}"
+                            Classes="danger"
+                            Command="{Binding SkipCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+    </Grid>
+</UserControl>
