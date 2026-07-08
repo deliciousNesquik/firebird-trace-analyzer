@@ -18,6 +18,7 @@ using FirebirdTraceAnalyzer.Services.Dialogs;
 using FirebirdTraceAnalyzer.Services.EventLinking;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
@@ -102,6 +103,15 @@ internal sealed class Program
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+
+        // Хранилище распарсенных событий (SQLite). Создаётся лениво при первом обращении;
+        // пока никто не резолвит — файл БД не создаётся. Путь — из настроек.
+        services.AddSingleton<IEventStore>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var dir = settings.GetEventStoreDirectory();
+            return new EventStoreService(Path.Combine(dir, "events.db"));
+        });
 
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(

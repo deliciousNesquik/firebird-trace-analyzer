@@ -19,6 +19,22 @@ public enum AppTheme
 }
 
 /// <summary>
+/// Режим хранения распарсенных событий на диске.
+/// </summary>
+public enum StorageMode
+{
+    /// <summary>Не сохранять события на диск.</summary>
+    Off,
+
+    /// <summary>Сессионный: каждый новый парсинг очищает хранилище и пишет туда файлы текущей сессии
+    /// (аварийное восстановление после закрытия/зависания).</summary>
+    Session,
+
+    /// <summary>Накопительный: каждый парсинг дополняет хранилище (долгий архив).</summary>
+    Accumulate
+}
+
+/// <summary>
 /// Основные настройки приложения
 /// </summary>
 public class AppSettings
@@ -62,6 +78,15 @@ public class AppSettings
     /// Путь к файлу лога парсера. Пусто — путь по умолчанию (logs/parser.log).
     /// </summary>
     public string ParserLogPath { get; set; } = string.Empty;
+
+    /// <summary>Режим дискового хранилища событий. По умолчанию — сессионный (аварийное восстановление).</summary>
+    public StorageMode StorageMode { get; set; } = StorageMode.Session;
+
+    /// <summary>
+    /// Папка файла хранилища событий (events.db). Пусто — папка по умолчанию
+    /// (%AppData%/FirebirdTraceAnalyzer/EventStore).
+    /// </summary>
+    public string StoragePath { get; set; } = string.Empty;
 }
 
 /// <summary>

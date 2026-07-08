@@ -24,6 +24,9 @@ public interface ISettingsService
     /// <summary>Папка для сохранения отчётов с учётом значения по умолчанию.</summary>
     string GetReportsDirectory();
 
+    /// <summary>Папка файла хранилища событий (events.db) с учётом значения по умолчанию.</summary>
+    string GetEventStoreDirectory();
+
     /// <summary>Сохраняет текущие настройки в пользовательский файл.</summary>
     void Save();
 

@@ -147,6 +147,15 @@ public sealed class SettingsService : ISettingsService
         return Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Reports", "History");
     }
 
+    public string GetEventStoreDirectory()
+    {
+        if (!string.IsNullOrWhiteSpace(App.StoragePath))
+            return ExpandPath(App.StoragePath);
+
+        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        return Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "EventStore");
+    }
+
     /// <summary>
     /// Раскрывает "~" в домашний каталог пользователя (.NET сам этого не делает — иначе
     /// рядом с приложением создаётся буквальная папка "~"). Также раскрывает переменные
@@ -190,6 +199,8 @@ public sealed class SettingsService : ISettingsService
         target.ReportsPath = source.ReportsPath;
         target.AppLogPath = source.AppLogPath;
         target.ParserLogPath = source.ParserLogPath;
+        target.StorageMode = source.StorageMode;
+        target.StoragePath = source.StoragePath;
     }
 
     private static void CopyWindow(WindowSettings source, WindowSettings target)
