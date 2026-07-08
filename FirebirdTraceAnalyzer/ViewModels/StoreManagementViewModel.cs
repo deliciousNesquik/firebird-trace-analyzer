@@ -22,8 +22,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private readonly IEventStore _store;
-    private readonly SemaphoreSlim _gate;
+    private readonly EventStoreDispatcher _dispatcher;
     private readonly IWindowProvider _windowProvider;
 
     public event EventHandler<object?>? CloseRequested;
@@ -47,15 +46,13 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public StoreManagementViewModel()
     {
-        _store = null!;
-        _gate = null!;
+        _dispatcher = null!;
         _windowProvider = null!;
     }
 
-    public StoreManagementViewModel(IEventStore store, SemaphoreSlim gate, IWindowProvider windowProvider)
+    public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
     {
-        _store = store ?? throw new ArgumentNullException(nameof(store));
-        _gate = gate ?? throw new ArgumentNullException(nameof(gate));
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
     }
 
@@ -68,19 +65,8 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBusy = true;
         try
         {
-            EventStoreStatistics stats;
-            IReadOnlyList<TraceFileInfoModel> files;
-
-            await _gate.WaitAsync();
-            try
-            {
-                stats = await Task.Run(() => _store.GetStatistics());
-                files = await Task.Run(() => _store.ListFiles());
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            var stats = await _dispatcher.RunAsync(store => store.GetStatistics());
+            var files = await _dispatcher.RunAsync(store => store.ListFiles());
 
             foreach (var item in Files)
                 item.PropertyChanged -= OnItemChanged;
@@ -117,19 +103,11 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBusy = true;
         try
         {
-            await _gate.WaitAsync();
-            try
+            await _dispatcher.RunAsync(store =>
             {
-                await Task.Run(() =>
-                {
-                    foreach (var hash in hashes)
-                        _store.DeleteFile(hash);
-                });
-            }
-            finally
-            {
-                _gate.Release();
-            }
+                foreach (var hash in hashes)
+                    store.DeleteFile(hash);
+            });
 
             Logger.Info("Store management: deleted {Count} file(s)", hashes.Count);
         }
@@ -152,15 +130,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBusy = true;
         try
         {
-            await _gate.WaitAsync();
-            try
-            {
-                await Task.Run(() => _store.Clear());
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            await _dispatcher.RunAsync(store => store.Clear());
 
             Logger.Info("Store management: cleared all");
         }
@@ -208,15 +178,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBusy = true;
         try
         {
-            await _gate.WaitAsync();
-            try
-            {
-                await Task.Run(() => _store.ExportTo(path, toExport));
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            await _dispatcher.RunAsync(store => store.ExportTo(path, toExport));
 
             StatusMessage = string.Format(Loc.Tr("Store.Manage.Exported"), toExport.Count);
         }
@@ -254,15 +216,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBusy = true;
         try
         {
-            await _gate.WaitAsync();
-            try
-            {
-                imported = await Task.Run(() => _store.ImportFrom(path));
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            imported = await _dispatcher.RunAsync(store => store.ImportFrom(path));
 
             StatusMessage = string.Format(Loc.Tr("Store.Manage.Imported"), imported);
         }

@@ -1130,9 +1130,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 // Кэш переоткрытия: если файл с этим хэшем уже в хранилище — читаем события с диска
                 // вместо повторного парсинга (мгновенное переоткрытие / восстановление после падения).
-                var store = StoreIfEnabled();
-                var traceModel = store is not null && await ContainsInStoreAsync(store, fileHash, cancellationToken)
-                    ? await LoadFromStoreAsync(fileInfo, fileHash, store, cancellationToken)
+                var dispatcher = StoreDispatcher();
+                var traceModel = dispatcher is not null && await ContainsInStoreAsync(dispatcher, fileHash)
+                    ? await LoadFromStoreAsync(fileInfo, fileHash, dispatcher)
                     : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
@@ -1206,70 +1206,51 @@ public partial class MainWindowViewModel : ViewModelBase
             events.Count,
             fileHash);
 
-        // Хранилище: пишем распарсенные события на диск (аддитивно, за флагом StorageMode,
-        // вне UI-потока, не фатально). WriteFile заменяет данные файла по хэшу — корректно для reparse.
-        await WriteToStoreAsync(model, events, cancellationToken);
+        // Хранилище: ставим запись в фоновую очередь (за флагом StorageMode) и сразу идём дальше —
+        // диск не на критическом пути парсинга/отображения. WriteFile заменяет данные по хэшу (reparse ок).
+        PersistToStore(model, events);
 
         return model;
     }
 
-    // Единый шлюз доступа к стору: SQLite-соединение однопоточное, поэтому все операции с хранилищем
-    // (запись при парсинге, удаление при закрытии) сериализуются здесь, даже если идут с фоновых потоков.
-    private readonly SemaphoreSlim _storeGate = new(1, 1);
-
-    /// <summary>Хранилище событий, если режим не Off; иначе null (и БД не создаётся).</summary>
-    private IEventStore? StoreIfEnabled()
-        => _appSettings.StorageMode == StorageMode.Off ? null : App.Services?.GetService<IEventStore>();
+    /// <summary>
+    /// Диспетчер хранилища (если режим не Off): все операции с единственным SQLite-соединением идут
+    /// строго по очереди на фоне, запись не блокирует парсинг/отображение. Резолвится лениво — в режиме
+    /// Off не трогаем DI и БД не создаётся.
+    /// </summary>
+    private EventStoreDispatcher? StoreDispatcher()
+        => _appSettings.StorageMode == StorageMode.Off ? null : App.Services?.GetService<EventStoreDispatcher>();
 
     /// <summary>
-    /// Пишет события файла в дисковое хранилище на фоне, сериализованно через <see cref="_storeGate"/>.
-    /// Ошибка записи не рушит парсинг/UI.
+    /// Ставит запись событий файла в фоновую очередь и сразу возвращается. Диск больше не на критическом
+    /// пути: карточка файла показывается сразу после парсинга, а запись драйнится в фоне по очереди.
+    /// WriteFile заменяет данные файла по хэшу — корректно для reparse.
+    ///
+    /// Передаём писателю СНИМОК списка (копия ссылок): рабочий список из <see cref="_eventsByFileHash"/>
+    /// может быть очищен на UI-потоке при быстром закрытии файла, а фоновый писатель в этот момент его
+    /// перечисляет — снимок исключает гонку «коллекция изменена во время записи».
     /// </summary>
-    private async Task WriteToStoreAsync(TraceFileInfoModel file, List<EventBase> events, CancellationToken ct)
+    private void PersistToStore(TraceFileInfoModel file, List<EventBase> events)
     {
-        var store = StoreIfEnabled();
-        if (store is null)
+        var dispatcher = StoreDispatcher();
+        if (dispatcher is null)
             return;
 
-        await _storeGate.WaitAsync(ct);
-        try
-        {
-            await Task.Run(() => store.WriteFile(file, events), ct);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "EventStore: failed to persist file {File}", file.FileName);
-        }
-        finally
-        {
-            _storeGate.Release();
-        }
+        var snapshot = new List<EventBase>(events);
+        dispatcher.Post(store => store.WriteFile(file, snapshot));
     }
 
-    /// <summary>Проверяет наличие файла в хранилище (сериализованно через шлюз — соединение однопоточное).</summary>
-    private async Task<bool> ContainsInStoreAsync(IEventStore store, string fileHash, CancellationToken ct)
+    /// <summary>Проверяет наличие файла в хранилище (через очередь диспетчера — соединение однопоточное).</summary>
+    private async Task<bool> ContainsInStoreAsync(EventStoreDispatcher dispatcher, string fileHash)
     {
-        await _storeGate.WaitAsync(ct);
         try
         {
-            return await Task.Run(() => store.ContainsFile(fileHash), ct);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
+            return await dispatcher.RunAsync(store => store.ContainsFile(fileHash));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "EventStore: ContainsFile failed for {Hash}", fileHash);
             return false; // при сбое проверки просто парсим как обычно
-        }
-        finally
-        {
-            _storeGate.Release();
         }
     }
 
@@ -1281,23 +1262,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task<TraceFileInfoModel> LoadFromStoreAsync(
         FileInfo fileInfo,
         string fileHash,
-        IEventStore store,
-        CancellationToken cancellationToken)
+        EventStoreDispatcher dispatcher)
     {
         StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingFromStore"), fileInfo.Name);
         Logger.Info("Loading from store (cache hit): {FileName}", fileInfo.Name);
 
-        await _storeGate.WaitAsync(cancellationToken);
-        IReadOnlyList<EventBase> restored;
-        try
-        {
-            restored = await Task.Run(() => store.ReadFile(fileHash), cancellationToken);
-        }
-        finally
-        {
-            _storeGate.Release();
-        }
-
+        var restored = await dispatcher.RunAsync(store => store.ReadFile(fileHash));
         var events = restored as List<EventBase> ?? restored.ToList();
 
         _eventsByFileHash[fileHash] = events;
@@ -1321,37 +1291,25 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     /// Режим Session — «зеркало сессии»: при закрытии/удалении файлов убираем их и из хранилища,
     /// чтобы стор всегда отражал загруженный набор. В Accumulate ничего не удаляем (архив хранит всё).
-    /// Удаление идёт на фоне и сериализовано тем же шлюзом, что и запись.
+    /// Удаление ставится в ту же фоновую очередь FIFO — после записи этих файлов, не раньше.
     /// </summary>
     private void RemoveFromStoreIfSession(IEnumerable<string> fileHashes)
     {
         if (_appSettings.StorageMode != StorageMode.Session)
             return;
 
-        var store = App.Services?.GetService<IEventStore>();
-        if (store is null)
+        var dispatcher = StoreDispatcher();
+        if (dispatcher is null)
             return;
 
         var hashes = fileHashes.ToList();
         if (hashes.Count == 0)
             return;
 
-        _ = Task.Run(async () =>
+        dispatcher.Post(store =>
         {
-            await _storeGate.WaitAsync();
-            try
-            {
-                foreach (var hash in hashes)
-                    store.DeleteFile(hash);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "EventStore: failed to delete {Count} file(s) on close", hashes.Count);
-            }
-            finally
-            {
-                _storeGate.Release();
-            }
+            foreach (var hash in hashes)
+                store.DeleteFile(hash);
         });
     }
 
@@ -1361,26 +1319,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (_appSettings.StorageMode != StorageMode.Session)
             return;
 
-        var store = App.Services?.GetService<IEventStore>();
-        if (store is null)
-            return;
-
-        _ = Task.Run(async () =>
-        {
-            await _storeGate.WaitAsync();
-            try
-            {
-                store.Clear();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "EventStore: failed to clear on close-all");
-            }
-            finally
-            {
-                _storeGate.Release();
-            }
-        });
+        StoreDispatcher()?.Post(store => store.Clear());
     }
 
     private async Task<bool> OpenFileInStorageAsync(FileCardViewModel card)
@@ -2282,15 +2221,15 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var store = App.Services?.GetService<IEventStore>();
+            var dispatcher = App.Services?.GetService<EventStoreDispatcher>();
             var windowProvider = App.Services?.GetService<IWindowProvider>();
-            if (store is null || windowProvider is null)
+            if (dispatcher is null || windowProvider is null)
             {
                 StatusMessage = Loc.Tr("Store.Manage.Unavailable");
                 return;
             }
 
-            var vm = new StoreManagementViewModel(store, _storeGate, windowProvider);
+            var vm = new StoreManagementViewModel(dispatcher, windowProvider);
             await vm.LoadAsync();
             await Dialogs.ShowDialogAsync<object>(vm);
         }
@@ -2330,8 +2269,8 @@ public partial class MainWindowViewModel : ViewModelBase
         if (_appSettings.StorageMode != StorageMode.Session)
             return;
 
-        var store = StoreIfEnabled();
-        if (store is null)
+        var dispatcher = StoreDispatcher();
+        if (dispatcher is null)
             return;
 
         // Уже есть открытые файлы — не мешаем начатой работе.
@@ -2339,19 +2278,14 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         List<TraceFileInfoModel> manifest;
-        await _storeGate.WaitAsync();
         try
         {
-            manifest = (await Task.Run(() => store.ListFiles())).ToList();
+            manifest = (await dispatcher.RunAsync(store => store.ListFiles())).ToList();
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "EventStore: ListFiles failed on startup");
             return;
-        }
-        finally
-        {
-            _storeGate.Release();
         }
 
         if (manifest.Count == 0)
@@ -2364,14 +2298,14 @@ public partial class MainWindowViewModel : ViewModelBase
         if (selected is null || selected.Count == 0)
             return;
 
-        await RestoreFilesAsync(selected, store);
+        await RestoreFilesAsync(selected, dispatcher);
     }
 
     /// <summary>
     /// Загружает выбранные при восстановлении файлы из хранилища в рабочий набор. Чтение с диска
     /// (без парсинга и без повторной записи в стор), карточки добавляются на UI-потоке.
     /// </summary>
-    private async Task RestoreFilesAsync(IReadOnlyList<TraceFileInfoModel> files, IEventStore store)
+    private async Task RestoreFilesAsync(IReadOnlyList<TraceFileInfoModel> files, EventStoreDispatcher dispatcher)
     {
         var restored = 0;
 
@@ -2385,19 +2319,14 @@ public partial class MainWindowViewModel : ViewModelBase
                     continue;
 
                 IReadOnlyList<EventBase> events;
-                await _storeGate.WaitAsync();
                 try
                 {
-                    events = await Task.Run(() => store.ReadFile(model.FileHash));
+                    events = await dispatcher.RunAsync(store => store.ReadFile(model.FileHash));
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex, "EventStore: failed to restore file {Hash}", model.FileHash);
                     continue;
-                }
-                finally
-                {
-                    _storeGate.Release();
                 }
 
                 var list = events as List<EventBase> ?? events.ToList();

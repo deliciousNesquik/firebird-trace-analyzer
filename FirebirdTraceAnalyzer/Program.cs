@@ -113,6 +113,11 @@ internal sealed class Program
             return new EventStoreService(Path.Combine(dir, "events.db"));
         });
 
+        // Диспетчер сериализует доступ к единственному соединению стора и выносит запись с критического
+        // пути. Синглтон на тот же IEventStore — один диспетчер на одно соединение.
+        services.AddSingleton<EventStoreDispatcher>(sp =>
+            new EventStoreDispatcher(sp.GetRequiredService<IEventStore>()));
+
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
             rulesPath: RulesConfiguration.EnsureRulesFile(),
