@@ -71,6 +71,14 @@
   "Settings.Section.Reports": "Reports",
   "Settings.ReportsFolder": "Reports folder",
   "Settings.ReportsFolder.Desc": "Folder where generated reports are saved. Empty = default app folder.",
+  "Settings.Section.Storage": "Event store",
+  "Settings.Storage.Mode": "Storage mode",
+  "Settings.Storage.Mode.Desc": "How parsed events are persisted to disk. Session mirrors the current working set for crash recovery; Accumulate keeps a growing archive across loads. Changing the folder may require a restart.",
+  "Settings.Storage.Mode.Off": "Off",
+  "Settings.Storage.Mode.Session": "Session (crash recovery)",
+  "Settings.Storage.Mode.Accumulate": "Accumulate (archive)",
+  "Settings.Storage.Folder": "Storage folder",
+  "Settings.Storage.Folder.Desc": "Folder for the event store file (events.db). Empty = default app folder.",
   "Settings.Section.Logs": "Logs",
   "Settings.Logs.RestartWarning": "Changing log file paths takes full effect only after restarting the application (the parser log is initialized at startup).",
   "Settings.AppLogFile": "Application log file",
@@ -612,6 +620,7 @@
   "FileDialog.RulesFileType": "Rules file",
   "FileDialog.SelectDownloadFolder": "Select Download Folder",
   "FileDialog.SelectReportsFolder": "Select Reports Folder",
+  "FileDialog.SelectStorageFolder": "Select Event Store Folder",
   "FileDialog.SelectAppLogFolder": "Select Application Log Folder",
   "FileDialog.SelectParserLogFolder": "Select Parser Log Folder"
 }

@@ -63,6 +63,23 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
     #endregion
 
+    #region Storage
+
+    /// <summary>Выбранный режим дискового хранилища событий (элемент из <see cref="AvailableStorageModes"/>).</summary>
+    [ObservableProperty] private StorageModeOption? _selectedStorageMode;
+
+    /// <summary>Доступные режимы хранилища с локализованными подписями.</summary>
+    public IReadOnlyList<StorageModeOption> AvailableStorageModes { get; } =
+    [
+        new(StorageMode.Off, Loc.Tr("Settings.Storage.Mode.Off")),
+        new(StorageMode.Session, Loc.Tr("Settings.Storage.Mode.Session")),
+        new(StorageMode.Accumulate, Loc.Tr("Settings.Storage.Mode.Accumulate"))
+    ];
+
+    [ObservableProperty] private string _storagePath = string.Empty;
+
+    #endregion
+
     #region Logs
 
     [ObservableProperty] private string _appLogPath = string.Empty;
@@ -135,6 +152,8 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         app.ReportsPath = ReportsPath?.Trim() ?? string.Empty;
         app.AppLogPath = AppLogPath?.Trim() ?? string.Empty;
         app.ParserLogPath = ParserLogPath?.Trim() ?? string.Empty;
+        app.StorageMode = SelectedStorageMode?.Mode ?? StorageMode.Session;
+        app.StoragePath = StoragePath?.Trim() ?? string.Empty;
 
         var ui = _settingsService.Ui;
         ui.Files = SectionFiles;
@@ -242,6 +261,11 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private Task BrowseReportsPathAsync() => PickFolderIntoAsync(
         Loc.Tr("FileDialog.SelectReportsFolder"),
         path => ReportsPath = path);
+
+    [RelayCommand]
+    private Task BrowseStoragePathAsync() => PickFolderIntoAsync(
+        Loc.Tr("FileDialog.SelectStorageFolder"),
+        path => StoragePath = path);
 
     [RelayCommand]
     private Task BrowseAppLogPathAsync() => PickFolderIntoAsync(
@@ -363,6 +387,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         ReportsPath = app.ReportsPath;
         AppLogPath = app.AppLogPath;
         ParserLogPath = app.ParserLogPath;
+        SelectedStorageMode = AvailableStorageModes.FirstOrDefault(o => o.Mode == app.StorageMode)
+                              ?? AvailableStorageModes[0];
+        StoragePath = app.StoragePath;
 
         SectionFiles = ui.Files;
         SectionSearch = ui.Search;
@@ -382,7 +409,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
             ReportsPath = ReportsPath?.Trim() ?? string.Empty,
             AppLogPath = AppLogPath?.Trim() ?? string.Empty,
-            ParserLogPath = ParserLogPath?.Trim() ?? string.Empty
+            ParserLogPath = ParserLogPath?.Trim() ?? string.Empty,
+            StorageMode = SelectedStorageMode?.Mode ?? StorageMode.Session,
+            StoragePath = StoragePath?.Trim() ?? string.Empty
         },
         Ui = new UiSectionSettings
         {
@@ -394,3 +423,6 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         }
     };
 }
+
+/// <summary>Пункт выпадающего списка режима хранилища: значение enum + локализованная подпись.</summary>
+public sealed record StorageModeOption(StorageMode Mode, string Label);

@@ -71,6 +71,14 @@
   "Settings.Section.Reports": "Отчёты",
   "Settings.ReportsFolder": "Папка отчётов",
   "Settings.ReportsFolder.Desc": "Папка, куда сохраняются сгенерированные отчёты. Пусто = папка приложения по умолчанию.",
+  "Settings.Section.Storage": "Хранилище событий",
+  "Settings.Storage.Mode": "Режим хранилища",
+  "Settings.Storage.Mode.Desc": "Как распарсенные события сохраняются на диск. «Сессия» зеркалит текущий рабочий набор для восстановления после падения; «Накопление» ведёт растущий архив по всем загрузкам. Смена папки может потребовать перезапуска.",
+  "Settings.Storage.Mode.Off": "Выключено",
+  "Settings.Storage.Mode.Session": "Сессия (восстановление)",
+  "Settings.Storage.Mode.Accumulate": "Накопление (архив)",
+  "Settings.Storage.Folder": "Папка хранилища",
+  "Settings.Storage.Folder.Desc": "Папка файла хранилища событий (events.db). Пусто = папка приложения по умолчанию.",
   "Settings.Section.Logs": "Логи",
   "Settings.Logs.RestartWarning": "Смена путей файлов логов полностью вступает в силу только после перезапуска приложения (лог парсера инициализируется при старте).",
   "Settings.AppLogFile": "Файл лога приложения",
@@ -612,6 +620,7 @@
   "FileDialog.RulesFileType": "Файл правил",
   "FileDialog.SelectDownloadFolder": "Выберите папку загрузки",
   "FileDialog.SelectReportsFolder": "Выберите папку отчётов",
+  "FileDialog.SelectStorageFolder": "Выберите папку хранилища событий",
   "FileDialog.SelectAppLogFolder": "Выберите папку журнала приложения",
   "FileDialog.SelectParserLogFolder": "Выберите папку журнала парсера"
 }

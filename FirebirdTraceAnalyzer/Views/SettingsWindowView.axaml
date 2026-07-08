@@ -250,6 +250,49 @@
 
                 <Separator Margin="0,6,0,16" />
 
+                <!-- Storage -->
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Storage}" />
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.Storage.Mode}" />
+                        <TextBlock Classes="desc"
+                                   Text="{loc:Tr Settings.Storage.Mode.Desc}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="1"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{Binding AvailableStorageModes}"
+                              SelectedItem="{Binding SelectedStorageMode}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:StorageModeOption">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Classes="label">
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.Storage.Folder}" />
+                        <TextBlock Classes="desc"
+                                   Text="{loc:Tr Settings.Storage.Folder.Desc}" />
+                    </StackPanel>
+                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding StoragePath}"
+                                 PlaceholderText="{loc:Tr Settings.Placeholder.DefaultAppData}" />
+                        <Button Grid.Column="1"
+                                Content="..."
+                                Width="40"
+                                Height="40"
+                                Padding="0"
+                                Classes="focused"
+                                Command="{Binding BrowseStoragePathCommand}" />
+                    </Grid>
+                </Grid>
+
+                <Separator Margin="0,6,0,16" />
+
                 <!-- Logs -->
                 <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Logs}" />
 
