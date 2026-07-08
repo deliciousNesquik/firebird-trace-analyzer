@@ -16,7 +16,7 @@
 
     <ItemGroup>
         <!-- Assets -->
-        <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Assets\**" />
     </ItemGroup>
 
     <!-- Копирование конфигураций -->
@@ -31,21 +31,22 @@
 
     <ItemGroup>
         <!-- Версионирование из git-тегов (build-only) -->
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
         <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
 
-        <PackageReference Include="Avalonia" Version="12.0.2"/>
+        <PackageReference Include="Avalonia" Version="12.0.2" />
         <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
-        <PackageReference Include="Avalonia.Desktop" Version="12.0.2"/>
+        <PackageReference Include="Avalonia.Desktop" Version="12.0.2" />
         
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.2"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.2"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.2" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.2" />
         <PackageReference Include="Avalonia.Themes.Simple" Version="12.0.2" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="ClosedXML" Version="0.105.0" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
         <PackageReference Include="CsvHelper" Version="33.1.0" />
         <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
         <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="11.0.0-preview.4.26230.115" />
