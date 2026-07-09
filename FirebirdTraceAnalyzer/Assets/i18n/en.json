@@ -323,6 +323,7 @@
   "Main.FilterEvents": "Filter events",
   "Filter.Title": "Filter by",
   "Filter.SearchPlaceholder": "Type to find filter...",
+  "Filter.TextSearchPlaceholder": "Contains text…",
   "Filter.Excluded": "excluded",
   "Filter.Range": "Range:",
   "Filter.From": "From:",

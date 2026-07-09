@@ -323,6 +323,7 @@
   "Main.FilterEvents": "Фильтрация событий",
   "Filter.Title": "Фильтровать по",
   "Filter.SearchPlaceholder": "Введите для поиска...",
+  "Filter.TextSearchPlaceholder": "Содержит текст…",
   "Filter.Excluded": "исключено",
   "Filter.Range": "Диапазон:",
   "Filter.From": "От:",
