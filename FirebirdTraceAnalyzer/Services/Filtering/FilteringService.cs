@@ -319,7 +319,8 @@ public sealed class FilteringService : IFilteringService
             FilterType.EnumMultiSelect,
             field.PropertyPath,
             evt => CheckEnumFilter(evt, field.PropertyPath, availableValues),
-            field.Category);
+            field.Category,
+            field.FilterDisplayOrder);
 
         foreach (var item in availableValues)
             descriptor.AvailableValues.Add(item);
@@ -355,7 +356,8 @@ public sealed class FilteringService : IFilteringService
             FilterType.StringMultiSelect,
             field.PropertyPath,
             evt => CheckStringFilter(evt, field.PropertyPath, availableValues),
-            field.Category);
+            field.Category,
+            field.FilterDisplayOrder);
 
         foreach (var item in availableValues)
             descriptor.AvailableValues.Add(item);
@@ -385,7 +387,8 @@ public sealed class FilteringService : IFilteringService
             FilterType.NumericRange,
             field.PropertyPath,
             evt => true,
-            field.Category)
+            field.Category,
+            field.FilterDisplayOrder)
         {
             MinValue = min,
             MaxValue = max,
@@ -434,7 +437,8 @@ public sealed class FilteringService : IFilteringService
             FilterType.DateTimeRange,
             field.PropertyPath,
             evt => false,
-            field.Category)
+            field.Category,
+            field.FilterDisplayOrder)
         {
             MinValue = min,
             MaxValue = max,

@@ -196,6 +196,8 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
                 IsSortable = sortableAttr != null,
                 IsFilterable = filterableAttr != null,
                 FilterType = filterableAttr?.FilterType,
+                FilterDisplayOrder = filterableAttr?.DisplayOrder ?? 100,
+                SortDisplayOrder = sortableAttr?.DisplayOrder ?? 100,
                 Format = null,
                 PropertyInfo = prop,
                 DeclaringType = type

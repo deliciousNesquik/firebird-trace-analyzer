@@ -19,6 +19,12 @@ public sealed record DiscoveredField
     public bool IsFilterable { get; init; }
     public FilterType? FilterType { get; init; }
     public string? Format { get; init; }
+
+    /// <summary>Порядок в списке фильтров (из FilterableFieldAttribute.DisplayOrder; меньше = выше).</summary>
+    public int FilterDisplayOrder { get; init; } = 100;
+
+    /// <summary>Порядок в списке сортировок (из SortableFieldAttribute.DisplayOrder; меньше = выше).</summary>
+    public int SortDisplayOrder { get; init; } = 100;
     
     // Метаданные
     public PropertyInfo PropertyInfo { get; init; } = null!;
