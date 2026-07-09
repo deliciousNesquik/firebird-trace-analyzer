@@ -154,17 +154,18 @@
                                         BorderThickness="1"
                                         CornerRadius="4"
                                         Padding="12"
-                                        Margin="0,0,0,8">
+                                        Margin="0,0,0,8"
+                                        Cursor="Hand"
+                                        PointerPressed="OnFileRowPressed">
 
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
 
-                                        <!-- Checkbox -->
+                                        <!-- Индикатор выбора: клик по всей строке переключает (см. OnFileRowPressed) -->
                                         <CheckBox Grid.Column="0"
                                                   IsChecked="{Binding IsSelected}"
+                                                  IsHitTestVisible="False"
                                                   VerticalAlignment="Center"
-                                                  Margin="0,0,12,0"
-                                                  Command="{Binding $parent[UserControl].((vm:RemoteFileSelectionViewModel)DataContext).ToggleFileSelectionCommand}"
-                                                  CommandParameter="{Binding}" />
+                                                  Margin="0,0,12,0" />
 
                                         <!-- File Info -->
                                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">

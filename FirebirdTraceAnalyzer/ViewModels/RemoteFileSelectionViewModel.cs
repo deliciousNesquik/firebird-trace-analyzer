@@ -156,14 +156,6 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
     }
 
     [RelayCommand]
-    private void ToggleFileSelection(RemoteFileInfo? file)
-    {
-        if (file == null) return;
-        
-        Logger.Debug("Toggled selection for {FileName}: {IsSelected}", file.FileName, file.IsSelected);
-    }
-
-    [RelayCommand]
     private void ApplySearch()
     {
         if (string.IsNullOrWhiteSpace(SearchText))
