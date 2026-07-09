@@ -18,7 +18,7 @@ namespace FirebirdTraceAnalyzer.Services.Persistence;
 public sealed class EventStoreService : IEventStore
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
 
     private readonly string _dbPath;
     private readonly SqliteConnection _connection;
@@ -61,9 +61,22 @@ public sealed class EventStoreService : IEventStore
 
     private void EnsureSchema()
     {
+        // Пользовательскую БД не мигрируем: при несовпадении версии пересоздаём (стор — восстановимый
+        // кэш/архив распарсенного). Дёшево по сопровождению, потеря данных допустима по договорённости.
+        var version = ReadUserVersion();
+        if (version != 0 && version != SchemaVersion)
+        {
+            Logger.Info("EventStore schema v{Old} != v{New} — сброс хранилища", version, SchemaVersion);
+            Exec(@"DROP TABLE IF EXISTS perf_table_item; DROP TABLE IF EXISTS error_line;
+                   DROP TABLE IF EXISTS sql_parameter; DROP TABLE IF EXISTS event;
+                   DROP TABLE IF EXISTS attachment; DROP TABLE IF EXISTS sql_text;
+                   DROP TABLE IF EXISTS files;");
+        }
+
         Exec(@"
 CREATE TABLE IF NOT EXISTS files (
-    hash TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, size INTEGER NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL, path TEXT NOT NULL, size INTEGER NOT NULL,
     start_ts INTEGER NOT NULL, end_ts INTEGER NOT NULL, event_count INTEGER NOT NULL,
     imported_ts INTEGER NOT NULL);
 
@@ -78,7 +91,7 @@ CREATE TABLE IF NOT EXISTS attachment (
 
 CREATE TABLE IF NOT EXISTS event (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_hash TEXT NOT NULL REFERENCES files(hash) ON DELETE CASCADE,
+    file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
     ts INTEGER NOT NULL, trace_id INTEGER NOT NULL, hex_trace_id TEXT NOT NULL, event_type INTEGER NOT NULL,
     attachment_ref INTEGER REFERENCES attachment(id), session_id INTEGER, sql_ref INTEGER REFERENCES sql_text(id),
     statement_id INTEGER,
@@ -104,14 +117,22 @@ CREATE TABLE IF NOT EXISTS perf_table_item (
     insert_count INTEGER NOT NULL, delete_count INTEGER NOT NULL, backout_count INTEGER NOT NULL,
     purge_count INTEGER NOT NULL, expunge_count INTEGER NOT NULL);
 
-CREATE INDEX IF NOT EXISTS ix_event_file ON event(file_hash);
+CREATE INDEX IF NOT EXISTS ix_event_file ON event(file_id);
 CREATE INDEX IF NOT EXISTS ix_event_ts ON event(ts);
-CREATE INDEX IF NOT EXISTS ix_event_type ON event(event_type);
 CREATE INDEX IF NOT EXISTS ix_param_event ON sql_parameter(event_seq);
 CREATE INDEX IF NOT EXISTS ix_errline_event ON error_line(event_seq);
 CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
+        // ix_event_type убран: запросы стора не фильтруют по типу (фильтрация типов — в памяти UI),
+        // индекс на 5.7M строк только раздувал БД.
 
         Exec($"PRAGMA user_version={SchemaVersion};");
+    }
+
+    private int ReadUserVersion()
+    {
+        using var c = _connection.CreateCommand();
+        c.CommandText = "PRAGMA user_version;";
+        return Convert.ToInt32(c.ExecuteScalar() ?? 0);
     }
 
     // ---------------------------------------------------------------- write
@@ -129,13 +150,14 @@ CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
             del.ExecuteNonQuery();
         }
 
-        // Родительскую строку файла вставляем ДО событий (на неё ссылается event.file_hash по FK).
-        // event_count проставим фактическим после цикла.
+        // Родительскую строку файла вставляем ДО событий (на её id ссылается event.file_id по FK).
+        // event_count проставим фактическим после цикла. RETURNING id — целочисленный ключ файла.
+        long fileId;
         using (var ins = _connection.CreateCommand())
         {
             ins.Transaction = tx;
             ins.CommandText = @"INSERT INTO files(hash,name,path,size,start_ts,end_ts,event_count,imported_ts)
-                                VALUES($h,$n,$p,$s,$st,$et,0,$i);";
+                                VALUES($h,$n,$p,$s,$st,$et,0,$i) RETURNING id;";
             ins.Parameters.AddWithValue("$h", file.FileHash);
             ins.Parameters.AddWithValue("$n", file.FileName);
             ins.Parameters.AddWithValue("$p", file.FilePath);
@@ -143,11 +165,11 @@ CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
             ins.Parameters.AddWithValue("$st", file.StartTrace.Ticks);
             ins.Parameters.AddWithValue("$et", file.EndTrace.Ticks);
             ins.Parameters.AddWithValue("$i", DateTime.UtcNow.Ticks);
-            ins.ExecuteNonQuery();
+            fileId = (long)ins.ExecuteScalar()!;
         }
 
         long count = 0;
-        using (var writer = new BatchWriter(_connection, tx, file.FileHash))
+        using (var writer = new BatchWriter(_connection, tx, fileId))
         {
             foreach (var ev in events)
             {
@@ -177,18 +199,18 @@ CREATE INDEX IF NOT EXISTS ix_perfitem_event ON perf_table_item(event_seq);");
     /// </summary>
     private sealed class BatchWriter : IDisposable
     {
-        private readonly string _fileHash;
+        private readonly long _fileId;
         private readonly SqliteCommand _ev, _sqlIns, _sqlSel, _attIns, _attSel, _param, _err, _perfItem;
         private readonly Dictionary<string, SqliteParameter> _evp = new(StringComparer.Ordinal);
         private readonly Dictionary<string, long> _sqlCache = new(StringComparer.Ordinal);
         private readonly Dictionary<string, long> _attCache = new(StringComparer.Ordinal);
 
-        public BatchWriter(SqliteConnection c, SqliteTransaction tx, string fileHash)
+        public BatchWriter(SqliteConnection c, SqliteTransaction tx, long fileId)
         {
-            _fileHash = fileHash;
+            _fileId = fileId;
 
             _ev = Cmd(c, tx, @"
-INSERT INTO event(file_hash,ts,trace_id,hex_trace_id,event_type,attachment_ref,session_id,sql_ref,statement_id,
+INSERT INTO event(file_id,ts,trace_id,hex_trace_id,event_type,attachment_ref,session_id,sql_ref,statement_id,
     txn_present,txn_id,txn_isolation,txn_consistency,txn_lock,txn_access,restart_count,procedure_name,
     trigger_name,trigger_table,trigger_timing,trigger_event,component,
     perf_present,perf_execute_ms,perf_fetch,perf_read,perf_write,perf_mark,perf_table_state)
@@ -231,7 +253,7 @@ RETURNING seq;");
         {
             void S(string n, object? v) => _evp[n].Value = v ?? DBNull.Value;
 
-            S("$file", _fileHash);
+            S("$file", _fileId);
             S("$ts", ev.Timestamp.Ticks);
             S("$tid", ev.TraceId);
             S("$hex", ev.HexTraceId);
@@ -524,29 +546,38 @@ RETURNING seq;");
         return cmd.ExecuteScalar() is not null;
     }
 
+    /// <summary>Целочисленный id файла по его хэшу (null — файла нет).</summary>
+    private long? FileId(string fileHash)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT id FROM files WHERE hash=$h;";
+        cmd.Parameters.AddWithValue("$h", fileHash);
+        var v = cmd.ExecuteScalar();
+        return v is null or DBNull ? null : Convert.ToInt64(v);
+    }
+
     public IReadOnlyList<EventBase> ReadFile(string fileHash)
     {
         var result = new List<EventBase>();
         var attCache = new Dictionary<long, AttachmentInfo>();
         var sqlCache = new Dictionary<long, string>();
 
+        var fileId = FileId(fileHash);
+        if (fileId is null)
+            return result;
+
         using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT * FROM event WHERE file_hash=$h ORDER BY seq;";
-        cmd.Parameters.AddWithValue("$h", fileHash);
+        cmd.CommandText = "SELECT * FROM event WHERE file_id=$fid ORDER BY seq;";
+        cmd.Parameters.AddWithValue("$fid", fileId.Value);
         using var reader = cmd.ExecuteReader();
-        var seqs = new List<long>();
         var rows = new List<Row>();
         while (reader.Read())
-        {
-            var row = ReadRow(reader);
-            rows.Add(row);
-            seqs.Add(row.Seq);
-        }
+            rows.Add(ReadRow(reader));
 
         // Дочерние коллекции — пакетно (без N+1).
-        var paramsBySeq = LoadParameters(fileHash);
-        var errorsBySeq = LoadErrorLines(fileHash);
-        var perfBySeq = LoadPerfItems(fileHash);
+        var paramsBySeq = LoadParameters(fileId.Value);
+        var errorsBySeq = LoadErrorLines(fileId.Value);
+        var perfBySeq = LoadPerfItems(fileId.Value);
 
         foreach (var row in rows)
             result.Add(BuildEvent(row, attCache, sqlCache,
@@ -767,13 +798,13 @@ RETURNING seq;");
         return info;
     }
 
-    private Dictionary<long, List<SqlParameters>> LoadParameters(string fileHash)
+    private Dictionary<long, List<SqlParameters>> LoadParameters(long fileId)
     {
         var map = new Dictionary<long, List<SqlParameters>>();
         using var c = _connection.CreateCommand();
         c.CommandText = @"SELECT p.event_seq,p.name,p.dtype,p.value FROM sql_parameter p
-                          JOIN event e ON e.seq=p.event_seq WHERE e.file_hash=$h ORDER BY p.event_seq,p.ord;";
-        c.Parameters.AddWithValue("$h", fileHash);
+                          JOIN event e ON e.seq=p.event_seq WHERE e.file_id=$fid ORDER BY p.event_seq,p.ord;";
+        c.Parameters.AddWithValue("$fid", fileId);
         using var r = c.ExecuteReader();
         while (r.Read())
             (map.TryGetValue(r.GetInt64(0), out var l) ? l : map[r.GetInt64(0)] = new())
@@ -781,13 +812,13 @@ RETURNING seq;");
         return map;
     }
 
-    private Dictionary<long, List<ErrorLines>> LoadErrorLines(string fileHash)
+    private Dictionary<long, List<ErrorLines>> LoadErrorLines(long fileId)
     {
         var map = new Dictionary<long, List<ErrorLines>>();
         using var c = _connection.CreateCommand();
         c.CommandText = @"SELECT x.event_seq,x.code,x.message FROM error_line x
-                          JOIN event e ON e.seq=x.event_seq WHERE e.file_hash=$h ORDER BY x.event_seq,x.ord;";
-        c.Parameters.AddWithValue("$h", fileHash);
+                          JOIN event e ON e.seq=x.event_seq WHERE e.file_id=$fid ORDER BY x.event_seq,x.ord;";
+        c.Parameters.AddWithValue("$fid", fileId);
         using var r = c.ExecuteReader();
         while (r.Read())
             (map.TryGetValue(r.GetInt64(0), out var l) ? l : map[r.GetInt64(0)] = new())
@@ -795,14 +826,14 @@ RETURNING seq;");
         return map;
     }
 
-    private Dictionary<long, List<PerformanceTableItem>> LoadPerfItems(string fileHash)
+    private Dictionary<long, List<PerformanceTableItem>> LoadPerfItems(long fileId)
     {
         var map = new Dictionary<long, List<PerformanceTableItem>>();
         using var c = _connection.CreateCommand();
         c.CommandText = @"SELECT i.event_seq,i.table_name,i.natural_count,i.index_count,i.update_count,i.insert_count,
                           i.delete_count,i.backout_count,i.purge_count,i.expunge_count FROM perf_table_item i
-                          JOIN event e ON e.seq=i.event_seq WHERE e.file_hash=$h ORDER BY i.event_seq,i.ord;";
-        c.Parameters.AddWithValue("$h", fileHash);
+                          JOIN event e ON e.seq=i.event_seq WHERE e.file_id=$fid ORDER BY i.event_seq,i.ord;";
+        c.Parameters.AddWithValue("$fid", fileId);
         using var r = c.ExecuteReader();
         while (r.Read())
             (map.TryGetValue(r.GetInt64(0), out var l) ? l : map[r.GetInt64(0)] = new())
