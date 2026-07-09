@@ -21,6 +21,12 @@ public partial class FilterDescriptor : ViewModelBase
     public FilterType FilterType { get; }
     public string PropertyPath { get; }
 
+    /// <summary>
+    /// true — фильтр «содержит подстроку» (<see cref="FilterType.TextSearch"/>): в UI вместо списка
+    /// значений/диапазона показывается поле ввода, а фильтрация идёт по <see cref="SearchText"/>.
+    /// </summary>
+    public bool IsTextSearch => FilterType == FilterType.TextSearch;
+
     public ObservableCollection<FilterValueItem> AvailableValues { get; } = [];
     public ObservableCollection<FilterValueItem> FilteredValues { get; } = [];
 

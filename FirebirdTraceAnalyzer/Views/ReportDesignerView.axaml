@@ -316,6 +316,11 @@
                                                                     <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsActive}"
                                                                               FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
                                                                     <StackPanel IsVisible="{Binding IsActive}" Margin="26,6,0,0">
+                                                                        <!-- TextSearch: поле «содержит подстроку» (SQL и т.п.) -->
+                                                                        <TextBox PlaceholderText="{loc:Tr Filter.TextSearchPlaceholder}"
+                                                                                 Text="{Binding SearchText, Mode=TwoWay}"
+                                                                                 IsVisible="{Binding IsTextSearch}"
+                                                                                 Margin="0,0,0,6" />
                                                                         <TextBox PlaceholderText="{loc:Tr ReportDesigner.TypeToFindPlaceholder}"
                                                                                  Text="{Binding ValueSearchText, Mode=TwoWay}"
                                                                                  IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"

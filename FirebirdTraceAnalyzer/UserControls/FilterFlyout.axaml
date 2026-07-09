@@ -48,6 +48,13 @@
                                             <StackPanel IsVisible="{Binding IsActive}"
                                                         Margin="28,8,0,0">
 
+                                                <!-- TextSearch: поле «содержит подстроку» (SQL, ошибки и т.п.) -->
+                                                <TextBox
+                                                    PlaceholderText="{loc:Tr Filter.TextSearchPlaceholder}"
+                                                    Text="{Binding SearchText, Mode=TwoWay}"
+                                                    IsVisible="{Binding IsTextSearch}"
+                                                    Margin="0,0,0,12" />
+
                                                 <TextBox
                                                     PlaceholderText="{loc:Tr Filter.SearchPlaceholder}"
                                                     Text="{Binding ValueSearchText, Mode=TwoWay}"

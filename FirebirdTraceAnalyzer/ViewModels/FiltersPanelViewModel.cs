@@ -52,6 +52,7 @@ public partial class FiltersPanelViewModel(
         public HashSet<object> ExcludedValues { get; set; } = new();
         public object? CurrentMinValue { get; set; }
         public object? CurrentMaxValue { get; set; }
+        public string? SearchText { get; set; }
     }
 
     /// <summary>
@@ -115,7 +116,8 @@ public partial class FiltersPanelViewModel(
                     .Select(v => v.Value)
                     .ToHashSet(),
                 CurrentMinValue = filter.CurrentMinValue,
-                CurrentMaxValue = filter.CurrentMaxValue
+                CurrentMaxValue = filter.CurrentMaxValue,
+                SearchText = filter.SearchText
             };
     }
 
@@ -139,6 +141,9 @@ public partial class FiltersPanelViewModel(
         // Восстанавливаем диапазоны
         filter.CurrentMinValue = state.CurrentMinValue ?? filter.MinValue;
         filter.CurrentMaxValue = state.CurrentMaxValue ?? filter.MaxValue;
+
+        // Восстанавливаем строку поиска (TextSearch)
+        filter.SearchText = state.SearchText;
     }
 
     /// <summary>
@@ -188,7 +193,9 @@ public partial class FiltersPanelViewModel(
             UpdateActiveFiltersCount();
             MarkAsChanged(); // Помечаем, что нужно применить
         }
-        else if (e.PropertyName is nameof(FilterDescriptor.CurrentMinValue) or nameof(FilterDescriptor.CurrentMaxValue))
+        else if (e.PropertyName is nameof(FilterDescriptor.CurrentMinValue)
+                 or nameof(FilterDescriptor.CurrentMaxValue)
+                 or nameof(FilterDescriptor.SearchText))
         {
             MarkAsChanged();
         }

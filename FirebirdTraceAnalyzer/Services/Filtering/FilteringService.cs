@@ -189,7 +189,8 @@ public sealed class FilteringService : IFilteringService
             MinValue = source.MinValue,
             MaxValue = source.MaxValue,
             CurrentMinValue = source.MinValue,
-            CurrentMaxValue = source.MaxValue
+            CurrentMaxValue = source.MaxValue,
+            SearchText = source.SearchText
         };
 
         foreach (var value in source.AvailableValues)
@@ -239,6 +240,10 @@ public sealed class FilteringService : IFilteringService
                     return true;
                 });
                 break;
+
+            case FilterType.TextSearch:
+                clone.UpdatePredicate(evt => CheckTextSearchFilter(evt, clone));
+                break;
         }
 
         return clone;
@@ -260,6 +265,7 @@ public sealed class FilteringService : IFilteringService
             // EnumMultiSelect, поэтому UpdateFilterValues и CreateConfigurableClone подхватывают его без
             // отдельных веток. Отдельный контрол-переключатель — при желании, отдельным заходом.
             FilterType.Boolean => CreateEnumFilter(filterId, field, events),
+            FilterType.TextSearch => CreateTextSearchFilter(filterId, field),
             _ => null
         };
     }
@@ -471,9 +477,37 @@ public sealed class FilteringService : IFilteringService
         return descriptor;
     }
 
+    // TextSearch: значения не перечисляем (высокая кардинальность — SQL, сообщения ошибок).
+    // Предикат читает descriptor.SearchText вживую и матчит по подстроке (Contains).
+    private FilterDescriptor CreateTextSearchFilter(string id, DiscoveredField field)
+    {
+        var descriptor = new FilterDescriptor(
+            id,
+            field.DisplayName,
+            FilterType.TextSearch,
+            field.PropertyPath,
+            _ => true,
+            field.Category,
+            field.FilterDisplayOrder);
+
+        descriptor.UpdatePredicate(evt => CheckTextSearchFilter(evt, descriptor));
+
+        return descriptor;
+    }
+
     #endregion
 
     #region Check Filters
+
+    private bool CheckTextSearchFilter(EventBase evt, FilterDescriptor descriptor)
+    {
+        var query = descriptor.SearchText;
+        if (string.IsNullOrWhiteSpace(query))
+            return true; // пустой запрос ничего не отсекает
+
+        var value = _propertyAccessor.GetValue(evt, descriptor.PropertyPath)?.ToString();
+        return value != null && value.Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
 
     private bool CheckEnumFilter(EventBase evt, string propertyPath, ObservableCollection<FilterValueItem> availableValues)
     {
