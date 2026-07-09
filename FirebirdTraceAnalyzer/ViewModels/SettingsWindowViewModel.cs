@@ -50,9 +50,6 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
     #region Advanced
 
-    /// <summary>(Advanced) Парсить уже скачанный файл, пока качается следующий.</summary>
-    [ObservableProperty] private bool _allowConcurrentProcessing;
-
     /// <summary>(Advanced) Режим разработчика: показывает диагностические инструменты (статистика парсера).</summary>
     [ObservableProperty] private bool _developerMode;
 
@@ -148,7 +145,6 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     {
         var app = _settingsService.App;
         app.IsClassicSearch = IsClassicSearch;
-        app.AllowConcurrentProcessing = AllowConcurrentProcessing;
         app.DeveloperMode = DeveloperMode;
         app.Theme = Theme;
         app.Language = SelectedLanguage?.Code ?? "en";
@@ -382,7 +378,6 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private void LoadFrom(AppSettings app, UiSectionSettings ui)
     {
         IsClassicSearch = app.IsClassicSearch;
-        AllowConcurrentProcessing = app.AllowConcurrentProcessing;
         DeveloperMode = app.DeveloperMode;
         Theme = app.Theme;
         var code = string.IsNullOrWhiteSpace(app.Language) ? "en" : app.Language;
@@ -408,7 +403,6 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         App = new AppSettings
         {
             IsClassicSearch = IsClassicSearch,
-            AllowConcurrentProcessing = AllowConcurrentProcessing,
             DeveloperMode = DeveloperMode,
             Theme = Theme,
             Language = SelectedLanguage?.Code ?? "en",

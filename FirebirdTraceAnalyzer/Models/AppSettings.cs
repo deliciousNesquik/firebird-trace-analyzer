@@ -41,13 +41,6 @@ public class AppSettings
 {
     public bool IsClassicSearch { get; set; }
 
-    /// <summary>
-    /// (Advanced) Обрабатывать (парсить) уже скачанный файл, пока качается следующий.
-    /// Сокращает суммарное время «скачивание + обработка» при большом числе файлов.
-    /// По умолчанию выключено — скачивание и обработка идут строго последовательно.
-    /// </summary>
-    public bool AllowConcurrentProcessing { get; set; }
-
     /// <summary>Режим оформления: Auto (по системе) / Light / Dark.</summary>
     public AppTheme Theme { get; set; } = AppTheme.Auto;
 

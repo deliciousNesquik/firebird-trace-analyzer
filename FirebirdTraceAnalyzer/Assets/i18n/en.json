@@ -66,8 +66,6 @@
   "Settings.Badge.Advanced": "Advanced",
   "Settings.DeveloperMode": "Developer mode",
   "Settings.DeveloperMode.Desc": "Unlocks diagnostic tools (e.g. parser statistics). Off by default.",
-  "Settings.Concurrent": "Process while downloading",
-  "Settings.Concurrent.Desc": "Allow processing of the downloaded file while another is downloading. Cuts total time on large batches, but is not recommended unless you understand the trade-offs.",
   "Common.Enabled": "Enabled",
   "Common.Disabled": "Disabled",
   "Settings.Section.RemoteFiles": "Remote files",

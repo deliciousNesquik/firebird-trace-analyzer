@@ -192,7 +192,6 @@ public sealed class SettingsService : ISettingsService
     private static void CopyApp(AppSettings source, AppSettings target)
     {
         target.IsClassicSearch = source.IsClassicSearch;
-        target.AllowConcurrentProcessing = source.AllowConcurrentProcessing;
         target.Theme = source.Theme;
         target.Language = source.Language;
         target.RemoteDownloadPath = source.RemoteDownloadPath;

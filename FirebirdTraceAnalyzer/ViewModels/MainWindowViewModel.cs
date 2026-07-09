@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Threading.Channels;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -1579,48 +1578,19 @@ public partial class MainWindowViewModel : ViewModelBase
             // Создаём каталог только после подтверждения выбора.
             Directory.CreateDirectory(downloadDirectory);
 
-            int processedCount;
+            // Последовательно: сначала скачиваем все файлы, затем парсим. Пофайловый пересчёт
+            // фильтров/сортировки/статистики (прежний overlap-режим) убран — он давал кратный рост
+            // времени и памяти на больших наборах, а выигрыш от совмещения был мизерным (доминирует сеть).
+            var downloadedPaths = await DownloadFilesWithProgressAsync(
+                selectedFiles,
+                downloadDirectory,
+                settings.DeleteAfterProcessingFromServer,
+                cts.Token);
 
-            if (_appSettings.AllowConcurrentProcessing)
-            {
-                // (Advanced) Overlap: качаем и парсим одновременно. Цикл скачивания — producer,
-                // единственный consumer-таск парсит файлы по мере готовности. Один consumer →
-                // AllEvents/_eventsByFileHash трогает только один поток, гонок нет.
-                var channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
-                {
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-
-                var downloadTask = DownloadFilesWithProgressAsync(
-                    selectedFiles,
-                    downloadDirectory,
-                    settings.DeleteAfterProcessingFromServer,
-                    cts.Token,
-                    channel.Writer);
-
-                var processTask = ProcessDownloadedFilesStreamAsync(
-                    channel.Reader,
-                    deleteLocalFilesAfterProcessing,
-                    cts.Token);
-
-                await Task.WhenAll(downloadTask, processTask);
-                processedCount = await processTask;
-            }
-            else
-            {
-                // Последовательно: сначала скачиваем все файлы, затем парсим.
-                var downloadedPaths = await DownloadFilesWithProgressAsync(
-                    selectedFiles,
-                    downloadDirectory,
-                    settings.DeleteAfterProcessingFromServer,
-                    cts.Token);
-
-                processedCount = await ProcessDownloadedFilesAsync(
-                    downloadedPaths,
-                    deleteLocalFilesAfterProcessing,
-                    cts.Token);
-            }
+            var processedCount = await ProcessDownloadedFilesAsync(
+                downloadedPaths,
+                deleteLocalFilesAfterProcessing,
+                cts.Token);
 
             StatusMessage = string.Format(Loc.Tr("Status.Main.SuccessfullyProcessedRemote"), processedCount);
             Logger.Info("Remote files processed: {Count}", processedCount);
@@ -1723,8 +1693,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory,
         bool deleteAfterDownload,
-        CancellationToken cancellationToken,
-        ChannelWriter<string>? sink = null)
+        CancellationToken cancellationToken)
     {
         var progressViewModel = new DownloadProgressViewModel();
         progressViewModel.Initialize(files);
@@ -1777,11 +1746,6 @@ public partial class MainWindowViewModel : ViewModelBase
                 Telemetry?.RecordDownload(Path.GetFileName(localPath), downloadSw.ElapsedMilliseconds, downloadedBytes);
 
                 await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.FileCompleted(file.FileName); });
-
-                // В overlap-режиме отдаём путь потребителю сразу, чтобы парсинг шёл параллельно
-                // со скачиванием следующего файла.
-                if (sink is not null)
-                    await sink.WriteAsync(localPath, cancellationToken);
             }
 
             // Удаляем с сервера если нужно
@@ -1793,10 +1757,6 @@ public partial class MainWindowViewModel : ViewModelBase
                 Logger.Info("Deleted {Count} files from server", remotePaths.Count);
             }
 
-            // Все файлы отданы потребителю: закрываем канал, чтобы consumer завершил обработку,
-            // не дожидаясь косметической паузы ниже.
-            sink?.TryComplete();
-
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadCompleted(); });
 
             // Ждём 2 секунды, чтобы пользователь увидел завершение
@@ -1806,19 +1766,12 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            // Пробрасываем ошибку потребителю (если он есть), чтобы его await foreach завершился
-            // исключением, а не завис в ожидании новых элементов.
-            sink?.TryComplete(ex);
-
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadFailed(ex.Message); });
 
             throw;
         }
         finally
         {
-            // Страховка: если канал ещё открыт (например, неожиданный выход) — закрываем.
-            sink?.TryComplete();
-
             // Гарантированно убираем презентацию при любом исходе (док и/или вынесенное окно).
             // IsDownloading снимаем заранее, чтобы обработчик Closing не вернул окно в док.
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -1862,51 +1815,12 @@ public partial class MainWindowViewModel : ViewModelBase
             // включил удаление локальных файлов после обработки.
         }
 
-        if (addedCount > 0) ApplyAllFilters();
-
-        StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
-
-        return addedCount;
-    }
-
-    /// <summary>
-    /// (Advanced) Overlap-обработка: consumer читает пути скачанных файлов из канала и парсит их
-    /// по мере поступления, пока producer (цикл скачивания) продолжает качать следующие.
-    /// Единственный consumer — поэтому <see cref="ParseFileAsync"/> и коллекции остаются
-    /// однопоточными. Возвращает число реально добавленных файлов.
-    /// </summary>
-    private async Task<int> ProcessDownloadedFilesStreamAsync(
-        ChannelReader<string> reader,
-        bool deleteAfterProcessing,
-        CancellationToken cancellationToken)
-    {
-        var addedCount = 0;
-
-        // Продолжения после await по каналу могут резюмироваться не на UI-потоке. Обработку каждого
-        // файла (парсинг + мутация AllEvents/FileCards/StatusMessage) и обновление списка событий
-        // выполняем строго на UI-потоке — как и остальной код приложения (single-threaded модель).
-        // Overlap при этом сохраняется: тяжёлая SFTP-передача идёт в Task.Run внутри
-        // DownloadFileAsync, пока UI-поток парсит уже скачанный файл.
-        //
-        // В отличие от последовательного режима, обновляем видимый список ПОСЛЕ КАЖДОГО файла, а не
-        // одним пакетом в конце: смысл overlap-режима в том, чтобы события уже обработанных файлов
-        // появлялись сразу, не дожидаясь окончания всей загрузки.
-        await foreach (var path in reader.ReadAllAsync(cancellationToken))
+        if (addedCount > 0)
         {
-            var added = await Dispatcher.UIThread.InvokeAsync(
-                () => ProcessSingleDownloadedFileAsync(path, deleteAfterProcessing, cancellationToken));
-
-            if (!added)
-                continue;
-
-            addedCount++;
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                var sw = Stopwatch.StartNew();
-                ApplyAllFilters();
-                sw.Stop();
-                Telemetry?.AddFinalize(sw.ElapsedMilliseconds);
-            });
+            var finalizeSw = Stopwatch.StartNew();
+            ApplyAllFilters();
+            finalizeSw.Stop();
+            Telemetry?.AddFinalize(finalizeSw.ElapsedMilliseconds);
         }
 
         StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
