@@ -2,7 +2,6 @@
 
 /// <summary>
 /// Базовое исключение библиотеки.
-/// Соответствует концепции RuleConfigError в Python.
 /// </summary>
 public abstract class FirebirdParseException : Exception
 {
@@ -12,7 +11,6 @@ public abstract class FirebirdParseException : Exception
 
 /// <summary>
 /// Ошибка валидации правил парсинга.
-/// Аналог Python RuleConfigError.
 /// </summary>
 public sealed class RuleValidationException : FirebirdParseException
 {
