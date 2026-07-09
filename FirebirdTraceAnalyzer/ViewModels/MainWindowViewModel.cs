@@ -1252,6 +1252,11 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Сбор таймингов конвейера (для окна «Статистика парсера»). Всегда доступен, накладные копеечные.</summary>
     private IParseTelemetry? Telemetry => App.Services?.GetService<IParseTelemetry>();
 
+    private IBackgroundTaskService? _backgroundTasks;
+
+    /// <summary>Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»). Биндится панелью.</summary>
+    public IBackgroundTaskService? BackgroundTasks => _backgroundTasks ??= App.Services?.GetService<IBackgroundTaskService>();
+
     /// <summary>
     /// Ставит запись событий файла в фоновую очередь и сразу возвращается. Диск больше не на критическом
     /// пути: карточка файла показывается сразу после парсинга, а запись драйнится в фоне по очереди.
@@ -1270,12 +1275,24 @@ public partial class MainWindowViewModel : ViewModelBase
         var snapshot = new List<EventBase>(events);
         var telemetry = Telemetry;
         var name = file.FileName;
+
+        // Видимый индикатор фоновой записи: запись в стор может идти минутами (очередь на диск).
+        // Begin увеличивает счётчик задачи, Dispose (в finally) уменьшает — пункт исчезает, когда очередь пуста.
+        var bg = BackgroundTasks?.Begin("store-write", Loc.Tr("Background.StoreWrite"));
+
         dispatcher.Post(store =>
         {
             var sw = Stopwatch.StartNew();
-            store.WriteFile(file, snapshot);
-            sw.Stop();
-            telemetry?.AddStoreWrite(name, sw.ElapsedMilliseconds);
+            try
+            {
+                store.WriteFile(file, snapshot);
+            }
+            finally
+            {
+                sw.Stop();
+                telemetry?.AddStoreWrite(name, sw.ElapsedMilliseconds);
+                bg?.Dispose();
+            }
         });
     }
 

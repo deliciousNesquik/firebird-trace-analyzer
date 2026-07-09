@@ -282,12 +282,22 @@
                    Padding="10" />
     </Grid>
 
-        <!-- Мини-панель прогресса загрузки (снизу-справа), немодальная -->
-        <views:DownloadDockView DataContext="{Binding ActiveDownload}"
-                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsDownloadDockVisible}"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom"
-                                Margin="0,0,16,16" />
+        <!-- Немодальные мини-панели снизу-справа: стопкой, каждая со своей видимостью -->
+        <StackPanel HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Spacing="12">
+
+            <!-- Индикатор фоновых задач (напр. запись в хранилище) -->
+            <views:BackgroundTasksView
+                DataContext="{Binding BackgroundTasks}"
+                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).BackgroundTasks.HasActive, FallbackValue=False}" />
+
+            <!-- Прогресс загрузки -->
+            <views:DownloadDockView
+                DataContext="{Binding ActiveDownload}"
+                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsDownloadDockVisible}" />
+        </StackPanel>
 
         <!-- Оверлей модальных диалогов внутри окна -->
         <usercontrols:DialogHost DataContext="{Binding Dialogs}" />

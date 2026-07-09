@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ifc="using:FirebirdTraceAnalyzer.Interfaces"
+             xmlns:models="using:FirebirdTraceAnalyzer.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="140"
+             x:Class="FirebirdTraceAnalyzer.Views.BackgroundTasksView"
+             x:DataType="ifc:IBackgroundTaskService">
+
+    <!-- Немодальная мини-панель фоновых задач: снизу-справа, не мешает основной работе.
+         Показывает, что идёт фоновая работа, и просит не закрывать приложение. -->
+    <Border Width="360"
+            Background="{DynamicResource SurfaceElevatedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="14"
+            BoxShadow="0 6 20 0 #40000000">
+
+        <StackPanel Spacing="8">
+
+            <TextBlock Text="{loc:Tr Background.Title}"
+                       FontWeight="SemiBold"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:BackgroundTaskItem">
+                        <StackPanel Spacing="4" Margin="0,4,0,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding Title}"
+                                           FontSize="12"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Grid.Column="1"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}">
+                                    <Run Text="{loc:Tr Background.Queued}" />
+                                    <Run Text="{Binding Count}" />
+                                </TextBlock>
+                            </Grid>
+
+                            <TextBlock Text="{Binding Detail}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                            <ProgressBar IsIndeterminate="True" Height="4" CornerRadius="2" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="{loc:Tr Background.DontClose}"
+                       FontSize="11"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource WarningTextBrush}" />
+        </StackPanel>
+    </Border>
+</UserControl>

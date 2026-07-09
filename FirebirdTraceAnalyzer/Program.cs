@@ -105,6 +105,9 @@ internal sealed class Program
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
 
+        // Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»).
+        services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
+
         // Сбор таймингов конвейера (скачивание/парсинг/запись/UI) за сессию — для окна «Статистика парсера».
         services.AddSingleton<IParseTelemetry, ParseTelemetryService>();
 
