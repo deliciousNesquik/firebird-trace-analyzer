@@ -297,6 +297,29 @@ public sealed class EventStoreRoundTripTests
         finally { TryDelete(srcDb); TryDelete(destDb); }
     }
 
+    [Fact]
+    public void SizeBreakdown_ReportsRowsAndTextPayload()
+    {
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H", "f.log"), SampleEvents());
+
+            var b = store.GetSizeBreakdown();
+
+            Assert.Equal(16, b.EventRows);
+            Assert.Equal(2, b.SqlTextRows);          // Sql1, Sql2 (дедуп)
+            Assert.Equal(2, b.ErrorLineRows);        // единственный ErrorEvent с двумя строками
+            Assert.True(b.ParameterRows > 0);         // несколько событий с параметрами
+            Assert.True(b.SqlTextBytes > 0);
+            Assert.True(b.DbSizeBytes > 0);
+            // «Остальное» = размер БД − текстовые нагрузки, не отрицательное.
+            Assert.True(b.OtherBytes >= 0);
+        }
+        finally { TryDelete(db); }
+    }
+
     private static void TryDelete(string db)
     {
         foreach (var p in new[] { db, db + "-wal", db + "-shm" })

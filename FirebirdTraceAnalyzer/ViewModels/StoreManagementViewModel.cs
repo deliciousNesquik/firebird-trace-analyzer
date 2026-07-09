@@ -43,6 +43,17 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     [ObservableProperty] private string _rawSizeText = string.Empty;
     [ObservableProperty] private string _compressionText = string.Empty;
 
+    // Разбивка размера (грузится по кнопке — тяжёлый полный скан).
+    [ObservableProperty] private bool _isBreakdownLoaded;
+    [ObservableProperty] private bool _isBreakdownLoading;
+    [ObservableProperty] private string _sqlTextInfo = "—";
+    [ObservableProperty] private string _paramInfo = "—";
+    [ObservableProperty] private string _errorInfo = "—";
+    [ObservableProperty] private string _otherInfo = "—";
+    [ObservableProperty] private string _eventRowsText = "—";
+    [ObservableProperty] private string _attachmentRowsText = "—";
+    [ObservableProperty] private string _perfRowsText = "—";
+
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public StoreManagementViewModel()
     {
@@ -62,6 +73,9 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     [RelayCommand]
     private async Task RefreshAsync()
     {
+        // Разбивка размера могла устареть после удаления/очистки/импорта — просим перезагрузить.
+        IsBreakdownLoaded = false;
+
         IsBusy = true;
         try
         {
@@ -245,6 +259,36 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     {
         foreach (var file in Files)
             file.IsSelected = false;
+    }
+
+    /// <summary>Грузит разбивку размера по запросу (полный скан таблиц — недёшево).</summary>
+    [RelayCommand]
+    private async Task LoadSizeBreakdownAsync()
+    {
+        IsBreakdownLoading = true;
+        try
+        {
+            var b = await _dispatcher.RunAsync(store => store.GetSizeBreakdown());
+
+            SqlTextInfo = $"{ByteSizeFormatter.FormatBytes(b.SqlTextBytes)} • {b.SqlTextRows:N0}";
+            ParamInfo = $"{ByteSizeFormatter.FormatBytes(b.ParameterBytes)} • {b.ParameterRows:N0}";
+            ErrorInfo = $"{ByteSizeFormatter.FormatBytes(b.ErrorMessageBytes)} • {b.ErrorLineRows:N0}";
+            OtherInfo = ByteSizeFormatter.FormatBytes(b.OtherBytes);
+            EventRowsText = b.EventRows.ToString("N0");
+            AttachmentRowsText = b.AttachmentRows.ToString("N0");
+            PerfRowsText = b.PerfItemRows.ToString("N0");
+
+            IsBreakdownLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Store management: size breakdown failed");
+            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+        }
+        finally
+        {
+            IsBreakdownLoading = false;
+        }
     }
 
     [RelayCommand]

@@ -640,6 +640,35 @@ RETURNING seq;");
         };
     }
 
+    public EventStoreSizeBreakdown GetSizeBreakdown()
+    {
+        long Scalar(string sql)
+        {
+            using var c = _connection.CreateCommand();
+            c.CommandText = sql;
+            var v = c.ExecuteScalar();
+            return v is null or DBNull ? 0 : Convert.ToInt64(v);
+        }
+
+        long dbSize = 0;
+        try { dbSize = new FileInfo(_dbPath).Length; } catch { /* файл ещё не сброшен — не критично */ }
+
+        // Байты текста берём через LENGTH(CAST(x AS BLOB)) — это размер UTF-8, а не число символов.
+        return new EventStoreSizeBreakdown
+        {
+            DbSizeBytes = dbSize,
+            EventRows = Scalar("SELECT COUNT(*) FROM event;"),
+            SqlTextRows = Scalar("SELECT COUNT(*) FROM sql_text;"),
+            AttachmentRows = Scalar("SELECT COUNT(*) FROM attachment;"),
+            ParameterRows = Scalar("SELECT COUNT(*) FROM sql_parameter;"),
+            ErrorLineRows = Scalar("SELECT COUNT(*) FROM error_line;"),
+            PerfItemRows = Scalar("SELECT COUNT(*) FROM perf_table_item;"),
+            SqlTextBytes = Scalar("SELECT COALESCE(SUM(LENGTH(CAST(text AS BLOB))),0) FROM sql_text;"),
+            ParameterBytes = Scalar("SELECT COALESCE(SUM(LENGTH(CAST(value AS BLOB))),0) FROM sql_parameter;"),
+            ErrorMessageBytes = Scalar("SELECT COALESCE(SUM(LENGTH(CAST(message AS BLOB))),0) FROM error_line;")
+        };
+    }
+
     // ---------------------------------------------------------------- row → event
 
     private sealed record Row(

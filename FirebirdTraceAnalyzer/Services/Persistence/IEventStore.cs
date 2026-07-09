@@ -49,4 +49,7 @@ public interface IEventStore : IDisposable
 
     /// <summary>Сводная статистика хранилища.</summary>
     EventStoreStatistics GetStatistics();
+
+    /// <summary>Разбивка размера: строки по таблицам + байты текстовых нагрузок (тяжёлый полный скан — по запросу).</summary>
+    EventStoreSizeBreakdown GetSizeBreakdown();
 }

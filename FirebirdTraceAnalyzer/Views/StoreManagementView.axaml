@@ -53,6 +53,7 @@
                 Padding="20,14"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
+          <StackPanel Spacing="14">
             <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12">
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
@@ -89,6 +90,64 @@
                     <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="11" />
                 </StackPanel>
             </Grid>
+
+            <!-- Size breakdown (on demand) -->
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{loc:Tr Store.Manage.Breakdown.Title}"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Button Grid.Column="1"
+                                Classes="normal"
+                                IsVisible="{Binding !IsBreakdownLoaded}"
+                                IsEnabled="{Binding !IsBreakdownLoading}"
+                                Content="{loc:Tr Store.Manage.Breakdown.Load}"
+                                Command="{Binding LoadSizeBreakdownCommand}" />
+                    </Grid>
+
+                    <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Hint}"
+                               FontSize="10" TextWrapping="Wrap"
+                               IsVisible="{Binding !IsBreakdownLoaded}"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12"
+                          IsVisible="{Binding IsBreakdownLoaded}">
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.SqlText}" Classes="statLabel" />
+                            <TextBlock Text="{Binding SqlTextInfo}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Params}" Classes="statLabel" />
+                            <TextBlock Text="{Binding ParamInfo}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="2" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Errors}" Classes="statLabel" />
+                            <TextBlock Text="{Binding ErrorInfo}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="3" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Other}" Classes="statLabel" />
+                            <TextBlock Text="{Binding OtherInfo}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.EventRows}" Classes="statLabel" />
+                            <TextBlock Text="{Binding EventRowsText}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.AttachmentRows}" Classes="statLabel" />
+                            <TextBlock Text="{Binding AttachmentRowsText}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="1">
+                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.PerfRows}" Classes="statLabel" />
+                            <TextBlock Text="{Binding PerfRowsText}" Classes="statValue" FontSize="13" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+          </StackPanel>
         </Border>
 
         <!-- File list -->
