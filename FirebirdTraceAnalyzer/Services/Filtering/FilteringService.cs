@@ -256,6 +256,10 @@ public sealed class FilteringService : IFilteringService
             FilterType.StringMultiSelect => CreateStringFilter(filterId, field, events),
             FilterType.NumericRange => CreateNumericRangeFilter(filterId, field, events),
             FilterType.DateTimeRange => CreateDateTimeRangeFilter(filterId, field, events),
+            // Boolean переиспользует путь мультиселекта: две галки (True/False). Дескриптор помечается
+            // EnumMultiSelect, поэтому UpdateFilterValues и CreateConfigurableClone подхватывают его без
+            // отдельных веток. Отдельный контрол-переключатель — при желании, отдельным заходом.
+            FilterType.Boolean => CreateEnumFilter(filterId, field, events),
             _ => null
         };
     }
@@ -329,7 +333,7 @@ public sealed class FilteringService : IFilteringService
 
         return descriptor;
     }
-
+    
     private FilterDescriptor CreateStringFilter(string id, DiscoveredField field, List<EventBase> events)
     {
         var valueCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
