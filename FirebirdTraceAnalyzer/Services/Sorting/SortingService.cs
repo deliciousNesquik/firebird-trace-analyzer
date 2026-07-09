@@ -100,7 +100,7 @@ public sealed class SortingService : ISortingService
             _propertyAccessor.ToSortId(field.PropertyPath),
             field.DisplayName,
             CreatePropertyComparer(field.PropertyPath),
-            false, // isDefault
+            field.IsDefaultSort,
             field.Category,
             field.SortDisplayOrder);
     }

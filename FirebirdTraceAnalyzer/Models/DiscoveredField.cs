@@ -25,6 +25,9 @@ public sealed record DiscoveredField
 
     /// <summary>Порядок в списке сортировок (из SortableFieldAttribute.DisplayOrder; меньше = выше).</summary>
     public int SortDisplayOrder { get; init; } = 100;
+
+    /// <summary>Флаг, определяющий сортировку по умолчанию</summary>
+    public bool IsDefaultSort { get; init; } = false;
     
     // Метаданные
     public PropertyInfo PropertyInfo { get; init; } = null!;
