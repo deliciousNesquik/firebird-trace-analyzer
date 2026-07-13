@@ -32,6 +32,9 @@
     <ItemGroup>
         <!-- Версионирование из git-тегов (build-only) -->
         <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+        <!-- Пин патченного нативного SQLite: перекрывает транзитивный 2.1.11 (GHSA-2m69-gcr7-jv3q).
+             Патч есть только в линии 3.x (bundle 2.1.12 не публиковался). -->
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
         <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
 
         <PackageReference Include="Avalonia" Version="12.0.2" />
