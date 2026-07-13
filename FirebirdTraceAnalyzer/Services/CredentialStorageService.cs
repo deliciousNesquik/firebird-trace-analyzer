@@ -8,10 +8,11 @@ namespace FirebirdTraceAnalyzer.Services;
 
 /// <summary>
 /// Сервис для безопасного хранения учётных данных.
-/// Платформо-зависимое хранилище:
+/// Бэкенд выбирается один раз под текущую ОС/окружение (<see cref="StorageBackend"/>):
 /// - Windows: DPAPI (<see cref="ProtectedData"/>) + файл в %APPDATA%.
 /// - macOS: системный Keychain через утилиту <c>security</c>.
-/// - Linux: файл с правами 0600 (НЕбезопасно; TODO: Secret Service / libsecret).
+/// - Linux: Secret Service (gnome-keyring / KWallet) через утилиту <c>secret-tool</c>.
+/// - Фолбэк (нет keyring/secret-tool): файл с правами 0600 и слабой обфускацией — НЕбезопасно.
 /// </summary>
 public class CredentialStorageService : ICredentialStorageService
 {
@@ -19,10 +20,29 @@ public class CredentialStorageService : ICredentialStorageService
 
     private const string KeychainService = "FirebirdTraceAnalyzer";
 
+    /// <summary>Выбранный бэкенд хранения секретов.</summary>
+    private enum StorageBackend
+    {
+        /// <summary>Windows DPAPI + файл в %APPDATA%.</summary>
+        WindowsDpapi,
+
+        /// <summary>macOS Keychain через утилиту <c>security</c>.</summary>
+        MacKeychain,
+
+        /// <summary>Linux Secret Service (gnome-keyring / KWallet) через утилиту <c>secret-tool</c>.</summary>
+        LinuxSecretService,
+
+        /// <summary>Фолбэк: файл 0600 со слабой обфускацией (нет надёжного шифрования).</summary>
+        EncryptedFile
+    }
+
+    private readonly StorageBackend _backend;
     private readonly string _storageDirectory;
 
     public CredentialStorageService()
     {
+        _backend = DetectBackend();
+
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         // На некоторых платформах ApplicationData может быть пустым — откатываемся на профиль пользователя.
@@ -31,12 +51,35 @@ public class CredentialStorageService : ICredentialStorageService
 
         _storageDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Credentials");
 
-        // Директория нужна только для файловых бэкендов (Windows/Linux); на macOS секреты идут в Keychain.
-        if (!OperatingSystem.IsMacOS() && !Directory.Exists(_storageDirectory))
+        // Директория нужна только файловым бэкендам (Windows DPAPI и фолбэк).
+        if (_backend is StorageBackend.WindowsDpapi or StorageBackend.EncryptedFile
+            && !Directory.Exists(_storageDirectory))
         {
             Directory.CreateDirectory(_storageDirectory);
             Logger.Info("Created credentials storage directory: {Path}", _storageDirectory);
         }
+
+        Logger.Info("Credential storage backend: {Backend}", _backend);
+
+        if (_backend == StorageBackend.EncryptedFile)
+            Logger.Warn("Secure credential store unavailable; passwords will be stored with file " +
+                        "permissions only (no strong encryption). Install libsecret (secret-tool) and run " +
+                        "a keyring daemon to enable the Secret Service backend.");
+    }
+
+    /// <summary>Определяет бэкенд под текущую ОС. Secret Service доступен только при наличии <c>secret-tool</c>.</summary>
+    private static StorageBackend DetectBackend()
+    {
+        if (OperatingSystem.IsWindows())
+            return StorageBackend.WindowsDpapi;
+
+        if (OperatingSystem.IsMacOS())
+            return StorageBackend.MacKeychain;
+
+        if (OperatingSystem.IsLinux() && IsCommandAvailable("secret-tool"))
+            return StorageBackend.LinuxSecretService;
+
+        return StorageBackend.EncryptedFile;
     }
 
     public Task SavePasswordAsync(string server, string username, string password)
@@ -47,24 +90,17 @@ public class CredentialStorageService : ICredentialStorageService
             {
                 var account = CreateKey(server, username);
 
-                if (OperatingSystem.IsMacOS())
+                switch (_backend)
                 {
-                    // -U: обновить, если запись уже существует. Пароль не логируем.
-                    var (exitCode, _, stderr) = RunSecurity(
-                        "add-generic-password",
-                        "-U",
-                        "-s", KeychainService,
-                        "-a", account,
-                        "-w", password);
-
-                    if (exitCode != 0)
-                        throw new InvalidOperationException($"Keychain save failed (exit {exitCode}): {stderr}");
-                }
-                else
-                {
-                    var filePath = GetCredentialFilePath(account);
-                    File.WriteAllText(filePath, EncryptPassword(password));
-                    RestrictFilePermissions(filePath);
+                    case StorageBackend.MacKeychain:
+                        SaveMac(account, password);
+                        break;
+                    case StorageBackend.LinuxSecretService:
+                        SaveSecretService(account, password);
+                        break;
+                    default:
+                        SaveFile(account, password);
+                        break;
                 }
 
                 Logger.Info("Password saved for {Username}@{Server}", username, server);
@@ -85,32 +121,12 @@ public class CredentialStorageService : ICredentialStorageService
             {
                 var account = CreateKey(server, username);
 
-                if (OperatingSystem.IsMacOS())
+                return _backend switch
                 {
-                    var (exitCode, stdout, _) = RunSecurity(
-                        "find-generic-password",
-                        "-s", KeychainService,
-                        "-a", account,
-                        "-w");
-
-                    if (exitCode != 0)
-                    {
-                        Logger.Debug("No Keychain password for {Username}@{Server}", username, server);
-                        return null;
-                    }
-
-                    // -w печатает только пароль; убираем завершающий перевод строки.
-                    return stdout.TrimEnd('\r', '\n');
-                }
-
-                var filePath = GetCredentialFilePath(account);
-                if (!File.Exists(filePath))
-                {
-                    Logger.Debug("No saved password found for {Username}@{Server}", username, server);
-                    return null;
-                }
-
-                return DecryptPassword(File.ReadAllText(filePath));
+                    StorageBackend.MacKeychain => GetMac(account),
+                    StorageBackend.LinuxSecretService => GetSecretService(account),
+                    _ => GetFile(account)
+                };
             }
             catch (Exception ex)
             {
@@ -128,28 +144,20 @@ public class CredentialStorageService : ICredentialStorageService
             {
                 var account = CreateKey(server, username);
 
-                if (OperatingSystem.IsMacOS())
+                switch (_backend)
                 {
-                    var (exitCode, _, stderr) = RunSecurity(
-                        "delete-generic-password",
-                        "-s", KeychainService,
-                        "-a", account);
-
-                    // exit 44 = item not found — это не ошибка для удаления.
-                    if (exitCode != 0 && exitCode != 44)
-                        Logger.Warn("Keychain delete returned exit {Code}: {Err}", exitCode, stderr);
-                    else
-                        Logger.Info("Password deleted for {Username}@{Server}", username, server);
-
-                    return;
+                    case StorageBackend.MacKeychain:
+                        DeleteMac(account);
+                        break;
+                    case StorageBackend.LinuxSecretService:
+                        DeleteSecretService(account);
+                        break;
+                    default:
+                        DeleteFile(account);
+                        break;
                 }
 
-                var filePath = GetCredentialFilePath(account);
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                    Logger.Info("Password deleted for {Username}@{Server}", username, server);
-                }
+                Logger.Info("Password deleted for {Username}@{Server}", username, server);
             }
             catch (Exception ex)
             {
@@ -165,19 +173,145 @@ public class CredentialStorageService : ICredentialStorageService
         {
             var account = CreateKey(server, username);
 
-            if (OperatingSystem.IsMacOS())
+            return _backend switch
             {
-                var (exitCode, _, _) = RunSecurity(
-                    "find-generic-password",
-                    "-s", KeychainService,
-                    "-a", account);
-
-                return exitCode == 0;
-            }
-
-            return File.Exists(GetCredentialFilePath(account));
+                StorageBackend.MacKeychain => HasMac(account),
+                StorageBackend.LinuxSecretService => HasSecretService(account),
+                _ => File.Exists(GetCredentialFilePath(account))
+            };
         });
     }
+
+    #region macOS Keychain (утилита security)
+
+    private static void SaveMac(string account, string password)
+    {
+        // -U: обновить, если запись уже существует. Пароль не логируем.
+        var (exitCode, _, stderr) = RunTool("security", null,
+            "add-generic-password",
+            "-U",
+            "-s", KeychainService,
+            "-a", account,
+            "-w", password);
+
+        if (exitCode != 0)
+            throw new InvalidOperationException($"Keychain save failed (exit {exitCode}): {stderr}");
+    }
+
+    private static string? GetMac(string account)
+    {
+        var (exitCode, stdout, _) = RunTool("security", null,
+            "find-generic-password",
+            "-s", KeychainService,
+            "-a", account,
+            "-w");
+
+        if (exitCode != 0)
+            return null;
+
+        // -w печатает только пароль; убираем завершающий перевод строки, добавленный утилитой.
+        return stdout.TrimEnd('\r', '\n');
+    }
+
+    private static void DeleteMac(string account)
+    {
+        var (exitCode, _, stderr) = RunTool("security", null,
+            "delete-generic-password",
+            "-s", KeychainService,
+            "-a", account);
+
+        // exit 44 = item not found — это не ошибка для удаления.
+        if (exitCode != 0 && exitCode != 44)
+            Logger.Warn("Keychain delete returned exit {Code}: {Err}", exitCode, stderr);
+    }
+
+    private static bool HasMac(string account)
+    {
+        var (exitCode, _, _) = RunTool("security", null,
+            "find-generic-password",
+            "-s", KeychainService,
+            "-a", account);
+
+        return exitCode == 0;
+    }
+
+    #endregion
+
+    #region Linux Secret Service (утилита secret-tool)
+
+    // Секрет передаётся через stdin (pipe), а НЕ через argv — не виден в списке процессов (ps/argv).
+    private static void SaveSecretService(string account, string password)
+    {
+        var (exitCode, _, stderr) = RunTool("secret-tool", password,
+            "store",
+            "--label=" + KeychainService,
+            "service", KeychainService,
+            "account", account);
+
+        if (exitCode != 0)
+            throw new InvalidOperationException($"Secret Service save failed (exit {exitCode}): {stderr}");
+    }
+
+    private static string? GetSecretService(string account)
+    {
+        var (exitCode, stdout, _) = RunTool("secret-tool", null,
+            "lookup",
+            "service", KeychainService,
+            "account", account);
+
+        // secret-tool lookup печатает секрет БЕЗ завершающего перевода строки, поэтому не триммим.
+        return exitCode == 0 ? stdout : null;
+    }
+
+    private static void DeleteSecretService(string account)
+    {
+        var (exitCode, _, stderr) = RunTool("secret-tool", null,
+            "clear",
+            "service", KeychainService,
+            "account", account);
+
+        if (exitCode != 0)
+            Logger.Warn("secret-tool clear returned exit {Code}: {Err}", exitCode, stderr);
+    }
+
+    private static bool HasSecretService(string account)
+    {
+        var (exitCode, _, _) = RunTool("secret-tool", null,
+            "lookup",
+            "service", KeychainService,
+            "account", account);
+
+        return exitCode == 0;
+    }
+
+    #endregion
+
+    #region Файловый бэкенд (Windows DPAPI / фолбэк)
+
+    private void SaveFile(string account, string password)
+    {
+        var filePath = GetCredentialFilePath(account);
+        File.WriteAllText(filePath, EncryptPassword(password));
+        RestrictFilePermissions(filePath);
+    }
+
+    private string? GetFile(string account)
+    {
+        var filePath = GetCredentialFilePath(account);
+        if (!File.Exists(filePath))
+            return null;
+
+        return DecryptPassword(File.ReadAllText(filePath));
+    }
+
+    private void DeleteFile(string account)
+    {
+        var filePath = GetCredentialFilePath(account);
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+    }
+
+    #endregion
 
     private static string CreateKey(string server, string username)
     {
@@ -191,13 +325,44 @@ public class CredentialStorageService : ICredentialStorageService
         return Path.Combine(_storageDirectory, $"{key}.cred");
     }
 
-    /// <summary>Запускает утилиту <c>security</c> (macOS Keychain) и возвращает результат.</summary>
-    private static (int ExitCode, string StdOut, string StdErr) RunSecurity(params string[] args)
+    /// <summary>Есть ли исполняемый файл <paramref name="command"/> в каталогах PATH.</summary>
+    private static bool IsCommandAvailable(string command)
     {
-        var psi = new ProcessStartInfo("security")
+        var pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar))
+            return false;
+
+        foreach (var dir in pathVar.Split(Path.PathSeparator))
+        {
+            if (string.IsNullOrWhiteSpace(dir))
+                continue;
+
+            try
+            {
+                if (File.Exists(Path.Combine(dir, command)))
+                    return true;
+            }
+            catch
+            {
+                // Некорректная запись в PATH — пропускаем.
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Запускает внешнюю утилиту хранилища секретов и возвращает результат.
+    /// Если <paramref name="stdinSecret"/> задан — секрет уходит через stdin (pipe), не через argv.
+    /// </summary>
+    private static (int ExitCode, string StdOut, string StdErr) RunTool(
+        string fileName, string? stdinSecret, params string[] args)
+    {
+        var psi = new ProcessStartInfo(fileName)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = stdinSecret is not null,
             UseShellExecute = false,
             CreateNoWindow = true
         };
@@ -206,7 +371,14 @@ public class CredentialStorageService : ICredentialStorageService
             psi.ArgumentList.Add(arg);
 
         using var process = Process.Start(psi)
-                            ?? throw new InvalidOperationException("Failed to start 'security' process");
+                            ?? throw new InvalidOperationException($"Failed to start '{fileName}' process");
+
+        if (stdinSecret is not null)
+        {
+            // Пишем ровно секрет без завершающего перевода строки и закрываем поток (EOF).
+            process.StandardInput.Write(stdinSecret);
+            process.StandardInput.Close();
+        }
 
         var stdout = process.StandardOutput.ReadToEnd();
         var stderr = process.StandardError.ReadToEnd();
@@ -244,8 +416,7 @@ public class CredentialStorageService : ICredentialStorageService
             return Convert.ToBase64String(encryptedBytes);
         }
 
-        // Linux fallback: файл защищён правами 0600, но содержимое не шифруется надёжно.
-        // TODO: интеграция с Secret Service / libsecret.
+        // Фолбэк без keyring: файл защищён правами 0600, но содержимое надёжно НЕ шифруется.
         Logger.Warn("Storing credential with file permissions only (no strong encryption) on this OS");
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
     }

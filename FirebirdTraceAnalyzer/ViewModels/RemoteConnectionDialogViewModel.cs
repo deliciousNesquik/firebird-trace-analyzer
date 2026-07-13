@@ -190,12 +190,21 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
                 return;
             }
 
-            // Сохраняем пароль если нужно
-            if (RememberPassword && AuthenticationMethod == AuthenticationMethod.Password 
+            // Сохраняем пароль если нужно. Сохранение — необязательное удобство: сбой хранилища
+            // (недоступен keyring/Secret Service) НЕ должен рушить уже установленное соединение,
+            // поэтому ошибку только логируем.
+            if (RememberPassword && AuthenticationMethod == AuthenticationMethod.Password
                 && _credentialStorage != null)
             {
-                await _credentialStorage.SavePasswordAsync(Hostname, Username, Password);
-                Logger.Info("Password saved for {Username}@{Hostname}", Username, Hostname);
+                try
+                {
+                    await _credentialStorage.SavePasswordAsync(Hostname, Username, Password);
+                    Logger.Info("Password saved for {Username}@{Hostname}", Username, Hostname);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to save password to secure store; continuing without remembering it");
+                }
             }
 
             StatusMessage = Loc.Tr("Status.Remote.ConnectedSuccessfully");
