@@ -186,34 +186,6 @@ public class RemoteFileService : IRemoteFileService
         }, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<string>> DownloadFilesAsync(
-        IEnumerable<RemoteFileInfo> files,
-        string localDirectory,
-        IProgress<(int FileIndex, int TotalFiles, long BytesTransferred, long TotalBytes)>? progress = null,
-        CancellationToken cancellationToken = default)
-    {
-        var fileList = files.ToList();
-        var downloadedPaths = new List<string>();
-
-        for (var i = 0; i < fileList.Count; i++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var file = fileList[i];
-            var fileIndex = i;
-
-            var fileProgress = new Progress<(long BytesTransferred, long TotalBytes)>(p =>
-            {
-                progress?.Report((fileIndex, fileList.Count, p.BytesTransferred, p.TotalBytes));
-            });
-
-            var localPath = await DownloadFileAsync(file, localDirectory, fileProgress, cancellationToken);
-            downloadedPaths.Add(localPath);
-        }
-
-        return downloadedPaths;
-    }
-
     public Task DeleteFileAsync(string remotePath, CancellationToken cancellationToken = default)
     {
         var sftpClient = _connectionService.GetSftpClient();

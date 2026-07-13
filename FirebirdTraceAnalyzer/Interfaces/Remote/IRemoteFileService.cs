@@ -18,14 +18,7 @@ public interface IRemoteFileService
         string localDirectory,
         IProgress<(long BytesTransferred, long TotalBytes)>? progress = null,
         CancellationToken cancellationToken = default);
-    
-    /// <summary>Скачать несколько файлов</summary>
-    Task<IReadOnlyList<string>> DownloadFilesAsync(
-        IEnumerable<RemoteFileInfo> files,
-        string localDirectory,
-        IProgress<(int FileIndex, int TotalFiles, long BytesTransferred, long TotalBytes)>? progress = null,
-        CancellationToken cancellationToken = default);
-    
+
     /// <summary>Удалить файл на сервере</summary>
     Task DeleteFileAsync(string remotePath, CancellationToken cancellationToken = default);
     
