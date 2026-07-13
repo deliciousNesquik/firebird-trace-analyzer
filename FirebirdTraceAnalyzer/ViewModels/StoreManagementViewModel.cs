@@ -77,6 +77,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         IsBreakdownLoaded = false;
 
         IsBusy = true;
+        StatusMessage = Loc.Tr("Store.Manage.Loading");
         try
         {
             var stats = await _dispatcher.RunAsync(store => store.GetStatistics());
@@ -115,6 +116,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
             return;
 
         IsBusy = true;
+        StatusMessage = string.Format(Loc.Tr("Store.Manage.Deleting"), hashes.Count);
         try
         {
             await _dispatcher.RunAsync(store =>
@@ -142,6 +144,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     private async Task ClearAllAsync()
     {
         IsBusy = true;
+        StatusMessage = Loc.Tr("Store.Manage.Clearing");
         try
         {
             await _dispatcher.RunAsync(store => store.Clear());
@@ -190,6 +193,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         var path = picked.Path.LocalPath;
 
         IsBusy = true;
+        StatusMessage = Loc.Tr("Store.Manage.Exporting");
         try
         {
             await _dispatcher.RunAsync(store => store.ExportTo(path, toExport));
@@ -228,6 +232,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         var imported = 0;
 
         IsBusy = true;
+        StatusMessage = Loc.Tr("Store.Manage.Importing");
         try
         {
             imported = await _dispatcher.RunAsync(store => store.ImportFrom(path));

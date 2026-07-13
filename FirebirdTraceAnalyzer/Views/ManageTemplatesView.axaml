@@ -91,7 +91,7 @@
                                             Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).ViewCommand}"
                                             CommandParameter="{Binding}">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                             <TextBlock Text="{loc:Tr Templates.View}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
@@ -100,7 +100,7 @@
                                             Command="{Binding $parent[UserControl].((vm:ManageTemplatesViewModel)DataContext).EditCommand}"
                                             CommandParameter="{Binding}">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource EditIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                            <Svg Width="20" Height="20" VerticalAlignment="Center" Path="{DynamicResource EditIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                             <TextBlock Text="{loc:Tr Templates.Edit}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>

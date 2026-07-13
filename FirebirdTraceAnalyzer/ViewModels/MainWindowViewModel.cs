@@ -2227,7 +2227,10 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             var vm = new StoreManagementViewModel(dispatcher, windowProvider);
-            await vm.LoadAsync();
+
+            // Грузим статистику/список в фоне: окно открывается сразу (с индикатором занятости),
+            // а не ждёт, пока чтение проберётся сквозь очередь фоновых записей в стор.
+            _ = vm.LoadAsync();
             await Dialogs.ShowDialogAsync<object>(vm);
         }
         catch (Exception ex)

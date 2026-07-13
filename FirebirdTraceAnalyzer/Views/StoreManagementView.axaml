@@ -27,6 +27,7 @@
         </Style>
     </UserControl.Styles>
 
+    <Panel>
     <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
@@ -253,4 +254,21 @@
         </Border>
 
     </Grid>
+
+        <!-- Оверлей занятости: показывает, что идёт долгая операция (загрузка/удаление/очистка/…),
+             и блокирует ввод, пока она не завершится. -->
+        <Border IsVisible="{Binding IsBusy}"
+                Background="{DynamicResource AppBackgroundBrush}"
+                Opacity="0.85">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Width="260">
+                <ProgressBar IsIndeterminate="True" Height="4" CornerRadius="2" />
+                <TextBlock Text="{Binding StatusMessage}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+        </Border>
+    </Panel>
 </UserControl>
