@@ -541,6 +541,7 @@
   "Status.Main.SettingsLoaded": "Настройки приложения загружены.",
   "Status.Main.SortedBy": "Сортировка: {0} ({1})",
   "Status.Main.AvailableFilters": "Доступные фильтры: {0}",
+  "Status.Main.BuildingFilters": "Формирование фильтров и сортировок…",
   "Status.Main.SearchLabel": "Поиск: '{0}'",
   "Status.Main.EventsCount": "{0:N0} из {1:N0}",
   "Status.Main.FilteringError": "Ошибка фильтрации: {0}",

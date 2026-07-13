@@ -275,11 +275,21 @@
             IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatisticsSectionVisible}"
             DataContext="{Binding StatisticInfoModels}" />
 
-        <TextBlock Grid.Row="5"
+        <DockPanel Grid.Row="5"
                    Background="{DynamicResource SurfaceBrush}"
-                   IsVisible="{Binding IsLogsSectionVisible}"
-                   Text="{Binding StatusMessage}"
-                   Padding="10" />
+                   IsVisible="{Binding IsLogsSectionVisible}">
+            <!-- Живой индикатор: формирование фильтров/сортировок идёт в фоне, UI не висит -->
+            <ProgressBar DockPanel.Dock="Left"
+                         IsIndeterminate="True"
+                         IsVisible="{Binding IsFiltering}"
+                         Width="90"
+                         Height="4"
+                         Margin="10,0,0,0"
+                         VerticalAlignment="Center" />
+            <TextBlock Text="{Binding StatusMessage}"
+                       Padding="10"
+                       VerticalAlignment="Center" />
+        </DockPanel>
     </Grid>
 
         <!-- Немодальные мини-панели снизу-справа: стопкой, каждая со своей видимостью -->

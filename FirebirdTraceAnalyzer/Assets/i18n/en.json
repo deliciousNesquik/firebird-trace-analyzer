@@ -541,6 +541,7 @@
   "Status.Main.SettingsLoaded": "Application settings loaded.",
   "Status.Main.SortedBy": "Sorted by: {0} ({1})",
   "Status.Main.AvailableFilters": "Available filters: {0}",
+  "Status.Main.BuildingFilters": "Building filters and sorting…",
   "Status.Main.SearchLabel": "Search: '{0}'",
   "Status.Main.EventsCount": "{0:N0} of {1:N0}",
   "Status.Main.FilteringError": "Filtering error: {0}",

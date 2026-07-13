@@ -123,6 +123,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isFileLoading;
     [ObservableProperty] private double _loadProgress;
 
+    /// <summary>Идёт формирование фильтров/сортировок (тяжёлый расчёт в фоне) — для индикатора загрузки.</summary>
+    [ObservableProperty] private bool _isFiltering;
+
     // --- Презентация загрузки: док-панель снизу-справа / вынесенное окно ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDownloadDockVisible))]
@@ -415,13 +418,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Обновляет список доступных сортировок</summary>
     private void UpdateAvailableSorts()
+        => ApplyAvailableSorts(_sortingService.GetAvailableSorts(VisibleEvents));
+
+    /// <summary>Применяет готовый список сортировок к UI (группировка + восстановление выбора).
+    /// Список считается заранее (в т.ч. в фоне) — здесь только UI-операции.</summary>
+    private void ApplyAvailableSorts(IReadOnlyList<SortDescriptor> sorts)
     {
         var previousSelectedId = SelectedSort?.Id;
 
         AvailableSortsByCategory.Clear();
-
-        // Передаём ВИДИМЫЕ события (после фильтрации)
-        var sorts = _sortingService.GetAvailableSorts(VisibleEvents);
 
         var grouped = sorts
             .GroupBy(s => s.Category)
@@ -548,7 +553,12 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         // Передаём VisibleEvents вместо AllEvents!
         // Это позволяет показывать фильтры только для видимого типа события
-        var filters = _filteringService.GetAvailableFilters(VisibleEvents);
+        var events = VisibleEvents.ToList();
+        var filters = _filteringService.GetAvailableFilters(events);
+
+        // Счётчики/значения в reuse-пути GetAvailableFilters больше не считаются — считаем и применяем
+        // здесь (синхронно; этот путь используют разовые вызовы вроде «закрыть все файлы»).
+        _filteringService.ApplyFilterValues(filters, _filteringService.ScanFilterValues(events, filters));
 
         FiltersPanelViewModel.LoadFilters(filters);
 
@@ -559,82 +569,106 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     ///     Применяет все активные фильтры и обновляет UI
     /// </summary>
-    private void ApplyAllFilters()
+    // Защита от наложения: если фильтрация уже идёт, помечаем «надо перезапустить» и выходим —
+    // текущий прогон по завершении сам перезапустится с актуальными настройками.
+    private bool _filterRunning;
+    private bool _filterRerunRequested;
+
+    /// <summary>
+    /// Точка входа для UI-колбэков (тумблеры фильтров, поиск, сортировка). Запускает асинхронный
+    /// пересчёт, не блокируя вызывающего.
+    /// </summary>
+    private void ApplyAllFilters() => _ = ApplyAllFiltersAsync();
+
+    /// <summary>
+    /// Пересчитывает фильтры/поиск/сортировку. Тяжёлый O(N)-расчёт (включая сканы значений/счётчиков)
+    /// выполняется в фоновом потоке, UI остаётся отзывчивым (крутится индикатор <see cref="IsFiltering"/>);
+    /// применение результатов к привязанным коллекциям — на UI-потоке.
+    /// </summary>
+    private async Task ApplyAllFiltersAsync()
     {
+        if (_filterRunning)
+        {
+            _filterRerunRequested = true;
+            return;
+        }
+
+        _filterRunning = true;
+        IsFiltering = true;
         try
         {
-            _isBatchUpdate = true;
+            do
+            {
+                _filterRerunRequested = false;
+                await RunFilterPipelineAsync();
+            }
+            while (_filterRerunRequested);
+        }
+        finally
+        {
+            IsFiltering = false;
+            _filterRunning = false;
+        }
+    }
 
-            Logger.Info("Starting to use filters and search...");
+    private async Task RunFilterPipelineAsync()
+    {
+        _isBatchUpdate = true;
+        try
+        {
+            StatusMessage = Loc.Tr("Status.Main.BuildingFilters");
+
+            // Снимок настроек на UI-потоке (дальше читаем их в фоне).
+            var allEvents = AllEvents;
+            var searchActive = IsSearchActive && !string.IsNullOrWhiteSpace(SearchText);
+            var searchText = SearchText;
+            var searchMode = IsClassicSearch ? SearchType.Classic : SearchType.Regex;
+            var filterSnapshot = FiltersPanelViewModel.AvailableFilters.ToList();
+            var sortId = SelectedSort?.Id;
+            var sortDescending = IsSortDescending;
+
             var sw = Stopwatch.StartNew();
 
-            IEnumerable<EventBase> query = AllEvents;
-
-            // СНАЧАЛА поиск (если активен)
-            if (IsSearchActive && !string.IsNullOrWhiteSpace(SearchText))
+            // Тяжёлый расчёт в фоне — UI не блокируется.
+            var result = await Task.Run(() =>
             {
-                var searchMode = IsClassicSearch ? SearchType.Classic : SearchType.Regex;
-                query = _searchService.Search(query, SearchText, searchMode);
+                IEnumerable<EventBase> query = allEvents;
 
-                var searchResults = query.ToList();
-                Logger.Info("Search completed in {Elapsed}ms, found: {Count}",
-                    sw.ElapsedMilliseconds, searchResults.Count);
-                query = searchResults;
-                sw.Restart();
-            }
+                if (searchActive)
+                    query = _searchService.Search(query, searchText, searchMode).ToList();
 
-            // Применяем фильтры
-            query = _filteringService.ApplyFilters(
-                query,
-                FiltersPanelViewModel.AvailableFilters);
+                query = _filteringService.ApplyFilters(query, filterSnapshot);
+                var list = query.ToList();
 
-            var filteredList = query.ToList();
+                if (sortId != null)
+                    list = _sortingService.ApplySort(list, sortId, sortDescending).ToList();
 
-            Logger.Info("Filtering completed in {Elapsed}ms, resulting in: {Count} events",
-                sw.ElapsedMilliseconds, filteredList.Count);
+                // Структура фильтров/сортировок + O(N)-скан значений и счётчиков — тоже в фоне.
+                var filters = _filteringService.GetAvailableFilters(list);
+                var valueScan = _filteringService.ScanFilterValues(list, filters);
+                var sorts = _sortingService.GetAvailableSorts(list);
 
-            // Применяем сортировку (если есть)
-            if (SelectedSort != null)
-            {
-                sw.Restart();
-                filteredList = _sortingService.ApplySort(
-                    filteredList,
-                    SelectedSort.Id,
-                    IsSortDescending).ToList();
+                return (list, filters, valueScan, sorts);
+            });
 
-                Logger.Info("Sorting completed in {Elapsed}ms", sw.ElapsedMilliseconds);
-            }
+            Logger.Info("Filter pipeline computed in {Elapsed}ms, resulting in: {Count} events",
+                sw.ElapsedMilliseconds, result.list.Count);
 
-            // Обновляем UI (одним батчем)
-            sw.Restart();
-            VisibleEvents.ReplaceRange(filteredList);
-            Logger.Info("UI updated in {Elapsed}ms", sw.ElapsedMilliseconds);
+            // Применение на UI-потоке (продолжение после await возвращается в UI-контекст).
+            VisibleEvents.ReplaceRange(result.list);
 
-            // СНАЧАЛА обновляем сортировки (для видимых типов)
-            sw.Restart();
-            UpdateAvailableSorts();
-            Logger.Info("Sortings updated in {Elapsed}ms", sw.ElapsedMilliseconds);
+            // Значения/счётчики применяем ДО LoadFilters, чтобы подписки в LoadFilters охватили
+            // новые значения.
+            _filteringService.ApplyFilterValues(result.filters, result.valueScan);
+            FiltersPanelViewModel.LoadFilters(result.filters);
 
-            // ПОТОМ обновляем фильтры (для видимых типов)
-            sw.Restart();
-            UpdateAvailableFilters();
-            Logger.Info("Filters updated in {Elapsed}ms", sw.ElapsedMilliseconds);
-
-            // Обновляем счётчики фильтров
-            sw.Restart();
-            FiltersPanelViewModel.UpdateFilterCounts(filteredList);
-            Logger.Info("Filter counters updated in {Elapsed}ms", sw.ElapsedMilliseconds);
-
-            // Обновляем статистику
+            ApplyAvailableSorts(result.sorts);
             UpdateStatistics();
 
             var statusParts = new List<string>();
-
             if (IsSearchActive)
                 statusParts.Add(string.Format(Loc.Tr("Status.Main.SearchLabel"), SearchText));
-
-            statusParts.Add(string.Format(Loc.Tr("Status.Main.EventsCount"), filteredList.Count, AllEvents.Count));
-
+            statusParts.Add(string.Format(Loc.Tr("Status.Main.EventsCount"), result.list.Count, AllEvents.Count));
             StatusMessage = string.Join(" • ", statusParts);
         }
         catch (Exception ex)
@@ -1974,7 +2008,6 @@ public partial class MainWindowViewModel : ViewModelBase
             _isBatchUpdate = false;
             IsFileLoading = false;
 
-            UpdateAvailableFilters();
             ApplyAllFilters();
 
             NotifyCommandsCanExecuteChanged();
@@ -2028,7 +2061,6 @@ public partial class MainWindowViewModel : ViewModelBase
             _isBatchUpdate = false;
             IsFileLoading = false;
 
-            UpdateAvailableFilters();
             ApplyAllFilters();
 
             NotifyCommandsCanExecuteChanged();

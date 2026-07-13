@@ -65,7 +65,8 @@ public sealed class FilteringService : IFilteringService
             currentEventTypes.SetEquals(_lastEventTypes))
         {
             Logger.Debug("Event types haven't changed, we'll reuse filters");
-            UpdateFilterValues(_lastGeneratedFilters, eventList);
+            // Значения/счётчики/диапазоны обновляются отдельно (ScanFilterValues + ApplyFilterValues):
+            // тяжёлый O(N)-скан идёт в фоне, здесь возвращаем только структуру.
             return _lastGeneratedFilters;
         }
 
@@ -101,63 +102,86 @@ public sealed class FilteringService : IFilteringService
         return result;
     }
 
-    private void UpdateFilterValues(List<FilterDescriptor> filters, List<EventBase> events)
+    // Скан (фон): только читает события и PropertyPath/FilterType дескрипторов, ничего не пишет в UI.
+    public FilterValueScan ScanFilterValues(IReadOnlyList<EventBase> events, IReadOnlyList<FilterDescriptor> filters)
+    {
+        var scan = new FilterValueScan();
+
+        foreach (var filter in filters)
+        {
+            switch (filter.FilterType)
+            {
+                case FilterType.EnumMultiSelect or FilterType.StringMultiSelect:
+                {
+                    var valueCounts = new Dictionary<object, int>();
+                    foreach (var evt in events)
+                    {
+                        var value = _propertyAccessor.GetValue(evt, filter.PropertyPath);
+                        if (value != null)
+                        {
+                            valueCounts.TryGetValue(value, out var count);
+                            valueCounts[value] = count + 1;
+                        }
+                    }
+                    scan.MultiSelectCounts[filter.Id] = valueCounts;
+                    break;
+                }
+                case FilterType.NumericRange or FilterType.DateTimeRange:
+                {
+                    IComparable? min = null, max = null;
+                    foreach (var evt in events)
+                    {
+                        if (_propertyAccessor.GetValue(evt, filter.PropertyPath) is IComparable value)
+                        {
+                            if (min == null || value.CompareTo(min) < 0) min = value;
+                            if (max == null || value.CompareTo(max) > 0) max = value;
+                        }
+                    }
+                    if (min != null && max != null)
+                        scan.Ranges[filter.Id] = (min, max);
+                    break;
+                }
+            }
+        }
+
+        return scan;
+    }
+
+    // Применение (UI): пишет счётчики/новые значения/границы в дескрипторы. Только на UI-потоке.
+    public void ApplyFilterValues(IReadOnlyList<FilterDescriptor> filters, FilterValueScan scan)
     {
         foreach (var filter in filters)
         {
             switch (filter.FilterType)
             {
                 case FilterType.EnumMultiSelect or FilterType.StringMultiSelect:
-                    UpdateMultiSelectFilter(filter, events);
+                {
+                    if (!scan.MultiSelectCounts.TryGetValue(filter.Id, out var valueCounts))
+                        break;
+
+                    foreach (var item in filter.AvailableValues)
+                        item.Count = valueCounts.GetValueOrDefault(item.Value, 0);
+
+                    var existingValues = filter.AvailableValues.Select(v => v.Value).ToHashSet();
+                    foreach (var (value, count) in valueCounts.Where(kv => !existingValues.Contains(kv.Key)))
+                    {
+                        var displayName = value is Enum ? GetEnumDisplayName(value) : value.ToString()!;
+                        filter.AvailableValues.Add(new FilterValueItem(value, displayName, count));
+                    }
                     break;
+                }
                 case FilterType.NumericRange or FilterType.DateTimeRange:
-                    UpdateRangeFilter(filter, events);
+                {
+                    if (scan.Ranges.TryGetValue(filter.Id, out var range))
+                    {
+                        filter.MinValue = range.Min;
+                        filter.MaxValue = range.Max;
+                        filter.CurrentMinValue ??= filter.MinValue;
+                        filter.CurrentMaxValue ??= filter.MaxValue;
+                    }
                     break;
+                }
             }
-        }
-    }
-
-    private void UpdateMultiSelectFilter(FilterDescriptor filter, List<EventBase> events)
-    {
-        var valueCounts = new Dictionary<object, int>();
-
-        foreach (var evt in events)
-        {
-            var value = _propertyAccessor.GetValue(evt, filter.PropertyPath);
-            if (value != null)
-            {
-                valueCounts.TryGetValue(value, out var count);
-                valueCounts[value] = count + 1;
-            }
-        }
-
-        foreach (var item in filter.AvailableValues)
-        {
-            item.Count = valueCounts.GetValueOrDefault(item.Value, 0);
-        }
-
-        var existingValues = filter.AvailableValues.Select(v => v.Value).ToHashSet();
-        foreach (var (value, count) in valueCounts.Where(kv => !existingValues.Contains(kv.Key)))
-        {
-            var displayName = value is Enum ? GetEnumDisplayName(value) : value.ToString()!;
-            filter.AvailableValues.Add(new FilterValueItem(value, displayName, count));
-        }
-    }
-
-    private void UpdateRangeFilter(FilterDescriptor filter, List<EventBase> events)
-    {
-        var values = events
-            .Select(evt => _propertyAccessor.GetValue(evt, filter.PropertyPath))
-            .Where(v => v != null)
-            .Cast<IComparable>()
-            .ToList();
-
-        if (values.Count > 0)
-        {
-            filter.MinValue = values.Min();
-            filter.MaxValue = values.Max();
-            filter.CurrentMinValue ??= filter.MinValue;
-            filter.CurrentMaxValue ??= filter.MaxValue;
         }
     }
 

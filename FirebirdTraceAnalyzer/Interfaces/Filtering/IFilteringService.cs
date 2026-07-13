@@ -14,6 +14,18 @@ public interface IFilteringService
     /// Применяет все активные фильтры к коллекции.
     /// </summary>
     IEnumerable<EventBase> ApplyFilters(IEnumerable<EventBase> events, IEnumerable<FilterDescriptor> filters);
+
+    /// <summary>
+    /// Считает значения/счётчики/диапазоны фильтров по событиям (тяжёлый O(N)-проход).
+    /// Ничего не пишет в дескрипторы — безопасно вызывать в фоновом потоке.
+    /// </summary>
+    FilterValueScan ScanFilterValues(IReadOnlyList<EventBase> events, IReadOnlyList<FilterDescriptor> filters);
+
+    /// <summary>
+    /// Применяет результат <see cref="ScanFilterValues"/> к дескрипторам (счётчики, новые значения,
+    /// границы диапазонов). Пишет в UI-привязанные коллекции — вызывать только на UI-потоке.
+    /// </summary>
+    void ApplyFilterValues(IReadOnlyList<FilterDescriptor> filters, FilterValueScan scan);
     
     /// <summary>
     /// Регистрирует пользовательский фильтр.
