@@ -22,6 +22,7 @@ public class SshConnectionService : ISshConnectionService
 
     private readonly object _syncLock = new();
     private SftpClient? _sftpClient;
+    private Renci.SshNet.AuthenticationMethod? _authMethod;
     private PrivateKeyFile? _privateKeyFile;
     private bool _disposed;
 
@@ -107,7 +108,7 @@ public class SshConnectionService : ISshConnectionService
         // lock делает его идемпотентным и защищает от двойного dispose/гонок.
         lock (_syncLock)
         {
-            if (_sftpClient is null && _privateKeyFile is null)
+            if (_sftpClient is null && _authMethod is null && _privateKeyFile is null)
                 return;
 
             try
@@ -115,6 +116,11 @@ public class SshConnectionService : ISshConnectionService
                 _sftpClient?.Disconnect();
                 _sftpClient?.Dispose();
                 _sftpClient = null;
+
+                // Auth-метод (хранит пароль/ключ) — IDisposable, освобождаем явно, чтобы
+                // секрет не висел в памяти до GC.
+                _authMethod?.Dispose();
+                _authMethod = null;
 
                 // Освобождаем ключевой материал, чтобы он не висел в памяти до GC
                 _privateKeyFile?.Dispose();
@@ -193,13 +199,18 @@ public class SshConnectionService : ISshConnectionService
             throw new InvalidOperationException("Not connected to server");
     }
 
-    private static ConnectionInfo CreatePasswordConnection(SshConnectionSettings settings)
+    private ConnectionInfo CreatePasswordConnection(SshConnectionSettings settings)
     {
+        var authMethod = new PasswordAuthenticationMethod(settings.Username, settings.Password!);
+
+        // Сохраняем ссылку: auth-метод хранит пароль, освобождаем в Disconnect().
+        _authMethod = authMethod;
+
         return new ConnectionInfo(
             settings.Hostname,
             settings.Port,
             settings.Username,
-            new PasswordAuthenticationMethod(settings.Username, settings.Password!));
+            authMethod);
     }
 
     private ConnectionInfo CreatePrivateKeyConnection(SshConnectionSettings settings)
@@ -214,11 +225,14 @@ public class SshConnectionService : ISshConnectionService
         // Сохраняем ссылку: ключ нужен на время аутентификации, освобождаем в Disconnect().
         _privateKeyFile = keyFile;
 
+        var authMethod = new PrivateKeyAuthenticationMethod(settings.Username, keyFile);
+        _authMethod = authMethod;
+
         return new ConnectionInfo(
             settings.Hostname,
             settings.Port,
             settings.Username,
-            new PrivateKeyAuthenticationMethod(settings.Username, keyFile));
+            authMethod);
     }
 
     public void Dispose()
