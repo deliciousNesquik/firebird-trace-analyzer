@@ -74,7 +74,9 @@ public class SshConnectionService : ISshConnectionService
 
             Logger.Info("SFTP connection established");
 
-            CurrentSettings = settings;
+            // После аутентификации секреты больше не нужны — не держим их в долгоживущем
+            // CurrentSettings (сервис — singleton), чтобы пароль не висел в памяти всю сессию.
+            CurrentSettings = settings with { Password = null, KeyPassphrase = null };
         }
         catch (SshAuthenticationException ex)
         {
