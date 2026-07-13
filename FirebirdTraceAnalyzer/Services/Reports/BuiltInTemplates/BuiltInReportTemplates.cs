@@ -93,7 +93,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Time",
                         PropertyPath = "Timestamp",
                         Format = "yyyy-MM-dd HH:mm:ss",
-                        WidthPercent = 15,
+                        WidthPercent = 13,
                         Order = 1,
                         Alignment = TextAlignment.Left
                     },
@@ -121,7 +121,7 @@ public static class BuiltInReportTemplates
                         Name = "SqlText",
                         DisplayName = "SQL Query",
                         PropertyPath = "Sql",
-                        WidthPercent = 48,
+                        WidthPercent = 28,
                         Order = 4,
                         Alignment = TextAlignment.Left
                     },
@@ -130,7 +130,7 @@ public static class BuiltInReportTemplates
                         Name = "Parameters",
                         DisplayName = "Parameters",
                         PropertyPath = "Parameters",
-                        WidthPercent = 48,
+                        WidthPercent = 12,
                         Order = 5,
                         Alignment = TextAlignment.Left
                     },
@@ -140,7 +140,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Reads",
                         PropertyPath = "Performance.ReadCount",
                         Format = "N0",
-                        WidthPercent = 10,
+                        WidthPercent = 9,
                         Order = 6,
                         Alignment = TextAlignment.Right
                     },
@@ -150,7 +150,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Writes",
                         PropertyPath = "Performance.WriteCount",
                         Format = "N0",
-                        WidthPercent = 10,
+                        WidthPercent = 8,
                         Order = 7,
                         Alignment = TextAlignment.Right
                     },
@@ -275,7 +275,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Time",
                         PropertyPath = "Timestamp",
                         Format = "yyyy-MM-dd HH:mm:ss",
-                        WidthPercent = 18,
+                        WidthPercent = 12,
                         Order = 1,
                         Alignment = TextAlignment.Left
                     },
@@ -284,7 +284,7 @@ public static class BuiltInReportTemplates
                         Name = "ProcedureName",
                         DisplayName = "Procedure Name",
                         PropertyPath = "ProcedureName",
-                        WidthPercent = 30,
+                        WidthPercent = 26,
                         Order = 2,
                         Alignment = TextAlignment.Left
                     },
@@ -293,7 +293,7 @@ public static class BuiltInReportTemplates
                         Name = "Parameters",
                         DisplayName = "Parameters",
                         PropertyPath = "Parameters",
-                        WidthPercent = 30,
+                        WidthPercent = 20,
                         Order = 3,
                         Alignment = TextAlignment.Left
                     },
@@ -302,7 +302,7 @@ public static class BuiltInReportTemplates
                         Name = "User",
                         DisplayName = "User",
                         PropertyPath = "Attachment.User",
-                        WidthPercent = 12,
+                        WidthPercent = 10,
                         Order = 4,
                         Alignment = TextAlignment.Left
                     },
@@ -312,7 +312,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Execution Time (ms)",
                         PropertyPath = "Performance.ExecuteMs",
                         Format = "N0",
-                        WidthPercent = 15,
+                        WidthPercent = 14,
                         Order = 5,
                         Alignment = TextAlignment.Right
                     },
@@ -322,7 +322,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Reads",
                         PropertyPath = "Performance.ReadCount",
                         Format = "N0",
-                        WidthPercent = 10,
+                        WidthPercent = 9,
                         Order = 6,
                         Alignment = TextAlignment.Right
                     },
@@ -332,7 +332,7 @@ public static class BuiltInReportTemplates
                         DisplayName = "Writes",
                         PropertyPath = "Performance.WriteCount",
                         Format = "N0",
-                        WidthPercent = 10,
+                        WidthPercent = 9,
                         Order = 7,
                         Alignment = TextAlignment.Right
                     }
