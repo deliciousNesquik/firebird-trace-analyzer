@@ -106,18 +106,32 @@ public class PdfReportExporter : IReportExporter
             }
 
             column.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
+        });
+    }
 
-            // Переменные заголовка
+    /// <summary>
+    /// Блок переменных заголовка (метаданные отчёта: список файлов, счётчики и т.п.).
+    /// Рендерится в теле документа (page.Content), а НЕ в повторяющемся page.Header —
+    /// иначе большой список (напр. имена 100+ файлов) перерастает высоту страницы,
+    /// а колонтитул не умеет разбиваться на страницы, и QuestPDF падает с
+    /// DocumentLayoutException ("conflicting size constraints").
+    /// </summary>
+    private void ComposeReportInfo(IContainer container, ReportTemplate template, ReportMetadata metadata)
+    {
+        container.Column(column =>
+        {
+            column.Spacing(3);
+
             foreach (var variable in template.Header.Variables.Where(v => v.IsVisible).OrderBy(v => v.DisplayOrder))
             {
                 var value = GetVariableValue(variable, metadata);
-                
+
                 column.Item().Row(row =>
                 {
                     row.RelativeItem().Text(variable.DisplayName)
                         .FontSize(9)
                         .Bold();
-                    
+
                     row.RelativeItem().Text(value)
                         .FontSize(9);
                 });
@@ -130,6 +144,13 @@ public class PdfReportExporter : IReportExporter
         container.Column(column =>
         {
             column.Spacing(10);
+
+            // Метаданные отчёта (переменные заголовка) — в начале тела, чтобы длинный
+            // список файлов мог разбиваться на страницы.
+            if (template.Header.Variables.Any(v => v.IsVisible))
+            {
+                column.Item().Element(c => ComposeReportInfo(c, template, metadata));
+            }
 
             // Секции отчёта
             foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
