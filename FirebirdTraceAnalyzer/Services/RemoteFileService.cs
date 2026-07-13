@@ -1,4 +1,5 @@
-﻿using FirebirdTraceAnalyzer.Interfaces.Remote;
+﻿using System.Diagnostics;
+using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
 using Renci.SshNet;
@@ -11,6 +12,11 @@ namespace FirebirdTraceAnalyzer.Services;
 public class RemoteFileService : IRemoteFileService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    /// <summary>Минимальный интервал между отчётами прогресса (мс): SSH.NET зовёт колбэк на каждый
+    /// буфер (тысячи раз), без троттлинга это заваливает UI-поток.</summary>
+    private const long ProgressThrottleMs = 100;
+
     private readonly SshConnectionService _connectionService;
 
     public RemoteFileService(ISshConnectionService connectionService)
@@ -155,10 +161,19 @@ public class RemoteFileService : IRemoteFileService
 
                 fileStream = File.Create(localPath);
 
+                var throttle = Stopwatch.StartNew();
                 sftpClient.DownloadFile(fileInfo.FullPath, fileStream, bytesTransferred =>
                 {
+                    // Троттлинг: не чаще одного отчёта в ProgressThrottleMs.
+                    if (throttle.ElapsedMilliseconds < ProgressThrottleMs)
+                        return;
+
+                    throttle.Restart();
                     progress?.Report(((long)bytesTransferred, fileInfo.Size));
                 });
+
+                // Гарантируем финальный 100%-отчёт (последний колбэк мог быть отсечён троттлингом).
+                progress?.Report((fileInfo.Size, fileInfo.Size));
 
                 Logger.Info("Download completed: {FileName}", fileInfo.FileName);
 
