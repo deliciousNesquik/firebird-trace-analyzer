@@ -296,6 +296,23 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         }
     }
 
+    /// <summary>
+    /// Закрывает окно, вернув выбранные файлы для загрузки в рабочую сессию (чтение их событий из
+    /// хранилища и добавление карточек выполняет владелец диалога). Для накопительного архива это
+    /// способ подгрузить нужный срез без повторного парсинга.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanLoadSelected))]
+    private void LoadSelected()
+    {
+        var selected = Files.Where(f => f.IsSelected).Select(f => f.File).ToList();
+        if (selected.Count == 0)
+            return;
+
+        CloseRequested?.Invoke(this, selected);
+    }
+
+    private bool CanLoadSelected() => SelectedCount > 0 && !IsBusy;
+
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this, null);
 
@@ -324,6 +341,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         SelectedCount = Files.Count(f => f.IsSelected);
         DeleteSelectedCommand.NotifyCanExecuteChanged();
         ClearAllCommand.NotifyCanExecuteChanged();
+        LoadSelectedCommand.NotifyCanExecuteChanged();
     }
 
     private bool CanDeleteSelected() => SelectedCount > 0 && !IsBusy;
@@ -334,5 +352,6 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     {
         DeleteSelectedCommand.NotifyCanExecuteChanged();
         ClearAllCommand.NotifyCanExecuteChanged();
+        LoadSelectedCommand.NotifyCanExecuteChanged();
     }
 }

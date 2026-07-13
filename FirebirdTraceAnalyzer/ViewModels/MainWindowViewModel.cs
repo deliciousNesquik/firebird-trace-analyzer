@@ -2231,7 +2231,12 @@ public partial class MainWindowViewModel : ViewModelBase
             // Грузим статистику/список в фоне: окно открывается сразу (с индикатором занятости),
             // а не ждёт, пока чтение проберётся сквозь очередь фоновых записей в стор.
             _ = vm.LoadAsync();
-            await Dialogs.ShowDialogAsync<object>(vm);
+
+            // Диалог возвращает выбранные файлы, если пользователь нажал «Загрузить в сессию»
+            // (для накопительного архива — подгрузка среза без повторного парсинга).
+            var toLoad = await Dialogs.ShowDialogAsync<IReadOnlyList<TraceFileInfoModel>>(vm);
+            if (toLoad is { Count: > 0 })
+                await RestoreFilesAsync(toLoad, dispatcher);
         }
         catch (Exception ex)
         {

@@ -600,6 +600,7 @@
   "Store.Manage.ClearAll": "Очистить всё",
   "Store.Manage.Import": "Импорт…",
   "Store.Manage.Export": "Экспорт…",
+  "Store.Manage.LoadSelected": "Загрузить в сессию",
   "Store.Manage.Close": "Закрыть",
   "Stats.Title": "Статистика парсера",
   "Stats.Subtitle": "Тайминги конвейера за текущую сессию по фазам. Время в мс, если не указано иначе.",

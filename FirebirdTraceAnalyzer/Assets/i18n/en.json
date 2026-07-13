@@ -600,6 +600,7 @@
   "Store.Manage.ClearAll": "Clear all",
   "Store.Manage.Import": "Import…",
   "Store.Manage.Export": "Export…",
+  "Store.Manage.LoadSelected": "Load into session",
   "Store.Manage.Close": "Close",
   "Stats.Title": "Parser statistics",
   "Stats.Subtitle": "Pipeline timings for the current session by phase. Times are in ms unless noted.",
