@@ -253,11 +253,19 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         Logger.Info("Confirmed selection: {Count} files, total size: {Size} bytes",
             selectedFiles.Count, requiredBytes);
 
-        CloseRequested?.Invoke(this, selectedFiles);
+        Close(selectedFiles);
     }
 
     [RelayCommand]
-    private void Cancel() => CloseRequested?.Invoke(this, null);
+    private void Cancel() => Close(null);
+
+    /// <summary>Закрывает диалог: снимает подписки с файлов (иначе они держат ссылку на VM) и
+    /// поднимает CloseRequested с результатом.</summary>
+    private void Close(object? result)
+    {
+        UnsubscribeFromFiles();
+        CloseRequested?.Invoke(this, result);
+    }
 
     /// <summary>
     /// Свободное место на разделе, где находится <paramref name="directory"/>.
