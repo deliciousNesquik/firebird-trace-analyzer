@@ -17,6 +17,9 @@ public class SshConnectionService : ISshConnectionService
     /// <summary>Таймаут отдельной SFTP-операции: «зависший» (без данных) трансфер прервётся, а не повиснет навсегда.</summary>
     private static readonly TimeSpan SftpOperationTimeout = TimeSpan.FromSeconds(60);
 
+    /// <summary>Размер буфера SFTP (256 КБ): компромисс скорость/память для крупных трейс-файлов.</summary>
+    private const uint SftpBufferSize = 256 * 1024;
+
     private readonly object _syncLock = new();
     private SftpClient? _sftpClient;
     private PrivateKeyFile? _privateKeyFile;
@@ -55,7 +58,11 @@ public class SshConnectionService : ISshConnectionService
             _sftpClient = new SftpClient(connectionInfo)
             {
                 // Чтобы зависший трансфер не блокировал процесс навсегда
-                OperationTimeout = SftpOperationTimeout
+                OperationTimeout = SftpOperationTimeout,
+
+                // Увеличенный буфер заметно ускоряет скачивание крупных файлов: меньше
+                // SFTP round-trip'ов, чем при дефолтных 32 КБ.
+                BufferSize = SftpBufferSize
             };
 
             // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)
