@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using Avalonia.Threading;
 using CsvHelper;
@@ -9,14 +8,10 @@ using CsvHelper.Configuration;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Enums.Reports;
-using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
-using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
-using FirebirdTraceParser.Models.Events;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;

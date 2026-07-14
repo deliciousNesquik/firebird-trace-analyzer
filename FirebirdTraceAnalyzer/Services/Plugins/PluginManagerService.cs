@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using NLog;

@@ -1,5 +1,4 @@
-﻿using FirebirdTraceParser.Attributes;
-using FirebirdTraceParser.Enums;
+﻿using FirebirdTraceParser.Enums;
 
 namespace FirebirdTraceAnalyzer.Services.Filtering;
 

@@ -1,5 +1,4 @@
 ﻿using FirebirdTraceAnalyzer.Models;
-using FirebirdTraceAnalyzer.ViewModels;
 
 namespace FirebirdTraceAnalyzer.Mocks;
 

@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Enums;
 
 namespace FirebirdTraceAnalyzer.Models;

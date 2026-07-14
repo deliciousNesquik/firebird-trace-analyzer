@@ -5,7 +5,6 @@ using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceParser.Models.Events;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;

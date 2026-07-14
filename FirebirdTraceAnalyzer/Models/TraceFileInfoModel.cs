@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace FirebirdTraceAnalyzer.Models;
+﻿namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
 /// Неизменяемая модель информации о загруженном trace-файле.

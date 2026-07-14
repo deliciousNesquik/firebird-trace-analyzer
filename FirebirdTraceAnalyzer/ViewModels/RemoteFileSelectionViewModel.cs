@@ -1,13 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
-using FirebirdTraceAnalyzer.ViewModels;
 using NLog;
 
 

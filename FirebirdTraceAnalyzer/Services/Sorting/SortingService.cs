@@ -2,7 +2,6 @@
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Models;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 

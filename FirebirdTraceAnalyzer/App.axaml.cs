@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using FirebirdTraceAnalyzer;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Services;

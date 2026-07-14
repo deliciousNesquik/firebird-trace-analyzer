@@ -7,7 +7,6 @@ using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.ValueObjects;
-using Xunit;
 
 namespace FirebirdTraceAnalyzer.Tests;
 

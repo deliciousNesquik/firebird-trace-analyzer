@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia.Platform.Storage;
-using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using NLog;

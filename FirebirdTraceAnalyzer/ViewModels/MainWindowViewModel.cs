@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Security.Cryptography;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -25,17 +24,12 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Diagnostics;
 using FirebirdTraceAnalyzer.Services.EventProperties;
-using FirebirdTraceAnalyzer.Services.Filtering;
 using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceAnalyzer.Services.Plugins;
-using FirebirdTraceAnalyzer.Services.Reports;
-using FirebirdTraceAnalyzer.Services.Searching;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
-using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Parsing.Engine;
-using FirebirdTraceParser.Parsing.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 

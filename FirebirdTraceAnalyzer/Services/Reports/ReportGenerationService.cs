@@ -4,7 +4,6 @@ using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceParser.Models.Events;
 using NLog;

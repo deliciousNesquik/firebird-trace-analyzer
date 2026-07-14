@@ -12,14 +12,8 @@ using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.EventProperties;
-using FirebirdTraceAnalyzer.Services.Filtering;
-using FirebirdTraceAnalyzer.Services.Reports;
-using FirebirdTraceAnalyzer.Services.Sorting;
-using FirebirdTraceParser.Enums;
 using FirebirdTraceParser.Models.Events;
-using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;

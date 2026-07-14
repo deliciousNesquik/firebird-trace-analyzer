@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 

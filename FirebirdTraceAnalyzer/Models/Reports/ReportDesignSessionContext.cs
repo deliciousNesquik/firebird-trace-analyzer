@@ -1,4 +1,3 @@
-using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Models.Reports;

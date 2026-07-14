@@ -3,8 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using System;
-using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 
 namespace FirebirdTraceAnalyzer.Controls;

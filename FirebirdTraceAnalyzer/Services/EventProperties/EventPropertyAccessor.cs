@@ -3,7 +3,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
-using FirebirdTraceParser.Attributes;
 using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Services.EventProperties;

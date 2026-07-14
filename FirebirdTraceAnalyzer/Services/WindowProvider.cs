@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 
 namespace FirebirdTraceAnalyzer.Services;
