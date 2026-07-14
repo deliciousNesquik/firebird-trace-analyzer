@@ -6,8 +6,8 @@
 // Полное руководство (что это, как грузится, где брать типы, сборка и установка) — в README.md.
 
 using FirebirdTraceAnalyzer.Interfaces.Plugins;
-using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceParser.Enums;
 using FirebirdTraceParser.Models.Events;
 

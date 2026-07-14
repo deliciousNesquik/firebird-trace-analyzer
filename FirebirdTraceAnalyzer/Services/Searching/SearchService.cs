@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
-using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.Enums;
 using FirebirdTraceAnalyzer.Interfaces.Searching;
+using FirebirdTraceParser.Models.Events;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.Services.Searching;

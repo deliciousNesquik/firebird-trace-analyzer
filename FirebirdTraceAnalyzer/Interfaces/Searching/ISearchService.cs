@@ -1,5 +1,5 @@
-﻿using FirebirdTraceParser.Models.Events;
-using FirebirdTraceAnalyzer.Enums;
+﻿using FirebirdTraceAnalyzer.Enums;
+using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Interfaces.Searching;
 

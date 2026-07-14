@@ -1,8 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.ViewModels;
 using FirebirdTraceParser.Enums;
+using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Services.Filtering;
 

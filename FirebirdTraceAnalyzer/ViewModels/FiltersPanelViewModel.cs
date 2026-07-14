@@ -3,9 +3,9 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
-using FirebirdTraceParser.Models.Events;
 using FirebirdTraceAnalyzer.Services.Filtering;
 using FirebirdTraceParser.Enums;
+using FirebirdTraceParser.Models.Events;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
