@@ -88,7 +88,7 @@
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="3" Spacing="1">
                     <TextBlock Text="{loc:Tr Store.Manage.Stat.Range}" Classes="statLabel" />
-                    <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="11" />
+                    <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="11" TextWrapping="Wrap" />
                 </StackPanel>
             </Grid>
 
