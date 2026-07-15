@@ -95,12 +95,61 @@
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8">
 
-                    <!-- Конструктор (задел на Phase 2) -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Builder}" IsExpanded="False"
-                              HorizontalAlignment="Stretch">
-                        <TextBlock Text="{loc:Tr Store.Analyze.Builder.Soon}"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <!-- Конструктор: показатели + разрезы + фильтры → генерация SQL -->
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Builder}" IsExpanded="True"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch">
+                        <StackPanel Spacing="6">
+
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.Measures}" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding Measures}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MeasureItem">
+                                        <CheckBox Content="{Binding DisplayName}"
+                                                  IsChecked="{Binding IsSelected}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.Dimensions}" FontWeight="SemiBold"
+                                       Margin="0,6,0,0" />
+                            <ItemsControl ItemsSource="{Binding Dimensions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:DimensionItem">
+                                        <CheckBox Content="{Binding DisplayName}"
+                                                  IsChecked="{Binding IsSelected}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.Filters}" FontWeight="SemiBold"
+                                       Margin="0,6,0,0" />
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.Period}" FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <ComboBox ItemsSource="{Binding Periods}"
+                                      SelectedItem="{Binding SelectedPeriod}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PeriodItem">
+                                        <TextBlock Text="{Binding Display}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.User}" FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBox Text="{Binding BuilderUser}" />
+                            <TextBlock Text="{loc:Tr Store.Analyze.Builder.Limit}" FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <NumericUpDown Value="{Binding BuilderLimit}"
+                                           Minimum="1" Maximum="1000000" Increment="100"
+                                           FormatString="0" />
+
+                            <Button Content="{loc:Tr Store.Analyze.Builder.Generate}"
+                                    Command="{Binding GenerateSqlCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    Classes="accent"
+                                    Margin="0,6,0,0" />
+                        </StackPanel>
                     </Expander>
 
                     <!-- Готовые запросы -->
