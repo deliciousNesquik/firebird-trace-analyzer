@@ -8,7 +8,6 @@ using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Storage;
 using FirebirdTraceAnalyzer.Services.Persistence;
-using FirebirdTraceAnalyzer.Services.Storage;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -52,29 +51,17 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Схема БД для дерева-подсказки (двойной клик вставляет имя в редактор).</summary>
     public IReadOnlyList<SchemaTable> Schema { get; } = BuildSchema();
 
-    // --- Конструктор запросов (показатели + разрезы + фильтры → генерация SQL) ---
-    public IReadOnlyList<MeasureItem> Measures { get; } = BuildMeasures();
-    public IReadOnlyList<DimensionItem> Dimensions { get; } = BuildDimensions();
-    public IReadOnlyList<PeriodItem> Periods { get; } = BuildPeriods();
-
-    [ObservableProperty] private PeriodItem? _selectedPeriod;
-    [ObservableProperty] private string _builderUser = string.Empty;
-    [ObservableProperty] private decimal _builderLimit = 1000;
-
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public StorageAnalyticsViewModel()
     {
         _dispatcher = null!;
         _windowProvider = null!;
-        SelectedPeriod = Periods[0];
     }
 
     public StorageAnalyticsViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
-
-        SelectedPeriod = Periods[0];
 
         // Стартовый запрос — активность пользователей.
         SqlText = Prebuilt[0].Sql;
@@ -99,24 +86,6 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     {
         if (!string.IsNullOrEmpty(token))
             SqlText = string.IsNullOrEmpty(SqlText) ? token : $"{SqlText} {token}";
-    }
-
-    /// <summary>Собирает SQL из выбора конструктора и подставляет в редактор (можно доработать вручную).</summary>
-    [RelayCommand]
-    private void GenerateSql()
-    {
-        var dims = Dimensions.Where(d => d.IsSelected)
-            .Select(d => new QueryDimensionOption(d.Id, d.DisplayName)).ToList();
-        var measures = Measures.Where(m => m.IsSelected)
-            .Select(m => new QueryMeasureOption(m.Id, m.DisplayName)).ToList();
-
-        SqlText = StorageQueryBuilder.Build(
-            dims,
-            measures,
-            SelectedPeriod?.Value ?? QueryPeriod.AllTime,
-            string.IsNullOrWhiteSpace(BuilderUser) ? null : BuilderUser.Trim(),
-            (int)BuilderLimit,
-            DateTime.Now);
     }
 
     [RelayCommand]
@@ -281,41 +250,4 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         new("perf_table_item", ["event_seq", "table_name", "natural_count", "index_count",
             "update_count", "insert_count", "delete_count"]),
     ];
-
-    private static IReadOnlyList<DimensionItem> BuildDimensions() =>
-        StorageQueryBuilder.DimensionIds
-            .Select(id => new DimensionItem(id, Loc.Tr($"Store.Analyze.Dim.{id}")))
-            .ToList();
-
-    private static IReadOnlyList<MeasureItem> BuildMeasures() =>
-        StorageQueryBuilder.MeasureIds
-            .Select(id => new MeasureItem(id, Loc.Tr($"Store.Analyze.Measure.{id}")))
-            .ToList();
-
-    private static IReadOnlyList<PeriodItem> BuildPeriods() =>
-    [
-        new(QueryPeriod.AllTime, Loc.Tr("Store.Analyze.Period.AllTime")),
-        new(QueryPeriod.Today, Loc.Tr("Store.Analyze.Period.Today")),
-        new(QueryPeriod.Week, Loc.Tr("Store.Analyze.Period.Week")),
-        new(QueryPeriod.Month, Loc.Tr("Store.Analyze.Period.Month")),
-    ];
 }
-
-/// <summary>Пункт-показатель конструктора (чекбокс).</summary>
-public partial class MeasureItem(string id, string displayName) : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
-{
-    public string Id { get; } = id;
-    public string DisplayName { get; } = displayName;
-    [ObservableProperty] private bool _isSelected;
-}
-
-/// <summary>Пункт-разрез конструктора (чекбокс).</summary>
-public partial class DimensionItem(string id, string displayName) : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
-{
-    public string Id { get; } = id;
-    public string DisplayName { get; } = displayName;
-    [ObservableProperty] private bool _isSelected;
-}
-
-/// <summary>Пункт-период конструктора (комбобокс).</summary>
-public sealed record PeriodItem(QueryPeriod Value, string Display);
