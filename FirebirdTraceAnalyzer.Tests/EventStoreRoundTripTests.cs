@@ -319,6 +319,55 @@ public sealed class EventStoreRoundTripTests
         finally { TryDelete(db); }
     }
 
+    [Fact]
+    public void ExecuteQuery_ReturnsDynamicColumnsAndRows()
+    {
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H", "f.log"), SampleEvents());
+
+            var r = store.ExecuteQuery(
+                "SELECT event_type AS et, COUNT(*) AS cnt FROM event GROUP BY event_type ORDER BY event_type",
+                1000);
+
+            Assert.Equal(new[] { "et", "cnt" }, r.Columns.ToArray());
+            Assert.True(r.Rows.Count > 0);
+            Assert.False(r.Truncated);
+            // Сумма счётчиков по типам = всего событий.
+            var total = r.Rows.Sum(row => Convert.ToInt64(row[1]));
+            Assert.Equal(16, total);
+        }
+        finally { TryDelete(db); }
+    }
+
+    [Fact]
+    public void ExecuteQuery_RejectsWrites_TruncatesAndStaysWritable()
+    {
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H", "f.log"), SampleEvents());
+
+            // Не-SELECT и цепочки операторов отклоняются (до выполнения).
+            Assert.ThrowsAny<Exception>(() => store.ExecuteQuery("DELETE FROM event", 100));
+            Assert.ThrowsAny<Exception>(() => store.ExecuteQuery("UPDATE files SET name='x'", 100));
+            Assert.ThrowsAny<Exception>(() => store.ExecuteQuery("SELECT 1; DROP TABLE files", 100));
+
+            // Усечение по лимиту строк.
+            var r = store.ExecuteQuery("SELECT seq FROM event", maxRows: 5);
+            Assert.Equal(5, r.Rows.Count);
+            Assert.True(r.Truncated);
+
+            // После запроса стор снова доступен для записи (PRAGMA query_only=OFF восстановлен).
+            store.WriteFile(File("H2", "2.log"), SampleEvents());
+            Assert.Equal(2, store.GetStatistics().FileCount);
+        }
+        finally { TryDelete(db); }
+    }
+
     private static void TryDelete(string db)
     {
         foreach (var p in new[] { db, db + "-wal", db + "-shm" })

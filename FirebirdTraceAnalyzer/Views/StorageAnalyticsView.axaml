@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
+             xmlns:st="using:FirebirdTraceAnalyzer.Models.Storage"
+             xmlns:sys="using:System"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="720"
+             x:Class="FirebirdTraceAnalyzer.Views.StorageAnalyticsView"
+             x:DataType="vm:StorageAnalyticsViewModel"
+             Width="1000"
+             MaxHeight="760">
+
+    <Design.DataContext>
+        <vm:StorageAnalyticsViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Margin="12">
+
+        <!-- Тулбар -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8">
+            <Button Grid.Column="0"
+                    Content="{loc:Tr Store.Analyze.Run}"
+                    Command="{Binding RunQueryCommand}"
+                    IsEnabled="{Binding !IsBusy}"
+                    Classes="accent"
+                    Margin="0,0,8,0" />
+            <Button Grid.Column="1"
+                    Content="{loc:Tr Store.Analyze.ExportCsv}"
+                    Command="{Binding ExportCsvCommand}"
+                    IsEnabled="{Binding HasResult}" />
+            <TextBlock Grid.Column="2"
+                       Text="{Binding StatusMessage}"
+                       VerticalAlignment="Center"
+                       Margin="12,0"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Grid.Column="3"
+                    Content="{loc:Tr Common.Close}"
+                    Command="{Binding CloseCommand}" />
+        </Grid>
+
+        <!-- Рабочая область: слева редактор+результат, справа помощники -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,4,320">
+
+            <!-- Левая колонка -->
+            <Grid Grid.Column="0" RowDefinitions="2*,4,3*">
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                    <TextBox Text="{Binding SqlText}"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             TextWrapping="NoWrap"
+                             FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                             FontSize="13"
+                             Watermark="SELECT ... FROM event ..."
+                             VerticalContentAlignment="Top"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Border>
+
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+                              Background="{DynamicResource BorderBrush}" />
+
+                <Border Grid.Row="2"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                    <Panel>
+                        <!-- Динамический грид результата строится в code-behind -->
+                        <ScrollViewer x:Name="ResultHost"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto" />
+                        <TextBlock Text="{loc:Tr Store.Analyze.NoResult}"
+                                   IsVisible="{Binding !HasResult}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Panel>
+                </Border>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                          Background="{DynamicResource BorderBrush}" />
+
+            <!-- Правая панель: помощники -->
+            <ScrollViewer Grid.Column="2" Padding="8,0,0,0">
+                <StackPanel Spacing="8">
+
+                    <!-- Конструктор (задел на Phase 2) -->
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Builder}" IsExpanded="False">
+                        <TextBlock Text="{loc:Tr Store.Analyze.Builder.Soon}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Expander>
+
+                    <!-- Готовые запросы -->
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Prebuilt}" IsExpanded="True">
+                        <ItemsControl ItemsSource="{Binding Prebuilt}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="st:PrebuiltQuery">
+                                    <Button Content="{Binding Name}"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left"
+                                            Margin="0,2"
+                                            Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).LoadPrebuiltCommand}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
+
+                    <!-- Схема БД -->
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Schema}" IsExpanded="True">
+                        <ItemsControl ItemsSource="{Binding Schema}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="st:SchemaTable">
+                                    <Expander Header="{Binding Name}" IsExpanded="False" Margin="0,1">
+                                        <ItemsControl ItemsSource="{Binding Columns}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <Button Content="{Binding}"
+                                                            HorizontalAlignment="Stretch"
+                                                            HorizontalContentAlignment="Left"
+                                                            Padding="8,2"
+                                                            FontSize="12"
+                                                            Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).InsertTokenCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

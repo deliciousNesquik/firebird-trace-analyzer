@@ -1,4 +1,5 @@
 using FirebirdTraceAnalyzer.Models;
+using FirebirdTraceAnalyzer.Models.Storage;
 using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Services.Persistence;
@@ -52,4 +53,11 @@ public interface IEventStore : IDisposable
 
     /// <summary>Разбивка размера: строки по таблицам + байты текстовых нагрузок (тяжёлый полный скан — по запросу).</summary>
     EventStoreSizeBreakdown GetSizeBreakdown();
+
+    /// <summary>
+    /// Выполняет произвольный SELECT/WITH (только чтение) и возвращает результат динамическими
+    /// колонками/строками. Записи отклоняются (PRAGMA query_only + валидация). Строк не больше
+    /// <paramref name="maxRows"/> (с признаком усечения). Вызывать только через диспетчер.
+    /// </summary>
+    StorageQueryResult ExecuteQuery(string sql, int maxRows, CancellationToken cancellationToken = default);
 }

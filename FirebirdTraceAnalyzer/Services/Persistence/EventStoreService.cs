@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using FirebirdTraceAnalyzer.Models;
+using FirebirdTraceAnalyzer.Models.Storage;
 using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.ValueObjects;
@@ -897,6 +899,78 @@ RETURNING seq;");
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
+    }
+
+    // ---------------------------------------------------------------- ad-hoc query
+
+    public StorageQueryResult ExecuteQuery(string sql, int maxRows, CancellationToken cancellationToken = default)
+    {
+        ValidateReadOnly(sql);
+
+        var sw = Stopwatch.StartNew();
+
+        // Физический запрет записи на время запроса (соединение общее, но диспетчер сериализует).
+        Exec("PRAGMA query_only=ON;");
+        try
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.CommandTimeout = 30;
+            using var reader = cmd.ExecuteReader();
+
+            var columns = new string[reader.FieldCount];
+            for (var i = 0; i < reader.FieldCount; i++)
+                columns[i] = reader.GetName(i);
+
+            var rows = new List<object?[]>();
+            var truncated = false;
+
+            while (reader.Read())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (rows.Count >= maxRows)
+                {
+                    truncated = true;
+                    break;
+                }
+
+                var row = new object?[reader.FieldCount];
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    var value = reader.GetValue(i);
+                    row[i] = value is DBNull ? null : value;
+                }
+                rows.Add(row);
+            }
+
+            sw.Stop();
+            return new StorageQueryResult(columns, rows, truncated, sw.ElapsedMilliseconds);
+        }
+        finally
+        {
+            // Возвращаем режим записи — дальше стор используется для парсинга/мутаций.
+            Exec("PRAGMA query_only=OFF;");
+        }
+    }
+
+    /// <summary>Пропускает только одиночный читающий запрос (SELECT/WITH). Реальный барьер —
+    /// PRAGMA query_only; здесь даём понятную ошибку до выполнения.</summary>
+    private static void ValidateReadOnly(string sql)
+    {
+        if (string.IsNullOrWhiteSpace(sql))
+            throw new InvalidOperationException("Пустой запрос.");
+
+        var trimmed = sql.Trim().TrimEnd(';').TrimStart();
+
+        // Запрещаем цепочку операторов (';' внутри после срезания единственного хвостового).
+        if (trimmed.Contains(';'))
+            throw new InvalidOperationException("Разрешён только один SELECT-запрос (без ';').");
+
+        var head = trimmed.TrimStart('(').TrimStart();
+        if (!head.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)
+            && !head.StartsWith("WITH", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Разрешены только запросы SELECT / WITH (только чтение).");
     }
 
     public void Dispose()

@@ -2271,6 +2271,32 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Открывает окно «Анализ хранилища» — произвольный SQL/агрегаты по накопительному архиву.</summary>
+    [RelayCommand]
+    private async Task OpenStorageAnalysisAsync()
+    {
+        try
+        {
+            var dispatcher = App.Services?.GetService<EventStoreDispatcher>();
+            var windowProvider = App.Services?.GetService<IWindowProvider>();
+            if (dispatcher is null || windowProvider is null)
+            {
+                StatusMessage = Loc.Tr("Store.Manage.Unavailable");
+                return;
+            }
+
+            var vm = new StorageAnalyticsViewModel(dispatcher, windowProvider);
+            _ = vm.LoadAsync();
+
+            await Dialogs.ShowDialogAsync<object>(vm);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error opening storage analysis window");
+            StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+        }
+    }
+
     /// <summary>Открывает окно «Статистика парсера» (только при включённом режиме разработчика).</summary>
     [RelayCommand]
     private async Task OpenParserStatisticsAsync()

@@ -171,7 +171,7 @@
 
         <MenuItem Header="{loc:Tr Menu.Storage}">
             <MenuItem Header="{loc:Tr Menu.StorageManagement}" Command="{Binding OpenStoreManagementCommand}"/>
-            <MenuItem Header="{loc:Tr Menu.StorageAnalysis}" />
+            <MenuItem Header="{loc:Tr Menu.StorageAnalysis}" Command="{Binding OpenStorageAnalysisCommand}" />
             <MenuItem Header="{loc:Tr Menu.StorageFinder}" />
         </MenuItem>
 
