@@ -114,8 +114,21 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     [RelayCommand(CanExecute = nameof(CanDeleteSelected))]
     private async Task DeleteSelectedAsync()
     {
-        var hashes = Files.Where(f => f.IsSelected).Select(f => f.File.FileHash).ToList();
+        var selected = Files.Where(f => f.IsSelected).ToList();
+        var hashes = selected.Select(f => f.File.FileHash).ToList();
         if (hashes.Count == 0)
+            return;
+
+        // Необратимое действие — спрашиваем подтверждение, показывая список выбранных файлов.
+        var confirmed = await _dialogService.ShowDialogAsync<bool>(new ConfirmDialogViewModel(
+            Loc.Tr("Store.Manage.DeleteConfirm.Title"),
+            string.Format(Loc.Tr("Store.Manage.DeleteConfirm.Message"), hashes.Count),
+            details: selected.Select(f => f.File.FileName).ToList(),
+            confirmText: Loc.Tr("Store.Manage.DeleteConfirm.Confirm"),
+            cancelText: Loc.Tr("Common.Cancel"),
+            isDanger: true));
+
+        if (!confirmed)
             return;
 
         IsBusy = true;
