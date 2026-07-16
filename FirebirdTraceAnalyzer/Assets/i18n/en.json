@@ -35,8 +35,6 @@
   "Store.Analyze.NothingToExport": "Nothing to export.",
   "Store.Analyze.ExportTitle": "Export result to CSV",
   "Store.Analyze.Exported": "Exported rows: {0}",
-  "Store.Analyze.Section.Builder": "Query builder",
-  "Store.Analyze.Builder.Soon": "The visual query builder is coming in a future version. For now use the prebuilt queries and the SQL editor.",
   "Store.Analyze.Section.Prebuilt": "Prebuilt queries",
   "Store.Analyze.Section.Schema": "DB schema",
   "Store.Analyze.Prebuilt.UserActivity": "User activity",

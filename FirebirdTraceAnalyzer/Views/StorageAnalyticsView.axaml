@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
              xmlns:st="using:FirebirdTraceAnalyzer.Models.Storage"
+             xmlns:uc="using:FirebirdTraceAnalyzer.UserControls"
              xmlns:sys="using:System"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,14 +10,14 @@
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="720"
              x:Class="FirebirdTraceAnalyzer.Views.StorageAnalyticsView"
              x:DataType="vm:StorageAnalyticsViewModel"
-             Width="1000"
-             MaxHeight="760">
+             Width="{Binding Bounds.Width, RelativeSource={RelativeSource AncestorType=uc:DialogHost}, Converter={StaticResource SubtractConverter}, ConverterParameter=48}"
+             Height="{Binding Bounds.Height, RelativeSource={RelativeSource AncestorType=uc:DialogHost}, Converter={StaticResource SubtractConverter}, ConverterParameter=48}">
 
     <Design.DataContext>
         <vm:StorageAnalyticsViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" Margin="12">
+    <Grid RowDefinitions="Auto,Auto,*" Margin="12">
 
         <!-- Тулбар -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8">
@@ -37,12 +38,19 @@
                        TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <Button Grid.Column="3"
-                    Content="{loc:Tr Common.Close}"
+                    Content="{loc:Tr Common.Cancel}"
                     Command="{Binding CloseCommand}" />
         </Grid>
 
+        <!-- Индикатор выполнения запроса -->
+        <ProgressBar Grid.Row="1"
+                     IsIndeterminate="True"
+                     IsVisible="{Binding IsBusy}"
+                     Height="3"
+                     Margin="0,0,0,8" />
+
         <!-- Рабочая область: слева редактор+результат, справа помощники -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,4,320">
+        <Grid Grid.Row="2" ColumnDefinitions="*,4,320">
 
             <!-- Левая колонка -->
             <Grid Grid.Column="0" RowDefinitions="2*,4,3*">
@@ -82,18 +90,14 @@
                           Background="{DynamicResource BorderBrush}" />
 
             <!-- Правая панель: помощники -->
-            <ScrollViewer Grid.Column="2" Padding="8,0,0,0">
+            <ScrollViewer Grid.Column="2" Padding="8,0,0,0"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8">
 
-                    <!-- Конструктор (задел на Phase 2) -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Builder}" IsExpanded="False">
-                        <TextBlock Text="{loc:Tr Store.Analyze.Builder.Soon}"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </Expander>
-
                     <!-- Готовые запросы -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Prebuilt}" IsExpanded="True">
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Prebuilt}" IsExpanded="True"
+                              HorizontalAlignment="Stretch">
                         <ItemsControl ItemsSource="{Binding Prebuilt}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="st:PrebuiltQuery">
@@ -109,11 +113,14 @@
                     </Expander>
 
                     <!-- Схема БД -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Schema}" IsExpanded="True">
+                    <Expander Header="{loc:Tr Store.Analyze.Section.Schema}" IsExpanded="True"
+                              HorizontalAlignment="Stretch">
                         <ItemsControl ItemsSource="{Binding Schema}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="st:SchemaTable">
-                                    <Expander Header="{Binding Name}" IsExpanded="False" Margin="0,1">
+                                    <Expander Header="{Binding Name}" IsExpanded="False" Margin="0,1"
+                                              HorizontalAlignment="Stretch"
+                                              HorizontalContentAlignment="Stretch">
                                         <ItemsControl ItemsSource="{Binding Columns}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="sys:String">
