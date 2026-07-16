@@ -46,13 +46,15 @@ public static class PerformanceTableParser
             
             if (line.Contains("***"))
                 continue;
-            
-            if (inTable && positions is not null && !string.IsNullOrWhiteSpace(line))
+
+            if (inTable && positions is not null)
             {
-                // Признак конца таблицы: строка без отступов (начинается с имени таблицы)
-                if (!char.IsWhiteSpace(line[0]) && line.TrimStart() == line)
+                // Строки таблицы (имя таблицы + счётчики) идут flush-left и подряд; конец блока —
+                // первая пустая строка. Прежнее условие «строка без отступов = конец» ошибочно
+                // обрывало парсинг на самой первой строке данных (они тоже flush-left).
+                if (string.IsNullOrWhiteSpace(line))
                     break;
-                
+
                 var item = ParseRow(line, positions, context);
                 if (item is not null)
                     items.Add(item);

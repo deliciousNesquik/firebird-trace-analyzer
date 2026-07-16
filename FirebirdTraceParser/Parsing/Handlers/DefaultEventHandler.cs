@@ -824,6 +824,9 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 performance = ParsePerformance(line, rules);
         }
 
+        if (includePerformance)
+            performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
+
         return new ProcedureData(attachment, transaction, procedureName,
             paramsList ?? (IReadOnlyList<SqlParameters>)Array.Empty<SqlParameters>(),
             performance, performanceTable);
@@ -875,6 +878,9 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             if (includePerformance && performance is null)
                 performance = ParsePerformance(line, rules);
         }
+
+        if (includePerformance)
+            performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
 
         return new TriggerData(attachment, transaction, triggerName, table, timing, eventType, performance,
             performanceTable);
