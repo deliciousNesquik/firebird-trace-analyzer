@@ -16,6 +16,7 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
+using FirebirdTraceAnalyzer.Models.Storage;
 using FirebirdTraceAnalyzer.ViewModels;
 
 namespace FirebirdTraceAnalyzer.Views;
@@ -189,7 +190,7 @@ public partial class StorageAnalyticsView : UserControl
         if (matches.Count == 0)
             return;
 
-        OpenCompletion(matches, replacePrefixLength: prefix.Length);
+        OpenCompletion(matches, replacePrefixLength: prefix.Length, DescribeWord);
     }
 
     // Колонки таблицы после точки: слово перед точкой — имя таблицы или её алиас из FROM/JOIN.
@@ -204,18 +205,22 @@ public partial class StorageAnalyticsView : UserControl
         if (columns is null || columns.Count == 0)
             return;
 
-        // Вставка сразу после точки — префикс заменять не нужно.
-        OpenCompletion(columns, replacePrefixLength: 0);
+        // Вставка сразу после точки — префикс заменять не нужно. Описания — по имени колонки.
+        OpenCompletion(columns, replacePrefixLength: 0, StorageSchemaDoc.Column);
     }
 
-    private void OpenCompletion(IEnumerable<string> items, int replacePrefixLength)
+    // Описание слова для подсказки: имя таблицы → её описание; иначе колонка по имени.
+    private static string? DescribeWord(string word) =>
+        StorageSchemaDoc.Table(word) ?? StorageSchemaDoc.Column(word);
+
+    private void OpenCompletion(IEnumerable<string> items, int replacePrefixLength, Func<string, string?>? describe = null)
     {
         _completionWindow = new CompletionWindow(SqlEditor.TextArea);
         if (replacePrefixLength > 0)
             _completionWindow.StartOffset -= replacePrefixLength;
 
         foreach (var item in items)
-            _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(item));
+            _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(item, describe?.Invoke(item)));
 
         _completionWindow.Closed += (_, _) => _completionWindow = null;
         _completionWindow.Show();
@@ -346,12 +351,13 @@ public partial class StorageAnalyticsView : UserControl
     };
 
     /// <summary>Элемент списка автодополнения — вставляет слово, заменяя набранный префикс.</summary>
-    private sealed class SqlCompletionData(string text) : ICompletionData
+    private sealed class SqlCompletionData(string text, string? description = null) : ICompletionData
     {
         public IImage? Image => null;
         public string Text { get; } = text;
         public object Content => Text;
-        public object Description => Text;
+        // Показывается всплывающей подсказкой рядом с выбранным пунктом: имя + описание поля.
+        public object Description { get; } = description is null ? text : $"{text} — {description}";
         public double Priority => 0;
 
         public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
