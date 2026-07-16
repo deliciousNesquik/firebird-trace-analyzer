@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 using Avalonia.Platform.Storage;
@@ -48,14 +49,21 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Готовые запросы — отправная точка (клик подставляет в редактор).</summary>
     public IReadOnlyList<PrebuiltQuery> Prebuilt { get; } = BuildPrebuilt();
 
-    /// <summary>Схема БД для дерева-подсказки (двойной клик вставляет имя в редактор).</summary>
+    /// <summary>Полная схема БД (все таблицы/колонки).</summary>
     public IReadOnlyList<SchemaTable> Schema { get; } = BuildSchema();
+
+    /// <summary>Отфильтрованная схема (карточки таблиц с чипами колонок) — под строку поиска.</summary>
+    public ObservableCollection<SchemaTable> FilteredSchema { get; } = [];
+
+    /// <summary>Строка поиска по схеме (фильтрует и таблицы, и колонки).</summary>
+    [ObservableProperty] private string _schemaFilter = string.Empty;
 
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public StorageAnalyticsViewModel()
     {
         _dispatcher = null!;
         _windowProvider = null!;
+        ApplySchemaFilter();
     }
 
     public StorageAnalyticsViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
@@ -63,8 +71,43 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
 
+        ApplySchemaFilter();
+
         // Стартовый запрос — активность пользователей.
         SqlText = Prebuilt[0].Sql;
+    }
+
+    partial void OnSchemaFilterChanged(string value) => ApplySchemaFilter();
+
+    /// <summary>Пересобирает <see cref="FilteredSchema"/> под строку поиска: совпадение по имени
+    /// таблицы показывает её целиком, иначе — только совпавшие колонки.</summary>
+    private void ApplySchemaFilter()
+    {
+        FilteredSchema.Clear();
+
+        var q = SchemaFilter?.Trim();
+        if (string.IsNullOrEmpty(q))
+        {
+            foreach (var table in Schema)
+                FilteredSchema.Add(table);
+            return;
+        }
+
+        foreach (var table in Schema)
+        {
+            if (table.Name.Contains(q, StringComparison.OrdinalIgnoreCase))
+            {
+                FilteredSchema.Add(table);
+                continue;
+            }
+
+            var columns = table.Columns
+                .Where(c => c.Contains(q, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (columns.Count > 0)
+                FilteredSchema.Add(new SchemaTable(table.Name, columns));
+        }
     }
 
     /// <summary>Вызывать до показа диалога (сейчас лёгкая — тяжёлого ничего не грузим).</summary>

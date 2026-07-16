@@ -17,6 +17,26 @@
         <vm:StorageAnalyticsViewModel />
     </Design.DataContext>
 
+    <UserControl.Styles>
+        <!-- «Чип» колонки: компактная кнопка-пилюля -->
+        <Style Selector="Button.chip">
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <!-- Карточка таблицы -->
+        <Style Selector="Border.schemaCard">
+            <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+    </UserControl.Styles>
+
     <Grid RowDefinitions="Auto,Auto,*" Margin="12">
 
         <!-- Тулбар -->
@@ -112,32 +132,48 @@
                         </ItemsControl>
                     </Expander>
 
-                    <!-- Схема БД -->
+                    <!-- Схема БД: поиск + карточки таблиц с чипами колонок -->
                     <Expander Header="{loc:Tr Store.Analyze.Section.Schema}" IsExpanded="True"
-                              HorizontalAlignment="Stretch">
-                        <ItemsControl ItemsSource="{Binding Schema}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="st:SchemaTable">
-                                    <Expander Header="{Binding Name}" IsExpanded="False" Margin="0,1"
-                                              HorizontalAlignment="Stretch"
-                                              HorizontalContentAlignment="Stretch">
-                                        <ItemsControl ItemsSource="{Binding Columns}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="sys:String">
-                                                    <Button Content="{Binding}"
-                                                            HorizontalAlignment="Stretch"
-                                                            HorizontalContentAlignment="Left"
-                                                            Padding="8,2"
-                                                            FontSize="12"
-                                                            Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).InsertTokenCommand}"
-                                                            CommandParameter="{Binding}" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Expander>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding SchemaFilter}"
+                                     Watermark="{loc:Tr Store.Analyze.SchemaSearch}" />
+
+                            <ItemsControl ItemsSource="{Binding FilteredSchema}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="st:SchemaTable">
+                                        <Border Classes="schemaCard" Margin="0,0,0,6">
+                                            <StackPanel Spacing="6">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Columns.Count}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                </Grid>
+                                                <ItemsControl ItemsSource="{Binding Columns}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="sys:String">
+                                                            <Button Classes="chip" Content="{Binding}"
+                                                                    Margin="0,0,4,4"
+                                                                    Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).InsertTokenCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </Expander>
 
                 </StackPanel>
