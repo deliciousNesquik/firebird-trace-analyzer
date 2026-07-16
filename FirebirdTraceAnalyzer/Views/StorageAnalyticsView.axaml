@@ -4,7 +4,6 @@
              xmlns:st="using:FirebirdTraceAnalyzer.Models.Storage"
              xmlns:uc="using:FirebirdTraceAnalyzer.UserControls"
              xmlns:ae="using:AvaloniaEdit"
-             xmlns:sys="using:System"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
@@ -18,47 +17,39 @@
         <vm:StorageAnalyticsViewModel />
     </Design.DataContext>
 
-    <UserControl.Styles>
-        <!-- «Чип» колонки: компактная кнопка-пилюля -->
-        <Style Selector="Button.chip">
-            <Setter Property="Padding" Value="8,2" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <!-- Карточка таблицы -->
-        <Style Selector="Border.schemaCard">
-            <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="8" />
-        </Style>
-    </UserControl.Styles>
-
     <Grid RowDefinitions="Auto,Auto,*" Margin="12">
 
         <!-- Тулбар -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,0,0,8">
             <Button Grid.Column="0"
                     Content="{loc:Tr Store.Analyze.Run}"
                     Command="{Binding RunQueryCommand}"
                     IsEnabled="{Binding !IsBusy}"
                     Classes="accent"
                     Margin="0,0,8,0" />
-            <Button Grid.Column="1"
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding Prebuilt}"
+                      SelectedItem="{Binding SelectedPrebuilt}"
+                      PlaceholderText="{loc:Tr Store.Analyze.Section.Prebuilt}"
+                      MinWidth="190"
+                      Margin="0,0,8,0">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="st:PrebuiltQuery">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="2"
                     Content="{loc:Tr Store.Analyze.ExportCsv}"
                     Command="{Binding ExportCsvCommand}"
                     IsEnabled="{Binding HasResult}" />
-            <TextBlock Grid.Column="2"
+            <TextBlock Grid.Column="3"
                        Text="{Binding StatusMessage}"
                        VerticalAlignment="Center"
                        Margin="12,0"
                        TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
-            <Button Grid.Column="3"
+            <Button Grid.Column="4"
                     Content="{loc:Tr Common.Cancel}"
                     Command="{Binding CloseCommand}" />
         </Grid>
@@ -70,11 +61,8 @@
                      Height="3"
                      Margin="0,0,0,8" />
 
-        <!-- Рабочая область: слева редактор+результат, справа помощники -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,4,320">
-
-            <!-- Левая колонка -->
-            <Grid Grid.Column="0" RowDefinitions="2*,4,3*">
+        <!-- Рабочая область: редактор + результат на всю ширину -->
+        <Grid Grid.Row="2" RowDefinitions="2*,4,3*">
                 <Border Grid.Row="0"
                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4"
                         ClipToBounds="True">
@@ -127,80 +115,6 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </Panel>
                 </Border>
-            </Grid>
-
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
-                          Background="{DynamicResource BorderBrush}" />
-
-            <!-- Правая панель: помощники -->
-            <ScrollViewer Grid.Column="2" Padding="8,0,0,0"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8">
-
-                    <!-- Готовые запросы -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Prebuilt}" IsExpanded="True"
-                              HorizontalAlignment="Stretch">
-                        <ItemsControl ItemsSource="{Binding Prebuilt}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="st:PrebuiltQuery">
-                                    <Button Content="{Binding Name}"
-                                            HorizontalAlignment="Stretch"
-                                            HorizontalContentAlignment="Left"
-                                            Margin="0,2"
-                                            Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).LoadPrebuiltCommand}"
-                                            CommandParameter="{Binding}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Expander>
-
-                    <!-- Схема БД: поиск + карточки таблиц с чипами колонок -->
-                    <Expander Header="{loc:Tr Store.Analyze.Section.Schema}" IsExpanded="True"
-                              HorizontalAlignment="Stretch"
-                              HorizontalContentAlignment="Stretch">
-                        <StackPanel Spacing="8">
-                            <TextBox Text="{Binding SchemaFilter}"
-                                     Watermark="{loc:Tr Store.Analyze.SchemaSearch}" />
-
-                            <ItemsControl ItemsSource="{Binding FilteredSchema}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="st:SchemaTable">
-                                        <Border Classes="schemaCard" Margin="0,0,0,6">
-                                            <StackPanel Spacing="6">
-                                                <Grid ColumnDefinitions="*,Auto">
-                                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Columns.Count}"
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                </Grid>
-                                                <ItemsControl ItemsSource="{Binding Columns}">
-                                                    <ItemsControl.ItemsPanel>
-                                                        <ItemsPanelTemplate>
-                                                            <WrapPanel />
-                                                        </ItemsPanelTemplate>
-                                                    </ItemsControl.ItemsPanel>
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="sys:String">
-                                                            <Button Classes="chip" Content="{Binding}"
-                                                                    Margin="0,0,4,4"
-                                                                    Command="{Binding $parent[UserControl].((vm:StorageAnalyticsViewModel)DataContext).InsertTokenCommand}"
-                                                                    CommandParameter="{Binding}" />
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Expander>
-
-                </StackPanel>
-            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

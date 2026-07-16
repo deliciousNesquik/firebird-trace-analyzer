@@ -36,8 +36,6 @@
   "Store.Analyze.ExportTitle": "Экспорт результата в CSV",
   "Store.Analyze.Exported": "Экспортировано строк: {0}",
   "Store.Analyze.Section.Prebuilt": "Готовые запросы",
-  "Store.Analyze.Section.Schema": "Схема БД",
-  "Store.Analyze.SchemaSearch": "Поиск по таблицам и колонкам…",
   "Store.Analyze.Prebuilt.UserActivity": "Активность пользователей",
   "Store.Analyze.Prebuilt.TopSlow": "Топ медленных операторов",
   "Store.Analyze.Prebuilt.ErrorsByUser": "Ошибки по пользователям",

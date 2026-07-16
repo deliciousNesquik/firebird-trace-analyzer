@@ -36,8 +36,6 @@
   "Store.Analyze.ExportTitle": "Export result to CSV",
   "Store.Analyze.Exported": "Exported rows: {0}",
   "Store.Analyze.Section.Prebuilt": "Prebuilt queries",
-  "Store.Analyze.Section.Schema": "DB schema",
-  "Store.Analyze.SchemaSearch": "Search tables and columns…",
   "Store.Analyze.Prebuilt.UserActivity": "User activity",
   "Store.Analyze.Prebuilt.TopSlow": "Top slow statements",
   "Store.Analyze.Prebuilt.ErrorsByUser": "Errors by user",

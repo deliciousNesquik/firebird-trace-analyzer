@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 using Avalonia.Platform.Storage;
@@ -46,17 +45,14 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     public IReadOnlyList<string> ResultColumns { get; private set; } = [];
     public IReadOnlyList<object?[]> ResultRows { get; private set; } = [];
 
-    /// <summary>Готовые запросы — отправная точка (клик подставляет в редактор).</summary>
+    /// <summary>Готовые запросы — отправная точка (выбор в тулбаре подставляет в редактор).</summary>
     public IReadOnlyList<PrebuiltQuery> Prebuilt { get; } = BuildPrebuilt();
 
-    /// <summary>Полная схема БД (все таблицы/колонки).</summary>
+    /// <summary>Выбор готового запроса из тулбара: подставляет SQL и сбрасывается (как меню).</summary>
+    [ObservableProperty] private PrebuiltQuery? _selectedPrebuilt;
+
+    /// <summary>Полная схема БД (все таблицы/колонки) — используется автодополнением редактора.</summary>
     public IReadOnlyList<SchemaTable> Schema { get; } = BuildSchema();
-
-    /// <summary>Отфильтрованная схема (карточки таблиц с чипами колонок) — под строку поиска.</summary>
-    public ObservableCollection<SchemaTable> FilteredSchema { get; } = [];
-
-    /// <summary>Строка поиска по схеме (фильтрует и таблицы, и колонки).</summary>
-    [ObservableProperty] private string _schemaFilter = string.Empty;
 
     /// <summary>Базовый размер шрифта редактора (100% масштаба).</summary>
     private const double BaseFontSize = 13;
@@ -82,7 +78,6 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     {
         _dispatcher = null!;
         _windowProvider = null!;
-        ApplySchemaFilter();
     }
 
     public StorageAnalyticsViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
@@ -90,43 +85,8 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
 
-        ApplySchemaFilter();
-
         // Стартовый запрос — активность пользователей.
         SqlText = Prebuilt[0].Sql;
-    }
-
-    partial void OnSchemaFilterChanged(string value) => ApplySchemaFilter();
-
-    /// <summary>Пересобирает <see cref="FilteredSchema"/> под строку поиска: совпадение по имени
-    /// таблицы показывает её целиком, иначе — только совпавшие колонки.</summary>
-    private void ApplySchemaFilter()
-    {
-        FilteredSchema.Clear();
-
-        var q = SchemaFilter?.Trim();
-        if (string.IsNullOrEmpty(q))
-        {
-            foreach (var table in Schema)
-                FilteredSchema.Add(table);
-            return;
-        }
-
-        foreach (var table in Schema)
-        {
-            if (table.Name.Contains(q, StringComparison.OrdinalIgnoreCase))
-            {
-                FilteredSchema.Add(table);
-                continue;
-            }
-
-            var columns = table.Columns
-                .Where(c => c.Contains(q, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (columns.Count > 0)
-                FilteredSchema.Add(new SchemaTable(table.Name, columns));
-        }
     }
 
     /// <summary>Вызывать до показа диалога (сейчас лёгкая — тяжёлого ничего не грузим).</summary>
@@ -136,18 +96,18 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         return Task.CompletedTask;
     }
 
-    [RelayCommand]
-    private void LoadPrebuilt(PrebuiltQuery? query)
-    {
-        if (query is not null)
-            SqlText = query.Sql;
-    }
+    private bool _applyingPrebuilt;
 
-    [RelayCommand]
-    private void InsertToken(string? token)
+    // Выбор в комбобоксе тулбара подставляет SQL и сбрасывается — пункт работает как меню.
+    partial void OnSelectedPrebuiltChanged(PrebuiltQuery? value)
     {
-        if (!string.IsNullOrEmpty(token))
-            SqlText = string.IsNullOrEmpty(SqlText) ? token : $"{SqlText} {token}";
+        if (_applyingPrebuilt || value is null)
+            return;
+
+        _applyingPrebuilt = true;
+        SqlText = value.Sql;
+        SelectedPrebuilt = null;
+        _applyingPrebuilt = false;
     }
 
     [RelayCommand]
