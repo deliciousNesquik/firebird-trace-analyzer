@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<!-- Подсветка SQL для окна «Анализ хранилища» (Firebird/SQLite диалект).
+     Цвета подобраны читаемыми и в светлой, и в тёмной теме. -->
+<SyntaxDefinition name="SQL" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+    <Color name="Comment" foreground="#6A9955" fontStyle="italic" />
+    <Color name="String"  foreground="#B5651D" />
+    <Color name="Keyword" foreground="#3B78C3" fontWeight="bold" />
+    <Color name="Function" foreground="#8250DF" />
+    <Color name="Number"  foreground="#B58900" />
+
+    <RuleSet ignoreCase="true">
+
+        <!-- Комментарии -->
+        <Span color="Comment" begin="--" />
+        <Span color="Comment" multiline="true" begin="/\*" end="\*/" />
+
+        <!-- Строковые литералы (одинарные кавычки; '' внутри — экранирование) -->
+        <Span color="String" multiline="true">
+            <Begin>'</Begin>
+            <End>'</End>
+        </Span>
+
+        <!-- Агрегаты/функции -->
+        <Keywords color="Function">
+            <Word>COUNT</Word>
+            <Word>SUM</Word>
+            <Word>AVG</Word>
+            <Word>MIN</Word>
+            <Word>MAX</Word>
+            <Word>CAST</Word>
+            <Word>COALESCE</Word>
+            <Word>LENGTH</Word>
+            <Word>UPPER</Word>
+            <Word>LOWER</Word>
+            <Word>SUBSTR</Word>
+            <Word>TRIM</Word>
+            <Word>ROUND</Word>
+            <Word>DATE</Word>
+            <Word>DATETIME</Word>
+            <Word>STRFTIME</Word>
+            <Word>IFNULL</Word>
+            <Word>ABS</Word>
+        </Keywords>
+
+        <!-- Ключевые слова SQL -->
+        <Keywords color="Keyword">
+            <Word>SELECT</Word>
+            <Word>FROM</Word>
+            <Word>WHERE</Word>
+            <Word>AND</Word>
+            <Word>OR</Word>
+            <Word>NOT</Word>
+            <Word>NULL</Word>
+            <Word>IS</Word>
+            <Word>IN</Word>
+            <Word>LIKE</Word>
+            <Word>BETWEEN</Word>
+            <Word>EXISTS</Word>
+            <Word>JOIN</Word>
+            <Word>LEFT</Word>
+            <Word>RIGHT</Word>
+            <Word>INNER</Word>
+            <Word>OUTER</Word>
+            <Word>CROSS</Word>
+            <Word>ON</Word>
+            <Word>USING</Word>
+            <Word>GROUP</Word>
+            <Word>BY</Word>
+            <Word>ORDER</Word>
+            <Word>ASC</Word>
+            <Word>DESC</Word>
+            <Word>HAVING</Word>
+            <Word>LIMIT</Word>
+            <Word>OFFSET</Word>
+            <Word>DISTINCT</Word>
+            <Word>AS</Word>
+            <Word>CASE</Word>
+            <Word>WHEN</Word>
+            <Word>THEN</Word>
+            <Word>ELSE</Word>
+            <Word>END</Word>
+            <Word>UNION</Word>
+            <Word>ALL</Word>
+            <Word>WITH</Word>
+            <Word>COLLATE</Word>
+        </Keywords>
+
+        <!-- Числа -->
+        <Rule color="Number">\b\d+(\.\d+)?\b</Rule>
+
+    </RuleSet>
+</SyntaxDefinition>

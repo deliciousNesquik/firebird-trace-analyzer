@@ -1,9 +1,13 @@
 using System;
 using System.ComponentModel;
+using System.Xml;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform;
+using AvaloniaEdit.Highlighting;
+using AvaloniaEdit.Highlighting.Xshd;
 using FirebirdTraceAnalyzer.ViewModels;
 
 namespace FirebirdTraceAnalyzer.Views;
@@ -11,6 +15,8 @@ namespace FirebirdTraceAnalyzer.Views;
 /// <summary>
 /// Окно «Анализ хранилища». Грид результата строится динамически (число/имена колонок известны
 /// только в рантайме), поэтому собирается в code-behind по сигналу <c>ResultRevision</c>.
+/// SQL-редактор — AvaloniaEdit с подсветкой; текст связан с VM.SqlText вручную (у TextEditor нет
+/// удобного bindable-свойства текста).
 /// </summary>
 public partial class StorageAnalyticsView : UserControl
 {
@@ -18,11 +24,39 @@ public partial class StorageAnalyticsView : UserControl
     private static readonly IBrush HeaderBrush = new SolidColorBrush(Color.Parse("#22808080"));
 
     private StorageAnalyticsViewModel? _vm;
+    private bool _syncingText;
 
     public StorageAnalyticsView()
     {
         InitializeComponent();
+        SqlEditor.SyntaxHighlighting = LoadSqlHighlighting();
+        SqlEditor.TextChanged += OnEditorTextChanged;
         DataContextChanged += OnDataContextChanged;
+    }
+
+    private static IHighlightingDefinition? LoadSqlHighlighting()
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(
+                new Uri("avares://FirebirdTraceAnalyzer/Assets/SqlHighlighting.xshd"));
+            using var reader = XmlReader.Create(stream);
+            return HighlightingLoader.Load(reader, HighlightingManager.Instance);
+        }
+        catch
+        {
+            return null; // без подсветки редактор всё равно работает
+        }
+    }
+
+    private void OnEditorTextChanged(object? sender, EventArgs e)
+    {
+        if (_vm is null || _syncingText)
+            return;
+
+        _syncingText = true;
+        _vm.SqlText = SqlEditor.Text;
+        _syncingText = false;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -33,7 +67,10 @@ public partial class StorageAnalyticsView : UserControl
         _vm = DataContext as StorageAnalyticsViewModel;
 
         if (_vm is not null)
+        {
             _vm.PropertyChanged += OnVmPropertyChanged;
+            SyncEditorFromVm();
+        }
 
         RebuildGrid();
     }
@@ -42,6 +79,19 @@ public partial class StorageAnalyticsView : UserControl
     {
         if (e.PropertyName == nameof(StorageAnalyticsViewModel.ResultRevision))
             RebuildGrid();
+        else if (e.PropertyName == nameof(StorageAnalyticsViewModel.SqlText))
+            SyncEditorFromVm();
+    }
+
+    // VM → редактор (напр. выбрали готовый запрос). Guard от эха при обычном вводе.
+    private void SyncEditorFromVm()
+    {
+        if (_vm is null || _syncingText || SqlEditor.Text == _vm.SqlText)
+            return;
+
+        _syncingText = true;
+        SqlEditor.Text = _vm.SqlText;
+        _syncingText = false;
     }
 
     private void RebuildGrid()

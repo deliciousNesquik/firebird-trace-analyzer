@@ -431,7 +431,10 @@
         <!-- Использование (Fluent) темы для базовых элементов, 
         после переопределения своего дизайна данная строка не понадобится -->
         <FluentTheme />
-        
+
+        <!-- Тема редактора кода (AvaloniaEdit) — для SQL-редактора окна «Анализ хранилища» -->
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
         <!-- Загрузка всех (Control) для участия в сборке приложения -->
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TraceInitEventCard.axaml" />
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TraceFiniEventCard.axaml" />
