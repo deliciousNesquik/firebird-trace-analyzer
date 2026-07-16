@@ -655,6 +655,7 @@
   "Store.Manage.NothingToExport": "Store is empty — nothing to export",
   "Store.Manage.Breakdown.Title": "Size breakdown",
   "Store.Manage.Breakdown.Load": "Show",
+  "Store.Manage.Breakdown.Loading": "Computing breakdown…",
   "Store.Manage.Breakdown.Hint": "Full table scan — computed on demand. Text payloads are uncompressed byte sizes.",
   "Store.Manage.Breakdown.SqlText": "SQL text (bytes • rows)",
   "Store.Manage.Breakdown.Params": "Parameters (bytes • rows)",

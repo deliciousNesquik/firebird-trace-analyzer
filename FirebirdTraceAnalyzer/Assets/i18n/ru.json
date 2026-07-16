@@ -655,6 +655,7 @@
   "Store.Manage.NothingToExport": "Хранилище пусто — нечего экспортировать",
   "Store.Manage.Breakdown.Title": "Разбивка размера",
   "Store.Manage.Breakdown.Load": "Показать",
+  "Store.Manage.Breakdown.Loading": "Собираю разбивку…",
   "Store.Manage.Breakdown.Hint": "Полный скан таблиц — считается по запросу. Байты текста — несжатый размер полезной нагрузки.",
   "Store.Manage.Breakdown.SqlText": "SQL-тексты (байты • строк)",
   "Store.Manage.Breakdown.Params": "Параметры (байты • строк)",
