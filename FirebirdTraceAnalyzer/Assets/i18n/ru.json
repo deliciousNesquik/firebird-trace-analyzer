@@ -23,7 +23,6 @@
   "Menu.Storage": "_Хранилище [E]",
   "Menu.StorageManagement": "_Управление хранилищем [M]",
   "Menu.StorageAnalysis": "_Анализ хранилища [A]",
-  "Menu.StorageFinder": "_Поиск в хранилище [F]",
   "Store.Analyze.Ready": "Готово. Напишите SQL или выберите готовый запрос.",
   "Store.Analyze.Run": "▶ Выполнить",
   "Store.Analyze.ExportCsv": "Экспорт CSV",

@@ -23,7 +23,6 @@
   "Menu.Storage": "_Event store [E]",
   "Menu.StorageManagement": "_Manage Event Store [M]",
   "Menu.StorageAnalysis": "_Analyze Event Store [A]",
-  "Menu.StorageFinder": "_Find in Event Store [F]",
   "Store.Analyze.Ready": "Ready. Write SQL or pick a prebuilt query.",
   "Store.Analyze.Run": "▶ Run",
   "Store.Analyze.ExportCsv": "Export CSV",
