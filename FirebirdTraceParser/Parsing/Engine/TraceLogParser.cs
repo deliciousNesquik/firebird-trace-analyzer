@@ -199,20 +199,28 @@ public sealed class TraceLogParser(
             var evt = _handler.Handle(block.Header!, block.BodyLines, _rules, context);
 
             if (evt != null)
+            {
                 events.Add(evt);
+            }
             else
+            {
+                // Блок не дал события (неизвестный тип или не хватило обязательных данных) — он
+                // пропущен. Фиксируем как Warning, чтобы это попало в SkippedBlocks и не терялось тихо.
                 warnings.Add(new ParsingWarning
                 {
-                    Severity = WarningSeverity.Info,
-                    Message = "Block handler returned null",
-                    LineNumber = block.StartLine
+                    Severity = WarningSeverity.Warning,
+                    Message = "Block skipped: no event produced (unknown type or missing data)",
+                    LineNumber = block.StartLine,
+                    BlockContent = string.Join("\n", block.BodyLines.Take(3))
                 });
+            }
         }
         catch (Exception ex)
         {
+            // Строгий режим трактует сбой разбора как ошибку (HasErrors), мягкий — как предупреждение.
             var severity = options.ValidationMode == ValidationMode.Strict
-                ? WarningSeverity.Warning
-                : WarningSeverity.Error;
+                ? WarningSeverity.Error
+                : WarningSeverity.Warning;
 
             warnings.Add(new ParsingWarning
             {

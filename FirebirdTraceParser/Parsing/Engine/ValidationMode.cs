@@ -5,9 +5,11 @@
 /// </summary>
 public enum ValidationMode
 {
-    /// <summary>Строгий режим: любая ошибка парсинга блока - warning</summary>
+    /// <summary>Строгий режим: сбой разбора блока трактуется как ошибка (<c>Error</c>) —
+    /// <c>ParsingResult.HasErrors</c> становится <c>true</c>.</summary>
     Strict,
-    
-    /// <summary>Мягкий режим: пропускаются только критические ошибки</summary>
+
+    /// <summary>Мягкий режим: сбой разбора блока трактуется как предупреждение (<c>Warning</c>) —
+    /// разбор продолжается, <c>HasErrors</c> не поднимается (проблемы видны в <c>SkippedBlocks</c>).</summary>
     Relaxed
 }
