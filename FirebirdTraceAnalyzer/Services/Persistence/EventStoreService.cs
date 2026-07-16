@@ -646,7 +646,7 @@ RETURNING seq;");
         }
 
         var files = (int)Scalar("SELECT COUNT(*) FROM files;");
-        var events = Scalar("SELECT COUNT(*) FROM event;");
+        var events = Scalar("SELECT COALESCE(SUM(event_count),0) FROM files;");
         var sql = Scalar("SELECT COUNT(*) FROM sql_text;");
         var att = Scalar("SELECT COUNT(*) FROM attachment;");
         var raw = Scalar("SELECT COALESCE(SUM(size),0) FROM files;");
@@ -654,7 +654,7 @@ RETURNING seq;");
         DateTime? start = null, end = null;
         using (var c = _connection.CreateCommand())
         {
-            c.CommandText = "SELECT MIN(ts), MAX(ts) FROM event;";
+            c.CommandText = "SELECT MIN(start_ts), MAX(end_ts) FROM files;";
             using var r = c.ExecuteReader();
             if (r.Read() && !r.IsDBNull(0))
             {
