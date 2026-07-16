@@ -24,6 +24,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
 
     private readonly EventStoreDispatcher _dispatcher;
     private readonly IWindowProvider _windowProvider;
+    private readonly IDialogService _dialogService;
 
     public event EventHandler<object?>? CloseRequested;
 
@@ -59,12 +60,14 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     {
         _dispatcher = null!;
         _windowProvider = null!;
+        _dialogService = null!;
     }
 
-    public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
+    public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider, IDialogService dialogService)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
     }
 
     /// <summary>Первичная загрузка статистики и списка файлов (вызывать до показа диалога).</summary>
@@ -143,6 +146,17 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     [RelayCommand(CanExecute = nameof(CanClearAll))]
     private async Task ClearAllAsync()
     {
+        // Необратимое действие — спрашиваем подтверждение (красная кнопка).
+        var confirmed = await _dialogService.ShowDialogAsync<bool>(new ConfirmDialogViewModel(
+            Loc.Tr("Store.Manage.ClearConfirm.Title"),
+            string.Format(Loc.Tr("Store.Manage.ClearConfirm.Message"), FileCount, EventCount.ToString("N0")),
+            confirmText: Loc.Tr("Store.Manage.ClearConfirm.Confirm"),
+            cancelText: Loc.Tr("Common.Cancel"),
+            isDanger: true));
+
+        if (!confirmed)
+            return;
+
         IsBusy = true;
         StatusMessage = Loc.Tr("Store.Manage.Clearing");
         try
