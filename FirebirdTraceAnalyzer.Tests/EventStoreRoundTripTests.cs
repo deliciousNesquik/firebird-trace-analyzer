@@ -368,6 +368,34 @@ public sealed class EventStoreRoundTripTests
         finally { TryDelete(db); }
     }
 
+    [Fact]
+    public void Statistics_EventCountAndRange_DerivedFromFiles_MatchEventTable()
+    {
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H1", "1.log"), SampleEvents());
+            store.WriteFile(File("H2", "2.log"), SampleEvents());
+
+            // «Правда» — прямо по таблице event (то, что раньше и считала статистика).
+            var count = Convert.ToInt64(store.ExecuteQuery("SELECT COUNT(*) FROM event", 1, default).Rows[0][0]);
+            var range = store.ExecuteQuery("SELECT MIN(ts), MAX(ts) FROM event", 1, default).Rows[0];
+            var minTs = Convert.ToInt64(range[0]);
+            var maxTs = Convert.ToInt64(range[1]);
+
+            var s = store.GetStatistics();
+
+            // Оптимизированная статистика (из files: SUM(event_count), MIN(start_ts)/MAX(end_ts))
+            // обязана совпадать с реальными данными по event.
+            Assert.Equal(2, s.FileCount);
+            Assert.Equal(count, s.EventCount);
+            Assert.Equal(minTs, s.RangeStart!.Value.Ticks);
+            Assert.Equal(maxTs, s.RangeEnd!.Value.Ticks);
+        }
+        finally { TryDelete(db); }
+    }
+
     private static void TryDelete(string db)
     {
         foreach (var p in new[] { db, db + "-wal", db + "-shm" })
