@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml;
 using Avalonia;
 using Avalonia.Controls;
@@ -43,6 +44,7 @@ public partial class StorageAnalyticsView : UserControl
     private StorageAnalyticsViewModel? _vm;
     private bool _syncingText;
     private List<string> _completionWords = [.. SqlKeywords];
+    private Dictionary<string, IReadOnlyList<string>> _tables = new(StringComparer.OrdinalIgnoreCase);
     private CompletionWindow? _completionWindow;
 
     public StorageAnalyticsView()
@@ -108,6 +110,8 @@ public partial class StorageAnalyticsView : UserControl
             }
 
         _completionWords = words.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        _tables = _vm?.Schema.ToDictionary(t => t.Name, t => t.Columns, StringComparer.OrdinalIgnoreCase)
+                  ?? new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
     }
 
     private void OnEditorTextEntered(object? sender, TextInputEventArgs e)
@@ -115,11 +119,22 @@ public partial class StorageAnalyticsView : UserControl
         if (_completionWindow is not null || string.IsNullOrEmpty(e.Text))
             return;
 
-        var ch = e.Text[0];
-        if (!char.IsLetter(ch) && ch != '_')
+        // «table.» / «alias.» → колонки этой таблицы
+        if (e.Text == ".")
+        {
+            ShowMemberCompletion();
             return;
+        }
 
-        var prefix = GetWordBeforeCaret();
+        var ch = e.Text[0];
+        if (char.IsLetter(ch) || ch == '_')
+            ShowWordCompletion();
+    }
+
+    // Обычное автодополнение по префиксу слова (ключевые слова + таблицы/колонки).
+    private void ShowWordCompletion()
+    {
+        var prefix = GetWordBeforeOffset(SqlEditor.CaretOffset);
         if (prefix.Length < 1)
             return;
 
@@ -132,21 +147,67 @@ public partial class StorageAnalyticsView : UserControl
         if (matches.Count == 0)
             return;
 
+        OpenCompletion(matches, replacePrefixLength: prefix.Length);
+    }
+
+    // Колонки таблицы после точки: слово перед точкой — имя таблицы или её алиас из FROM/JOIN.
+    private void ShowMemberCompletion()
+    {
+        var dotOffset = SqlEditor.CaretOffset - 1; // позиция только что введённой точки
+        var ident = GetWordBeforeOffset(dotOffset);
+        if (ident.Length == 0)
+            return;
+
+        var columns = ResolveTableColumns(ident);
+        if (columns is null || columns.Count == 0)
+            return;
+
+        // Вставка сразу после точки — префикс заменять не нужно.
+        OpenCompletion(columns, replacePrefixLength: 0);
+    }
+
+    private void OpenCompletion(IEnumerable<string> items, int replacePrefixLength)
+    {
         _completionWindow = new CompletionWindow(SqlEditor.TextArea);
-        // Сегмент замены — весь набранный префикс слова (чтобы фильтровалось и заменялось целиком).
-        _completionWindow.StartOffset -= prefix.Length;
-        foreach (var m in matches)
-            _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(m));
+        if (replacePrefixLength > 0)
+            _completionWindow.StartOffset -= replacePrefixLength;
+
+        foreach (var item in items)
+            _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(item));
 
         _completionWindow.Closed += (_, _) => _completionWindow = null;
         _completionWindow.Show();
     }
 
-    private string GetWordBeforeCaret()
+    /// <summary>Разрешает слово перед точкой в колонки таблицы: прямое имя таблицы, иначе алиас,
+    /// найденный в тексте как «FROM/JOIN &lt;table&gt; [AS] &lt;alias&gt;».</summary>
+    private IReadOnlyList<string>? ResolveTableColumns(string ident)
+    {
+        if (_tables.TryGetValue(ident, out var direct))
+            return direct;
+
+        var table = FindAliasTable(ident);
+        return table is not null && _tables.TryGetValue(table, out var byAlias) ? byAlias : null;
+    }
+
+    private string? FindAliasTable(string alias)
+    {
+        // Ищем «<word> [AS] <alias>» и проверяем, что <word> — известная таблица.
+        var rx = new Regex($@"\b(\w+)\s+(?:AS\s+)?{Regex.Escape(alias)}\b", RegexOptions.IgnoreCase);
+        foreach (Match m in rx.Matches(SqlEditor.Text))
+        {
+            var candidate = m.Groups[1].Value;
+            if (_tables.ContainsKey(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private string GetWordBeforeOffset(int offset)
     {
         var doc = SqlEditor.Document;
-        var caret = SqlEditor.CaretOffset;
-        var start = caret;
+        var start = offset;
         while (start > 0)
         {
             var ch = doc.GetCharAt(start - 1);
@@ -156,7 +217,7 @@ public partial class StorageAnalyticsView : UserControl
                 break;
         }
 
-        return doc.GetText(start, caret - start);
+        return doc.GetText(start, offset - start);
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
