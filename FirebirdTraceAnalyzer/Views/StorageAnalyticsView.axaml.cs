@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Xml;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
+using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Editing;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using FirebirdTraceAnalyzer.ViewModels;
@@ -23,14 +29,28 @@ public partial class StorageAnalyticsView : UserControl
     private static readonly IBrush GridLineBrush = new SolidColorBrush(Color.Parse("#33808080"));
     private static readonly IBrush HeaderBrush = new SolidColorBrush(Color.Parse("#22808080"));
 
+    // Ключевые слова/функции SQL для автодополнения (имена таблиц/колонок добавляются из схемы VM).
+    private static readonly string[] SqlKeywords =
+    [
+        "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN", "EXISTS",
+        "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "ON", "USING", "GROUP", "BY", "ORDER",
+        "ASC", "DESC", "HAVING", "LIMIT", "OFFSET", "DISTINCT", "AS", "CASE", "WHEN", "THEN", "ELSE",
+        "END", "UNION", "ALL", "WITH", "COLLATE",
+        "COUNT", "SUM", "AVG", "MIN", "MAX", "CAST", "COALESCE", "LENGTH", "UPPER", "LOWER", "SUBSTR",
+        "TRIM", "ROUND", "DATE", "DATETIME", "STRFTIME", "IFNULL", "ABS"
+    ];
+
     private StorageAnalyticsViewModel? _vm;
     private bool _syncingText;
+    private List<string> _completionWords = [.. SqlKeywords];
+    private CompletionWindow? _completionWindow;
 
     public StorageAnalyticsView()
     {
         InitializeComponent();
         SqlEditor.SyntaxHighlighting = LoadSqlHighlighting();
         SqlEditor.TextChanged += OnEditorTextChanged;
+        SqlEditor.TextArea.TextEntered += OnEditorTextEntered;
         DataContextChanged += OnDataContextChanged;
     }
 
@@ -70,9 +90,73 @@ public partial class StorageAnalyticsView : UserControl
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
             SyncEditorFromVm();
+            BuildCompletionWords();
         }
 
         RebuildGrid();
+    }
+
+    // Кандидаты автодополнения: ключевые слова + имена таблиц и колонок из схемы.
+    private void BuildCompletionWords()
+    {
+        var words = new List<string>(SqlKeywords);
+        if (_vm is not null)
+            foreach (var table in _vm.Schema)
+            {
+                words.Add(table.Name);
+                words.AddRange(table.Columns);
+            }
+
+        _completionWords = words.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private void OnEditorTextEntered(object? sender, TextInputEventArgs e)
+    {
+        if (_completionWindow is not null || string.IsNullOrEmpty(e.Text))
+            return;
+
+        var ch = e.Text[0];
+        if (!char.IsLetter(ch) && ch != '_')
+            return;
+
+        var prefix = GetWordBeforeCaret();
+        if (prefix.Length < 1)
+            return;
+
+        var matches = _completionWords
+            .Where(w => w.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(w => w, StringComparer.OrdinalIgnoreCase)
+            .Take(50)
+            .ToList();
+
+        if (matches.Count == 0)
+            return;
+
+        _completionWindow = new CompletionWindow(SqlEditor.TextArea);
+        // Сегмент замены — весь набранный префикс слова (чтобы фильтровалось и заменялось целиком).
+        _completionWindow.StartOffset -= prefix.Length;
+        foreach (var m in matches)
+            _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(m));
+
+        _completionWindow.Closed += (_, _) => _completionWindow = null;
+        _completionWindow.Show();
+    }
+
+    private string GetWordBeforeCaret()
+    {
+        var doc = SqlEditor.Document;
+        var caret = SqlEditor.CaretOffset;
+        var start = caret;
+        while (start > 0)
+        {
+            var ch = doc.GetCharAt(start - 1);
+            if (char.IsLetterOrDigit(ch) || ch == '_')
+                start--;
+            else
+                break;
+        }
+
+        return doc.GetText(start, caret - start);
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -157,4 +241,17 @@ public partial class StorageAnalyticsView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         }
     };
+
+    /// <summary>Элемент списка автодополнения — вставляет слово, заменяя набранный префикс.</summary>
+    private sealed class SqlCompletionData(string text) : ICompletionData
+    {
+        public IImage? Image => null;
+        public string Text { get; } = text;
+        public object Content => Text;
+        public object Description => Text;
+        public double Priority => 0;
+
+        public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+            => textArea.Document.Replace(completionSegment, Text);
+    }
 }
