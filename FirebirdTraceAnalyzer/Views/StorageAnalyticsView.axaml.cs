@@ -43,6 +43,10 @@ public partial class StorageAnalyticsView : UserControl
         "TRIM", "ROUND", "DATE", "DATETIME", "STRFTIME", "IFNULL", "ABS"
     ];
 
+    // После этих слов ожидается имя таблицы → по пробелу сразу показываем список таблиц.
+    private static readonly HashSet<string> TableContextKeywords =
+        new(StringComparer.OrdinalIgnoreCase) { "FROM", "JOIN", "INTO", "UPDATE" };
+
     private StorageAnalyticsViewModel? _vm;
     private bool _syncingText;
     private List<string> _completionWords = [.. SqlKeywords];
@@ -94,6 +98,10 @@ public partial class StorageAnalyticsView : UserControl
                 break;
             case Key.D0 or Key.NumPad0:
                 _vm.FontZoomResetCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Key.Space: // Ctrl+Space — вручную показать список таблиц
+                ShowAllTables();
                 e.Handled = true;
                 break;
         }
@@ -169,9 +177,36 @@ public partial class StorageAnalyticsView : UserControl
             return;
         }
 
+        // «FROM »/«JOIN »… + пробел → список всех таблиц (чтобы не гадать, какие есть).
+        if (e.Text == " ")
+        {
+            var prevWord = GetWordBeforeOffset(SqlEditor.CaretOffset - 1);
+            if (TableContextKeywords.Contains(prevWord))
+                ShowAllTables();
+            return;
+        }
+
         var ch = e.Text[0];
         if (char.IsLetter(ch) || ch == '_')
             ShowWordCompletion();
+    }
+
+    // Список всех таблиц (с описаниями). Учитывает уже набранный префикс. Ctrl+Space / пробел после FROM.
+    private void ShowAllTables()
+    {
+        if (_completionWindow is not null)
+            return;
+
+        var prefix = GetWordBeforeOffset(SqlEditor.CaretOffset);
+        var tables = _tables.Keys
+            .Where(n => prefix.Length == 0 || n.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (tables.Count == 0)
+            return;
+
+        OpenCompletion(tables, replacePrefixLength: prefix.Length, StorageSchemaDoc.Table);
     }
 
     // Обычное автодополнение по префиксу слова (ключевые слова + таблицы/колонки).
