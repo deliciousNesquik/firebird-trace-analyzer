@@ -39,7 +39,7 @@
                     <StackPanel Spacing="10">
 
                         <!-- HEADER -->
-                        <Grid ColumnDefinitions="Auto Auto * Auto">
+                        <Grid ColumnDefinitions="Auto *">
 
                             <!-- EVENT TYPE -->
                             <Border Grid.Column="0"
@@ -54,7 +54,7 @@
                             </Border>
 
                             <!-- TIMESTAMP -->
-                            <TextBlock Grid.Column="2"
+                            <TextBlock Grid.Column="1"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Center"
                                        Text="{Binding Timestamp, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:yyyy-MM-ddTHH:mm:ss.ffff}'}"

@@ -34,7 +34,7 @@
 
                         <!-- HEADER -->
 
-                        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                        <Grid ColumnDefinitions="Auto,*">
 
                             <Border Grid.Column="0"
                                     Background="{DynamicResource ErrorEventBrush}"

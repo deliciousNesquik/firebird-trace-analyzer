@@ -19,7 +19,7 @@
                 <Border BorderThickness="1" Padding="10" BorderBrush="{DynamicResource BorderBrush}">
 
                     <StackPanel Spacing="10">
-                        <Grid ColumnDefinitions="Auto Auto * Auto">
+                        <Grid ColumnDefinitions="Auto *">
                             <Border Grid.Column="0"
                                     Background="{DynamicResource TraceInitEventBrush}"
                                     CornerRadius="5"
@@ -31,7 +31,7 @@
                                            FontSize="16" />
                             </Border>
                             
-                            <TextBlock Grid.Column="2"
+                            <TextBlock Grid.Column="1"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Center"
                                        Text="{Binding Timestamp, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:yyyy-MM-ddTHH:mm:ss.ffff}'}"
