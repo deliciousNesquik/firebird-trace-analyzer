@@ -48,10 +48,6 @@ public partial class StorageAnalyticsView : UserControl
     private Dictionary<string, IReadOnlyList<string>> _tables = new(StringComparer.OrdinalIgnoreCase);
     private CompletionWindow? _completionWindow;
 
-    private const double DefaultFontSize = 13;
-    private const double MinFontSize = 8;
-    private const double MaxFontSize = 40;
-
     public StorageAnalyticsView()
     {
         InitializeComponent();
@@ -59,7 +55,8 @@ public partial class StorageAnalyticsView : UserControl
         SqlEditor.TextChanged += OnEditorTextChanged;
         SqlEditor.TextArea.TextEntered += OnEditorTextEntered;
 
-        // Зум шрифта: Ctrl+колесо и Ctrl +/−/0. Tunnel — перехватываем до внутреннего скролла редактора.
+        // Зум шрифта — через те же команды VM, что и бейдж масштаба. Tunnel: перехват до внутреннего
+        // скролла редактора, чтобы Ctrl+колесо не прокручивало текст.
         SqlEditor.AddHandler(InputElement.PointerWheelChangedEvent, OnEditorPointerWheel, RoutingStrategies.Tunnel);
         SqlEditor.AddHandler(InputElement.KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
 
@@ -68,37 +65,38 @@ public partial class StorageAnalyticsView : UserControl
 
     private void OnEditorPointerWheel(object? sender, PointerWheelEventArgs e)
     {
-        if ((e.KeyModifiers & KeyModifiers.Control) == 0)
+        if (_vm is null || (e.KeyModifiers & KeyModifiers.Control) == 0)
             return;
 
-        ZoomFont(e.Delta.Y > 0 ? 1 : -1);
+        if (e.Delta.Y > 0)
+            _vm.FontZoomInCommand.Execute(null);
+        else
+            _vm.FontZoomOutCommand.Execute(null);
+
         e.Handled = true;
     }
 
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
-        if ((e.KeyModifiers & KeyModifiers.Control) == 0)
+        if (_vm is null || (e.KeyModifiers & KeyModifiers.Control) == 0)
             return;
 
         switch (e.Key)
         {
             case Key.OemPlus or Key.Add:
-                ZoomFont(1);
+                _vm.FontZoomInCommand.Execute(null);
                 e.Handled = true;
                 break;
             case Key.OemMinus or Key.Subtract:
-                ZoomFont(-1);
+                _vm.FontZoomOutCommand.Execute(null);
                 e.Handled = true;
                 break;
             case Key.D0 or Key.NumPad0:
-                SqlEditor.FontSize = DefaultFontSize;
+                _vm.FontZoomResetCommand.Execute(null);
                 e.Handled = true;
                 break;
         }
     }
-
-    private void ZoomFont(int step)
-        => SqlEditor.FontSize = Math.Clamp(SqlEditor.FontSize + step, MinFontSize, MaxFontSize);
 
     private static IHighlightingDefinition? LoadSqlHighlighting()
     {

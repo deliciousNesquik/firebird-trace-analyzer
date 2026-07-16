@@ -58,6 +58,25 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Строка поиска по схеме (фильтрует и таблицы, и колонки).</summary>
     [ObservableProperty] private string _schemaFilter = string.Empty;
 
+    /// <summary>Базовый размер шрифта редактора (100% масштаба).</summary>
+    private const double BaseFontSize = 13;
+
+    /// <summary>Масштаб шрифта SQL-редактора (как «масштаб» в превью отчётов): 0.5–3.0.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EditorFontSize))]
+    [NotifyPropertyChangedFor(nameof(EditorZoomPercent))]
+    private double _editorZoom = 1.0;
+
+    /// <summary>Итоговый размер шрифта редактора (привязан к TextEditor.FontSize).</summary>
+    public double EditorFontSize => BaseFontSize * EditorZoom;
+
+    /// <summary>Подпись бейджа масштаба.</summary>
+    public string EditorZoomPercent => $"{EditorZoom * 100:0}%";
+
+    [RelayCommand] private void FontZoomIn() => EditorZoom = Math.Min(3.0, Math.Round(EditorZoom + 0.1, 2));
+    [RelayCommand] private void FontZoomOut() => EditorZoom = Math.Max(0.5, Math.Round(EditorZoom - 0.1, 2));
+    [RelayCommand] private void FontZoomReset() => EditorZoom = 1.0;
+
     /// <summary>Конструктор только для XAML-дизайнера.</summary>
     public StorageAnalyticsViewModel()
     {
