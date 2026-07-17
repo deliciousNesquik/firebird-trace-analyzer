@@ -16,21 +16,7 @@
         <PackageReference Include="NLog" Version="5.3.*" />
         <PackageReference Include="NLog.Extensions.Logging" Version="5.3.*" />
 
-        <!-- JSON & Schema -->
+        <!-- JSON -->
         <PackageReference Include="System.Text.Json" Version="11.0.0-preview.4.26230.115" />
-        <PackageReference Include="NJsonSchema" Version="11.*" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="Configuration\*.json" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="Configuration\rules.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="Configuration\rules.schema.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
     </ItemGroup>
 </Project>
