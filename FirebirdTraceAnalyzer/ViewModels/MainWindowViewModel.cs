@@ -1404,6 +1404,11 @@ public partial class MainWindowViewModel : ViewModelBase
             foreach (var hash in hashes)
                 store.DeleteFile(hash);
         });
+
+        // Частичное удаление место на диске не освобождает — помечаем обслуживание на след. запуск
+        // (VACUUM на каждое закрытие файла делать нельзя — дорого).
+        _appSettings.StorageMaintenancePending = true;
+        _settingsService.Save();
     }
 
     /// <summary>Режим Session: полностью очищает хранилище (закрытие всех файлов = пустая сессия).</summary>
@@ -1412,7 +1417,43 @@ public partial class MainWindowViewModel : ViewModelBase
         if (_appSettings.StorageMode != StorageMode.Session)
             return;
 
+        // Clear() сам делает VACUUM — обслуживание больше не требуется.
         StoreDispatcher()?.Post(store => store.Clear());
+        _appSettings.StorageMaintenancePending = false;
+        _settingsService.Save();
+    }
+
+    /// <summary>
+    /// Отложенное обслуживание хранилища на старте: если помечено <see cref="AppSettings.StorageMaintenancePending"/>,
+    /// фоново выполняет чистку осиротевших словарей + VACUUM и сбрасывает флаг. Запуск не блокирует.
+    /// </summary>
+    public Task RunPendingStorageMaintenanceAsync()
+    {
+        if (_appSettings.StorageMode == StorageMode.Off || !_appSettings.StorageMaintenancePending)
+            return Task.CompletedTask;
+
+        var dispatcher = StoreDispatcher();
+        if (dispatcher is null)
+            return Task.CompletedTask;
+
+        var bg = BackgroundTasks?.Begin("store-maintenance", Loc.Tr("Background.StoreMaintenance"));
+        dispatcher.Post(store =>
+        {
+            try
+            {
+                store.Compact();
+            }
+            finally
+            {
+                bg?.Dispose();
+            }
+        });
+
+        // Флаг снимаем сразу — обслуживание уже в очереди диспетчера.
+        _appSettings.StorageMaintenancePending = false;
+        _settingsService.Save();
+
+        return Task.CompletedTask;
     }
 
     private async Task<bool> OpenFileInStorageAsync(FileCardViewModel card)

@@ -38,6 +38,9 @@ public partial class MainWindow : Window
 
         await vm.PromptSessionRecoveryAsync();
         await vm.PromptUnresolvedCollisionsAsync();
+
+        // Отложенное обслуживание хранилища (чистка сирот + VACUUM после частичных удалений).
+        await vm.RunPendingStorageMaintenanceAsync();
     }
 
     private void ApplyWindowGeometry(WindowSettings ws)
