@@ -86,6 +86,12 @@ public class AppSettings
     /// По умолчанию выключен — обычным пользователям эти пункты не показываются.
     /// </summary>
     public bool DeveloperMode { get; set; }
+
+    /// <summary>
+    /// Отложенное обслуживание хранилища: выставляется при частичном удалении файлов, чтобы на
+    /// следующем запуске фоново выполнить чистку сирот + VACUUM (не делаем VACUUM на каждое удаление).
+    /// </summary>
+    public bool StorageMaintenancePending { get; set; }
 }
 
 /// <summary>
