@@ -1,14 +1,17 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -25,6 +28,15 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     private readonly EventStoreDispatcher _dispatcher;
     private readonly IWindowProvider _windowProvider;
     private readonly IDialogService _dialogService;
+
+    // Резолвим лениво из DI (как в MainWindowViewModel) — чтобы не менять сигнатуру ctor и дизайнерский ctor.
+    private ISettingsService? _settings;
+    private IBackgroundTaskService? _backgroundTasks;
+    private ISettingsService? Settings => _settings ??= App.Services?.GetService<ISettingsService>();
+    private IBackgroundTaskService? BackgroundTasks => _backgroundTasks ??= App.Services?.GetService<IBackgroundTaskService>();
+
+    /// <summary>Идёт обслуживание (Compact) в фоне — блокирует кнопку «Сжать сейчас».</summary>
+    [ObservableProperty] private bool _isCompacting;
 
     public event EventHandler<object?>? CloseRequested;
 
@@ -153,6 +165,14 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
             IsBusy = false;
         }
 
+        // Место освободится не сразу: помечаем обслуживание — при следующем запуске (фоново) или
+        // немедленно по кнопке «Сжать сейчас». VACUUM на каждое удаление не делаем (дорого).
+        if (Settings is not null)
+        {
+            Settings.App.StorageMaintenancePending = true;
+            Settings.Save();
+        }
+
         await RefreshAsync();
     }
 
@@ -177,6 +197,13 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
             await _dispatcher.RunAsync(store => store.Clear());
 
             Logger.Info("Store management: cleared all");
+
+            // Полная очистка уже выполнила VACUUM — отложенное обслуживание больше не нужно.
+            if (Settings is not null)
+            {
+                Settings.App.StorageMaintenancePending = false;
+                Settings.Save();
+            }
         }
         catch (Exception ex)
         {
@@ -189,6 +216,42 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         }
 
         await RefreshAsync();
+    }
+
+    /// <summary>Немедленное обслуживание по требованию: чистка сирот + VACUUM фоновой задачей.
+    /// Само удаление место не освобождает — сжатие вынесено сюда (и в старт приложения).</summary>
+    [RelayCommand]
+    private void Compact()
+    {
+        if (IsCompacting)
+            return;
+
+        var bg = BackgroundTasks?.Begin("store-maintenance", Loc.Tr("Background.StoreMaintenance"));
+        IsCompacting = true;
+        StatusMessage = Loc.Tr("Store.Manage.Compacting");
+
+        // VACUUM может идти долго на большом архиве — гоним фоново (Post), окно остаётся отзывчивым.
+        _dispatcher.Post(store =>
+        {
+            try
+            {
+                store.Compact();
+            }
+            finally
+            {
+                bg?.Dispose();
+                Dispatcher.UIThread.Post(async void () =>
+                {
+                    IsCompacting = false;
+                    if (Settings is not null)
+                    {
+                        Settings.App.StorageMaintenancePending = false;
+                        Settings.Save();
+                    }
+                    await RefreshAsync();
+                });
+            }
+        });
     }
 
     /// <summary>Экспортирует выбранные файлы (или все, если ничего не выбрано) в отдельный файл-хранилище.</summary>

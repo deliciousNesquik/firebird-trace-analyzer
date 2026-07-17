@@ -237,7 +237,7 @@
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
                     <Button Grid.Column="0"
                             Content="{loc:Tr Store.Manage.LoadSelected}"
                             Classes="focused"
@@ -251,14 +251,20 @@
                             Classes="normal"
                             Command="{Binding ExportCommand}" />
                     <Button Grid.Column="3"
+                            Content="{loc:Tr Store.Manage.Compact}"
+                            Classes="normal"
+                            IsEnabled="{Binding !IsCompacting}"
+                            ToolTip.Tip="{loc:Tr Store.Manage.CompactTip}"
+                            Command="{Binding CompactCommand}" />
+                    <Button Grid.Column="4"
                             Content="{loc:Tr Store.Manage.DeleteSelected}"
                             Classes="danger"
                             Command="{Binding DeleteSelectedCommand}" />
-                    <Button Grid.Column="4"
+                    <Button Grid.Column="5"
                             Content="{loc:Tr Store.Manage.ClearAll}"
                             Classes="danger"
                             Command="{Binding ClearAllCommand}" />
-                    <Button Grid.Column="6"
+                    <Button Grid.Column="7"
                             Content="{loc:Tr Store.Manage.Close}"
                             Classes="normal"
                             Command="{Binding CloseCommand}" />
