@@ -414,6 +414,7 @@
             <x:String x:Key="AddIcon">avares://FirebirdTraceAnalyzer/Assets/add.svg</x:String>
             <x:String x:Key="EditIcon">avares://FirebirdTraceAnalyzer/Assets/edit.svg</x:String>
             <x:String x:Key="HistoryIcon">avares://FirebirdTraceAnalyzer/Assets/history.svg</x:String>
+            <x:String x:Key="MaintenanceIcon">avares://FirebirdTraceAnalyzer/Assets/maintenance.svg</x:String>
 
             <!-- Подключение всех конвертеров -->
             <converters:BoolToPasswordCharConverter x:Key="BoolToPasswordCharConverter" />
