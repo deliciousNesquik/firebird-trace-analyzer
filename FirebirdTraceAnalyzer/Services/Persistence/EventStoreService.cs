@@ -633,6 +633,20 @@ RETURNING seq;");
     {
         Exec("DELETE FROM perf_table_item; DELETE FROM error_line; DELETE FROM sql_parameter; " +
              "DELETE FROM event; DELETE FROM files; DELETE FROM sql_text; DELETE FROM attachment;");
+        // Полная очистка возвращает место и пересобирает структуру/индексы. На пустой БД VACUUM дёшев.
+        Exec("VACUUM;");
+        Exec("PRAGMA wal_checkpoint(TRUNCATE);");
+    }
+
+    public void Compact()
+    {
+        // Осиротевшие дедуп-словари: строки, на которые не осталось ссылок из event. DeleteFile их
+        // не трогает (дедуп между файлами), поэтому они копятся — чистим здесь, при обслуживании.
+        Exec("DELETE FROM sql_text WHERE id NOT IN (SELECT sql_ref FROM event WHERE sql_ref IS NOT NULL);");
+        Exec("DELETE FROM attachment WHERE id NOT IN (SELECT attachment_ref FROM event WHERE attachment_ref IS NOT NULL);");
+        // Пересборка БД+индексов и возврат места на диск; затем усечение WAL-файла.
+        Exec("VACUUM;");
+        Exec("PRAGMA wal_checkpoint(TRUNCATE);");
     }
 
     public EventStoreStatistics GetStatistics()
