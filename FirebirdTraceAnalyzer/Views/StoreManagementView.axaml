@@ -5,25 +5,55 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
-             mc:Ignorable="d" d:DesignWidth="820" d:DesignHeight="640"
+             mc:Ignorable="d" d:DesignWidth="860" d:DesignHeight="680"
              x:Class="FirebirdTraceAnalyzer.Views.StoreManagementView"
              x:DataType="vm:StoreManagementViewModel"
-             Width="820"
-             MaxHeight="720">
+             Width="860"
+             MaxHeight="760">
 
     <Design.DataContext>
         <vm:StoreManagementViewModel />
     </Design.DataContext>
 
     <UserControl.Styles>
-        <Style Selector="TextBlock.statLabel">
+        <!-- Карточка метрики -->
+        <Style Selector="Border.statCard">
+            <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,10" />
+        </Style>
+        <Style Selector="Border.statCard TextBlock.statLabel">
             <Setter Property="FontSize" Value="10" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
-        <Style Selector="TextBlock.statValue">
-            <Setter Property="FontSize" Value="16" />
+        <Style Selector="Border.statCard TextBlock.statValue">
+            <Setter Property="FontSize" Value="17" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+
+        <!-- Заголовок секции -->
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+
+        <!-- Строка файла: подсветка при наведении -->
+        <Style Selector="Border.fileRow">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="Border.fileRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -33,7 +63,7 @@
         <!-- Header -->
         <Border Grid.Row="0"
                 Background="{DynamicResource SurfaceBrush}"
-                Padding="20"
+                Padding="20,16"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Spacing="4">
@@ -51,56 +81,71 @@
         <!-- Statistics -->
         <Border Grid.Row="1"
                 Background="{DynamicResource SurfaceBrush}"
-                Padding="20,14"
+                Padding="20,16"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1">
-          <StackPanel Spacing="14">
-            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12">
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
 
-                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.DbSize}" Classes="statLabel" />
-                    <TextBlock Text="{Binding DbSizeText}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.RawSize}" Classes="statLabel" />
-                    <TextBlock Text="{Binding RawSizeText}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="0" Grid.Column="2" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Compression}" Classes="statLabel" />
-                    <TextBlock Text="{Binding CompressionText}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="0" Grid.Column="3" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Files}" Classes="statLabel" />
-                    <TextBlock Text="{Binding FileCount}" Classes="statValue" />
-                </StackPanel>
+                <Border Grid.Row="0" Grid.Column="0" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.DbSize}" Classes="statLabel" />
+                        <TextBlock Text="{Binding DbSizeText}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="1" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.RawSize}" Classes="statLabel" />
+                        <TextBlock Text="{Binding RawSizeText}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.Compression}" Classes="statLabel" />
+                        <TextBlock Text="{Binding CompressionText}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="3" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.Files}" Classes="statLabel" />
+                        <TextBlock Text="{Binding FileCount}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
 
-                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Events}" Classes="statLabel" />
-                    <TextBlock Text="{Binding EventCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueSql}" Classes="statLabel" />
-                    <TextBlock Text="{Binding UniqueSqlCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueAttachments}" Classes="statLabel" />
-                    <TextBlock Text="{Binding UniqueAttachmentCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="3" Spacing="1">
-                    <TextBlock Text="{loc:Tr Store.Manage.Stat.Range}" Classes="statLabel" />
-                    <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="11" TextWrapping="Wrap" />
-                </StackPanel>
+                <Border Grid.Row="1" Grid.Column="0" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.Events}" Classes="statLabel" />
+                        <TextBlock Text="{Binding EventCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueSql}" Classes="statLabel" />
+                        <TextBlock Text="{Binding UniqueSqlCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="2" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.UniqueAttachments}" Classes="statLabel" />
+                        <TextBlock Text="{Binding UniqueAttachmentCount, StringFormat='{}{0:N0}'}" Classes="statValue" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="3" Classes="statCard">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{loc:Tr Store.Manage.Stat.Range}" Classes="statLabel" />
+                        <TextBlock Text="{Binding RangeText}" Classes="statValue" FontSize="12" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
             </Grid>
 
             <!-- Size breakdown (on demand) -->
-            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
-                <StackPanel Spacing="10">
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0"
                                    Text="{loc:Tr Store.Manage.Breakdown.Title}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   Classes="sectionTitle"
+                                   VerticalAlignment="Center" />
                         <Button Grid.Column="1"
                                 Classes="normal"
                                 IsVisible="{Binding !IsBreakdownLoaded}"
@@ -124,37 +169,51 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
 
-                    <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="12"
+                    <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12"
                           IsVisible="{Binding IsBreakdownLoaded}">
-                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.SqlText}" Classes="statLabel" />
-                            <TextBlock Text="{Binding SqlTextInfo}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Params}" Classes="statLabel" />
-                            <TextBlock Text="{Binding ParamInfo}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="2" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Errors}" Classes="statLabel" />
-                            <TextBlock Text="{Binding ErrorInfo}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="3" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Other}" Classes="statLabel" />
-                            <TextBlock Text="{Binding OtherInfo}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
+                        <Border Grid.Row="0" Grid.Column="0" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.SqlText}" Classes="statLabel" />
+                                <TextBlock Text="{Binding SqlTextInfo}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Params}" Classes="statLabel" />
+                                <TextBlock Text="{Binding ParamInfo}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="2" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Errors}" Classes="statLabel" />
+                                <TextBlock Text="{Binding ErrorInfo}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="3" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.Other}" Classes="statLabel" />
+                                <TextBlock Text="{Binding OtherInfo}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
 
-                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.EventRows}" Classes="statLabel" />
-                            <TextBlock Text="{Binding EventRowsText}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.AttachmentRows}" Classes="statLabel" />
-                            <TextBlock Text="{Binding AttachmentRowsText}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="1">
-                            <TextBlock Text="{loc:Tr Store.Manage.Breakdown.PerfRows}" Classes="statLabel" />
-                            <TextBlock Text="{Binding PerfRowsText}" Classes="statValue" FontSize="13" />
-                        </StackPanel>
+                        <Border Grid.Row="1" Grid.Column="0" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.EventRows}" Classes="statLabel" />
+                                <TextBlock Text="{Binding EventRowsText}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.AttachmentRows}" Classes="statLabel" />
+                                <TextBlock Text="{Binding AttachmentRowsText}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" Classes="statCard">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{loc:Tr Store.Manage.Breakdown.PerfRows}" Classes="statLabel" />
+                                <TextBlock Text="{Binding PerfRowsText}" Classes="statValue" FontSize="13" />
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -164,40 +223,45 @@
         <!-- File list -->
         <Border Grid.Row="2"
                 Background="{DynamicResource AppBackgroundBrush}"
-                Padding="20">
+                Padding="20,16">
             <Grid RowDefinitions="Auto,*">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="5" Margin="0,0,0,12">
-                    <Button Grid.Column="0"
-                            Content="{loc:Tr Store.Manage.SelectAll}"
-                            Classes="focused"
-                            Command="{Binding SelectAllCommand}" />
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8" Margin="0,0,0,12">
+                    <TextBlock Grid.Column="0"
+                               Text="{loc:Tr Store.Manage.FilesTitle}"
+                               Classes="sectionTitle"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0" />
                     <Button Grid.Column="1"
-                            Content="{loc:Tr Store.Manage.DeselectAll}"
-                            Classes="danger"
-                            Command="{Binding DeselectAllCommand}" />
-                    <Button Grid.Column="3"
-                            Content="{loc:Tr Store.Manage.Refresh}"
+                            Content="{loc:Tr Store.Manage.SelectAll}"
                             Classes="normal"
-                            Command="{Binding RefreshCommand}" />
+                            Command="{Binding SelectAllCommand}" />
+                    <Button Grid.Column="2"
+                            Content="{loc:Tr Store.Manage.DeselectAll}"
+                            Classes="normal"
+                            Command="{Binding DeselectAllCommand}" />
+                    <Button Grid.Column="4"
+                            Classes="normal"
+                            Padding="0"
+                            Width="40"
+                            Height="40"
+                            Command="{Binding RefreshCommand}">
+                        <Svg Width="20" Path="{DynamicResource ReloadIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
+                    </Button>
                 </Grid>
 
                 <ScrollViewer Grid.Row="1">
                     <ItemsControl ItemsSource="{Binding Files}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:RestorableFileInfo">
-                                <Border Background="{DynamicResource SurfaceBrush}"
-                                        BorderBrush="{DynamicResource BorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
-                                        Padding="12"
-                                        Margin="0,0,0,8">
+                                <Border Classes="fileRow">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <CheckBox Grid.Column="0"
                                                   IsChecked="{Binding IsSelected}"
                                                   VerticalAlignment="Center"
                                                   Margin="0,0,12,0" />
                                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium" FontSize="13" />
+                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium" FontSize="13"
+                                                       TextTrimming="CharacterEllipsis" />
                                             <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                                                 <Run Text="{Binding TimeRange}" />
                                                 <Run Text=" • " />
@@ -227,7 +291,7 @@
         <!-- Footer -->
         <Border Grid.Row="3"
                 Background="{DynamicResource SurfaceBrush}"
-                Padding="20"
+                Padding="20,14"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
@@ -237,38 +301,57 @@
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
-                    <Button Grid.Column="0"
-                            Content="{loc:Tr Store.Manage.LoadSelected}"
+                <!-- WrapPanel: кнопки переносятся на новую строку, если не влезают — ничего не обрезается. -->
+                <WrapPanel Grid.Row="1">
+                    <WrapPanel.Styles>
+                        <Style Selector="WrapPanel > Button">
+                            <Setter Property="Margin" Value="0,0,8,8" />
+                        </Style>
+                    </WrapPanel.Styles>
+
+                    <!-- Основное действие -->
+                    <Button Content="{loc:Tr Store.Manage.LoadSelected}"
                             Classes="focused"
                             Command="{Binding LoadSelectedCommand}" />
-                    <Button Grid.Column="1"
-                            Content="{loc:Tr Store.Manage.Import}"
-                            Classes="normal"
-                            Command="{Binding ImportCommand}" />
-                    <Button Grid.Column="2"
-                            Content="{loc:Tr Store.Manage.Export}"
-                            Classes="normal"
-                            Command="{Binding ExportCommand}" />
-                    <Button Grid.Column="3"
-                            Content="{loc:Tr Store.Manage.Compact}"
-                            Classes="normal"
+
+                    <!-- Обмен / обслуживание — компактные иконки с подсказками -->
+                    <Button Classes="normal" Padding="0" Width="40" Height="40"
+                            ToolTip.Tip="{loc:Tr Store.Manage.Import}"
+                            Command="{Binding ImportCommand}">
+                        <Svg Width="18" Height="18" Path="{DynamicResource ImportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                    </Button>
+                    <Button Classes="normal" Padding="0" Width="40" Height="40"
+                            ToolTip.Tip="{loc:Tr Store.Manage.Export}"
+                            Command="{Binding ExportCommand}">
+                        <Svg Width="18" Height="18" Path="{DynamicResource ExportIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                    </Button>
+                    <Button Classes="normal" Padding="0" Width="40" Height="40"
                             IsEnabled="{Binding !IsCompacting}"
                             ToolTip.Tip="{loc:Tr Store.Manage.CompactTip}"
-                            Command="{Binding CompactCommand}" />
-                    <Button Grid.Column="4"
-                            Content="{loc:Tr Store.Manage.DeleteSelected}"
-                            Classes="danger"
-                            Command="{Binding DeleteSelectedCommand}" />
-                    <Button Grid.Column="5"
-                            Content="{loc:Tr Store.Manage.ClearAll}"
-                            Classes="danger"
-                            Command="{Binding ClearAllCommand}" />
-                    <Button Grid.Column="7"
-                            Content="{loc:Tr Store.Manage.Close}"
+                            Command="{Binding CompactCommand}">
+                        <Svg Width="18" Height="18" Path="{DynamicResource MaintenanceIcon}" Css="{DynamicResource ThemeIconFill}" />
+                    </Button>
+
+                    <!-- Разрушительные действия (текст оставляем для ясности) -->
+                    <Button Classes="danger" Command="{Binding DeleteSelectedCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Svg Width="18" Height="18" Path="{DynamicResource TrashIcon}"
+                                 Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="{loc:Tr Store.Manage.DeleteSelected}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="danger" Command="{Binding ClearAllCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Svg Width="18" Height="18" Path="{DynamicResource TrashIcon}"
+                                 Css="{DynamicResource ThemeIconStrokeOnlyWhite}" />
+                            <TextBlock Text="{loc:Tr Store.Manage.ClearAll}" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Content="{loc:Tr Store.Manage.Close}"
                             Classes="normal"
                             Command="{Binding CloseCommand}" />
-                </Grid>
+                </WrapPanel>
             </Grid>
         </Border>
 

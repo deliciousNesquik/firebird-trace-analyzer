@@ -622,6 +622,7 @@
   "Store.Manage.Stat.UniqueSql": "Unique SQL",
   "Store.Manage.Stat.UniqueAttachments": "Unique attachments",
   "Store.Manage.Stat.Range": "Time range",
+  "Store.Manage.FilesTitle": "Files in the store",
   "Store.Manage.SelectAll": "Select all",
   "Store.Manage.DeselectAll": "Deselect all",
   "Store.Manage.Refresh": "Refresh",

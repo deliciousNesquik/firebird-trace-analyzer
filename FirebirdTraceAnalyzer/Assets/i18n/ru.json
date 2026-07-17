@@ -622,6 +622,7 @@
   "Store.Manage.Stat.UniqueSql": "Уникальных SQL",
   "Store.Manage.Stat.UniqueAttachments": "Уникальных подключений",
   "Store.Manage.Stat.Range": "Диапазон времени",
+  "Store.Manage.FilesTitle": "Файлы в хранилище",
   "Store.Manage.SelectAll": "Выбрать все",
   "Store.Manage.DeselectAll": "Снять выбор",
   "Store.Manage.Refresh": "Обновить",
