@@ -38,7 +38,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     public EventBase? Handle(Match blockHeader, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var eventTypeStr = blockHeader.Groups["event_type"].Value;
+        var eventTypeStr = blockHeader.GetGroupValue("event_type");
 
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
             return HandleError(blockHeader, bodyLines, rules, context);
@@ -82,22 +82,15 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static (DateTime Timestamp, int TraceId, string HexTraceId) ParseEventMetadata(Match header,
         ParsingContext context)
     {
-        var timestamp = DateTime.TryParse(header.Groups["ts"].Value, CultureInfo.InvariantCulture,
+        var timestamp = DateTime.TryParse(header.GetGroupValue("ts"), CultureInfo.InvariantCulture,
             DateTimeStyles.None, out var ts) ? ts : default;
 
         return (
             Timestamp: timestamp,
-            TraceId: ParseIntOrDefault(header.Groups["trace_id"].ValueSpan),
-            HexTraceId: context.Intern(header.Groups["hex_trace_id"].Value)
+            TraceId: header.GetGroupInt("trace_id"),
+            HexTraceId: context.Intern(header.GetGroupValue("hex_trace_id"))
         );
     }
-
-    // Безопасный разбор числовых групп: один битый/переполненный field не теряет всё событие
-    private static int ParseIntOrDefault(ReadOnlySpan<char> span, int defaultValue = 0)
-        => int.TryParse(span, out var value) ? value : defaultValue;
-
-    private static long ParseLongOrDefault(ReadOnlySpan<char> span, long defaultValue = 0)
-        => long.TryParse(span, out var value) ? value : defaultValue;
 
     /// <summary>
     ///     Создает PerformanceInfo по умолчанию (все нули).
@@ -441,7 +434,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         if (attachment is null) return null;
 
         // Извлекаем компонент из "ERROR AT <компонент>"
-        var eventTypeStr = header.Groups["event_type"].Value;
+        var eventTypeStr = header.GetGroupValue("event_type");
         var component = eventTypeStr["ERROR AT ".Length..].Trim();
 
         // Парсим цепочку ошибок
@@ -473,7 +466,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var m = sessionRx.Match(line);
             if (m.Success)
             {
-                var sessionId = ParseIntOrDefault(m.Groups["session_id"].ValueSpan);
+                var sessionId = m.GetGroupInt("session_id");
                 return context.InternSession(sessionId);
             }
         }
@@ -508,7 +501,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
         if (am is null) return null;
 
-        var attachmentId = ParseLongOrDefault(am.Groups["attachment_id"].ValueSpan);
+        var attachmentId = am.GetGroupLong("attachment_id");
 
         if (context.TryGetAttachment(attachmentId, out var cachedInfo))
             return cachedInfo;
@@ -516,17 +509,15 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var newInfo = new AttachmentInfo
         {
             AttachmentId = attachmentId,
-            DatabasePath = context.Intern(am.Groups["database_path"].Value),
-            User = context.Intern(am.Groups["user"].Value),
-            Role = context.Intern(am.Groups["role"].Value),
-            Charset = context.Intern(am.Groups["charset"].Value),
-            Protocol = context.Intern(am.Groups["protocol"].Value.Trim()),
-            Address = am.Groups["address"].Success
-                ? context.Intern(am.Groups["address"].Value)
-                : context.Intern("<internal>"),
-            Port = am.Groups["port"].Success ? ParseIntOrDefault(am.Groups["port"].ValueSpan) : 0,
-            ProcessPath = pm is not null ? context.Intern(pm.Groups["process_path"].Value) : null,
-            ProcessId = pm is not null ? ParseIntOrDefault(pm.Groups["process_id"].ValueSpan) : null
+            DatabasePath = context.Intern(am.GetGroupValue("database_path")),
+            User = context.Intern(am.GetGroupValue("user")),
+            Role = context.Intern(am.GetGroupValue("role")),
+            Charset = context.Intern(am.GetGroupValue("charset")),
+            Protocol = context.Intern(am.GetGroupValue("protocol").Trim()),
+            Address = context.Intern(am.GetGroupValue("address", "<internal>")),
+            Port = am.GetGroupInt("port"),
+            ProcessPath = pm is not null ? context.Intern(pm.GetGroupValue("process_path")) : null,
+            ProcessId = pm is not null ? pm.GetGroupInt("process_id") : null
         };
 
         return context.AddAttachment(newInfo);
@@ -540,7 +531,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var m = rules["transaction"].Match(line);
         if (!m.Success) return null;
 
-        var tid = ParseLongOrDefault(m.Groups["transaction_id"].ValueSpan);
+        var tid = m.GetGroupLong("transaction_id");
 
         // Получаем ValueSpan вместо Value (нет аллокации строки для группы)
         var paramsSpan = m.Groups["params"].ValueSpan;
@@ -621,8 +612,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             if (match.Success)
                 (errors ??= new()).Add(new ErrorLines
                 {
-                    ErrorCode = ParseIntOrDefault(match.Groups[1].ValueSpan),
-                    Message = context.Intern(match.Groups[2].Value.Trim())
+                    ErrorCode = match.GetGroupInt("1"),
+                    Message = context.Intern(match.GetGroupValue("2").Trim())
                 });
         }
 
@@ -642,13 +633,13 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             return null;
 
         var value = paramM.Groups["value"].Success
-            ? paramM.Groups["value"].Value
-            : paramM.Groups["value_null"].Value;
+            ? paramM.GetGroupValue("value")
+            : paramM.GetGroupValue("value_null");
 
         return new SqlParameters
         {
-            Name = context.Intern(paramM.Groups["name"].Value),
-            Dtype = context.Intern(paramM.Groups["dtype"].Value),
+            Name = context.Intern(paramM.GetGroupValue("name")),
+            Dtype = context.Intern(paramM.GetGroupValue("dtype")),
             Value = context.Intern(value)
         };
     }
@@ -718,7 +709,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var sm = statementRx.Match(line);
             if (sm.Success)
             {
-                statementId = ParseLongOrDefault(sm.Groups["statement_id"].ValueSpan);
+                statementId = sm.GetGroupLong("statement_id");
                 continue;
             }
 
@@ -727,7 +718,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 var rm = restartedRx.Match(line);
                 if (rm.Success)
                 {
-                    restartCount = ParseIntOrDefault(rm.Groups["count"].ValueSpan);
+                    restartCount = rm.GetGroupInt("count");
                     continue;
                 }
             }
@@ -809,7 +800,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var pmProc = procedureRx.Match(line);
             if (pmProc.Success)
             {
-                procedureName = context.Intern(pmProc.Groups["procedure_name"].Value);
+                procedureName = context.Intern(pmProc.GetGroupValue("procedure_name"));
                 continue;
             }
 
@@ -856,20 +847,20 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             var tm = triggerRx.Match(line);
             if (tm.Success)
             {
-                triggerName = context.Intern(tm.Groups["trigger_name"].Value);
+                triggerName = context.Intern(tm.GetGroupValue("trigger_name"));
 
                 // проверяем тип триггера (DML или DDL)
                 if (tm.Groups["table"].Success) // DML триггер (FOR table)
                 {
-                    table = context.Intern(tm.Groups["table"].Value);
-                    timing = context.Intern(tm.Groups["timing"].Value);
-                    eventType = context.Intern(tm.Groups["event"].Value);
+                    table = context.Intern(tm.GetGroupValue("table"));
+                    timing = context.Intern(tm.GetGroupValue("timing"));
+                    eventType = context.Intern(tm.GetGroupValue("event"));
                 }
                 else if (tm.Groups["ddl_event"].Success) // DDL триггер (ON ...)
                 {
                     table = null;
                     timing = null;
-                    eventType = context.Intern(tm.Groups["ddl_event"].Value); // "ON CONNECT", "ON DISCONNECT", etc.
+                    eventType = context.Intern(tm.GetGroupValue("ddl_event")); // "ON CONNECT", "ON DISCONNECT", etc.
                 }
 
                 continue;
@@ -893,17 +884,17 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
         var mFetched = rules["fetched"].Match(line);
         if (mFetched.Success)
-            fetchCount = ParseIntOrDefault(mFetched.Groups["fetch_count"].ValueSpan);
+            fetchCount = mFetched.GetGroupInt("fetch_count");
 
         var mPerf = rules["performance"].Match(line);
         if (mPerf.Success)
             return new PerformanceInfo
             {
-                ExecuteMs = ParseIntOrDefault(mPerf.Groups["execute_ms"].ValueSpan),
+                ExecuteMs = mPerf.GetGroupInt("execute_ms"),
                 FetchCount = fetchCount,
-                ReadCount = mPerf.Groups["read"].Success ? ParseIntOrDefault(mPerf.Groups["read"].ValueSpan) : 0,
-                WriteCount = mPerf.Groups["write"].Success ? ParseIntOrDefault(mPerf.Groups["write"].ValueSpan) : 0,
-                MarkCount = mPerf.Groups["mark"].Success ? ParseIntOrDefault(mPerf.Groups["mark"].ValueSpan) : 0
+                ReadCount = mPerf.GetGroupInt("read"),
+                WriteCount = mPerf.GetGroupInt("write"),
+                MarkCount = mPerf.GetGroupInt("mark")
             };
 
         return null;
