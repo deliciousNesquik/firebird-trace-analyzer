@@ -396,6 +396,62 @@ public sealed class EventStoreRoundTripTests
         finally { TryDelete(db); }
     }
 
+    // Много событий с УНИКАЛЬНЫМ SQL — раздувает sql_text, чтобы эффект VACUUM был измеримым.
+    private static List<EventBase> BulkDistinctSql(int count)
+    {
+        var list = new List<EventBase>(count);
+        for (var i = 0; i < count; i++)
+            list.Add(new StatementStartEvent
+            {
+                Timestamp = T(i), TraceId = 3, HexTraceId = "0x03",
+                EventType = EventType.ExecuteStatementStart,
+                Attachment = AttFull(), Transaction = Txn(), StatementId = i,
+                Sql = $"SELECT * FROM BIGTABLE WHERE id = {i} AND note = '{new string('x', 380)}{i}'",
+                Parameters = new List<SqlParameters>()
+            });
+        return list;
+    }
+
+    private static long Size(string db) => new FileInfo(db).Length;
+
+    [Fact]
+    public void Delete_DoesNotReclaim_ButCompactDoes_AndClearsOrphans()
+    {
+        var db = TempDb();
+        try
+        {
+            using (var s = new EventStoreService(db))
+            {
+                s.WriteFile(File("H", "big.log"), BulkDistinctSql(3000));
+                Assert.Equal(3000, s.GetStatistics().UniqueSqlCount);
+            }
+            var sizeAfterWrite = Size(db);
+
+            using (var s = new EventStoreService(db))
+            {
+                s.DeleteFile("H");
+                Assert.Equal(0, s.GetStatistics().EventCount);
+                Assert.Equal(3000, s.GetStatistics().UniqueSqlCount); // словарь осиротел, но остался
+            }
+            var sizeAfterDelete = Size(db);
+
+            using (var s = new EventStoreService(db))
+            {
+                s.Compact();
+                Assert.Equal(0, s.GetStatistics().UniqueSqlCount);    // сироты вычищены
+                Assert.Equal(0, s.GetStatistics().FileCount);
+            }
+            var sizeAfterCompact = Size(db);
+
+            // Удаление место НЕ вернуло; Compact (VACUUM) — вернул.
+            Assert.True(sizeAfterDelete >= sizeAfterWrite * 0.8,
+                $"delete не должен уменьшать файл (было {sizeAfterWrite}, стало {sizeAfterDelete})");
+            Assert.True(sizeAfterCompact < sizeAfterWrite / 2,
+                $"compact должен ужать файл (было {sizeAfterWrite}, стало {sizeAfterCompact})");
+        }
+        finally { TryDelete(db); }
+    }
+
     private static void TryDelete(string db)
     {
         foreach (var p in new[] { db, db + "-wal", db + "-shm" })
