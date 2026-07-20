@@ -915,6 +915,35 @@ RETURNING seq;");
         cmd.ExecuteNonQuery();
     }
 
+    // ---------------------------------------------------------------- schema introspection
+
+    public IReadOnlyList<SchemaTable> GetSchema()
+    {
+        // Имена таблиц в порядке объявления, без служебных sqlite_%.
+        var tables = new List<string>();
+        using (var c = _connection.CreateCommand())
+        {
+            c.CommandText =
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
+            using var r = c.ExecuteReader();
+            while (r.Read()) tables.Add(r.GetString(0));
+        }
+
+        var result = new List<SchemaTable>(tables.Count);
+        foreach (var table in tables)
+        {
+            var columns = new List<string>();
+            using var c = _connection.CreateCommand();
+            // PRAGMA не принимает параметры-плейсхолдеры; имя таблицы из sqlite_master, инъекция исключена.
+            c.CommandText = $"PRAGMA table_info(\"{table}\");";
+            using var r = c.ExecuteReader();
+            while (r.Read()) columns.Add(r.GetString(1)); // столбец 1 = name (по возрастанию cid)
+            result.Add(new SchemaTable(table, columns));
+        }
+
+        return result;
+    }
+
     // ---------------------------------------------------------------- ad-hoc query
 
     public StorageQueryResult ExecuteQuery(string sql, int maxRows, CancellationToken cancellationToken = default)

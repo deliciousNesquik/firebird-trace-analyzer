@@ -51,8 +51,9 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Выбор готового запроса из тулбара: подставляет SQL и сбрасывается (как меню).</summary>
     [ObservableProperty] private PrebuiltQuery? _selectedPrebuilt;
 
-    /// <summary>Полная схема БД (все таблицы/колонки) — используется автодополнением редактора.</summary>
-    public IReadOnlyList<SchemaTable> Schema { get; } = BuildSchema();
+    /// <summary>Полная схема БД (все таблицы/колонки) — используется автодополнением редактора.
+    /// Грузится из реальной DDL в <see cref="LoadAsync"/> (PRAGMA table_info), а не хардкодится.</summary>
+    [ObservableProperty] private IReadOnlyList<SchemaTable> _schema = [];
 
     /// <summary>Базовый размер шрифта редактора (100% масштаба).</summary>
     private const double BaseFontSize = 13;
@@ -89,11 +90,19 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         SqlText = Prebuilt[0].Sql;
     }
 
-    /// <summary>Вызывать до показа диалога (сейчас лёгкая — тяжёлого ничего не грузим).</summary>
-    public Task LoadAsync()
+    /// <summary>Вызывать до показа диалога: подгружает схему БД для автодополнения.</summary>
+    public async Task LoadAsync()
     {
+        try
+        {
+            Schema = await _dispatcher.RunAsync(store => store.GetSchema());
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Storage analytics: failed to load schema");
+        }
+
         StatusMessage = Loc.Tr("Store.Analyze.Ready");
-        return Task.CompletedTask;
     }
 
     private bool _applyingPrebuilt;
@@ -260,16 +269,4 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
             """),
     ];
 
-    private static IReadOnlyList<SchemaTable> BuildSchema() =>
-    [
-        new("files", ["id", "hash", "name", "path", "size", "start_ts", "end_ts", "event_count", "imported_ts"]),
-        new("event", ["seq", "file_id", "ts", "event_type", "attachment_ref", "sql_ref", "procedure_name",
-            "trigger_name", "component", "perf_execute_ms", "perf_read", "perf_write", "perf_fetch"]),
-        new("sql_text", ["id", "sha", "text"]),
-        new("attachment", ["id", "att_id", "db_path", "user", "role", "protocol", "address", "port"]),
-        new("sql_parameter", ["event_seq", "ord", "name", "dtype", "value"]),
-        new("error_line", ["event_seq", "ord", "code", "message"]),
-        new("perf_table_item", ["event_seq", "table_name", "natural_count", "index_count",
-            "update_count", "insert_count", "delete_count"]),
-    ];
 }

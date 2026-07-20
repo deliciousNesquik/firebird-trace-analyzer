@@ -62,6 +62,11 @@ public interface IEventStore : IDisposable
     /// <summary>Разбивка размера: строки по таблицам + байты текстовых нагрузок (тяжёлый полный скан — по запросу).</summary>
     EventStoreSizeBreakdown GetSizeBreakdown();
 
+    /// <summary>Схема БД по интроспекции (sqlite_master + PRAGMA table_info): таблицы и их колонки
+    /// в порядке объявления. Служебные таблицы SQLite (sqlite_%) исключены. Используется
+    /// автодополнением окна «Анализ хранилища» — всегда актуальна реальной DDL.</summary>
+    IReadOnlyList<SchemaTable> GetSchema();
+
     /// <summary>
     /// Выполняет произвольный SELECT/WITH (только чтение) и возвращает результат динамическими
     /// колонками/строками. Записи отклоняются (PRAGMA query_only + валидация). Строк не больше

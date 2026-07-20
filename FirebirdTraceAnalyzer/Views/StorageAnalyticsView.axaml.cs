@@ -308,6 +308,8 @@ public partial class StorageAnalyticsView : UserControl
             RebuildGrid();
         else if (e.PropertyName == nameof(StorageAnalyticsViewModel.SqlText))
             SyncEditorFromVm();
+        else if (e.PropertyName == nameof(StorageAnalyticsViewModel.Schema))
+            BuildCompletionWords(); // схема подгрузилась из БД — обновляем кандидатов автодополнения
     }
 
     // VM → редактор (напр. выбрали готовый запрос). Guard от эха при обычном вводе.
