@@ -4,7 +4,6 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-        <!-- Версию проставляет MinVer из git-тега vX.Y.Z (см. пакет MinVer ниже). -->
         <MinVerTagPrefix>v</MinVerTagPrefix>
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
@@ -15,25 +14,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Assets -->
         <AvaloniaResource Include="Assets\**" />
     </ItemGroup>
 
-    <!-- Копирование конфигураций -->
     <ItemGroup>
-        <None Update="Configuration\**\*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update="NLog.config">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- Версионирование из git-тегов (build-only) -->
         <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
-        <!-- Пин патченного нативного SQLite: перекрывает транзитивный 2.1.11 (GHSA-2m69-gcr7-jv3q).
-             Патч есть только в линии 3.x (bundle 2.1.12 не публиковался). -->
         <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
         <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
 
@@ -44,7 +29,6 @@
         
         <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.2" />
         <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.2" />
-        <PackageReference Include="Avalonia.Themes.Simple" Version="12.0.2" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
@@ -58,11 +42,9 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="11.0.0-preview.4.26230.115" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.4.26230.115" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="11.0.0-preview.4.26230.115" />
-        <PackageReference Include="NJsonSchema" Version="11.6.1" />
         <PackageReference Include="NLog" Version="6.1.3" />
         <PackageReference Include="NLog.Extensions.Logging" Version="6.1.3" />
         <PackageReference Include="QuestPDF" Version="2026.5.0" />
-        <PackageReference Include="RazorLight" Version="2.3.1" />
         <PackageReference Include="SSH.NET" Version="2025.1.0" />
         <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.10" />
         <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="11.0.0-preview.4.26230.115" />
@@ -70,7 +52,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Копирование конфигураций -->
         <None Update="Configuration\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
