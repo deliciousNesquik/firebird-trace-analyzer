@@ -104,7 +104,9 @@ public class ReportTemplateService : IReportTemplateService
 
         try
         {
-            var fileName = $"{SanitizeFileName(template.Name)}_{template.Id}.json";
+            // Санируем и Id: у импортированного/подделанного шаблона он может содержать разделители
+            // пути или '..' — иначе имя файла вышло бы за каталог шаблонов (path traversal).
+            var fileName = $"{SanitizeFileName(template.Name)}_{SanitizeFileName(template.Id)}.json";
             var filePath = Path.Combine(_templatesDirectory, fileName);
 
             var json = JsonSerializer.Serialize(template, _jsonOptions);
