@@ -51,6 +51,7 @@ public sealed class TraceLogParser(
         if (currentBlock.HasData)
             FlushBlock(currentBlock, events, warnings, options, context);
 
+        LogWarnings(warnings);
         _logger.Info("Parsing completed: {EventCount} events, {WarningCount} warnings",
             events.Count, warnings.Count);
 
@@ -100,6 +101,7 @@ public sealed class TraceLogParser(
         if (currentBlock.HasData)
             FlushBlock(currentBlock, events, warnings, options, context);
 
+        LogWarnings(warnings);
         progress?.Report(1.0);
 
         return new ParsingResult<EventBase>
@@ -147,6 +149,16 @@ public sealed class TraceLogParser(
             FlushBlock(currentBlock, buffer, warnings, options, context);
 
         // Логируем накопленные предупреждения через ILogger (это библиотека — Console здесь недопустим)
+        LogWarnings(warnings);
+
+        // Остаток батча
+        foreach (var evt in buffer)
+            yield return evt;
+    }
+
+    // Единое логирование предупреждений для всех трёх API — иначе файловые пути «слепы» по логам.
+    private void LogWarnings(IReadOnlyList<ParsingWarning> warnings)
+    {
         foreach (var warning in warnings)
         {
             switch (warning.Severity)
@@ -162,10 +174,6 @@ public sealed class TraceLogParser(
                     break;
             }
         }
-
-        // Остаток батча
-        foreach (var evt in buffer)
-            yield return evt;
     }
 
     private void ProcessLine(
