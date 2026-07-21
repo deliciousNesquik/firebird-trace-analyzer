@@ -15,6 +15,10 @@ namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 public class XlsxReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    /// <summary>Сколько первых строк учитывать при автоподборе ширины колонок (см. AdjustToContents).</summary>
+    private const int WidthSampleRows = 200;
+
     private readonly IReportProjectionService _projectionService;
 
     public XlsxReportExporter(IReportProjectionService projectionService)
@@ -57,8 +61,11 @@ public class XlsxReportExporter : IReportExporter
                 ComposeFooter(worksheet, currentRow, template);
             }
 
-            // Автоподбор ширины колонок
-            worksheet.Columns().AdjustToContents();
+            // Автоподбор ширины колонок по ВЫБОРКЕ строк (заголовок + первые N), а не по всем ячейкам:
+            // AdjustToContents() без границ сканирует каждую ячейку — O(строк×колонок), что на больших
+            // отчётах (миллионы строк) недопустимо. Выборки достаточно для разумной ширины.
+            var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+            worksheet.Columns().AdjustToContents(1, Math.Min(lastRow, WidthSampleRows));
 
             workbook.SaveAs(outputPath);
 
