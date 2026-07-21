@@ -21,6 +21,14 @@ public sealed record ParseOptions
     
     /// <summary>Включить парсинг таблиц производительности</summary>
     public bool ParsePerformanceTables { get; init; } = true;
-    
+
+    /// <summary>
+    /// Максимум строк в теле одного блока. Блок закрывается только следующим заголовком, поэтому
+    /// файл без границ блоков (битый/вредоносный) иначе буферизуется целиком в память → OOM.
+    /// При превышении блок усекается с предупреждением. Лимит намеренно щедрый — легитимные блоки
+    /// (большой SQL, широкая perf-таблица) его не достигают.
+    /// </summary>
+    public int MaxBlockLines { get; init; } = 200_000;
+
     public static ParseOptions Default => new();
 }

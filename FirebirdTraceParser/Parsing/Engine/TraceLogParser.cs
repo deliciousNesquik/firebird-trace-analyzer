@@ -209,6 +209,22 @@ public sealed class TraceLogParser(
         }
         else if (currentBlock.HasData && !string.IsNullOrWhiteSpace(line))
         {
+            if (currentBlock.BodyLines.Count >= options.MaxBlockLines)
+            {
+                // Тело блока превысило лимит — защита от OOM на файле без границ блоков.
+                // Усекаем: сбрасываем то, что накопили, и игнорируем хвост до следующего заголовка.
+                warnings.Add(new ParsingWarning
+                {
+                    Severity = WarningSeverity.Warning,
+                    Message = $"Block body exceeded MaxBlockLines ({options.MaxBlockLines}); block truncated",
+                    LineNumber = currentBlock.StartLine,
+                    BlockContent = string.Join("\n", currentBlock.BodyLines.Take(3))
+                });
+                FlushBlock(currentBlock, events, warnings, options, context);
+                currentBlock.Reset();
+                return;
+            }
+
             currentBlock.BodyLines.Add(line);
         }
     }
