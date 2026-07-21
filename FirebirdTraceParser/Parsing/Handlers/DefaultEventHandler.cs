@@ -125,6 +125,62 @@ public sealed class DefaultEventHandler(
         };
     }
 
+    // ==================== Prepare-хелперы (общая часть Finish/Failed пар) ====================
+    // Собирают разобранные+провалидированные данные и метаданные в one struct с НЕнулевыми полями,
+    // поэтому хендлеры Finish и Failed*Finish отличаются только new-выражением (тип + EventType),
+    // без дублирования разбора/валидации/метаданных и без оператора «!».
+
+    private readonly record struct StatementFinishData(
+        AttachmentInfo Attachment, StatementData Data, DateTime Ts, int Tid, string Hex);
+
+    private readonly record struct ProcedureFinishData(
+        AttachmentInfo Attachment, TransactionInfo Transaction, string ProcedureName,
+        ProcedureData Data, DateTime Ts, int Tid, string Hex);
+
+    private readonly record struct TriggerFinishData(
+        AttachmentInfo Attachment, TransactionInfo Transaction, string TriggerName, string Event,
+        TriggerData Data, DateTime Ts, int Tid, string Hex);
+
+    private bool TryPrepareStatementFinish(Match header, IReadOnlyList<string> body,
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, bool requireTransaction,
+        out StatementFinishData prepared)
+    {
+        prepared = default;
+        var data = ParseStatementData(body, rules, true, true, context);
+        if (data.Attachment is null || (requireTransaction && data.Transaction is null))
+            return false;
+
+        var (ts, tid, hex) = ParseEventMetadata(header, context);
+        prepared = new StatementFinishData(data.Attachment, data, ts, tid, hex);
+        return true;
+    }
+
+    private bool TryPrepareProcedureFinish(Match header, IReadOnlyList<string> body,
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, out ProcedureFinishData prepared)
+    {
+        prepared = default;
+        var data = ParseProcedureData(body, rules, true, context);
+        if (data.Attachment is null || data.Transaction is null || data.ProcedureName is null)
+            return false;
+
+        var (ts, tid, hex) = ParseEventMetadata(header, context);
+        prepared = new ProcedureFinishData(data.Attachment, data.Transaction, data.ProcedureName, data, ts, tid, hex);
+        return true;
+    }
+
+    private bool TryPrepareTriggerFinish(Match header, IReadOnlyList<string> body,
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, out TriggerFinishData prepared)
+    {
+        prepared = default;
+        var data = ParseTriggerData(body, rules, true, context);
+        if (data.Attachment is null || data.Transaction is null || data.TriggerName is null || data.Event is null)
+            return false;
+
+        var (ts, tid, hex) = ParseEventMetadata(header, context);
+        prepared = new TriggerFinishData(data.Attachment, data.Transaction, data.TriggerName, data.Event, data, ts, tid, hex);
+        return true;
+    }
+
     // ==================== Handlers ====================
 
     private TraceInitEvent? HandleTraceInit(Match header, IReadOnlyList<string> bodyLines,
@@ -249,50 +305,44 @@ public sealed class DefaultEventHandler(
     private StatementFinishEvent? HandleStatementFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseStatementData(bodyLines, rules, true, true, context);
-        if (data.Attachment is null)
+        if (!TryPrepareStatementFinish(header, bodyLines, rules, context, requireTransaction: false, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new StatementFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.ExecuteStatementFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            StatementId = data.StatementId,
-            Sql = data.Sql ?? string.Empty,
-            Parameters = data.Params,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Data.Transaction,
+            StatementId = p.Data.StatementId,
+            Sql = p.Data.Sql ?? string.Empty,
+            Parameters = p.Data.Params,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedStatementFinishEvent? HandleFailedStatementFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseStatementData(bodyLines, rules, true, true, context);
-        if (data.Attachment is null || data.Transaction is null)
+        if (!TryPrepareStatementFinish(header, bodyLines, rules, context, requireTransaction: true, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new FailedStatementFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.FailedExecuteStatementFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            StatementId = data.StatementId,
-            Sql = data.Sql ?? string.Empty,
-            Parameters = data.Params,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Data.Transaction,
+            StatementId = p.Data.StatementId,
+            Sql = p.Data.Sql ?? string.Empty,
+            Parameters = p.Data.Params,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
@@ -321,48 +371,42 @@ public sealed class DefaultEventHandler(
     private ProcedureFinishEvent? HandleProcedureFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseProcedureData(bodyLines, rules, true, context);
-        if (data.Attachment is null || data.Transaction is null || data.ProcedureName is null)
+        if (!TryPrepareProcedureFinish(header, bodyLines, rules, context, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new ProcedureFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.ExecuteProcedureFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            ProcedureName = data.ProcedureName,
-            Parameters = data.Params,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Transaction,
+            ProcedureName = p.ProcedureName,
+            Parameters = p.Data.Params,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedProcedureFinishEvent? HandleFailedProcedureFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseProcedureData(bodyLines, rules, true, context);
-        if (data.Attachment is null || data.Transaction is null || data.ProcedureName is null)
+        if (!TryPrepareProcedureFinish(header, bodyLines, rules, context, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new FailedProcedureFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.FailedExecuteProcedureFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            ProcedureName = data.ProcedureName,
-            Parameters = data.Params,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Transaction,
+            ProcedureName = p.ProcedureName,
+            Parameters = p.Data.Params,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
@@ -394,54 +438,46 @@ public sealed class DefaultEventHandler(
     private TriggerFinishEvent? HandleTriggerFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseTriggerData(bodyLines, rules, true, context);
-
-        if (data.Attachment is null || data.Transaction is null || data.TriggerName is null || data.Event is null)
+        if (!TryPrepareTriggerFinish(header, bodyLines, rules, context, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new TriggerFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.ExecuteTriggerFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            TriggerName = data.TriggerName,
-            Table = data.Table,
-            Timing = data.Timing,
-            Event = data.Event,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Transaction,
+            TriggerName = p.TriggerName,
+            Table = p.Data.Table,
+            Timing = p.Data.Timing,
+            Event = p.Event,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedTriggerFinishEvent? HandleFailedTriggerFinish(Match header, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var data = ParseTriggerData(bodyLines, rules, true, context);
-
-        if (data.Attachment is null || data.Transaction is null || data.TriggerName is null || data.Event is null)
+        if (!TryPrepareTriggerFinish(header, bodyLines, rules, context, out var p))
             return null;
-
-        var (timestamp, traceId, hexTraceId) = ParseEventMetadata(header, context);
 
         return new FailedTriggerFinishEvent
         {
-            Timestamp = timestamp,
-            TraceId = traceId,
-            HexTraceId = hexTraceId,
+            Timestamp = p.Ts,
+            TraceId = p.Tid,
+            HexTraceId = p.Hex,
             EventType = EventType.FailedExecuteTriggerFinish,
-            Attachment = data.Attachment,
-            Transaction = data.Transaction,
-            TriggerName = data.TriggerName,
-            Table = data.Table,
-            Timing = data.Timing,
-            Event = data.Event,
-            Performance = data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? data.PerformanceTable : null
+            Attachment = p.Attachment,
+            Transaction = p.Transaction,
+            TriggerName = p.TriggerName,
+            Table = p.Data.Table,
+            Timing = p.Data.Timing,
+            Event = p.Event,
+            Performance = p.Data.Performance ?? CreateDefaultPerformance(),
+            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
