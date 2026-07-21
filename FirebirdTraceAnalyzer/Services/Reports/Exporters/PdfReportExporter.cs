@@ -40,6 +40,11 @@ public class PdfReportExporter : IReportExporter
         {
             Logger.Info("Exporting report to PDF: {Path}", outputPath);
 
+            // Таблицу событий считаем ОДИН раз на весь экспорт (группировка/сортировка/рефлексия по
+            // всем событиям — дорого): Lazy потокобезопасен и вычислится только при наличии Events-секции,
+            // а не заново на каждую такую секцию.
+            var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -53,7 +58,7 @@ public class PdfReportExporter : IReportExporter
                     page.Header().Element(c => ComposeHeader(c, template, metadata));
 
                     // Содержимое
-                    page.Content().Element(c => ComposeContent(c, template, metadata));
+                    page.Content().Element(c => ComposeContent(c, template, metadata, eventsTable));
 
                     // Футер
                     page.Footer().Element(c => ComposeFooter(c, template));
@@ -136,7 +141,8 @@ public class PdfReportExporter : IReportExporter
         });
     }
 
-    private void ComposeContent(IContainer container, ReportTemplate template, ReportMetadata metadata)
+    private void ComposeContent(IContainer container, ReportTemplate template, ReportMetadata metadata,
+        Lazy<ReportTable> eventsTable)
     {
         container.Column(column =>
         {
@@ -152,12 +158,13 @@ public class PdfReportExporter : IReportExporter
             // Секции отчёта
             foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
             {
-                column.Item().Element(c => ComposeSection(c, section, template, metadata));
+                column.Item().Element(c => ComposeSection(c, section, template, metadata, eventsTable));
             }
         });
     }
 
-    private void ComposeSection(IContainer container, ReportSection section, ReportTemplate template, ReportMetadata metadata)
+    private void ComposeSection(IContainer container, ReportSection section, ReportTemplate template, ReportMetadata metadata,
+        Lazy<ReportTable> eventsTable)
     {
         container.Column(column =>
         {
@@ -184,7 +191,7 @@ public class PdfReportExporter : IReportExporter
             switch (section.ContentType)
             {
                 case SectionContentType.Events:
-                    column.Item().Element(c => ComposeEventsTable(c, template, metadata.Events));
+                    column.Item().Element(c => ComposeEventsTable(c, eventsTable.Value));
                     break;
 
                 case SectionContentType.Statistics:
@@ -194,10 +201,8 @@ public class PdfReportExporter : IReportExporter
         });
     }
 
-    private void ComposeEventsTable(IContainer container, ReportTemplate template, IReadOnlyList<EventBase> events)
+    private void ComposeEventsTable(IContainer container, ReportTable data)
     {
-        var data = _projectionService.BuildTable(template, events);
-
         container.Table(table =>
         {
             // Определяем колонки
