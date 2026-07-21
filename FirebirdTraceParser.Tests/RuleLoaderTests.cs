@@ -90,4 +90,13 @@ public sealed class RuleLoaderTests
         // Каждый паттерн обязан иметь конечный таймаут — защита от ReDoS на недоверенном вводе.
         Assert.All(rules.Values, rx => Assert.NotEqual(Regex.InfiniteMatchTimeout, rx.MatchTimeout));
     }
+
+    [Fact]
+    public void RegexTimeout_TakenFromParseOptions()
+    {
+        var loader = new JsonRuleLoader(new MemoryCache(new MemoryCacheOptions()), TestSupport.Logger,
+            new FirebirdTraceParser.Parsing.Engine.ParseOptions { RegexTimeout = TimeSpan.FromMilliseconds(37) });
+        var rules = loader.LoadRules(TestSupport.RulesPath);
+        Assert.All(rules.Values, rx => Assert.Equal(TimeSpan.FromMilliseconds(37), rx.MatchTimeout));
+    }
 }

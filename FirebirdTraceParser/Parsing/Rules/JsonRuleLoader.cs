@@ -1,16 +1,21 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using FirebirdTraceParser.Exceptions;
+using FirebirdTraceParser.Parsing.Engine;
 using Microsoft.Extensions.Caching.Memory;
 using NLog;
 
 namespace FirebirdTraceParser.Parsing.Rules;
 
-public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger) : IRuleLoader
+public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOptions? parseOptions = null) : IRuleLoader
 {
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private const int SupportedSchemaVersion = 1;
+
+    // Единый управляемый барьер против ReDoS: таймаут матча берём из опций (иначе безопасный дефолт 1 c).
+    private readonly TimeSpan _regexTimeout =
+        parseOptions is { RegexTimeout: var t } && t > TimeSpan.Zero ? t : TimeSpan.FromSeconds(1);
     
     // делаем маппинг флагов регулярных выражений
     private static readonly Dictionary<string, RegexOptions> FlagMap = new()
@@ -73,8 +78,8 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger) : IRuleLo
                 // парсим флаги
                 var options = ParseFlags(rule.Flags) | RegexOptions.Compiled;
                 
-                // компилируем регулярные выражения с тайм-аутом в секунду
-                var regex = new Regex(rule.Pattern, options, TimeSpan.FromSeconds(1));
+                // компилируем регулярные выражения с настраиваемым тайм-аутом матча
+                var regex = new Regex(rule.Pattern, options, _regexTimeout);
                 
                 // валидируем необходимые группы которые указанны в конфиге
                 var specGroups = new HashSet<string>(rule.RequiredGroups);
