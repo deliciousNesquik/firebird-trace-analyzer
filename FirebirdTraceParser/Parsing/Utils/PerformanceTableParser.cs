@@ -126,6 +126,9 @@ public static class PerformanceTableParser
     private static int ParseIntSafe(ReadOnlySpan<char> value)
     {
         value = value.Trim();
-        return value.IsEmpty ? 0 : int.Parse(value, CultureInfo.InvariantCulture);
+        // TryParse вместо Parse: при сдвиге колонки не бросаем исключение и не теряем всю строку.
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : 0;
     }
 }
