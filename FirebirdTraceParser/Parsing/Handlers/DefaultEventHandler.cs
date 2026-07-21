@@ -544,47 +544,26 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var lockMode = "NONE";
         var accessMode = "NONE";
 
-        // Безалокационный проход по токенам через Срезы (Slices)
+        // Классификация токенов таблицей вместо длинной if/else-цепочки. Alternate-lookup по
+        // ReadOnlySpan<char> — без аллокации строки на токен. NONE/(NONE) просто нет в таблице.
+        var lookup = TxTokens.GetAlternateLookup<ReadOnlySpan<char>>();
         var start = 0;
         while (start < paramsSpan.Length)
         {
             var currentSlice = paramsSpan[start..];
             var nextPipe = currentSlice.IndexOf('|');
 
-            var token = nextPipe == -1 ? currentSlice : currentSlice[..nextPipe];
-            token = token.Trim(); // Сдвигает указатели span, выделения памяти нет
+            var token = (nextPipe == -1 ? currentSlice : currentSlice[..nextPipe]).Trim();
 
-            if (!token.IsEmpty &&
-                !token.Equals("NONE", StringComparison.OrdinalIgnoreCase) &&
-                !token.Equals("(NONE)", StringComparison.OrdinalIgnoreCase))
+            if (!token.IsEmpty && lookup.TryGetValue(token, out var map))
             {
-                // Сравнение span без ToUpperInvariant()
-                // Проверяем уровни изоляции
-                if (token.Equals("READ_COMMITTED", StringComparison.OrdinalIgnoreCase))
-                    isolationLevel = "READ_COMMITTED";
-                else if (token.Equals("CONCURRENCY", StringComparison.OrdinalIgnoreCase))
-                    isolationLevel = "CONCURRENCY";
-                else if (token.Equals("SNAPSHOT", StringComparison.OrdinalIgnoreCase)) isolationLevel = "SNAPSHOT";
-                else if (token.Equals("SNAPSHOT_TABLE_STABILITY", StringComparison.OrdinalIgnoreCase))
-                    isolationLevel = "SNAPSHOT_TABLE_STABILITY";
-
-                // Проверяем режимы консистентности
-                else if (token.Equals("READ_CONSISTENCY", StringComparison.OrdinalIgnoreCase))
-                    consistencyMode = "READ_CONSISTENCY";
-                else if (token.Equals("NO_RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
-                    consistencyMode = "NO_RECORD_VERSION";
-                else if (token.Equals("RECORD_VERSION", StringComparison.OrdinalIgnoreCase))
-                    consistencyMode = "RECORD_VERSION";
-
-                // Проверяем режимы блокировки
-                else if (token.Equals("NOWAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "NOWAIT";
-                else if (token.Equals("WAIT", StringComparison.OrdinalIgnoreCase)) lockMode = "WAIT";
-                else if (token.Equals("LOCK_TIMEOUT", StringComparison.OrdinalIgnoreCase))
-                    lockMode = "LOCK_TIMEOUT";
-
-                // Проверяем режимы доступа
-                else if (token.Equals("READ_WRITE", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_WRITE";
-                else if (token.Equals("READ_ONLY", StringComparison.OrdinalIgnoreCase)) accessMode = "READ_ONLY";
+                switch (map.Field)
+                {
+                    case TxField.Isolation: isolationLevel = map.Value; break;
+                    case TxField.Consistency: consistencyMode = map.Value; break;
+                    case TxField.Lock: lockMode = map.Value; break;
+                    case TxField.Access: accessMode = map.Value; break;
+                }
             }
 
             if (nextPipe == -1) break;
@@ -599,8 +578,27 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             LockMode = lockMode,
             AccessMode = accessMode
         };
-
     }
+
+    private enum TxField { Isolation, Consistency, Lock, Access }
+
+    /// <summary>Токен параметров транзакции → (поле, каноническое значение). Расширение — одна строка.</summary>
+    private static readonly Dictionary<string, (TxField Field, string Value)> TxTokens =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["READ_COMMITTED"] = (TxField.Isolation, "READ_COMMITTED"),
+            ["CONCURRENCY"] = (TxField.Isolation, "CONCURRENCY"),
+            ["SNAPSHOT"] = (TxField.Isolation, "SNAPSHOT"),
+            ["SNAPSHOT_TABLE_STABILITY"] = (TxField.Isolation, "SNAPSHOT_TABLE_STABILITY"),
+            ["READ_CONSISTENCY"] = (TxField.Consistency, "READ_CONSISTENCY"),
+            ["NO_RECORD_VERSION"] = (TxField.Consistency, "NO_RECORD_VERSION"),
+            ["RECORD_VERSION"] = (TxField.Consistency, "RECORD_VERSION"),
+            ["NOWAIT"] = (TxField.Lock, "NOWAIT"),
+            ["WAIT"] = (TxField.Lock, "WAIT"),
+            ["LOCK_TIMEOUT"] = (TxField.Lock, "LOCK_TIMEOUT"),
+            ["READ_WRITE"] = (TxField.Access, "READ_WRITE"),
+            ["READ_ONLY"] = (TxField.Access, "READ_ONLY")
+        };
 
     private static IReadOnlyList<ErrorLines> ParseErrorChain(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)

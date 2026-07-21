@@ -118,6 +118,22 @@ public sealed class EventHandlerTests
         Assert.Equal("READ_CONSISTENCY", s.Transaction.ConsistencyMode);
     }
 
+    [Fact]
+    public void Transaction_SnapshotWaitReadOnly_Parsed()
+    {
+        List<string> body =
+        [
+            AttachmentLine, ProcessLine, "(TRA_100, SNAPSHOT | WAIT | READ_ONLY)",
+            "Statement 1:", SqlDashes, "SELECT 1"
+        ];
+        var s = Assert.IsType<StatementStartEvent>(
+            NewHandler().Handle(Header(HeaderLine("EXECUTE_STATEMENT_START")), body, Rules, NewContext()));
+        Assert.Equal("SNAPSHOT", s.Transaction!.IsolationLevel);
+        Assert.Equal("WAIT", s.Transaction.LockMode);
+        Assert.Equal("READ_ONLY", s.Transaction.AccessMode);
+        Assert.Equal("NONE", s.Transaction.ConsistencyMode); // не задан → дефолт
+    }
+
     // ---------------------------------------------------------------- edge / absurd
 
     [Fact]
