@@ -483,6 +483,9 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     /// <summary>
     /// Загружает существующий шаблон для редактирования
     /// </summary>
+    /// <summary>Исходная дата создания редактируемого шаблона — сохраняется при пересохранении.</summary>
+    private DateTime? _editingCreatedAt;
+
     public async Task LoadTemplateAsync(string templateId, CancellationToken cancellationToken = default)
     {
         try
@@ -502,6 +505,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             // Заполняем поля из шаблона
             IsEditingExisting = true;
             EditingTemplateId = template.Id;
+            _editingCreatedAt = template.CreatedAt;
 
             TemplateName = template.Name;
             TemplateDescription = template.Description;
@@ -670,7 +674,8 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
                 Name = TemplateName,
                 Description = TemplateDescription,
                 IsBuiltIn = false,
-                CreatedAt = IsEditingExisting ? DateTime.Now : DateTime.Now,
+                // При редактировании сохраняем исходную дату создания, для нового — текущую.
+                CreatedAt = IsEditingExisting && _editingCreatedAt is { } created ? created : DateTime.Now,
                 ModifiedAt = DateTime.Now,
                 Version = "1.0",
 
