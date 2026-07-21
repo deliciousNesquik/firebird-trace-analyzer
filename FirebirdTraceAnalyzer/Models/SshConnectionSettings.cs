@@ -1,4 +1,5 @@
-﻿using FirebirdTraceAnalyzer.Enums;
+﻿using System.Text.Json.Serialization;
+using FirebirdTraceAnalyzer.Enums;
 
 namespace FirebirdTraceAnalyzer.Models;
 
@@ -19,13 +20,15 @@ public sealed record SshConnectionSettings
     /// <summary>Метод аутентификации</summary>
     public AuthenticationMethod AuthMethod { get; init; } = AuthenticationMethod.Password;
     
-    /// <summary>Пароль (только для AuthMethod.Password)</summary>
+    /// <summary>Пароль (только для AuthMethod.Password). Секрет: никогда не сериализуется в профили.</summary>
+    [JsonIgnore]
     public string? Password { get; init; }
-    
+
     /// <summary>Путь к приватному ключу (только для AuthMethod.PrivateKey)</summary>
     public string? PrivateKeyPath { get; init; }
-    
-    /// <summary>Парольная фраза для ключа (опционально)</summary>
+
+    /// <summary>Парольная фраза для ключа (опционально). Секрет: никогда не сериализуется в профили.</summary>
+    [JsonIgnore]
     public string? KeyPassphrase { get; init; }
     
     /// <summary>Удалённая директория с трассировочными файлами</summary>

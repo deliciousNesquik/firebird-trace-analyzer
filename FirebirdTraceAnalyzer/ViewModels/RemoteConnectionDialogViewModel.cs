@@ -302,7 +302,9 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
 
         try
         {
-            var settings = CreateConnectionSettings() with { Password = null }; // Не сохраняем пароль
+            // Не сохраняем секреты в файл профиля: ни пароль, ни парольную фразу ключа
+            // (они и так помечены [JsonIgnore]; здесь — явное намерение и защита in-memory списка).
+            var settings = CreateConnectionSettings() with { Password = null, KeyPassphrase = null };
             
             var profile = new SshConnectionProfile
             {
