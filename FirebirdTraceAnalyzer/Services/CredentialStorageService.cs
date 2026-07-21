@@ -405,7 +405,9 @@ public class CredentialStorageService : ICredentialStorageService
         }
     }
 
-    private static string EncryptPassword(string password)
+    private const string AesPrefix = "AESGCM1:";
+
+    private string EncryptPassword(string password)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -418,12 +420,14 @@ public class CredentialStorageService : ICredentialStorageService
             return Convert.ToBase64String(encryptedBytes);
         }
 
-        // Фолбэк без keyring: файл защищён правами 0600, но содержимое надёжно НЕ шифруется.
-        Logger.Warn("Storing credential with file permissions only (no strong encryption) on this OS");
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+        // Фолбэк без keyring: шифруем AES-GCM на локальном ключе (0600), а не кодируем Base64,
+        // иначе пароль лежит на диске открыто. Слабее OS-keyring (ключ доступен процессам с правами
+        // пользователя), но защищает от случайного раскрытия, бэкапов без ключа и простого чтения файла.
+        Logger.Warn("Secure keyring unavailable; using local AES-GCM fallback (weaker than OS keyring)");
+        return AesPrefix + EncryptWithLocalKey(password);
     }
 
-    private static string DecryptPassword(string encryptedPassword)
+    private string DecryptPassword(string encryptedPassword)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -436,6 +440,41 @@ public class CredentialStorageService : ICredentialStorageService
             return Encoding.UTF8.GetString(decryptedBytes);
         }
 
+        if (encryptedPassword.StartsWith(AesPrefix, StringComparison.Ordinal))
+            return DecryptWithLocalKey(encryptedPassword[AesPrefix.Length..]);
+
+        // Обратная совместимость: старые значения хранились как Base64(UTF8) без шифрования.
         return Encoding.UTF8.GetString(Convert.FromBase64String(encryptedPassword));
+    }
+
+    private string EncryptWithLocalKey(string plaintext) =>
+        LocalKeyCipher.Encrypt(GetOrCreateFallbackKey(), plaintext);
+
+    private string DecryptWithLocalKey(string payloadBase64) =>
+        LocalKeyCipher.Decrypt(GetOrCreateFallbackKey(), payloadBase64);
+
+    /// <summary>
+    /// Возвращает 256-битный ключ фолбэк-шифрования, создавая его при первом обращении и сохраняя
+    /// в файл <c>fallback.key</c> (0600) рядом с кредами. Не защищает от процессов с правами
+    /// пользователя, но снимает хранение паролей открытым текстом.
+    /// </summary>
+    private byte[] GetOrCreateFallbackKey()
+    {
+        var keyPath = Path.Combine(_storageDirectory, "fallback.key");
+
+        if (File.Exists(keyPath))
+        {
+            var existing = Convert.FromBase64String(File.ReadAllText(keyPath));
+            if (existing.Length == 32)
+                return existing;
+            Logger.Warn("Fallback key file has unexpected size; regenerating");
+        }
+
+        var key = RandomNumberGenerator.GetBytes(32);
+        if (!Directory.Exists(_storageDirectory))
+            Directory.CreateDirectory(_storageDirectory);
+        File.WriteAllText(keyPath, Convert.ToBase64String(key));
+        RestrictFilePermissions(keyPath);
+        return key;
     }
 }
