@@ -121,15 +121,18 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
     
     private static RegexOptions ParseFlags(string[]? flags)
     {
-        if (flags == null || flags.Length == 0)
-            return RegexOptions.IgnorePatternWhitespace;
-        
-        var result = RegexOptions.None;
+        // IgnorePatternWhitespace — базовый флаг (паттерны в rules.json пишутся «читаемыми»).
+        // Явные флаги ДОБАВЛЯЮТСЯ к базовому набору, а не заменяют его: иначе указание любого
+        // флага молча меняло бы трактовку пробелов/комментариев в паттерне.
+        var result = RegexOptions.IgnorePatternWhitespace;
+        if (flags == null)
+            return result;
+
         foreach (var flag in flags)
         {
             if (!FlagMap.TryGetValue(flag, out var option))
                 throw new RuleValidationException($"Неизвестный флаг regex: {flag}");
-            
+
             result |= option;
         }
         return result;

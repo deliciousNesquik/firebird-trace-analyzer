@@ -99,6 +99,24 @@ public sealed class RuleLoaderTests
     }
 
     [Fact]
+    public void Flags_AreAdditiveToIgnorePatternWhitespace()
+    {
+        // sample "abc" совпадает с "^ABC$" только при IgnoreCase → флаг применён;
+        // при этом IgnorePatternWhitespace остаётся базовым (не заменён).
+        var path = WriteTemp("""
+        { "schemaVersion": 1, "rules": {
+            "r": { "pattern": "^ABC$", "flags": ["IgnoreCase"], "requiredGroups": [], "sample": "abc" } } }
+        """);
+        try
+        {
+            var rx = NewLoader().LoadRules(path)["r"];
+            Assert.True(rx.Options.HasFlag(RegexOptions.IgnoreCase));
+            Assert.True(rx.Options.HasFlag(RegexOptions.IgnorePatternWhitespace));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void CompiledRules_HaveTimeoutSet()
     {
         var rules = NewLoader().LoadRules(TestSupport.RulesPath);
