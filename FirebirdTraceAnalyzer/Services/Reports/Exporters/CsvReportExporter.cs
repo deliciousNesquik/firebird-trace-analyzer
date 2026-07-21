@@ -48,20 +48,32 @@ public class CsvReportExporter : IReportExporter
             // Пустая строка для разделения
             await csv.NextRecordAsync();
 
-            // Строим таблицу (колонки + строки) и пишем заголовки и данные из неё
-            var table = _projectionService.BuildTable(template, metadata.Events);
+            // Идём по секциям в том же порядке и по тому же ContentType, что и PDF/DOCX/XLSX, чтобы
+            // один шаблон давал согласованное содержимое во всех форматах (раньше CSV игнорировал
+            // Sections: всегда писал события и статистику только по флагу ShowSummary).
+            var table = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
+            var wroteAny = false;
 
-            // Записываем заголовки столбцов
-            await WriteHeadersAsync(csv, table, cancellationToken);
-
-            // Записываем события
-            await WriteEventsAsync(csv, table, cancellationToken);
-
-            // Записываем статистику (если включена)
-            if (template.Body.ShowSummary)
+            foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
             {
-                await csv.NextRecordAsync();
-                await WriteSummaryAsync(csv, metadata, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (wroteAny)
+                    await csv.NextRecordAsync();
+
+                switch (section.ContentType)
+                {
+                    case SectionContentType.Events:
+                        await WriteHeadersAsync(csv, table.Value, cancellationToken);
+                        await WriteEventsAsync(csv, table.Value, cancellationToken);
+                        wroteAny = true;
+                        break;
+
+                    case SectionContentType.Statistics:
+                        await WriteSummaryAsync(csv, metadata, cancellationToken);
+                        wroteAny = true;
+                        break;
+                }
             }
 
             Logger.Info("CSV export completed: {Path}", outputPath);
