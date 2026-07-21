@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Parsing.Handlers;
 using FirebirdTraceParser.Parsing.Rules;
+using FirebirdTraceParser.Parsing.Utils;
 using Microsoft.Extensions.Caching.Memory;
 using NLog;
 
@@ -26,7 +27,7 @@ internal static class TestSupport
 
     public static IReadOnlyDictionary<string, Regex> Rules => LazyRules.Value;
 
-    public static DefaultEventHandler NewHandler() => new(Logger);
+    public static DefaultEventHandler NewHandler() => new(Logger, new PerformanceTableParser(Logger));
 
     public static ParsingContext NewContext() => new();
 

@@ -10,10 +10,10 @@ using NLog;
 /// <summary>
 /// Парсер таблицы производительности (fixed-width колонки по заголовку).
 /// </summary>
-public static class PerformanceTableParser
+public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTableParser
 {
-    private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
-    
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
     private sealed record ColumnPositions(
         int TableNameEnd,
         int NaturalStart, int NaturalEnd,
@@ -26,7 +26,7 @@ public static class PerformanceTableParser
         int ExpungeStart, int ExpungeEnd
     );
     
-    public static PerformanceTable? ParsePerformanceTable(IReadOnlyList<string> lines, int startIndex,
+    public PerformanceTable? ParsePerformanceTable(IReadOnlyList<string> lines, int startIndex,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
         var items = new List<PerformanceTableItem>();
@@ -42,7 +42,7 @@ public static class PerformanceTableParser
             {
                 positions = DetectColumnPositions(line);
                 inTable = true;
-                Logger.Trace("Performance table header detected");
+                _logger.Trace("Performance table header detected");
                 continue;
             }
             
@@ -91,7 +91,7 @@ public static class PerformanceTableParser
         );
     }
     
-    private static PerformanceTableItem? ParseRow(string line, ColumnPositions pos, ParsingContext context)
+    private PerformanceTableItem? ParseRow(string line, ColumnPositions pos, ParsingContext context)
     {
         try
         {
@@ -116,7 +116,7 @@ public static class PerformanceTableParser
         catch (Exception ex)
         {
             // Не пишем сырой недоверенный ввод в лог — только длину и исключение.
-            Logger.Warn(ex, "Failed to parse performance table row (len={Length})", line.Length);
+            _logger.Warn(ex, "Failed to parse performance table row (len={Length})", line.Length);
             return null;
         }
     }

@@ -12,9 +12,14 @@ using NLog;
 namespace FirebirdTraceParser.Parsing.Handlers;
 
 /// <summary> Обработчик событий по умолчанию. </summary>
-public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = null) : IEventHandler
+public sealed class DefaultEventHandler(
+    ILogger logger,
+    IPerformanceTableParser performanceTableParser,
+    ParseOptions? options = null) : IEventHandler
 {
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IPerformanceTableParser _performanceTableParser =
+        performanceTableParser ?? throw new ArgumentNullException(nameof(performanceTableParser));
     private readonly ParseOptions _options = options ?? ParseOptions.Default;
 
     private static readonly Dictionary<string, EventType> EventTypeMapping = new(StringComparer.OrdinalIgnoreCase)
@@ -684,7 +689,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
 
     // ==================== Complex Parsers ====================
 
-    private static StatementData ParseStatementData(IReadOnlyList<string> lines,
+    private StatementData ParseStatementData(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, bool includePerformance, bool isRestarted, ParsingContext context)
     {
         var attachment = ParseAttachmentInfo(lines, rules, context);
@@ -792,7 +797,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             {
                 // Сканируем хвост на таблицу производительности один раз, без копии массива
                 performanceTableSearched = true;
-                performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, i, rules, context);
+                performanceTable = _performanceTableParser.ParsePerformanceTable(lines, i, rules, context);
             }
         }
 
@@ -801,7 +806,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             performance, performanceTable, restartCount);
     }
 
-    private static ProcedureData ParseProcedureData(IReadOnlyList<string> lines,
+    private ProcedureData ParseProcedureData(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, bool includePerformance, ParsingContext context)
     {
         var attachment = ParseAttachmentInfo(lines, rules, context);
@@ -851,14 +856,14 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         }
 
         if (includePerformance)
-            performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
+            performanceTable = _performanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
 
         return new ProcedureData(attachment, transaction, procedureName,
             paramsList ?? (IReadOnlyList<SqlParameters>)Array.Empty<SqlParameters>(),
             performance, performanceTable);
     }
 
-    private static TriggerData ParseTriggerData(IReadOnlyList<string> lines, IReadOnlyDictionary<string, Regex> rules,
+    private TriggerData ParseTriggerData(IReadOnlyList<string> lines, IReadOnlyDictionary<string, Regex> rules,
         bool includePerformance, ParsingContext context)
     {
         var attachment = ParseAttachmentInfo(lines, rules, context);
@@ -918,7 +923,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         }
 
         if (includePerformance)
-            performanceTable = PerformanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
+            performanceTable = _performanceTableParser.ParsePerformanceTable(lines, 0, rules, context);
 
         return new TriggerData(attachment, transaction, triggerName, table, timing, eventType, performance,
             performanceTable);

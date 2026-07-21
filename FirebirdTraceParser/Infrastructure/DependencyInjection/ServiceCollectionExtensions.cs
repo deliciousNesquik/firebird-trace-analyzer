@@ -2,6 +2,7 @@
 using FirebirdTraceParser.Parsing.Engine;
 using FirebirdTraceParser.Parsing.Handlers;
 using FirebirdTraceParser.Parsing.Rules;
+using FirebirdTraceParser.Parsing.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
@@ -47,6 +48,9 @@ public static class ServiceCollectionExtensions
             var loader = provider.GetRequiredService<IRuleLoader>();
             return loader.LoadRules(rulesPath);
         });
+
+        // парсер таблиц производительности (инъектируется в обработчик)
+        services.AddSingleton<IPerformanceTableParser, PerformanceTableParser>();
 
         // регистрируем стандартный обработчик событий
         services.AddSingleton<IEventHandler, DefaultEventHandler>();

@@ -42,7 +42,8 @@ public sealed class PerformanceTableParserTests
     [Fact]
     public void ParsesRealTable_AllRows_NotEmpty()
     {
-        var table = PerformanceTableParser.ParsePerformanceTable(Lines, 0, Rules, new ParsingContext());
+        var parser = new PerformanceTableParser(NLog.LogManager.GetLogger("test"));
+        var table = parser.ParsePerformanceTable(Lines, 0, Rules, new ParsingContext());
 
         Assert.NotNull(table);
         Assert.NotNull(table!.Items);
