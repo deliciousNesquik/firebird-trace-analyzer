@@ -1229,11 +1229,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Logger.Info("Streaming parse started: {FileName}", fileInfo.Name);
 
-        var events = new List<EventBase>(8192);
-
-        var startTrace = DateTime.MinValue;
-        var endTrace = DateTime.MinValue;
-
         var parseSw = Stopwatch.StartNew();
 
         await using var stream = new FileStream(
@@ -1244,19 +1239,30 @@ public partial class MainWindowViewModel : ViewModelBase
             1024 * 1024,
             true);
 
-        await foreach (var evt in _parser.ParseStreamAsync(
-                           stream,
-                           cancellationToken: cancellationToken))
+        // Разбор — CPU-работа; уводим её с UI-потока (Task.Run + ConfigureAwait(false)), иначе на
+        // файлах в миллионы событий UI либо блокируется, либо тонет в continuation-Post'ах.
+        var (events, startTrace, endTrace) = await Task.Run(async () =>
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            var list = new List<EventBase>(8192);
+            var start = DateTime.MinValue;
+            var end = DateTime.MinValue;
 
-            if (startTrace == DateTime.MinValue)
-                startTrace = evt.Timestamp;
+            await foreach (var evt in _parser.ParseStreamAsync(
+                               stream,
+                               cancellationToken: cancellationToken).ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            endTrace = evt.Timestamp;
+                if (start == DateTime.MinValue)
+                    start = evt.Timestamp;
 
-            events.Add(evt);
-        }
+                end = evt.Timestamp;
+
+                list.Add(evt);
+            }
+
+            return (list, start, end);
+        }, cancellationToken);
 
         parseSw.Stop();
 
