@@ -74,7 +74,10 @@ public sealed class SearchService : ISearchService
 
         try
         {
-            regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(5));
+            // Без RegexOptions.Compiled: паттерн создаётся заново на каждый поиск и используется
+            // одним проходом. Compiled оправдан лишь для долгоживущих часто переиспользуемых регэкспов
+            // (по гайдлайну .NET), иначе одноразовая генерация IL — чистые накладные.
+            regex = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(5));
         }
         catch (ArgumentException ex)
         {
