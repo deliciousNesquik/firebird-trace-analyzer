@@ -28,7 +28,14 @@ public partial class SortDescriptor : ViewModelBase
     
     /// <summary>Функция сравнения событий для сортировки</summary>
     public Func<EventBase, EventBase, bool, int> Comparer { get; }
-    
+
+    /// <summary>
+    /// Необязательный извлекатель ключа сортировки. Если задан, <c>ApplySort</c> извлекает ключ ОДИН
+    /// раз на событие (decorate-sort-undecorate) вместо вызова геттера на каждом сравнении
+    /// (O(N·logN) вызовов рефлексии). Плагинные сорты без селектора используют <see cref="Comparer"/>.
+    /// </summary>
+    public Func<EventBase, object?>? KeySelector { get; init; }
+
     /// <summary>Является ли сортировкой по умолчанию</summary>
     public bool IsDefault { get; init; }
 

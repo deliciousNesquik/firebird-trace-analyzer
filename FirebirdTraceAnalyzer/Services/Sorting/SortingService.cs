@@ -95,13 +95,18 @@ public sealed class SortingService : ISortingService
 
     private SortDescriptor CreateFieldSort(DiscoveredField field)
     {
+        var path = field.PropertyPath;
         return new SortDescriptor(
-            _propertyAccessor.ToSortId(field.PropertyPath),
+            _propertyAccessor.ToSortId(path),
             field.DisplayName,
-            CreatePropertyComparer(field.PropertyPath),
+            CreatePropertyComparer(path),
             field.IsDefaultSort,
             field.Category,
-            field.SortDisplayOrder);
+            field.SortDisplayOrder)
+        {
+            // Ключ достаём один раз на событие (см. ApplySort) — избегаем рефлексии на каждом сравнении.
+            KeySelector = evt => _propertyAccessor.GetValue(evt, path)
+        };
     }
 
     private Func<EventBase, EventBase, bool, int> CreatePropertyComparer(string propertyPath)
@@ -128,7 +133,28 @@ public sealed class SortingService : ISortingService
         }
 
         var sorted = events.ToList();
-        sorted.Sort((a, b) => descriptor.Comparer(a, b, descending));
+
+        if (descriptor.KeySelector is { } keySelector)
+        {
+            // decorate-sort-undecorate: извлекаем ключ ОДИН раз на событие, затем сортируем по ключам,
+            // вместо пересчёта геттера через рефлексию на каждом из O(N·logN) сравнений.
+            var keyed = new (object? Key, EventBase Event)[sorted.Count];
+            for (var i = 0; i < sorted.Count; i++)
+                keyed[i] = (keySelector(sorted[i]), sorted[i]);
+
+            Array.Sort(keyed, (a, b) =>
+            {
+                var result = _propertyAccessor.Compare(a.Key, b.Key);
+                return descending ? -result : result;
+            });
+
+            for (var i = 0; i < keyed.Length; i++)
+                sorted[i] = keyed[i].Event;
+        }
+        else
+        {
+            sorted.Sort((a, b) => descriptor.Comparer(a, b, descending));
+        }
 
         Logger.Info("Sorting applied: {DisplayName}, descending={Descending}",
             descriptor.DisplayName, descending);
