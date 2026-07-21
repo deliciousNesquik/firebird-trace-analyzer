@@ -612,8 +612,11 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             StatusMessage = Loc.Tr("Status.Main.BuildingFilters");
 
-            // Снимок настроек на UI-потоке (дальше читаем их в фоне).
-            var allEvents = AllEvents;
+            // Снимок на UI-потоке (дальше читаем в фоне). Именно КОПИЯ, а не живая ссылка:
+            // пока фоновый Task.Run перечисляет события, UI-поток может параллельно мутировать
+            // AllEvents (загрузка/закрытие файлов) → иначе гонка «коллекция изменена во время
+            // перечисления» (ср. PersistToStore, где для той же цели берётся снимок).
+            var allEvents = AllEvents.ToList();
             var searchActive = IsSearchActive && !string.IsNullOrWhiteSpace(SearchText);
             var searchText = SearchText;
             var searchMode = IsClassicSearch ? SearchType.Classic : SearchType.Regex;
