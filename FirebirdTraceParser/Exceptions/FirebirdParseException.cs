@@ -17,8 +17,15 @@ public sealed class RuleValidationException : FirebirdParseException
     public string? RuleName { get; init; }
     public string? SampleData { get; init; }
     
-    public RuleValidationException(string message, string? ruleName = null) 
+    public RuleValidationException(string message, string? ruleName = null)
         : base(message)
+    {
+        RuleName = ruleName;
+    }
+
+    /// <summary>Сохраняет первопричину (например RegexParseException) в InnerException.</summary>
+    public RuleValidationException(string message, Exception inner, string? ruleName = null)
+        : base(message, inner)
     {
         RuleName = ruleName;
     }

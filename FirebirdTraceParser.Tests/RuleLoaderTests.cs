@@ -84,6 +84,21 @@ public sealed class RuleLoaderTests
     }
 
     [Fact]
+    public void InvalidRegexPattern_PreservesInnerException()
+    {
+        var path = WriteTemp("""
+        { "schemaVersion": 1, "rules": {
+            "r": { "pattern": "(unbalanced", "flags": [], "requiredGroups": [], "sample": "x" } } }
+        """);
+        try
+        {
+            var ex = Assert.Throws<RuleValidationException>(() => NewLoader().LoadRules(path));
+            Assert.NotNull(ex.InnerException); // первопричина (RegexParseException) не потеряна
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void CompiledRules_HaveTimeoutSet()
     {
         var rules = NewLoader().LoadRules(TestSupport.RulesPath);

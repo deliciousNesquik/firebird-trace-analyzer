@@ -112,7 +112,7 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
             catch (Exception ex) when (ex is not RuleValidationException)
             {
                 _logger.Fatal(ex, $"Rule '{name}' failed compilation");
-                throw new RuleValidationException($"Rule failed compilation '{name}': {ex.Message}", name);
+                throw new RuleValidationException($"Rule failed compilation '{name}': {ex.Message}", ex, name);
             }
         }
         
