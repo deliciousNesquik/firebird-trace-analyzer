@@ -688,6 +688,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         PerformanceTable? performanceTable = null;
         var performanceTableSearched = false;
         int? restartCount = null;
+        var fetchCount = 0;
 
         // Кэшируем Regex в локали — убираем словарные лукапы из горячего цикла
         var statementRx = rules["statement"];
@@ -742,7 +743,10 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                     // break if param or performance/fetched
                     if (parametersRx.IsMatch(l) ||
                         (includePerformance && (fetchedRx.IsMatch(l) || performanceRx.IsMatch(l))))
+                    {
+                        i--; // вернуть строку основному циклу, иначе первый параметр/perf после SQL теряется
                         break;
+                    }
 
                     sqlLines.Add(l);
                     i++;
@@ -759,10 +763,21 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 continue;
             }
 
-            if (includePerformance && performance is null)
+            if (includePerformance)
             {
-                performance = ParsePerformance(line, rules);
-                if (performance is not null) continue;
+                // "N records fetched" идёт отдельной строкой перед таймингами — запоминаем.
+                var fm = fetchedRx.Match(line);
+                if (fm.Success)
+                {
+                    fetchCount = fm.GetGroupInt("fetch_count");
+                    continue;
+                }
+
+                if (performance is null)
+                {
+                    performance = ParsePerformance(line, rules, fetchCount);
+                    if (performance is not null) continue;
+                }
             }
 
             if (includePerformance && !performanceTableSearched)
@@ -785,9 +800,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         TransactionInfo? transaction = null;
         string? procedureName = null;
         var procedureRx = rules["procedure"];
+        var fetchedRx = rules["fetched"];
         List<SqlParameters>? paramsList = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
+        var fetchCount = 0;
 
         foreach (var line in lines)
         {
@@ -811,8 +828,18 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 continue;
             }
 
-            if (includePerformance && performance is null)
-                performance = ParsePerformance(line, rules);
+            if (includePerformance)
+            {
+                var fm = fetchedRx.Match(line);
+                if (fm.Success)
+                {
+                    fetchCount = fm.GetGroupInt("fetch_count");
+                    continue;
+                }
+
+                if (performance is null)
+                    performance = ParsePerformance(line, rules, fetchCount);
+            }
         }
 
         if (includePerformance)
@@ -830,11 +857,13 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         TransactionInfo? transaction = null;
         string? triggerName = null;
         var triggerRx = rules["trigger"];
+        var fetchedRx = rules["fetched"];
         string? table = null;
         string? timing = null;
         string? eventType = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
+        var fetchCount = 0;
 
         foreach (var line in lines)
         {
@@ -866,8 +895,18 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
                 continue;
             }
 
-            if (includePerformance && performance is null)
-                performance = ParsePerformance(line, rules);
+            if (includePerformance)
+            {
+                var fm = fetchedRx.Match(line);
+                if (fm.Success)
+                {
+                    fetchCount = fm.GetGroupInt("fetch_count");
+                    continue;
+                }
+
+                if (performance is null)
+                    performance = ParsePerformance(line, rules, fetchCount);
+            }
         }
 
         if (includePerformance)
@@ -877,15 +916,14 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
             performanceTable);
     }
 
+    /// <summary>
+    /// Разбирает строку метрик выполнения. Количество выданных записей приходит отдельной строкой
+    /// ("N records fetched") ДО строки таймингов, поэтому оно накапливается вызывающим и передаётся
+    /// сюда параметром <paramref name="fetchCount"/> — иначе оно теряется (было всегда 0).
+    /// </summary>
     private static PerformanceInfo? ParsePerformance(string line,
-        IReadOnlyDictionary<string, Regex> rules)
+        IReadOnlyDictionary<string, Regex> rules, int fetchCount)
     {
-        var fetchCount = 0;
-
-        var mFetched = rules["fetched"].Match(line);
-        if (mFetched.Success)
-            fetchCount = mFetched.GetGroupInt("fetch_count");
-
         var mPerf = rules["performance"].Match(line);
         if (mPerf.Success)
             return new PerformanceInfo
