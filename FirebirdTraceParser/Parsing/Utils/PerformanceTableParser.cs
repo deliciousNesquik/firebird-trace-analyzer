@@ -114,7 +114,8 @@ public static class PerformanceTableParser
         }
         catch (Exception ex)
         {
-            Logger.Warn(ex, "Failed to parse performance table row: {Line}", line);
+            // Не пишем сырой недоверенный ввод в лог — только длину и исключение.
+            Logger.Warn(ex, "Failed to parse performance table row (len={Length})", line.Length);
             return null;
         }
     }
