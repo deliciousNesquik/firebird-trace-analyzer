@@ -62,6 +62,15 @@ public partial class MainWindowViewModel : ViewModelBase
     #region Collections
 
     /// <summary>Все события из всех файлов (source of truth)</summary>
+    /// <summary>Размер буфера FileStream при чтении трейс-файла (1 МБ) — крупные последовательные чтения.</summary>
+    private const int FileStreamBufferBytes = 1024 * 1024;
+
+    /// <summary>Начальная ёмкость списка событий одного файла — реже перевыделяем при росте.</summary>
+    private const int InitialEventCapacity = 8192;
+
+    /// <summary>Сколько держать 100%-статус завершения скачивания, чтобы пользователь его увидел.</summary>
+    private static readonly TimeSpan DownloadCompletionLingerDelay = TimeSpan.FromSeconds(2);
+
     private List<EventBase> AllEvents { get; } = [];
 
     /// <summary>События после применения фильтров и сортировки</summary>
@@ -1232,14 +1241,14 @@ public partial class MainWindowViewModel : ViewModelBase
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
-            1024 * 1024,
+            FileStreamBufferBytes,
             true);
 
         // Разбор — CPU-работа; уводим её с UI-потока (Task.Run + ConfigureAwait(false)), иначе на
         // файлах в миллионы событий UI либо блокируется, либо тонет в continuation-Post'ах.
         var (events, startTrace, endTrace) = await Task.Run(async () =>
         {
-            var list = new List<EventBase>(8192);
+            var list = new List<EventBase>(InitialEventCapacity);
             var start = DateTime.MinValue;
             var end = DateTime.MinValue;
 
@@ -1858,7 +1867,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() => { progressViewModel.DownloadCompleted(); });
 
             // Ждём 2 секунды, чтобы пользователь увидел завершение
-            await Task.Delay(2000, cancellationToken);
+            await Task.Delay(DownloadCompletionLingerDelay, cancellationToken);
 
             return downloadedPaths;
         }
@@ -2579,7 +2588,7 @@ public partial class MainWindowViewModel : ViewModelBase
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
-            1024 * 1024,
+            FileStreamBufferBytes,
             true);
 
         var hashBytes = await SHA256.HashDataAsync(stream, cancellationToken);
