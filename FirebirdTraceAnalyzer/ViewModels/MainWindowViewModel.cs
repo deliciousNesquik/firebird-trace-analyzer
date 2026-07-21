@@ -1536,14 +1536,9 @@ public partial class MainWindowViewModel : ViewModelBase
         eventsToRemove.Clear(); // Освобождаем память
         eventsSet.Clear(); // Освобождаем HashSet
 
-        Logger.Info("Total removal time: {Elapsed}ms", sw.ElapsedMilliseconds);
-
-        // ✅ Принудительная сборка мусора для больших объёмов (опционально)
-        if (removedCount > 50000)
-        {
-            GC.Collect(2, GCCollectionMode.Optimized, false);
-            Logger.Info("GC forced for {Count} removed events", removedCount);
-        }
+        Logger.Info("Total removal time: {Elapsed}ms, removed {Count} events", sw.ElapsedMilliseconds, removedCount);
+        // Ручной GC.Collect убран: рантайм соберёт освободившиеся события сам; принудительный вызов
+        // мешает адаптивному планировщику GC и добавляет паузы без реального выигрыша.
     }
 
     /// <summary>
@@ -1586,13 +1581,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // ✅ Очищаем HashSet
         allEventsToRemove.Clear();
-
-        // ✅ Принудительная сборка мусора для больших объёмов
-        if (removedCount > 50000)
-        {
-            GC.Collect(2, GCCollectionMode.Optimized, false);
-            Logger.Info("GC forced for {Count} removed events (batch)", removedCount);
-        }
+        // Ручной GC.Collect убран (см. RemoveFileEvents): память освободится без принудительной сборки.
     }
 
     private bool IsDuplicate(string fileHash)
@@ -2201,10 +2190,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
             StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
             Logger.Info("All files closed: {Count}", count);
-
-            // ✅ Принудительная сборка мусора
-            GC.Collect(2, GCCollectionMode.Forced, true, true);
-            Logger.Info("GC forced after closing all files");
+            // Ручной блокирующий GC.Collect убран: он давал заметный фриз UI при закрытии файлов
+            // без реальной пользы — рантайм соберёт память сам.
         }
         finally
         {
