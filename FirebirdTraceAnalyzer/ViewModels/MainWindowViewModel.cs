@@ -931,17 +931,35 @@ public partial class MainWindowViewModel : ViewModelBase
             await vm.LoadAsync();
 
             // Create/Edit требуют сессии событий и окна редактора — обрабатываем здесь, затем
-            // перезагружаем список в окне.
+            // перезагружаем список в окне. Это async void обработчики событий: их исключения НЕ
+            // ловит внешний try (они срабатывают позже по событию) — оборачиваем каждый сами,
+            // иначе исключение из OpenReportEditorAsync/LoadAsync роняет всё приложение.
             async void OnEdit(object? _, string id)
             {
-                await OpenReportEditorAsync(id);
-                await vm.LoadAsync();
+                try
+                {
+                    await OpenReportEditorAsync(id);
+                    await vm.LoadAsync();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Error handling template edit request");
+                    StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+                }
             }
 
             async void OnCreate(object? _, EventArgs __)
             {
-                await OpenReportEditorAsync(null);
-                await vm.LoadAsync();
+                try
+                {
+                    await OpenReportEditorAsync(null);
+                    await vm.LoadAsync();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Error handling template create request");
+                    StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+                }
             }
 
             vm.EditRequested += OnEdit;
