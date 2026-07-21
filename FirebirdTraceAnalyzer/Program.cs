@@ -217,7 +217,8 @@ internal sealed class Program
         catch (Exception ex)
         {
             logger.Fatal(ex, "Failed to load parser rules. The application will now close.");
-            throw new Exception($"Failed to load parser rules. {ex.Message}");
+            // Сохраняем первопричину (тип + стек) как InnerException, а не только текст сообщения.
+            throw new InvalidOperationException("Failed to load parser rules.", ex);
         }
     }
 }
