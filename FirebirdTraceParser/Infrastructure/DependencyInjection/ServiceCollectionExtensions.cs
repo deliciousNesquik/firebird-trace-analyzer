@@ -32,7 +32,12 @@ public static class ServiceCollectionExtensions
 
         // регистрируем стандартное кеширование
         services.AddMemoryCache();
-        
+
+        // Опции по умолчанию. Регистрируем сам ParseOptions (а не IOptions<>), потому что
+        // DefaultEventHandler/JsonRuleLoader принимают ParseOptions напрямую через конструктор.
+        // Overload с настройкой перекрывает эту регистрацию (последняя AddSingleton выигрывает).
+        services.AddSingleton(ParseOptions.Default);
+
         // сервис загрузки правил
         services.AddSingleton<IRuleLoader, JsonRuleLoader>();
 
@@ -53,18 +58,25 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Добавляет парсер с кастомными опциями.
+    /// Добавляет парсер с кастомными опциями. ParseOptions — неизменяемый record (init-only
+    /// свойства), поэтому настройка идёт через with-трансформ, а не Action: например
+    /// <c>o =&gt; o with { ParsePerformanceTables = false }</c>.
     /// </summary>
     public static IServiceCollection AddFirebirdTraceParser(
         this IServiceCollection services,
         string rulesPath,
-        Action<ParseOptions> configureOptions,
+        Func<ParseOptions, ParseOptions> configureOptions,
         string? nlogConfigPath = null)
     {
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
         services.AddFirebirdTraceParser(rulesPath, nlogConfigPath);
 
-        // Регистрация опций через конфигурацию
-        services.Configure(configureOptions);
+        // Перекрываем зарегистрированный по умолчанию ParseOptions настроенным экземпляром —
+        // теперь он реально дойдёт до DefaultEventHandler(ILogger, ParseOptions) и JsonRuleLoader.
+        var options = configureOptions(ParseOptions.Default)
+                      ?? throw new ArgumentException("configureOptions вернул null", nameof(configureOptions));
+        services.AddSingleton(options);
 
         return services;
     }
