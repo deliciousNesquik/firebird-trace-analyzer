@@ -40,6 +40,31 @@ public sealed class DefaultEventHandler(
         ["FAILED EXECUTE_TRIGGER_FINISH"] = EventType.FailedExecuteTriggerFinish
     };
 
+    /// <summary>Обработчик тела блока конкретного типа события.</summary>
+    private delegate EventBase? EventFactory(Match header, IReadOnlyList<string> body,
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context);
+
+    // Диспетчеризация таблицей вместо switch: новый тип = одна запись, ветвление кода не трогаем.
+    // Ленивая инициализация (ссылки на методы экземпляра нельзя в инициализаторе поля); идемпотентна.
+    private Dictionary<EventType, EventFactory>? _dispatch;
+
+    private Dictionary<EventType, EventFactory> BuildDispatch() => new()
+    {
+        [EventType.TraceInit] = HandleTraceInit,
+        [EventType.TraceFinish] = HandleTraceFinish,
+        [EventType.AttachDatabase] = HandleAttach,
+        [EventType.DetachDatabase] = HandleDetach,
+        [EventType.ExecuteStatementStart] = HandleStatementStart,
+        [EventType.ExecuteStatementRestart] = HandleStatementRestart,
+        [EventType.ExecuteStatementFinish] = HandleStatementFinish,
+        [EventType.ExecuteProcedureStart] = HandleProcedureStart,
+        [EventType.ExecuteProcedureFinish] = HandleProcedureFinish,
+        [EventType.ExecuteTriggerStart] = HandleTriggerStart,
+        [EventType.ExecuteTriggerFinish] = HandleTriggerFinish,
+        [EventType.FailedExecuteStatementFinish] = HandleFailedStatementFinish,
+        [EventType.FailedExecuteProcedureFinish] = HandleFailedProcedureFinish,
+        [EventType.FailedExecuteTriggerFinish] = HandleFailedTriggerFinish
+    };
 
     public EventBase? Handle(Match blockHeader, IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
@@ -55,24 +80,10 @@ public sealed class DefaultEventHandler(
             return null;
         }
 
-        EventBase? result = eventType switch
-        {
-            EventType.TraceInit => HandleTraceInit(blockHeader, bodyLines, rules, context),
-            EventType.TraceFinish => HandleTraceFinish(blockHeader, bodyLines, rules, context),
-            EventType.AttachDatabase => HandleAttach(blockHeader, bodyLines, rules, context),
-            EventType.DetachDatabase => HandleDetach(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteStatementStart => HandleStatementStart(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteStatementRestart => HandleStatementRestart(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteStatementFinish => HandleStatementFinish(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteProcedureStart => HandleProcedureStart(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteProcedureFinish => HandleProcedureFinish(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteTriggerStart => HandleTriggerStart(blockHeader, bodyLines, rules, context),
-            EventType.ExecuteTriggerFinish => HandleTriggerFinish(blockHeader, bodyLines, rules, context),
-            EventType.FailedExecuteStatementFinish => HandleFailedStatementFinish(blockHeader, bodyLines, rules, context),
-            EventType.FailedExecuteProcedureFinish => HandleFailedProcedureFinish(blockHeader, bodyLines, rules, context),
-            EventType.FailedExecuteTriggerFinish => HandleFailedTriggerFinish(blockHeader, bodyLines, rules, context),
-            _ => null
-        };
+        _dispatch ??= BuildDispatch();
+        var result = _dispatch.TryGetValue(eventType, out var factory)
+            ? factory(blockHeader, bodyLines, rules, context)
+            : null;
 
         if (result == null)
             _logger.Warn("Handler returned null for {EventType}", eventType);
