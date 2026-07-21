@@ -116,6 +116,43 @@ public sealed class RuleLoaderTests
         finally { File.Delete(path); }
     }
 
+    [Theory]
+    [InlineData("{ not json at all")]
+    [InlineData("")]
+    [InlineData("[]")]
+    public void CompileFromJson_MalformedJson_ThrowsRuleValidation(string json)
+    {
+        Assert.Throws<RuleValidationException>(() => NewLoader().CompileFromJson(json));
+    }
+
+    [Fact]
+    public void CompileFromJson_MissingSchemaVersion_ThrowsRuleValidation()
+    {
+        Assert.Throws<RuleValidationException>(() =>
+            NewLoader().CompileFromJson("""{ "rules": {} }"""));
+    }
+
+    [Fact]
+    public void CompileFromJson_JsonNull_ThrowsRuleValidation_NotNullReference()
+    {
+        // "null" раньше давал NullReferenceException на config.Rules — теперь доменное исключение.
+        Assert.Throws<RuleValidationException>(() => NewLoader().CompileFromJson("null"));
+    }
+
+    [Fact]
+    public void CompileFromJson_EmptyRules_ThrowsRuleValidation()
+    {
+        Assert.Throws<RuleValidationException>(() =>
+            NewLoader().CompileFromJson("""{ "schemaVersion": 1, "rules": {} }"""));
+    }
+
+    [Fact]
+    public void CompileFromJson_WrongSchema_ThrowsSchemaVersion()
+    {
+        Assert.Throws<SchemaVersionException>(() =>
+            NewLoader().CompileFromJson("""{ "schemaVersion": 2, "rules": { "r": { "pattern": "x", "sample": "x" } } }"""));
+    }
+
     [Fact]
     public void CompiledRules_HaveTimeoutSet()
     {

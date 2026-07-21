@@ -19,4 +19,9 @@
         <!-- JSON -->
         <PackageReference Include="System.Text.Json" Version="11.0.0-preview.4.26230.115" />
     </ItemGroup>
+
+    <ItemGroup>
+        <!-- Даём тестам доступ к внутренним точкам входа (например JsonRuleLoader.CompileFromJson). -->
+        <InternalsVisibleTo Include="FirebirdTraceParser.Tests" />
+    </ItemGroup>
 </Project>

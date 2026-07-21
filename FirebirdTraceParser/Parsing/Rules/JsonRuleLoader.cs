@@ -37,34 +37,57 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
         }
         
         var cacheKey = $"Rules_{configPath}_{fileInfo.LastWriteTimeUtc.Ticks}";
-        
+
         return _cache.GetOrCreate(cacheKey, IReadOnlyDictionary<string, Regex> (entry) =>
         {
             entry.SetSlidingExpiration(TimeSpan.FromHours(1));
-            
             _logger.Info("Loading rules from: {ConfigPath}", configPath);
-            
-            // парсим правила из файла
-            var json = File.ReadAllText(configPath);
+            return CompileFromJson(File.ReadAllText(configPath));
+        })!;
+    }
+
+    /// <summary>
+    /// Компилирует правила из JSON-строки. Не зависит от файловой системы — точка входа для тестов.
+    /// Битый/неполный конфиг превращается в доменный <see cref="RuleValidationException"/>
+    /// (а не в сырой JsonException/KeyNotFoundException/NullReferenceException).
+    /// </summary>
+    internal IReadOnlyDictionary<string, Regex> CompileFromJson(string json)
+    {
+        RuleConfiguration? config;
+        int schemaVersion;
+        try
+        {
             using var document = JsonDocument.Parse(json);
-            
-            // валидируем правила из файла
-            var schemaVersion = document.RootElement.GetProperty("schemaVersion").GetInt32();
-            if (schemaVersion != SupportedSchemaVersion)
-                throw new SchemaVersionException(SupportedSchemaVersion, schemaVersion);
-            
-            // десериализуем правила из файла
-            var config = JsonSerializer.Deserialize<RuleConfiguration>(json, new JsonSerializerOptions
+            var root = document.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object)
+                throw new RuleValidationException("Конфиг правил: корень JSON должен быть объектом");
+
+            if (!root.TryGetProperty("schemaVersion", out var svEl)
+                || svEl.ValueKind != JsonValueKind.Number
+                || !svEl.TryGetInt32(out schemaVersion))
+                throw new RuleValidationException("Конфиг правил: отсутствует или некорректный 'schemaVersion'");
+
+            config = JsonSerializer.Deserialize<RuleConfiguration>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            })!;
-            
-            // компилируем и валидируем по предоставленным примерам
-            var compiled = CompileAndValidate(config.Rules);
-            
-            _logger.Info("Loaded {RuleCount} rules successfully", compiled.Count);
-            return compiled;
-        })!;
+            });
+        }
+        catch (JsonException ex)
+        {
+            _logger.Fatal(ex, "Invalid rules JSON");
+            throw new RuleValidationException($"Некорректный JSON правил: {ex.Message}", ex);
+        }
+
+        if (schemaVersion != SupportedSchemaVersion)
+            throw new SchemaVersionException(SupportedSchemaVersion, schemaVersion);
+
+        if (config?.Rules is null || config.Rules.Count == 0)
+            throw new RuleValidationException("Конфиг правил не содержит ни одного правила");
+
+        var compiled = CompileAndValidate(config.Rules);
+        _logger.Info("Loaded {RuleCount} rules successfully", compiled.Count);
+        return compiled;
     }
     
     private Dictionary<string, Regex> CompileAndValidate(Dictionary<string, RuleDefinition> rules)
