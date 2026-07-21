@@ -28,13 +28,24 @@ public sealed class TraceLogParser(
     public ParsingResult<EventBase> ParseFile(string filePath, ParseOptions? options = null)
     {
         options ??= ParseOptions.Default;
-
         _logger.Info("Starting parsing file: {FilePath}", filePath);
+
+        using var reader = new StreamReader(filePath, options.Encoding);
+        return Parse(reader, options);
+    }
+
+    /// <summary>
+    /// Синхронный разбор из произвольного <see cref="TextReader"/> — ядро <see cref="ParseFile"/>.
+    /// Не зависит от файловой системы, возвращает полный <see cref="ParsingResult{T}"/> с Warnings,
+    /// поэтому поведение SkippedBlocks/Strict проверяется тестами через <c>new StringReader(trace)</c>.
+    /// </summary>
+    public ParsingResult<EventBase> Parse(TextReader reader, ParseOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        options ??= ParseOptions.Default;
 
         var events = new List<EventBase>();
         var warnings = new List<ParsingWarning>();
-
-        using var reader = new StreamReader(filePath, options.Encoding);
 
         string? line;
         var lineNumber = 0;

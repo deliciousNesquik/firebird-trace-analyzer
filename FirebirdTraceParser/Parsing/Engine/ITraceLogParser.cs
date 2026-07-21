@@ -7,6 +7,9 @@ public interface ITraceLogParser
 {
     ParsingResult<EventBase> ParseFile(string filePath, ParseOptions? options = null);
 
+    /// <summary>Синхронный разбор из произвольного TextReader (без файла) с полным ParsingResult.</summary>
+    ParsingResult<EventBase> Parse(TextReader reader, ParseOptions? options = null);
+
     Task<ParsingResult<EventBase>> ParseFileAsync(
         string filePath,
         IProgress<double>? progress = null,

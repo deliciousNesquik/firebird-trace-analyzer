@@ -69,6 +69,28 @@ public sealed class TraceLogParserTests
         finally { File.Delete(path); }
     }
 
+    [Fact]
+    public void Parse_TextReader_CleanTrace_NoFileNeeded()
+    {
+        var result = NewParser().Parse(new StringReader(CleanTrace()));
+        Assert.Equal(3, result.Events.Count);
+        Assert.False(result.HasErrors);
+    }
+
+    [Fact]
+    public void Parse_TextReader_SkippedBlock_Warns()
+    {
+        var result = NewParser().Parse(new StringReader(HeaderLine("EXECUTE_STATEMENT_START") + "\n" + TransactionLine + "\n"));
+        Assert.Empty(result.Events);
+        Assert.True(result.SkippedBlocks >= 1);
+    }
+
+    [Fact]
+    public void Parse_NullReader_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => NewParser().Parse(null!));
+    }
+
     // ---------------------------------------------------------------- edge / absurd
 
     [Fact]
