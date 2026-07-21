@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using FirebirdTraceParser.Models.ValueObjects;
+using NLog;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
@@ -27,23 +28,32 @@ public class ErrorEventCard : TemplatedControl
 
     private async void CopyButtonOnClick(object? sender, RoutedEventArgs e)
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-
-        if (topLevel?.Clipboard == null)
-            return;
-
-        var sb = new StringBuilder();
-
-        sb.AppendLine($"Error at: {Component}");
-        sb.AppendLine();
-
-        if (Errors != null)
+        // async void + буфер обмена: SetTextAsync может бросить (особенно на X11/Wayland).
+        // Без catch исключение из продолжения на UI-потоке роняет приложение.
+        try
         {
-            foreach (var error in Errors)
-                sb.AppendLine($"{error.ErrorCode}: {error.Message}");
-        }
+            var topLevel = TopLevel.GetTopLevel(this);
 
-        await topLevel.Clipboard.SetTextAsync(sb.ToString());
+            if (topLevel?.Clipboard == null)
+                return;
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"Error at: {Component}");
+            sb.AppendLine();
+
+            if (Errors != null)
+            {
+                foreach (var error in Errors)
+                    sb.AppendLine($"{error.ErrorCode}: {error.Message}");
+            }
+
+            await topLevel.Clipboard.SetTextAsync(sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            LogManager.GetCurrentClassLogger().Warn(ex, "Failed to copy error details to clipboard");
+        }
     }
 
     public static readonly StyledProperty<DateTime> TimestampProperty =
