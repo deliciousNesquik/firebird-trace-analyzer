@@ -273,7 +273,11 @@ public sealed class TraceLogParser(
                 BlockContent = string.Join("\n", block.BodyLines.Take(3))
             });
 
-            _logger.Warn(ex, "Failed to parse block at line {LineNumber}", block.StartLine);
+            // Уровень лога соответствует severity результата (в Strict сбой блока — это Error).
+            if (severity == WarningSeverity.Error)
+                _logger.Error(ex, "Failed to parse block at line {LineNumber}", block.StartLine);
+            else
+                _logger.Warn(ex, "Failed to parse block at line {LineNumber}", block.StartLine);
         }
     }
 
