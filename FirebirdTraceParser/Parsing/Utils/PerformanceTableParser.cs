@@ -32,11 +32,12 @@ public static class PerformanceTableParser
         ColumnPositions? positions = null;
         bool inTable = false;
 
+        var headerRx = rules["performance_table_header"]; // lookup один раз вне цикла
         for (var idx = startIndex; idx < lines.Count; idx++)
         {
             var line = lines[idx];
             // Заголовок
-            if (rules["performance_table_header"].IsMatch(line))
+            if (headerRx.IsMatch(line))
             {
                 positions = DetectColumnPositions(line);
                 inTable = true;
