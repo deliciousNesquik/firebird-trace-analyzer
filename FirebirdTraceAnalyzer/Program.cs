@@ -159,6 +159,7 @@ internal sealed class Program
         
         // SSH сервисы
         services.AddSingleton<IHostKeyStore, KnownHostsStore>();
+        services.AddSingleton<ISshProfileStore, SshProfileStore>();
         services.AddSingleton<ISshConnectionService, SshConnectionService>();
         services.AddSingleton<IRemoteFileService, RemoteFileService>();
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();

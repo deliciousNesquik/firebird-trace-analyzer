@@ -24,6 +24,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
     private readonly ISshConnectionService _sshService;
     private readonly IFileDialogService? _fileDialogService;
     private readonly ICredentialStorageService? _credentialStorage;
+    private readonly ISshProfileStore? _profileStore;
 
     #region Observable Properties - Connection Settings
 
@@ -112,12 +113,14 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         IWindowProvider windowProvider,
         ISshConnectionService sshService,
         IFileDialogService fileDialogService,
-        ICredentialStorageService? credentialStorage = null)
+        ICredentialStorageService? credentialStorage = null,
+        ISshProfileStore? profileStore = null)
     {
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _sshService = sshService ?? throw new ArgumentNullException(nameof(sshService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _credentialStorage = credentialStorage;
+        _profileStore = profileStore;
 
         LoadSavedProfiles();
         
@@ -548,55 +551,24 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
 
     private void LoadSavedProfiles()
     {
-        try
-        {
-            var profilesPath = GetProfilesFilePath();
-            
-            if (!File.Exists(profilesPath))
-            {
-                Logger.Debug("No saved profiles found");
-                return;
-            }
+        if (_profileStore is null)
+            return;
 
-            var json = File.ReadAllText(profilesPath);
-            var profiles = System.Text.Json.JsonSerializer.Deserialize<List<SshConnectionProfile>>(json);
+        SavedProfiles.Clear();
+        foreach (var profile in _profileStore.Load().OrderByDescending(p => p.LastUsedAt ?? p.CreatedAt))
+            SavedProfiles.Add(profile);
 
-            if (profiles != null)
-            {
-                SavedProfiles.Clear();
-                foreach (var profile in profiles.OrderByDescending(p => p.LastUsedAt ?? p.CreatedAt))
-                {
-                    SavedProfiles.Add(profile);
-                }
-                
-                Logger.Info("Loaded {Count} profiles", profiles.Count);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error loading profiles");
-        }
+        Logger.Info("Loaded {Count} profiles", SavedProfiles.Count);
     }
 
     private async Task SaveProfilesToFileAsync()
     {
+        if (_profileStore is null)
+            return;
+
         try
         {
-            var profilesPath = GetProfilesFilePath();
-            var directory = Path.GetDirectoryName(profilesPath);
-            
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            var json = System.Text.Json.JsonSerializer.Serialize(
-                SavedProfiles.ToList(),
-                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-
-            await File.WriteAllTextAsync(profilesPath, json);
-            
-            Logger.Debug("Profiles saved to {Path}", profilesPath);
+            await _profileStore.SaveAsync(SavedProfiles.ToList());
         }
         catch (Exception ex)
         {
@@ -605,12 +577,7 @@ public partial class RemoteConnectionDialogViewModel : ViewModelBase, IDialogVie
         }
     }
 
-    private static string GetProfilesFilePath()
-    {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var appFolder = Path.Combine(appDataPath, "FirebirdTraceAnalyzer");
-        return Path.Combine(appFolder, "ssh_profiles.json");
-    }
+    private string GetProfilesFilePath() => _profileStore?.FilePath ?? string.Empty;
 
     #endregion
 }
