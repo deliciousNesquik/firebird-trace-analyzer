@@ -138,6 +138,10 @@ internal sealed class Program
         services.AddSingleton<EventStoreDispatcher>(sp =>
             new EventStoreDispatcher(sp.GetRequiredService<IEventStore>()));
 
+        // Ленивая обёртка: позволяет внедрять диспетчер в конструктор (вместо App.Services), НЕ создавая
+        // соединение/БД, пока к нему реально не обратятся (в режиме StorageMode.Off — не обращаемся).
+        services.AddSingleton(sp => new Lazy<EventStoreDispatcher>(sp.GetRequiredService<EventStoreDispatcher>));
+
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
             rulesPath: RulesConfiguration.EnsureRulesFile(),

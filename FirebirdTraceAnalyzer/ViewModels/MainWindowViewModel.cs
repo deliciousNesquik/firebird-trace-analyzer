@@ -54,6 +54,13 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IEventPropertyAccessor _propertyAccessor;
     private readonly IEventChainService _eventChainService;
 
+    // Внедряются через конструктор вместо резолва из App.Services (см. T1/A2 — тестируемость/DIP).
+    private readonly Lazy<EventStoreDispatcher>? _storeDispatcher;
+    private readonly IParseTelemetry? _telemetry;
+    private readonly IWindowProvider? _windowProvider;
+    private readonly IReportTemplateService? _reportTemplateService;
+    private readonly IReportGenerationService? _reportGenerationService;
+
     /// <summary>Сервис модальных диалогов внутри окна (биндится оверлеем DialogHost).</summary>
     public IDialogService Dialogs { get; }
 
@@ -217,7 +224,13 @@ public partial class MainWindowViewModel : ViewModelBase
         IEventPropertyAccessor propertyAccessor,
         IEventChainService eventChainService,
         IDialogService dialogService,
-        IPluginManagerService pluginManager)
+        IPluginManagerService pluginManager,
+        Lazy<EventStoreDispatcher> storeDispatcher,
+        IParseTelemetry telemetry,
+        IBackgroundTaskService backgroundTasks,
+        IWindowProvider windowProvider,
+        IReportTemplateService reportTemplateService,
+        IReportGenerationService reportGenerationService)
     {
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
@@ -242,6 +255,13 @@ public partial class MainWindowViewModel : ViewModelBase
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _eventChainService = eventChainService ?? throw new ArgumentNullException(nameof(eventChainService));
         Dialogs = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+
+        _storeDispatcher = storeDispatcher ?? throw new ArgumentNullException(nameof(storeDispatcher));
+        _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+        _backgroundTasks = backgroundTasks ?? throw new ArgumentNullException(nameof(backgroundTasks));
+        _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
+        _reportTemplateService = reportTemplateService ?? throw new ArgumentNullException(nameof(reportTemplateService));
+        _reportGenerationService = reportGenerationService ?? throw new ArgumentNullException(nameof(reportGenerationService));
 
 
         // Инициализация ViewModels
@@ -283,7 +303,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var viewModel = new EventInspectorViewModel(evt, chain);
         var window = new EventInspectorWindow(viewModel);
 
-        var owner = App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window;
+        var owner = _windowProvider?.GetCurrent() as Window;
         if (owner is not null)
             window.Show(owner);
         else
@@ -753,7 +773,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var templateService = App.Services?.GetService<IReportTemplateService>();
+            var templateService = _reportTemplateService;
             if (templateService == null) return;
 
             // 1. Загрузка встроенных отчетов
@@ -778,7 +798,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     private async Task RefreshCustomReportsAsync()
     {
-        var templateService = App.Services?.GetService<IReportTemplateService>();
+        var templateService = _reportTemplateService;
         if (templateService == null) return;
 
         var custom = await templateService.GetCustomTemplatesAsync();
@@ -804,8 +824,8 @@ public partial class MainWindowViewModel : ViewModelBase
             Logger.Info("Quick report requested: {TemplateId}", templateId);
 
             // Получаем сервисы
-            var templateService = App.Services?.GetRequiredService<IReportTemplateService>();
-            var generationService = App.Services?.GetRequiredService<IReportGenerationService>();
+            var templateService = _reportTemplateService;
+            var generationService = _reportGenerationService;
 
             if (templateService == null || generationService == null)
             {
@@ -1313,15 +1333,15 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Off не трогаем DI и БД не создаётся.
     /// </summary>
     private EventStoreDispatcher? StoreDispatcher()
-        => _appSettings.StorageMode == StorageMode.Off ? null : App.Services?.GetService<EventStoreDispatcher>();
+        => _appSettings.StorageMode == StorageMode.Off ? null : _storeDispatcher?.Value;
 
     /// <summary>Сбор таймингов конвейера (для окна «Статистика парсера»). Всегда доступен, накладные копеечные.</summary>
-    private IParseTelemetry? Telemetry => App.Services?.GetService<IParseTelemetry>();
+    private IParseTelemetry? Telemetry => _telemetry;
 
-    private IBackgroundTaskService? _backgroundTasks;
+    private readonly IBackgroundTaskService? _backgroundTasks;
 
     /// <summary>Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»). Биндится панелью.</summary>
-    public IBackgroundTaskService? BackgroundTasks => _backgroundTasks ??= App.Services?.GetService<IBackgroundTaskService>();
+    public IBackgroundTaskService? BackgroundTasks => _backgroundTasks;
 
     /// <summary>
     /// Ставит запись событий файла в фоновую очередь и сразу возвращается. Диск больше не на критическом
@@ -1795,7 +1815,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _downloadWindow = window;
         IsDownloadPoppedOut = true;
 
-        var owner = App.Services?.GetRequiredService<IWindowProvider>().GetCurrent() as Window;
+        var owner = _windowProvider?.GetCurrent() as Window;
         if (owner is not null)
             window.Show(owner);
         else
@@ -2310,8 +2330,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var dispatcher = App.Services?.GetService<EventStoreDispatcher>();
-            var windowProvider = App.Services?.GetService<IWindowProvider>();
+            var dispatcher = _storeDispatcher?.Value;
+            var windowProvider = _windowProvider;
             if (dispatcher is null || windowProvider is null)
             {
                 StatusMessage = Loc.Tr("Store.Manage.Unavailable");
@@ -2343,8 +2363,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var dispatcher = App.Services?.GetService<EventStoreDispatcher>();
-            var windowProvider = App.Services?.GetService<IWindowProvider>();
+            var dispatcher = _storeDispatcher?.Value;
+            var windowProvider = _windowProvider;
             if (dispatcher is null || windowProvider is null)
             {
                 StatusMessage = Loc.Tr("Store.Manage.Unavailable");
@@ -2369,7 +2389,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var telemetry = App.Services?.GetService<IParseTelemetry>();
+            var telemetry = _telemetry;
             if (telemetry is null)
                 return;
 
