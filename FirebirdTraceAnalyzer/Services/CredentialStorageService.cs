@@ -186,13 +186,15 @@ public class CredentialStorageService : ICredentialStorageService
 
     private static void SaveMac(string account, string password)
     {
-        // -U: обновить, если запись уже существует. Пароль не логируем.
-        var (exitCode, _, stderr) = RunTool("security", null,
+        // -U: обновить, если запись уже существует. Пароль передаём через stdin (флаг -w БЕЗ
+        // значения заставляет security читать пароль из stdin), а НЕ через argv — иначе он виден
+        // любому локальному пользователю в `ps` на время работы утилиты (та же защита, что в Linux-ветке).
+        var (exitCode, _, stderr) = RunTool("security", password,
             "add-generic-password",
             "-U",
             "-s", KeychainService,
             "-a", account,
-            "-w", password);
+            "-w");
 
         if (exitCode != 0)
             throw new InvalidOperationException($"Keychain save failed (exit {exitCode}): {stderr}");
