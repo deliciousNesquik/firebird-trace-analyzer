@@ -19,6 +19,8 @@ public class DocxReportExporter : IReportExporter
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IReportProjectionService _projectionService;
 
+    public ReportFormat Format => ReportFormat.DOCX;
+
     public DocxReportExporter(IReportProjectionService projectionService)
     {
         _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));

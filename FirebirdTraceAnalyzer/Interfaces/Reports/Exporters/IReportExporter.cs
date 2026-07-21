@@ -1,4 +1,5 @@
-﻿using FirebirdTraceAnalyzer.Models.Reports;
+﻿using FirebirdTraceAnalyzer.Enums.Reports;
+using FirebirdTraceAnalyzer.Models.Reports;
 
 namespace FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 
@@ -7,6 +8,9 @@ namespace FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 /// </summary>
 public interface IReportExporter
 {
+    /// <summary>Формат, который умеет экспортировать эта реализация (самоописание для реестра форматов).</summary>
+    ReportFormat Format { get; }
+
     /// <summary>
     /// Экспортирует отчёт в указанный формат
     /// </summary>

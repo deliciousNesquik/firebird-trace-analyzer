@@ -4,7 +4,6 @@ using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Models.Reports;
-using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceParser.Models.Events;
 using NLog;
 
@@ -22,22 +21,22 @@ public class ReportGenerationService : IReportGenerationService
     private readonly ISettingsService _settingsService;
 
     public ReportGenerationService(
-        PdfReportExporter pdfExporter,
-        DocxReportExporter docxExporter,
-        XlsxReportExporter xlsxExporter,
-        CsvReportExporter csvExporter,
+        IEnumerable<IReportExporter> exporters,
         IEventPropertyAccessor propertyAccessor,
         ISettingsService settingsService)
     {
         _propertyAccessor = propertyAccessor ?? throw new ArgumentNullException(nameof(propertyAccessor));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
-        _exporters = new Dictionary<ReportFormat, IReportExporter>
+
+        // Реестр форматов строим из внедрённой коллекции: каждый экспортёр сам объявляет свой Format
+        // (OCP — новый формат добавляется регистрацией реализации, без правки этого сервиса).
+        _exporters = new Dictionary<ReportFormat, IReportExporter>();
+        foreach (var exporter in exporters)
         {
-            [ReportFormat.PDF] = pdfExporter,
-            [ReportFormat.DOCX] = docxExporter,
-            [ReportFormat.XLSX] = xlsxExporter,
-            [ReportFormat.CSV] = csvExporter
-        };
+            if (!_exporters.TryAdd(exporter.Format, exporter))
+                Logger.Warn("Duplicate exporter for format {Format}: {Type} ignored",
+                    exporter.Format, exporter.GetType().Name);
+        }
     }
 
     public async Task<GeneratedReport> GenerateReportAsync(

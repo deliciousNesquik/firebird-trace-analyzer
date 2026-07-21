@@ -21,6 +21,8 @@ public class XlsxReportExporter : IReportExporter
 
     private readonly IReportProjectionService _projectionService;
 
+    public ReportFormat Format => ReportFormat.XLSX;
+
     public XlsxReportExporter(IReportProjectionService projectionService)
     {
         _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));

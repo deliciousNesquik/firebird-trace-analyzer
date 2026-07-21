@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
+using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
 using FirebirdTraceAnalyzer.Localization;
@@ -16,6 +17,8 @@ public class CsvReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IReportProjectionService _projectionService;
+
+    public ReportFormat Format => ReportFormat.CSV;
 
     public CsvReportExporter(IReportProjectionService projectionService)
     {
