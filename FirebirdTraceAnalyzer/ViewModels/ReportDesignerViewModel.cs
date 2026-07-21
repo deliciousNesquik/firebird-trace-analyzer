@@ -940,7 +940,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         return new ReportMetadata
         {
             GeneratedAt = DateTime.Now,
-            ApplicationVersion = GetApplicationVersion(),
+            ApplicationVersion = Core.AppVersion.Current,
             Events = preparedEvents,
             TotalEventsCount = _sessionContext?.TotalEventsCount ?? preparedEvents.Count,
             Files = _sessionContext?.Files ?? [],
@@ -948,8 +948,6 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             ActiveSort = sortDescription
         };
     }
-
-    private static string GetApplicationVersion() => Core.AppVersion.Current;
 
     #region Helper Methods
 

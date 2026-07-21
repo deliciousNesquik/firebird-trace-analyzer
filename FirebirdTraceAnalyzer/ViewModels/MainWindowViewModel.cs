@@ -699,7 +699,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ActiveFilters = GetActiveFiltersDescription(),
             ActiveSort = GetActiveSortDescription(),
             GeneratedAt = DateTime.Now,
-            ApplicationVersion = GetApplicationVersion()
+            ApplicationVersion = Core.AppVersion.Current
         };
     }
 
@@ -731,11 +731,6 @@ public partial class MainWindowViewModel : ViewModelBase
         return $"{SelectedSort.DisplayName} ({direction})";
     }
 
-    /// <summary>
-    ///     Получает версию приложения
-    /// </summary>
-    private static string GetApplicationVersion() => Core.AppVersion.Current;
-    
     /// <summary>
     /// Загружает списки шаблонов отчетов из сервиса в UI
     /// </summary>
