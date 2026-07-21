@@ -51,6 +51,18 @@ internal sealed class Program
             .LoadConfigurationFromFile(Path.Combine(baseDir, "Configuration", "nlog.config"))
             .GetCurrentClassLogger();
 
+        // Глобальные страховочные обработчики: фоновые падения (пул потоков, незамеченные Task)
+        // не доходят до try вокруг UI-цикла и иначе ушли бы без единой записи в лог.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            logger.Fatal(e.ExceptionObject as Exception,
+                "Unhandled exception (IsTerminating={Terminating})", e.IsTerminating);
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            logger.Error(e.Exception, "Unobserved task exception");
+            e.SetObserved();
+        };
+
         try
         {
             logger.Info("Initializing the application");
