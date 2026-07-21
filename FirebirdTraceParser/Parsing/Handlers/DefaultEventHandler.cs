@@ -82,7 +82,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static (DateTime Timestamp, int TraceId, string HexTraceId) ParseEventMetadata(Match header,
         ParsingContext context)
     {
-        var timestamp = DateTime.TryParse(header.GetGroupValue("ts"), CultureInfo.InvariantCulture,
+        // ValueSpan — без аллокации строки на каждое событие (пустой span у несовпавшей группы → default).
+        var timestamp = DateTime.TryParse(header.Groups["ts"].ValueSpan, CultureInfo.InvariantCulture,
             DateTimeStyles.None, out var ts) ? ts : default;
 
         return (
