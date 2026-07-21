@@ -2318,7 +2318,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            var vm = new StoreManagementViewModel(dispatcher, windowProvider, Dialogs);
+            var vm = new StoreManagementViewModel(dispatcher, windowProvider, Dialogs, _settingsService, BackgroundTasks);
 
             // Грузим статистику/список в фоне: окно открывается сразу (с индикатором занятости),
             // а не ждёт, пока чтение проберётся сквозь очередь фоновых записей в стор.

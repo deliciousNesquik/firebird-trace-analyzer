@@ -11,7 +11,6 @@ using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services.Persistence;
-using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -29,11 +28,11 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     private readonly IWindowProvider _windowProvider;
     private readonly IDialogService _dialogService;
 
-    // Резолвим лениво из DI (как в MainWindowViewModel) — чтобы не менять сигнатуру ctor и дизайнерский ctor.
-    private ISettingsService? _settings;
-    private IBackgroundTaskService? _backgroundTasks;
-    private ISettingsService? Settings => _settings ??= App.Services?.GetService<ISettingsService>();
-    private IBackgroundTaskService? BackgroundTasks => _backgroundTasks ??= App.Services?.GetService<IBackgroundTaskService>();
+    // Внедряются через конструктор (а не резолвятся из App.Services) — сервис-локатор убран.
+    private readonly ISettingsService? _settings;
+    private readonly IBackgroundTaskService? _backgroundTasks;
+    private ISettingsService? Settings => _settings;
+    private IBackgroundTaskService? BackgroundTasks => _backgroundTasks;
 
     /// <summary>Идёт обслуживание (Compact) в фоне — блокирует кнопку «Сжать сейчас».</summary>
     [ObservableProperty] private bool _isCompacting;
@@ -75,11 +74,14 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         _dialogService = null!;
     }
 
-    public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider, IDialogService dialogService)
+    public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider,
+        IDialogService dialogService, ISettingsService? settings, IBackgroundTaskService? backgroundTasks)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+        _settings = settings;
+        _backgroundTasks = backgroundTasks;
     }
 
     /// <summary>Первичная загрузка статистики и списка файлов (вызывать до показа диалога).</summary>
