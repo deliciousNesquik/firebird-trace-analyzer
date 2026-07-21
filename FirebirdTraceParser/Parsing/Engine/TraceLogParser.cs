@@ -18,6 +18,12 @@ public sealed class TraceLogParser(
     private readonly IEventHandler _handler = handler ?? throw new ArgumentNullException(nameof(handler));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+    // block_header проверяется на КАЖДОЙ строке файла — держим Regex в поле, чтобы не делать
+    // словарный lookup в горячем цикле. Отсутствие правила — ошибка конфигурации (fail-fast).
+    private readonly Regex _blockHeaderRx = rules is not null && rules.TryGetValue("block_header", out var bh)
+        ? bh
+        : throw new ArgumentException("rules должны содержать правило 'block_header'", nameof(rules));
+
     public ParsingResult<EventBase> ParseFile(string filePath, ParseOptions? options = null)
     {
         options ??= ParseOptions.Default;
@@ -170,15 +176,14 @@ public sealed class TraceLogParser(
         ParseOptions options,
         ParsingContext context)
     {
-        var blockMatch = _rules["block_header"].Match(line);
-
-        if (blockMatch.Success)
+        // IsMatch не аллоцирует объект Match — а строк тела блока на порядки больше заголовков.
+        if (_blockHeaderRx.IsMatch(line))
         {
             // Новый блок - обработать предыдущий
             if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options, context);
 
             currentBlock.Reset();
-            currentBlock.Header = blockMatch;
+            currentBlock.Header = _blockHeaderRx.Match(line); // Match только на редких строках-заголовках
             currentBlock.StartLine = lineNumber;
         }
         else if (currentBlock.HasData && !string.IsNullOrWhiteSpace(line))
