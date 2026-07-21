@@ -177,7 +177,28 @@ public sealed class TraceLogParser(
         ParsingContext context)
     {
         // IsMatch не аллоцирует объект Match — а строк тела блока на порядки больше заголовков.
-        if (_blockHeaderRx.IsMatch(line))
+        // Матч выполняется на недоверенной строке, поэтому таймаут ReDoS не должен ронять весь
+        // разбор: ловим RegexMatchTimeoutException, фиксируем предупреждение и пропускаем строку.
+        bool isHeader;
+        try
+        {
+            isHeader = _blockHeaderRx.IsMatch(line);
+        }
+        catch (RegexMatchTimeoutException ex)
+        {
+            warnings.Add(new ParsingWarning
+            {
+                Severity = options.ValidationMode == ValidationMode.Strict
+                    ? WarningSeverity.Error
+                    : WarningSeverity.Warning,
+                Message = $"Regex timeout matching block header: {ex.Message}",
+                LineNumber = lineNumber
+            });
+            _logger.Warn(ex, "Regex timeout matching block_header at line {LineNumber}", lineNumber);
+            return;
+        }
+
+        if (isHeader)
         {
             // Новый блок - обработать предыдущий
             if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options, context);
