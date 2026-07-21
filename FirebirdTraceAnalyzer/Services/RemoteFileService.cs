@@ -143,7 +143,9 @@ public class RemoteFileService : IRemoteFileService
 
         return Task.Run(() =>
         {
-            var localPath = Path.Combine(localDirectory, fileInfo.FileName);
+            // Имя приходит с сервера (листинг SFTP) — недоверенные данные. Санитизируем и проверяем,
+            // что итоговый путь не вышел за localDirectory (защита от '../' и разделителей пути).
+            var localPath = ResolveSafeLocalPath(localDirectory, fileInfo.FileName);
             FileStream? fileStream = null;
 
             // Отмену реализуем через закрытие выходного потока: DownloadFile прервётся
@@ -250,5 +252,32 @@ public class RemoteFileService : IRemoteFileService
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         return extension is ".log" or ".trace" or ".trc" or ".txt";
+    }
+
+    /// <summary>
+    /// Строит безопасный локальный путь для скачиваемого файла: берёт только компонент имени
+    /// (обрезая любые каталоги/'../') и проверяет, что результат остаётся внутри
+    /// <paramref name="localDirectory"/>. Бросает <see cref="InvalidOperationException"/> при попытке
+    /// выхода за каталог (path traversal через подконтрольное серверу имя файла).
+    /// </summary>
+    public static string ResolveSafeLocalPath(string localDirectory, string remoteFileName)
+    {
+        var safeName = Path.GetFileName(remoteFileName);
+
+        // Пустое имя, "." / ".." и т.п. после GetFileName недопустимы.
+        if (string.IsNullOrWhiteSpace(safeName) || safeName is "." or "..")
+            throw new InvalidOperationException($"Unsafe remote file name: '{remoteFileName}'");
+
+        var root = Path.GetFullPath(localDirectory);
+        var rootWithSep = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
+        var fullPath = Path.GetFullPath(Path.Combine(root, safeName));
+
+        if (!fullPath.StartsWith(rootWithSep, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Unsafe remote file name: '{remoteFileName}'");
+
+        return fullPath;
     }
 }
