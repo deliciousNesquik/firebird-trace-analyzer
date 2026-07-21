@@ -194,7 +194,122 @@ public sealed class FilteringService : IFilteringService
 
         Logger.Info("Apply {Count} activity filter(s)", activeFilters.Count);
 
-        return events.Where(evt => activeFilters.All(filter => filter.FilterPredicate(evt)));
+        // Состояние фильтров (наборы значений, границы диапазонов) постоянно в течение одного прохода.
+        // Компилируем предикат ОДИН раз на фильтр, а не пересобираем HashSet-ы и не парсим границы дат
+        // на КАЖДОМ событии (на миллионах событий это были миллионы лишних аллокаций/парсингов).
+        var compiled = new Func<EventBase, bool>[activeFilters.Count];
+        for (var i = 0; i < activeFilters.Count; i++)
+            compiled[i] = CompilePredicate(activeFilters[i]);
+
+        return events.Where(evt =>
+        {
+            foreach (var predicate in compiled)
+                if (!predicate(evt))
+                    return false;
+            return true;
+        });
+    }
+
+    /// <summary>
+    /// Строит предикат фильтра с предвычисленным состоянием (наборы значений/границы диапазона).
+    /// Для стандартных полевых фильтров логика повторяет Check*-методы, но без пересчёта на каждое
+    /// событие. Кастомные/плагинные фильтры сохраняют свой оригинальный предикат.
+    /// </summary>
+    private Func<EventBase, bool> CompilePredicate(FilterDescriptor filter)
+    {
+        // Кастомные фильтры (в т.ч. из плагинов) имеют произвольную логику — не подменяем её.
+        if (_customFilters.ContainsKey(filter.Id))
+            return filter.FilterPredicate;
+
+        var path = filter.PropertyPath;
+        switch (filter.FilterType)
+        {
+            case FilterType.EnumMultiSelect or FilterType.Boolean:
+            {
+                var included = filter.AvailableValues.Where(v => v.IsSelected).Select(v => v.Value).ToHashSet();
+                var excluded = filter.AvailableValues.Where(v => v.IsExcluded).Select(v => v.Value).ToHashSet();
+                if (included.Count == 0 && excluded.Count == 0)
+                    return static _ => true;
+                return evt =>
+                {
+                    var value = _propertyAccessor.GetValue(evt, path);
+                    if (included.Count > 0 && (value == null || !included.Contains(value)))
+                        return false;
+                    return value == null || !excluded.Contains(value);
+                };
+            }
+            case FilterType.StringMultiSelect:
+            {
+                var included = filter.AvailableValues.Where(v => v.IsSelected).Select(v => v.Value.ToString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var excluded = filter.AvailableValues.Where(v => v.IsExcluded).Select(v => v.Value.ToString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (included.Count == 0 && excluded.Count == 0)
+                    return static _ => true;
+                return evt =>
+                {
+                    var value = _propertyAccessor.GetValue(evt, path)?.ToString();
+                    if (included.Count > 0 && (value == null || !included.Contains(value)))
+                        return false;
+                    return value == null || !excluded.Contains(value);
+                };
+            }
+            case FilterType.DateTimeRange:
+            {
+                // Границы приходят из TwoWay-биндинга TextBox → это может быть строка ЛИБО DateTime.
+                // Приводим ОДИН раз здесь, а не парсим строку на каждом событии.
+                var hasMin = TryCoerceDateTime(filter.CurrentMinValue, out var min);
+                var hasMax = TryCoerceDateTime(filter.CurrentMaxValue, out var max);
+                return evt =>
+                {
+                    if (_propertyAccessor.GetValue(evt, path) is not DateTime dt)
+                        return false;
+                    if (hasMin && dt < min) return false;
+                    if (hasMax && dt > max) return false;
+                    return true;
+                };
+            }
+            case FilterType.NumericRange:
+            {
+                var min = filter.CurrentMinValue as IComparable;
+                var max = filter.CurrentMaxValue as IComparable;
+                return evt =>
+                {
+                    if (_propertyAccessor.GetValue(evt, path) is not IComparable value)
+                        return false;
+                    if (min != null && value.CompareTo(min) < 0) return false;
+                    if (max != null && value.CompareTo(max) > 0) return false;
+                    return true;
+                };
+            }
+            case FilterType.TextSearch:
+            {
+                var query = filter.SearchText;
+                if (string.IsNullOrWhiteSpace(query))
+                    return static _ => true;
+                return evt =>
+                {
+                    var value = _propertyAccessor.GetValue(evt, path)?.ToString();
+                    return value != null && value.Contains(query, StringComparison.OrdinalIgnoreCase);
+                };
+            }
+            default:
+                return filter.FilterPredicate;
+        }
+    }
+
+    /// <summary>Приводит границу диапазона (DateTime, либо строка из TextBox) к <see cref="DateTime"/>.</summary>
+    private static bool TryCoerceDateTime(object? boxed, out DateTime result)
+    {
+        switch (boxed)
+        {
+            case DateTime dt:
+                result = dt;
+                return true;
+            case null:
+                result = default;
+                return false;
+            default:
+                return DateTime.TryParse(boxed.ToString(), out result);
+        }
     }
 
     public FilterDescriptor CreateConfigurableClone(FilterDescriptor source)
@@ -484,13 +599,12 @@ public sealed class FilteringService : IFilteringService
             if (value is not DateTime dateTime)
                 return false;
 
-            var currentMin = DateTime.Parse(descriptor.CurrentMinValue.ToString() ?? throw new InvalidOperationException());
-            var currentMax = DateTime.Parse(descriptor.CurrentMaxValue.ToString() ?? throw new InvalidOperationException());
-            
-            if (dateTime < currentMin)
+            // Граница может быть DateTime либо строкой (TwoWay-биндинг TextBox). Не бросаем на
+            // непарсимом значении — просто не ограничиваем по этой границе.
+            if (TryCoerceDateTime(descriptor.CurrentMinValue, out var currentMin) && dateTime < currentMin)
                 return false;
 
-            if (dateTime > currentMax)
+            if (TryCoerceDateTime(descriptor.CurrentMaxValue, out var currentMax) && dateTime > currentMax)
                 return false;
 
             return true;
