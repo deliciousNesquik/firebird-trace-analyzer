@@ -10,6 +10,13 @@ namespace FirebirdTraceParser.Infrastructure.Caching;
 /// </summary>
 public sealed class ParsingContext
 {
+    /// <summary>
+    /// Порог интернинга. Длинные строки (тексты SQL, крупные значения параметров) почти уникальны —
+    /// их дедупликация не окупается, зато раздувает словарь и тратит CPU на хеширование. Такие строки
+    /// возвращаем как есть. Короткие повторяющиеся токены (имена, роли, charset, dtype) интернируются.
+    /// </summary>
+    private const int MaxInternLength = 128;
+
     private readonly Dictionary<string, string> _strings = new();
     private readonly Dictionary<long, AttachmentInfo> _attachments = new();
     private readonly Dictionary<int, TraceSessionInfo> _sessions = new();
@@ -19,6 +26,9 @@ public sealed class ParsingContext
     {
         if (string.IsNullOrEmpty(value))
             return string.Empty;
+
+        if (value.Length > MaxInternLength)
+            return value;
 
         if (_strings.TryGetValue(value, out var existing))
             return existing;

@@ -23,6 +23,17 @@ public sealed class ParsingContextTests
     }
 
     [Fact]
+    public void Intern_LongStrings_NotDeduplicated()
+    {
+        var ctx = new ParsingContext();
+        var a = new string('x', 200);
+        var b = new string('x', 200);
+        // Длинные строки не интернируются: словарь не раздувается, возвращается исходный экземпляр.
+        Assert.NotSame(ctx.Intern(a), ctx.Intern(b));
+        Assert.Same(a, ctx.Intern(a));
+    }
+
+    [Fact]
     public void InternSession_DeduplicatesById()
     {
         var ctx = new ParsingContext();
