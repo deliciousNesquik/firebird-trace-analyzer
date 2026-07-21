@@ -4,6 +4,7 @@ using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.EventLinking;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using FirebirdTraceAnalyzer.Interfaces.Filtering;
 using FirebirdTraceAnalyzer.Interfaces.Remote;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
@@ -152,7 +153,7 @@ internal sealed class Program
         services.AddSingleton<ISortingService, SortingService>();
         services.AddSingleton<IFilteringService, FilteringService>();
         services.AddSingleton<ISearchService, SearchService>();
-        services.AddSingleton<PluginManagerService>();
+        services.AddSingleton<IPluginManagerService, PluginManagerService>();
         
         services.AddSingleton<IFieldDiscoveryService, FieldDiscoveryService>();
         

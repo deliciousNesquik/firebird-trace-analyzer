@@ -25,6 +25,7 @@ using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Diagnostics;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Persistence;
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
@@ -46,7 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly UiSectionSettings _uiSettings;
     private readonly IFileDialogService _fileDialogService;
     private readonly ITraceLogParser _parser;
-    private readonly PluginManagerService _pluginManager;
+    private readonly IPluginManagerService _pluginManager;
     private readonly ISortingService _sortingService;
     private readonly IFilteringService _filteringService;
     private readonly ISearchService _searchService;
@@ -207,7 +208,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IEventPropertyAccessor propertyAccessor,
         IEventChainService eventChainService,
         IDialogService dialogService,
-        PluginManagerService pluginManager)
+        IPluginManagerService pluginManager)
     {
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();

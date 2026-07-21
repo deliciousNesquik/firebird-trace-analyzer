@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using FirebirdTraceAnalyzer.Services.Plugins;
 using NLog;
 
@@ -19,7 +20,7 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private readonly PluginManagerService _pluginManager;
+    private readonly IPluginManagerService _pluginManager;
     private readonly IFileDialogService _fileDialogService;
     private readonly IDialogService _dialogService;
 
@@ -40,7 +41,7 @@ public partial class PluginsViewModel : ViewModelBase, IDialogViewModel
     public event EventHandler<object?>? CloseRequested;
 
     public PluginsViewModel(
-        PluginManagerService pluginManager,
+        IPluginManagerService pluginManager,
         IFileDialogService fileDialogService,
         IDialogService dialogService)
     {

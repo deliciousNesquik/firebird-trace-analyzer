@@ -10,7 +10,7 @@ namespace FirebirdTraceAnalyzer.Services.Plugins;
 /// побеждает старшая версия, остальные — затеняются); хранит список выключенных плагинов на диске.
 /// Регистрируются только «эффективные» плагины (активные: включённые и не затенённые).
 /// </summary>
-public class PluginManagerService
+public class PluginManagerService : IPluginManagerService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -33,10 +33,14 @@ public class PluginManagerService
     private static string InstanceKey(string filePath, string id) => filePath + InstanceKeySep + id;
     private static string InstanceKey(PluginInfo p) => InstanceKey(p.FilePath, p.Id);
 
-    public PluginManagerService()
+    /// <param name="pluginsDirectory">
+    /// Каталог плагинов. Если не задан — %AppData%/FirebirdTraceAnalyzer/Plugins (шов для тестов;
+    /// DI подставляет значение по умолчанию).
+    /// </param>
+    public PluginManagerService(string? pluginsDirectory = null)
     {
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _pluginsDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Plugins");
+        _pluginsDirectory = pluginsDirectory ?? Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Plugins");
         _stateFile = Path.Combine(_pluginsDirectory, "plugins.state.json");
 
         if (!Directory.Exists(_pluginsDirectory))
