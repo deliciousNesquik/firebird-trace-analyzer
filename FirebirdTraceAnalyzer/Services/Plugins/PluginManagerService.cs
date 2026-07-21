@@ -280,11 +280,13 @@ public class PluginManagerService
     /// </summary>
     public (bool DeletedNow, bool Pending) DeletePackage(string folderPath)
     {
-        // Безопасность: удаляем только внутри каталога плагинов.
+        // Безопасность: удаляем только СТРОГО внутри каталога плагинов. Сверяем префикс с
+        // разделителем в конце, иначе соседняя папка вроде "PluginsEvil" тоже прошла бы проверку
+        // (StartsWith("…/Plugins") без разделителя), и её можно было бы удалить.
         var full = Path.GetFullPath(folderPath);
         var root = Path.GetFullPath(_pluginsDirectory);
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(full, root, StringComparison.OrdinalIgnoreCase))
+        var rootWithSep = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase))
         {
             Logger.Warn("Refused to delete outside plugins dir: {Path}", folderPath);
             return (false, false);
