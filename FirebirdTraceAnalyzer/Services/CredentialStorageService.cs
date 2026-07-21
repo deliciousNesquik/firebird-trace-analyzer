@@ -39,7 +39,11 @@ public class CredentialStorageService : ICredentialStorageService
     private readonly StorageBackend _backend;
     private readonly string _storageDirectory;
 
-    public CredentialStorageService()
+    /// <param name="storageDirectory">
+    /// Каталог для файловых бэкендов (Windows DPAPI/фолбэк). Если не задан — %AppData%/FirebirdTraceAnalyzer/Credentials
+    /// (шов для тестов; DI подставляет значение по умолчанию).
+    /// </param>
+    public CredentialStorageService(string? storageDirectory = null)
     {
         _backend = DetectBackend();
 
@@ -49,7 +53,8 @@ public class CredentialStorageService : ICredentialStorageService
         if (string.IsNullOrEmpty(appDataPath))
             appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-        _storageDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Credentials");
+        _storageDirectory = storageDirectory
+            ?? Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Credentials");
 
         // Директория нужна только файловым бэкендам (Windows DPAPI и фолбэк).
         if (_backend is StorageBackend.WindowsDpapi or StorageBackend.EncryptedFile
