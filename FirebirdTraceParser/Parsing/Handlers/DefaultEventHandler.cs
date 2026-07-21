@@ -5,6 +5,7 @@ using FirebirdTraceParser.Models.Enums;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.ValueObjects;
 using FirebirdTraceParser.Parsing.Engine;
+using FirebirdTraceParser.Parsing.Rules;
 using FirebirdTraceParser.Parsing.Utils;
 using NLog;
 
@@ -460,7 +461,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static TraceSessionInfo? ParseSessionInfo(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var sessionRx = rules["session"];
+        var sessionRx = rules[RuleKeys.Session];
 
         foreach (var line in lines)
         {
@@ -478,8 +479,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static AttachmentInfo? ParseAttachmentInfo(IReadOnlyList<string> lines,
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
-        var attachmentRx = rules["attachment"];
-        var processRx = rules["process"];
+        var attachmentRx = rules[RuleKeys.Attachment];
+        var processRx = rules[RuleKeys.Process];
         Match? am = null;
         Match? pm = null;
 
@@ -529,7 +530,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     {
         if (!line.Contains("(TRA_")) return null;
 
-        var m = rules["transaction"].Match(line);
+        var m = rules[RuleKeys.Transaction].Match(line);
         if (!m.Success) return null;
 
         var tid = m.GetGroupLong("transaction_id");
@@ -605,17 +606,25 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
     {
         List<ErrorLines>? errors = null;
-        var errorLineRx = rules["error_line"];
+        var errorLineRx = rules[RuleKeys.ErrorLine];
 
         foreach (var line in lines)
         {
             var match = errorLineRx.Match(line.Trim());
-            if (match.Success)
-                (errors ??= new()).Add(new ErrorLines
-                {
-                    ErrorCode = match.GetGroupInt("1"),
-                    Message = context.Intern(match.GetGroupValue("2").Trim())
-                });
+            if (!match.Success) continue;
+
+            // Именованные группы (актуальный rules.json) с откатом на позиционные 1/2 —
+            // чтобы уже развёрнутые у пользователей конфиги с безымянными группами не сломались.
+            var code = match.Groups["code"].Success ? match.GetGroupInt("code") : match.GetGroupInt("1");
+            var message = match.Groups["message"].Success
+                ? match.GetGroupValue("message")
+                : match.GetGroupValue("2");
+
+            (errors ??= new()).Add(new ErrorLines
+            {
+                ErrorCode = code,
+                Message = context.Intern(message.Trim())
+            });
         }
 
         return errors ?? (IReadOnlyList<ErrorLines>)Array.Empty<ErrorLines>();
@@ -629,7 +638,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static SqlParameters? ParseSqlParameter(string line, IReadOnlyDictionary<string, Regex> rules,
         ParsingContext context)
     {
-        var paramM = rules["parameters"].Match(line);
+        var paramM = rules[RuleKeys.Parameters].Match(line);
         if (!paramM.Success)
             return null;
 
@@ -692,11 +701,11 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var fetchCount = 0;
 
         // Кэшируем Regex в локали — убираем словарные лукапы из горячего цикла
-        var statementRx = rules["statement"];
-        var restartedRx = rules["restarted"];
-        var parametersRx = rules["parameters"];
-        var fetchedRx = rules["fetched"];
-        var performanceRx = rules["performance"];
+        var statementRx = rules[RuleKeys.Statement];
+        var restartedRx = rules[RuleKeys.Restarted];
+        var parametersRx = rules[RuleKeys.Parameters];
+        var fetchedRx = rules[RuleKeys.Fetched];
+        var performanceRx = rules[RuleKeys.Performance];
 
         for (var i = 0; i < lines.Count; i++)
         {
@@ -800,8 +809,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var attachment = ParseAttachmentInfo(lines, rules, context);
         TransactionInfo? transaction = null;
         string? procedureName = null;
-        var procedureRx = rules["procedure"];
-        var fetchedRx = rules["fetched"];
+        var procedureRx = rules[RuleKeys.Procedure];
+        var fetchedRx = rules[RuleKeys.Fetched];
         List<SqlParameters>? paramsList = null;
         PerformanceInfo? performance = null;
         PerformanceTable? performanceTable = null;
@@ -857,8 +866,8 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
         var attachment = ParseAttachmentInfo(lines, rules, context);
         TransactionInfo? transaction = null;
         string? triggerName = null;
-        var triggerRx = rules["trigger"];
-        var fetchedRx = rules["fetched"];
+        var triggerRx = rules[RuleKeys.Trigger];
+        var fetchedRx = rules[RuleKeys.Fetched];
         string? table = null;
         string? timing = null;
         string? eventType = null;
@@ -925,7 +934,7 @@ public sealed class DefaultEventHandler(ILogger logger, ParseOptions? options = 
     private static PerformanceInfo? ParsePerformance(string line,
         IReadOnlyDictionary<string, Regex> rules, int fetchCount)
     {
-        var mPerf = rules["performance"].Match(line);
+        var mPerf = rules[RuleKeys.Performance].Match(line);
         if (mPerf.Success)
             return new PerformanceInfo
             {

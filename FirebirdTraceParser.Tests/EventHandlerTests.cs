@@ -91,6 +91,22 @@ public sealed class EventHandlerTests
     }
 
     [Fact]
+    public void Error_PositionalGroups_BackwardCompatFallback()
+    {
+        // Уже развёрнутый rules.json с безымянными группами (?<code>/?<message> отсутствуют) —
+        // хендлер обязан откатиться на позиционные 1/2 и корректно разобрать код/сообщение.
+        var rules = new Dictionary<string, System.Text.RegularExpressions.Regex>(Rules)
+        {
+            ["error_line"] = new(@"^(\d+)\s*:\s*(.*)$",
+                System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1))
+        };
+        var evt = NewHandler().Handle(Header(HeaderLine("ERROR AT X::y")), ErrorBody(), rules, NewContext());
+        var e = Assert.IsType<ErrorEvent>(evt);
+        Assert.Equal(335544364, e.Errors[0].ErrorCode);
+        Assert.Equal("request synchronization error", e.Errors[0].Message);
+    }
+
+    [Fact]
     public void Transaction_IsolationParsed()
     {
         var evt = NewHandler().Handle(Header(HeaderLine("EXECUTE_STATEMENT_START")), StatementBody(false), Rules, NewContext());

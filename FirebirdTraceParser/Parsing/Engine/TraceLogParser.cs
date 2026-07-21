@@ -4,6 +4,7 @@ using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Models.Results;
 using FirebirdTraceParser.Parsing.Handlers;
+using FirebirdTraceParser.Parsing.Rules;
 using NLog;
 
 namespace FirebirdTraceParser.Parsing.Engine;
@@ -20,7 +21,7 @@ public sealed class TraceLogParser(
 
     // block_header проверяется на КАЖДОЙ строке файла — держим Regex в поле, чтобы не делать
     // словарный lookup в горячем цикле. Отсутствие правила — ошибка конфигурации (fail-fast).
-    private readonly Regex _blockHeaderRx = rules is not null && rules.TryGetValue("block_header", out var bh)
+    private readonly Regex _blockHeaderRx = rules is not null && rules.TryGetValue(RuleKeys.BlockHeader, out var bh)
         ? bh
         : throw new ArgumentException("rules должны содержать правило 'block_header'", nameof(rules));
 

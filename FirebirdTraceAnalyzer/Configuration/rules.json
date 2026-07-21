@@ -58,10 +58,10 @@
       "sample": "param0 = bigint, \"195\""
     },
     "error_line": {
-      "pattern": "^(\\d+)\\s*:\\s*(.*)$",
+      "pattern": "^(?<code>\\d+)\\s*:\\s*(?<message>.*)$",
       "flags": [],
       "description": "Регулярное выражение для извлечения строк ошибок",
-      "requiredGroups": [],
+      "requiredGroups": ["code", "message"],
       "sample": "335544364 : request synchronization error"
     },
     "performance": {

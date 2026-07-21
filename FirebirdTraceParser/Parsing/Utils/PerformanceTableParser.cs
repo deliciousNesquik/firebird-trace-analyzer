@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.ValueObjects;
+using FirebirdTraceParser.Parsing.Rules;
 using NLog;
 
 /// <summary>
@@ -32,7 +33,7 @@ public static class PerformanceTableParser
         ColumnPositions? positions = null;
         bool inTable = false;
 
-        var headerRx = rules["performance_table_header"]; // lookup один раз вне цикла
+        var headerRx = rules[RuleKeys.PerformanceTableHeader]; // lookup один раз вне цикла
         for (var idx = startIndex; idx < lines.Count; idx++)
         {
             var line = lines[idx];
