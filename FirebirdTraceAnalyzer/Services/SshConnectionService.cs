@@ -21,10 +21,16 @@ public class SshConnectionService : ISshConnectionService
     private const uint SftpBufferSize = 256 * 1024;
 
     private readonly object _syncLock = new();
+    private readonly IHostKeyStore _hostKeyStore;
     private SftpClient? _sftpClient;
     private Renci.SshNet.AuthenticationMethod? _authMethod;
     private PrivateKeyFile? _privateKeyFile;
     private bool _disposed;
+
+    public SshConnectionService(IHostKeyStore hostKeyStore)
+    {
+        _hostKeyStore = hostKeyStore ?? throw new ArgumentNullException(nameof(hostKeyStore));
+    }
 
     public bool IsConnected => _sftpClient?.IsConnected == true;
     public SshConnectionSettings? CurrentSettings { get; private set; }
@@ -64,6 +70,18 @@ public class SshConnectionService : ISshConnectionService
                 // Увеличенный буфер заметно ускоряет скачивание крупных файлов: меньше
                 // SFTP round-trip'ов, чем при дефолтных 32 КБ.
                 BufferSize = SftpBufferSize
+            };
+
+            // Проверка ключа хоста: SSH.NET по умолчанию принимает ЛЮБОЙ ключ сервера.
+            // Сверяем отпечаток с known_hosts (TOFU): первый ключ запоминаем, при несовпадении —
+            // отказ. Без этой подписки соединение уязвимо к подмене сервера (MITM).
+            _sftpClient.HostKeyReceived += (_, e) =>
+            {
+                e.CanTrust = _hostKeyStore.Verify(settings.Hostname, settings.Port,
+                    e.HostKeyName, e.FingerPrintSHA256);
+                if (!e.CanTrust)
+                    Logger.Error("Host key rejected for {Host}:{Port} — refusing connection (possible MITM)",
+                        settings.Hostname, settings.Port);
             };
 
             // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)

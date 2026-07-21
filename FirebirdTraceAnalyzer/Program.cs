@@ -145,6 +145,7 @@ internal sealed class Program
         services.AddSingleton<IFieldDiscoveryService, FieldDiscoveryService>();
         
         // SSH сервисы
+        services.AddSingleton<IHostKeyStore, KnownHostsStore>();
         services.AddSingleton<ISshConnectionService, SshConnectionService>();
         services.AddSingleton<IRemoteFileService, RemoteFileService>();
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
