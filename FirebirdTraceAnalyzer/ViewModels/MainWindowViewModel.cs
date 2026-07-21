@@ -298,11 +298,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void LoadSettings()
     {
         // UI Visibility
-        IsTraceFilesSectionVisible = _uiSettings.Files;
-        IsSearchSectionVisible = _uiSettings.Search;
-        IsEventsSectionVisible = _uiSettings.Events;
-        IsStatisticsSectionVisible = _uiSettings.Statistics;
-        IsLogsSectionVisible = _uiSettings.Logs;
+        ApplyUiSectionVisibilityFromSettings();
 
         // Search Type
         IsClassicSearch = _appSettings.IsClassicSearch;
@@ -329,6 +325,16 @@ public partial class MainWindowViewModel : ViewModelBase
         _uiSettings.Logs = IsLogsSectionVisible;
 
         _settingsService.Save();
+    }
+
+    /// <summary>Подтягивает видимость секций из настроек в живые свойства окна (один источник правды).</summary>
+    private void ApplyUiSectionVisibilityFromSettings()
+    {
+        IsTraceFilesSectionVisible = _uiSettings.Files;
+        IsSearchSectionVisible = _uiSettings.Search;
+        IsEventsSectionVisible = _uiSettings.Events;
+        IsStatisticsSectionVisible = _uiSettings.Statistics;
+        IsLogsSectionVisible = _uiSettings.Logs;
     }
 
     /// <summary>Сохраняет основные настройки приложения (режим поиска и т.п.).</summary>
@@ -2519,11 +2525,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // Подтягиваем сохранённые значения в живые свойства окна. _appSettings/_uiSettings —
             // те же экземпляры, что и в SettingsService, поэтому уже содержат новые значения.
-            IsTraceFilesSectionVisible = _uiSettings.Files;
-            IsSearchSectionVisible = _uiSettings.Search;
-            IsEventsSectionVisible = _uiSettings.Events;
-            IsStatisticsSectionVisible = _uiSettings.Statistics;
-            IsLogsSectionVisible = _uiSettings.Logs;
+            ApplyUiSectionVisibilityFromSettings();
             IsClassicSearch = _appSettings.IsClassicSearch;
             IsDeveloperMode = _appSettings.DeveloperMode;
 
@@ -2540,11 +2542,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void GoToFactorySettingsSection()
     {
-        IsTraceFilesSectionVisible = _uiSettings.Files;
-        IsSearchSectionVisible = _uiSettings.Search;
-        IsEventsSectionVisible = _uiSettings.Events;
-        IsStatisticsSectionVisible = _uiSettings.Statistics;
-        IsLogsSectionVisible = _uiSettings.Logs;
+        ApplyUiSectionVisibilityFromSettings();
 
         Logger.Info("Factory settings restored.");
         StatusMessage = Loc.Tr("Status.Main.FactorySettingsRestored");
