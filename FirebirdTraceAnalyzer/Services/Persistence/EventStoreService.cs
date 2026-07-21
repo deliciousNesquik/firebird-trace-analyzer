@@ -598,14 +598,44 @@ RETURNING seq;");
         cmd.CommandText = "SELECT * FROM event WHERE ($f IS NULL OR ts>=$f) AND ($t IS NULL OR ts<=$t) ORDER BY ts, seq;";
         cmd.Parameters.AddWithValue("$f", (object?)from?.Ticks ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$t", (object?)to?.Ticks ?? DBNull.Value);
+
+        // Переиспользуемые команды на дочерние коллекции: создаём ОДИН раз на весь стрим (а не новый
+        // SqliteCommand на каждое событие) и читаем детей ТОЛЬКО там, где они по типу события/маркеру
+        // реально возможны. Это убирает и N+1 (миллионы пустых запросов), и аллокацию команд.
+        using var paramCmd = _connection.CreateCommand();
+        paramCmd.CommandText = "SELECT name,dtype,value FROM sql_parameter WHERE event_seq=$s ORDER BY ord;";
+        var paramSeq = paramCmd.Parameters.Add("$s", SqliteType.Integer);
+
+        using var errCmd = _connection.CreateCommand();
+        errCmd.CommandText = "SELECT code,message FROM error_line WHERE event_seq=$s ORDER BY ord;";
+        var errSeq = errCmd.Parameters.Add("$s", SqliteType.Integer);
+
+        using var perfCmd = _connection.CreateCommand();
+        perfCmd.CommandText = @"SELECT table_name,natural_count,index_count,update_count,insert_count,delete_count,
+                          backout_count,purge_count,expunge_count FROM perf_table_item WHERE event_seq=$s ORDER BY ord;";
+        var perfSeq = perfCmd.Parameters.Add("$s", SqliteType.Integer);
+
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
             var row = ReadRow(reader);
-            yield return BuildEvent(row, attCache, sqlCache,
-                LoadParametersFor(row.Seq), LoadErrorLinesFor(row.Seq), LoadPerfItemsFor(row.Seq));
+            var type = (EventType)row.Type;
+
+            var prm = HasParameters(type) ? ReadParameters(paramCmd, paramSeq, row.Seq) : null;
+            var err = type == EventType.Error ? ReadErrorLines(errCmd, errSeq, row.Seq) : null;
+            // PerfTableState==2 означает «таблица с элементами»; только тогда есть смысл читать perf-строки.
+            var perf = row.PerfTableState == 2 ? ReadPerfItems(perfCmd, perfSeq, row.Seq) : null;
+
+            yield return BuildEvent(row, attCache, sqlCache, prm, err, perf);
         }
     }
+
+    // Типы событий, у которых в БД могут быть sql_parameter (совпадает с использованием prm в BuildEvent).
+    private static bool HasParameters(EventType type) => type
+        is EventType.ExecuteStatementStart or EventType.ExecuteStatementRestart
+        or EventType.ExecuteStatementFinish or EventType.FailedExecuteStatementFinish
+        or EventType.ExecuteProcedureStart or EventType.ExecuteProcedureFinish
+        or EventType.FailedExecuteProcedureFinish;
 
     // ---------------------------------------------------------------- manage / stats
 
@@ -862,36 +892,29 @@ RETURNING seq;");
         return map;
     }
 
-    private List<SqlParameters>? LoadParametersFor(long seq)
+    private static List<SqlParameters>? ReadParameters(SqliteCommand cmd, SqliteParameter seqParam, long seq)
     {
+        seqParam.Value = seq;
         List<SqlParameters>? list = null;
-        using var c = _connection.CreateCommand();
-        c.CommandText = "SELECT name,dtype,value FROM sql_parameter WHERE event_seq=$s ORDER BY ord;";
-        c.Parameters.AddWithValue("$s", seq);
-        using var r = c.ExecuteReader();
+        using var r = cmd.ExecuteReader();
         while (r.Read()) (list ??= new()).Add(new SqlParameters { Name = r.GetString(0), Dtype = r.GetString(1), Value = r.GetString(2) });
         return list;
     }
 
-    private List<ErrorLines>? LoadErrorLinesFor(long seq)
+    private static List<ErrorLines>? ReadErrorLines(SqliteCommand cmd, SqliteParameter seqParam, long seq)
     {
+        seqParam.Value = seq;
         List<ErrorLines>? list = null;
-        using var c = _connection.CreateCommand();
-        c.CommandText = "SELECT code,message FROM error_line WHERE event_seq=$s ORDER BY ord;";
-        c.Parameters.AddWithValue("$s", seq);
-        using var r = c.ExecuteReader();
+        using var r = cmd.ExecuteReader();
         while (r.Read()) (list ??= new()).Add(new ErrorLines { ErrorCode = r.GetInt32(0), Message = r.GetString(1) });
         return list;
     }
 
-    private List<PerformanceTableItem>? LoadPerfItemsFor(long seq)
+    private static List<PerformanceTableItem>? ReadPerfItems(SqliteCommand cmd, SqliteParameter seqParam, long seq)
     {
+        seqParam.Value = seq;
         List<PerformanceTableItem>? list = null;
-        using var c = _connection.CreateCommand();
-        c.CommandText = @"SELECT table_name,natural_count,index_count,update_count,insert_count,delete_count,
-                          backout_count,purge_count,expunge_count FROM perf_table_item WHERE event_seq=$s ORDER BY ord;";
-        c.Parameters.AddWithValue("$s", seq);
-        using var r = c.ExecuteReader();
+        using var r = cmd.ExecuteReader();
         while (r.Read()) (list ??= new()).Add(new PerformanceTableItem
         {
             TableName = r.GetString(0), NaturalCount = r.GetInt32(1), IndexCount = r.GetInt32(2), UpdateCount = r.GetInt32(3),
