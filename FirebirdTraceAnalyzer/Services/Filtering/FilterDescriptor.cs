@@ -105,8 +105,6 @@ public partial class FilterDescriptor : ViewModelBase
 
     private void UpdateFilteredValues()
     {
-        FilteredValues.Clear();
-
         var query = AvailableValues.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(ValueSearchText))
@@ -116,11 +114,18 @@ public partial class FilterDescriptor : ViewModelBase
         }
 
         // Сортируем: сначала отмеченные (включённые/исключённые), потом по количеству
-        foreach (var item in query
-                     .OrderByDescending(v => v.IsSelected || v.IsExcluded)
-                     .ThenByDescending(v => v.Count))
-        {
+        var ordered = query
+            .OrderByDescending(v => v.IsSelected || v.IsExcluded)
+            .ThenByDescending(v => v.Count)
+            .ToList();
+
+        // Если состав не изменился — не трогаем коллекцию: иначе каждый ввод в поиске значений даёт
+        // лавину Clear/Add-уведомлений и перерисовку списка впустую.
+        if (FilteredValues.SequenceEqual(ordered))
+            return;
+
+        FilteredValues.Clear();
+        foreach (var item in ordered)
             FilteredValues.Add(item);
-        }
     }
 }
