@@ -16,10 +16,15 @@ public class ReportTemplateService : IReportTemplateService
     private readonly string _templatesDirectory;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public ReportTemplateService()
+    /// <param name="templatesDirectory">
+    /// Каталог кастомных шаблонов. Если не задан — %AppData%/FirebirdTraceAnalyzer/Templates/Custom
+    /// (шов для тестов; DI подставляет значение по умолчанию).
+    /// </param>
+    public ReportTemplateService(string? templatesDirectory = null)
     {
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _templatesDirectory = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Templates", "Custom");
+        _templatesDirectory = templatesDirectory
+            ?? Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "Templates", "Custom");
 
         if (!Directory.Exists(_templatesDirectory))
         {
