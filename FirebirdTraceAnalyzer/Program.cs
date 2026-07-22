@@ -154,6 +154,7 @@ internal sealed class Program
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IWindowProvider, WindowProvider>();
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<ISortingService, SortingService>();
         services.AddSingleton<IFilteringService, FilteringService>();
         services.AddSingleton<ISearchService, SearchService>();

@@ -31,7 +31,6 @@ using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Parsing.Engine;
-using Microsoft.Extensions.DependencyInjection;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -58,6 +57,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Lazy<EventStoreDispatcher>? _storeDispatcher;
     private readonly IParseTelemetry? _telemetry;
     private readonly IWindowProvider? _windowProvider;
+    private readonly INavigationService? _navigation;
     private readonly IReportTemplateService? _reportTemplateService;
     private readonly IReportGenerationService? _reportGenerationService;
 
@@ -229,6 +229,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IParseTelemetry telemetry,
         IBackgroundTaskService backgroundTasks,
         IWindowProvider windowProvider,
+        INavigationService navigation,
         IReportTemplateService reportTemplateService,
         IReportGenerationService reportGenerationService)
     {
@@ -260,6 +261,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         _backgroundTasks = backgroundTasks ?? throw new ArgumentNullException(nameof(backgroundTasks));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
+        _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
         _reportTemplateService = reportTemplateService ?? throw new ArgumentNullException(nameof(reportTemplateService));
         _reportGenerationService = reportGenerationService ?? throw new ArgumentNullException(nameof(reportGenerationService));
 
@@ -300,14 +302,9 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var chain = _eventChainService.BuildChain(evt, AllEvents);
-        var viewModel = new EventInspectorViewModel(evt, chain);
-        var window = new EventInspectorWindow(viewModel);
 
-        var owner = _windowProvider?.GetCurrent() as Window;
-        if (owner is not null)
-            window.Show(owner);
-        else
-            window.Show();
+        // Создание окна инкапсулировано в INavigationService — VM больше не трогает View/Window (MVVM).
+        _navigation?.ShowEventInspector(evt, chain);
     }
 
     #endregion
@@ -894,9 +891,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     private async Task<ReportTemplate?> OpenReportEditorAsync(string? editTemplateId)
     {
-        var designerViewModel = App.Services?.GetRequiredService<ReportDesignerViewModel>();
-
-        if (designerViewModel == null)
+        if (_navigation is null)
         {
             StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
             return null;
@@ -910,27 +905,29 @@ public partial class MainWindowViewModel : ViewModelBase
             return null;
         }
 
-        designerViewModel.SetSessionContext(new ReportDesignSessionContext
+        // VM дизайнера резолвится из DI навигатором; настраиваем его здесь (в т.ч. async-загрузка шаблона).
+        var result = await _navigation.ShowDialogAsync<ReportDesignerViewModel, ReportTemplate?>(async designerViewModel =>
         {
-            SourceEvents = VisibleEvents.ToList(),
-            Files = FileCards.Select(c => c.FileInfo).ToList(),
-            TotalEventsCount = AllEvents.Count
+            designerViewModel.SetSessionContext(new ReportDesignSessionContext
+            {
+                SourceEvents = VisibleEvents.ToList(),
+                Files = FileCards.Select(c => c.FileInfo).ToList(),
+                TotalEventsCount = AllEvents.Count
+            });
+
+            if (VisibleEvents.Count > 0)
+            {
+                designerViewModel.LoadAvailableFields(VisibleEvents);
+                designerViewModel.LoadAvailableFilters(VisibleEvents);
+                designerViewModel.LoadAvailableSorts(VisibleEvents);
+            }
+
+            // Для редактирования подтягиваем параметры существующего шаблона.
+            if (editTemplateId != null)
+                await designerViewModel.LoadTemplateAsync(editTemplateId);
+
+            designerViewModel.MarkPreviewDirty();
         });
-
-        if (VisibleEvents.Count > 0)
-        {
-            designerViewModel.LoadAvailableFields(VisibleEvents);
-            designerViewModel.LoadAvailableFilters(VisibleEvents);
-            designerViewModel.LoadAvailableSorts(VisibleEvents);
-        }
-
-        // Для редактирования подтягиваем параметры существующего шаблона.
-        if (editTemplateId != null)
-            await designerViewModel.LoadTemplateAsync(editTemplateId);
-
-        // Открываем редактор как in-window overlay (стек диалогов: поверх окна управления шаблонами).
-        designerViewModel.MarkPreviewDirty();
-        var result = await Dialogs.ShowDialogAsync<ReportTemplate?>(designerViewModel);
 
         if (result != null)
         {
@@ -949,68 +946,73 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenManageTemplatesAsync()
     {
+        if (_navigation is null)
+        {
+            StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
+            return;
+        }
+
+        // Ссылка на VM и обработчики захватываются в configure, чтобы отписаться в finally после показа.
+        ManageTemplatesViewModel? bound = null;
+        EventHandler<string>? onEdit = null;
+        EventHandler? onCreate = null;
+
         try
         {
-            var vm = App.Services?.GetRequiredService<ManageTemplatesViewModel>();
-
-            if (vm == null)
+            await _navigation.ShowDialogAsync<ManageTemplatesViewModel, object>(async vm =>
             {
-                StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
-                return;
-            }
+                bound = vm;
+                await vm.LoadAsync();
 
-            await vm.LoadAsync();
-
-            // Create/Edit требуют сессии событий и окна редактора — обрабатываем здесь, затем
-            // перезагружаем список в окне. Это async void обработчики событий: их исключения НЕ
-            // ловит внешний try (они срабатывают позже по событию) — оборачиваем каждый сами,
-            // иначе исключение из OpenReportEditorAsync/LoadAsync роняет всё приложение.
-            async void OnEdit(object? _, string id)
-            {
-                try
+                // Create/Edit требуют сессии событий и окна редактора. Это async void обработчики
+                // событий: их исключения НЕ ловит внешний try — оборачиваем каждый сами, иначе
+                // исключение из OpenReportEditorAsync/LoadAsync роняет всё приложение.
+                onEdit = async (_, id) =>
                 {
-                    await OpenReportEditorAsync(id);
-                    await vm.LoadAsync();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error handling template edit request");
-                    StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
-                }
-            }
+                    try
+                    {
+                        await OpenReportEditorAsync(id);
+                        await vm.LoadAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error handling template edit request");
+                        StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+                    }
+                };
 
-            async void OnCreate(object? _, EventArgs __)
-            {
-                try
+                onCreate = async (_, __) =>
                 {
-                    await OpenReportEditorAsync(null);
-                    await vm.LoadAsync();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error handling template create request");
-                    StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
-                }
-            }
+                    try
+                    {
+                        await OpenReportEditorAsync(null);
+                        await vm.LoadAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error handling template create request");
+                        StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+                    }
+                };
 
-            vm.EditRequested += OnEdit;
-            vm.CreateRequested += OnCreate;
-
-            try
-            {
-                await Dialogs.ShowDialogAsync<object>(vm);
-            }
-            finally
-            {
-                vm.EditRequested -= OnEdit;
-                vm.CreateRequested -= OnCreate;
-                await RefreshCustomReportsAsync();
-            }
+                vm.EditRequested += onEdit;
+                vm.CreateRequested += onCreate;
+            });
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening manage templates");
             StatusMessage = string.Format(Loc.Tr("Status.Main.Error"), ex.Message);
+        }
+        finally
+        {
+            if (bound is not null)
+            {
+                if (onEdit is not null) bound.EditRequested -= onEdit;
+                if (onCreate is not null) bound.CreateRequested -= onCreate;
+            }
+
+            await RefreshCustomReportsAsync();
         }
     }
 
@@ -1653,9 +1655,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _loadingCts = cts;
 
             // Показываем диалог подключения как встроенный оверлей внутри главного окна
-            var connectionViewModel = App.Services!.GetRequiredService<RemoteConnectionDialogViewModel>();
-
-            var connectionResult = await Dialogs.ShowDialogAsync<bool>(connectionViewModel);
+            var connectionResult = _navigation is not null &&
+                await _navigation.ShowDialogAsync<RemoteConnectionDialogViewModel, bool>();
 
             if (!connectionResult)
             {
@@ -2531,14 +2532,13 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var viewModel = App.Services?.GetRequiredService<SettingsWindowViewModel>();
-            if (viewModel == null)
+            if (_navigation is null)
             {
                 StatusMessage = Loc.Tr("Status.Main.SettingsServiceNotAvailable");
                 return;
             }
 
-            var changed = await Dialogs.ShowDialogAsync<bool>(viewModel);
+            var changed = await _navigation.ShowDialogAsync<SettingsWindowViewModel, bool>();
 
             if (!changed)
                 return;
