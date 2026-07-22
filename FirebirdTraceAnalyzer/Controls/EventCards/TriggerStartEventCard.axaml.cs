@@ -3,23 +3,8 @@ using Avalonia.Controls.Primitives;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class TriggerStartEventCard : ConnectedEventCardBase
+public class TriggerStartEventCard : TransactionalEventCardBase
 {
-    public static readonly StyledProperty<long> TransactionIdProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, long>(nameof(TransactionId), 0);
-    
-    public static readonly StyledProperty<string> IsolationLevelProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(IsolationLevel), "<not set>");
-    
-    public static readonly StyledProperty<string> ConsistencyModeProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(ConsistencyMode), "<not set>");
-    
-    public static readonly StyledProperty<string> LockModeProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(LockMode), "<not set>");
-    
-    public static readonly StyledProperty<string> AccessModeProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(AccessMode), "<not set>");
-    
     public static readonly StyledProperty<string> TriggerNameProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(TriggerName), "<not set>");
     
@@ -32,36 +17,6 @@ public class TriggerStartEventCard : ConnectedEventCardBase
     public static readonly StyledProperty<string> EventProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Event), "<not set>");
     
-    
-    public long TransactionId
-    {
-        get => GetValue(TransactionIdProperty);
-        set => SetValue(TransactionIdProperty, value);
-    }
- 
-    public string IsolationLevel
-    {
-        get => GetValue(IsolationLevelProperty);
-        set => SetValue(IsolationLevelProperty, value);
-    }
-    
-    public string ConsistencyMode
-    {
-        get => GetValue(ConsistencyModeProperty);
-        set => SetValue(ConsistencyModeProperty, value);
-    }
-    
-    public string LockMode
-    {
-        get => GetValue(LockModeProperty);
-        set => SetValue(LockModeProperty, value);
-    }
-    
-    public string AccessMode
-    {
-        get => GetValue(AccessModeProperty);
-        set => SetValue(AccessModeProperty, value);
-    }
     
     public string TriggerName
     {

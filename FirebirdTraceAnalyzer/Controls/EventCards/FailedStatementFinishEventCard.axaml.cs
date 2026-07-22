@@ -5,25 +5,10 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class FailedStatementFinishEventCard : ConnectedEventCardBase
+public class FailedStatementFinishEventCard : TransactionalEventCardBase
 {
     public static readonly StyledProperty<long> StatementIdProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, long>(nameof(StatementId), 0);
-    
-    public static readonly StyledProperty<long> TransactionIdProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, long>(nameof(TransactionId), 0);
-    
-    public static readonly StyledProperty<string> IsolationLevelProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(IsolationLevel), "<not set>");
-    
-    public static readonly StyledProperty<string> ConsistencyModeProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(ConsistencyMode), "<not set>");
-    
-    public static readonly StyledProperty<string> LockModeProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(LockMode), "<not set>");
-    
-    public static readonly StyledProperty<string> AccessModeProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(AccessMode), "<not set>");
     
     public static readonly StyledProperty<string> SqlProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Sql), "<not set>");
@@ -50,36 +35,6 @@ public class FailedStatementFinishEventCard : ConnectedEventCardBase
     {
         get => GetValue(StatementIdProperty);
         set => SetValue(StatementIdProperty, value);
-    }
-    
-    public long TransactionId
-    {
-        get => GetValue(TransactionIdProperty);
-        set => SetValue(TransactionIdProperty, value);
-    }
- 
-    public string IsolationLevel
-    {
-        get => GetValue(IsolationLevelProperty);
-        set => SetValue(IsolationLevelProperty, value);
-    }
-    
-    public string ConsistencyMode
-    {
-        get => GetValue(ConsistencyModeProperty);
-        set => SetValue(ConsistencyModeProperty, value);
-    }
-    
-    public string LockMode
-    {
-        get => GetValue(LockModeProperty);
-        set => SetValue(LockModeProperty, value);
-    }
-    
-    public string AccessMode
-    {
-        get => GetValue(AccessModeProperty);
-        set => SetValue(AccessModeProperty, value);
     }
     
     public string Sql

@@ -5,23 +5,8 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class ProcedureFinishEventCard : ConnectedEventCardBase
+public class ProcedureFinishEventCard : TransactionalEventCardBase
 {
-    public static readonly StyledProperty<long> TransactionIdProperty =
-        AvaloniaProperty.Register<ProcedureFinishEventCard, long>(nameof(TransactionId), 0);
-    
-    public static readonly StyledProperty<string> IsolationLevelProperty =
-        AvaloniaProperty.Register<ProcedureFinishEventCard, string>(nameof(IsolationLevel), "<not set>");
-    
-    public static readonly StyledProperty<string> ConsistencyModeProperty =
-        AvaloniaProperty.Register<ProcedureFinishEventCard, string>(nameof(ConsistencyMode), "<not set>");
-    
-    public static readonly StyledProperty<string> LockModeProperty =
-        AvaloniaProperty.Register<ProcedureFinishEventCard, string>(nameof(LockMode), "<not set>");
-    
-    public static readonly StyledProperty<string> AccessModeProperty =
-        AvaloniaProperty.Register<ProcedureFinishEventCard, string>(nameof(AccessMode), "<not set>");
-    
     public static readonly StyledProperty<string> ProcedureNameProperty =
         AvaloniaProperty.Register<ProcedureFinishEventCard, string>(nameof(ProcedureName), "<not set>");
     
@@ -42,36 +27,6 @@ public class ProcedureFinishEventCard : ConnectedEventCardBase
     
     public static readonly StyledProperty<int> MarkCountProperty =
         AvaloniaProperty.Register<ProcedureFinishEventCard, int>(nameof(MarkCount), 0);
-    
-    public long TransactionId
-    {
-        get => GetValue(TransactionIdProperty);
-        set => SetValue(TransactionIdProperty, value);
-    }
- 
-    public string IsolationLevel
-    {
-        get => GetValue(IsolationLevelProperty);
-        set => SetValue(IsolationLevelProperty, value);
-    }
-    
-    public string ConsistencyMode
-    {
-        get => GetValue(ConsistencyModeProperty);
-        set => SetValue(ConsistencyModeProperty, value);
-    }
-    
-    public string LockMode
-    {
-        get => GetValue(LockModeProperty);
-        set => SetValue(LockModeProperty, value);
-    }
-    
-    public string AccessMode
-    {
-        get => GetValue(AccessModeProperty);
-        set => SetValue(AccessModeProperty, value);
-    }
     
     public string ProcedureName
     {
