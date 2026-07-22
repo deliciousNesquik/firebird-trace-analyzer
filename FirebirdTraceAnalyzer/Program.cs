@@ -142,6 +142,9 @@ internal sealed class Program
         // соединение/БД, пока к нему реально не обратятся (в режиме StorageMode.Off — не обращаемся).
         services.AddSingleton(sp => new Lazy<EventStoreDispatcher>(sp.GetRequiredService<EventStoreDispatcher>));
 
+        // Координатор хранилища: инкапсулирует режим/диспетчер/запись/чтение/обслуживание (вынос из MainWindowViewModel).
+        services.AddSingleton<IEventStoreCoordinator, EventStoreCoordinator>();
+
         // используем встроенный в парсере метод для подключения парсера как сервис
         services.AddFirebirdTraceParser(
             rulesPath: RulesConfiguration.EnsureRulesFile(),

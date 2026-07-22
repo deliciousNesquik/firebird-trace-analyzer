@@ -55,6 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     // Внедряются через конструктор вместо резолва из App.Services (см. T1/A2 — тестируемость/DIP).
     private readonly Lazy<EventStoreDispatcher>? _storeDispatcher;
+    private readonly IEventStoreCoordinator? _storeCoordinator;
     private readonly IParseTelemetry? _telemetry;
     private readonly IWindowProvider? _windowProvider;
     private readonly INavigationService? _navigation;
@@ -226,6 +227,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IDialogService dialogService,
         IPluginManagerService pluginManager,
         Lazy<EventStoreDispatcher> storeDispatcher,
+        IEventStoreCoordinator storeCoordinator,
         IParseTelemetry telemetry,
         IBackgroundTaskService backgroundTasks,
         IWindowProvider windowProvider,
@@ -258,6 +260,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Dialogs = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
         _storeDispatcher = storeDispatcher ?? throw new ArgumentNullException(nameof(storeDispatcher));
+        _storeCoordinator = storeCoordinator ?? throw new ArgumentNullException(nameof(storeCoordinator));
         _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         _backgroundTasks = backgroundTasks ?? throw new ArgumentNullException(nameof(backgroundTasks));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
@@ -1183,9 +1186,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 // Кэш переоткрытия: если файл с этим хэшем уже в хранилище — читаем события с диска
                 // вместо повторного парсинга (мгновенное переоткрытие / восстановление после падения).
-                var dispatcher = StoreDispatcher();
-                var traceModel = dispatcher is not null && await ContainsInStoreAsync(dispatcher, fileHash)
-                    ? await LoadFromStoreAsync(fileInfo, fileHash, dispatcher)
+                var traceModel = _storeCoordinator is { IsEnabled: true } && await _storeCoordinator.ContainsAsync(fileHash)
+                    ? await LoadFromStoreAsync(fileInfo, fileHash)
                     : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
                 var cardName = traceModel.FileName;
@@ -1290,18 +1292,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Хранилище: ставим запись в фоновую очередь (за флагом StorageMode) и сразу идём дальше —
         // диск не на критическом пути парсинга/отображения. WriteFile заменяет данные по хэшу (reparse ок).
-        PersistToStore(model, events);
+        // Хранилище: ставим запись в фоновую очередь (за флагом StorageMode) и сразу идём дальше.
+        _storeCoordinator?.Persist(model, events);
 
         return model;
     }
-
-    /// <summary>
-    /// Диспетчер хранилища (если режим не Off): все операции с единственным SQLite-соединением идут
-    /// строго по очереди на фоне, запись не блокирует парсинг/отображение. Резолвится лениво — в режиме
-    /// Off не трогаем DI и БД не создаётся.
-    /// </summary>
-    private EventStoreDispatcher? StoreDispatcher()
-        => _appSettings.StorageMode == StorageMode.Off ? null : _storeDispatcher?.Value;
 
     /// <summary>Сбор таймингов конвейера (для окна «Статистика парсера»). Всегда доступен, накладные копеечные.</summary>
     private IParseTelemetry? Telemetry => _telemetry;
@@ -1312,73 +1307,19 @@ public partial class MainWindowViewModel : ViewModelBase
     public IBackgroundTaskService? BackgroundTasks => _backgroundTasks;
 
     /// <summary>
-    /// Ставит запись событий файла в фоновую очередь и сразу возвращается. Диск больше не на критическом
-    /// пути: карточка файла показывается сразу после парсинга, а запись драйнится в фоне по очереди.
-    /// WriteFile заменяет данные файла по хэшу — корректно для reparse.
-    ///
-    /// Передаём писателю СНИМОК списка (копия ссылок): рабочий список из <see cref="_eventsByFileHash"/>
-    /// может быть очищен на UI-потоке при быстром закрытии файла, а фоновый писатель в этот момент его
-    /// перечисляет — снимок исключает гонку «коллекция изменена во время записи».
-    /// </summary>
-    private void PersistToStore(TraceFileInfoModel file, List<EventBase> events)
-    {
-        var dispatcher = StoreDispatcher();
-        if (dispatcher is null)
-            return;
-
-        var snapshot = new List<EventBase>(events);
-        var telemetry = Telemetry;
-        var name = file.FileName;
-
-        // Видимый индикатор фоновой записи: запись в стор может идти минутами (очередь на диск).
-        // Begin увеличивает счётчик задачи, Dispose (в finally) уменьшает — пункт исчезает, когда очередь пуста.
-        var bg = BackgroundTasks?.Begin("store-write", Loc.Tr("Background.StoreWrite"));
-
-        dispatcher.Post(store =>
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                store.WriteFile(file, snapshot);
-            }
-            finally
-            {
-                sw.Stop();
-                telemetry?.AddStoreWrite(name, sw.ElapsedMilliseconds);
-                bg?.Dispose();
-            }
-        });
-    }
-
-    /// <summary>Проверяет наличие файла в хранилище (через очередь диспетчера — соединение однопоточное).</summary>
-    private async Task<bool> ContainsInStoreAsync(EventStoreDispatcher dispatcher, string fileHash)
-    {
-        try
-        {
-            return await dispatcher.RunAsync(store => store.ContainsFile(fileHash));
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "EventStore: ContainsFile failed for {Hash}", fileHash);
-            return false; // при сбое проверки просто парсим как обычно
-        }
-    }
-
-    /// <summary>
     /// Читает события файла из хранилища и заполняет рабочий набор — зеркально <see cref="ParseFileAsync"/>,
     /// но без парсинга и без повторной записи в стор. Диапазон времени берём из первого/последнего события
     /// (порядок записи = порядок разбора).
     /// </summary>
-    private async Task<TraceFileInfoModel> LoadFromStoreAsync(
-        FileInfo fileInfo,
-        string fileHash,
-        EventStoreDispatcher dispatcher)
+    private async Task<TraceFileInfoModel> LoadFromStoreAsync(FileInfo fileInfo, string fileHash)
     {
         StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingFromStore"), fileInfo.Name);
         Logger.Info("Loading from store (cache hit): {FileName}", fileInfo.Name);
 
         var readSw = Stopwatch.StartNew();
-        var restored = await dispatcher.RunAsync(store => store.ReadFile(fileHash));
+        var restored = _storeCoordinator is null
+            ? (IReadOnlyList<EventBase>)[]
+            : await _storeCoordinator.ReadFileAsync(fileHash);
         readSw.Stop();
 
         var events = restored as List<EventBase> ?? restored.ToList();
@@ -1408,79 +1349,11 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Режим Session — «зеркало сессии»: при закрытии/удалении файлов убираем их и из хранилища,
-    /// чтобы стор всегда отражал загруженный набор. В Accumulate ничего не удаляем (архив хранит всё).
-    /// Удаление ставится в ту же фоновую очередь FIFO — после записи этих файлов, не раньше.
-    /// </summary>
-    private void RemoveFromStoreIfSession(IEnumerable<string> fileHashes)
-    {
-        if (_appSettings.StorageMode != StorageMode.Session)
-            return;
-
-        var dispatcher = StoreDispatcher();
-        if (dispatcher is null)
-            return;
-
-        var hashes = fileHashes.ToList();
-        if (hashes.Count == 0)
-            return;
-
-        dispatcher.Post(store =>
-        {
-            foreach (var hash in hashes)
-                store.DeleteFile(hash);
-        });
-
-        // Частичное удаление место на диске не освобождает — помечаем обслуживание на след. запуск
-        // (VACUUM на каждое закрытие файла делать нельзя — дорого).
-        _appSettings.StorageMaintenancePending = true;
-        _settingsService.Save();
-    }
-
-    /// <summary>Режим Session: полностью очищает хранилище (закрытие всех файлов = пустая сессия).</summary>
-    private void ClearStoreIfSession()
-    {
-        if (_appSettings.StorageMode != StorageMode.Session)
-            return;
-
-        // Clear() сам делает VACUUM — обслуживание больше не требуется.
-        StoreDispatcher()?.Post(store => store.Clear());
-        _appSettings.StorageMaintenancePending = false;
-        _settingsService.Save();
-    }
-
-    /// <summary>
-    /// Отложенное обслуживание хранилища на старте: если помечено <see cref="AppSettings.StorageMaintenancePending"/>,
-    /// фоново выполняет чистку осиротевших словарей + VACUUM и сбрасывает флаг. Запуск не блокирует.
+    /// Отложенное обслуживание хранилища на старте (делегирует координатору). Вызывается из
+    /// <c>MainWindow</c> после стартовых промптов.
     /// </summary>
     public Task RunPendingStorageMaintenanceAsync()
-    {
-        if (_appSettings.StorageMode == StorageMode.Off || !_appSettings.StorageMaintenancePending)
-            return Task.CompletedTask;
-
-        var dispatcher = StoreDispatcher();
-        if (dispatcher is null)
-            return Task.CompletedTask;
-
-        var bg = BackgroundTasks?.Begin("store-maintenance", Loc.Tr("Background.StoreMaintenance"));
-        dispatcher.Post(store =>
-        {
-            try
-            {
-                store.Compact();
-            }
-            finally
-            {
-                bg?.Dispose();
-            }
-        });
-
-        // Флаг снимаем сразу — обслуживание уже в очереди диспетчера.
-        _appSettings.StorageMaintenancePending = false;
-        _settingsService.Save();
-
-        return Task.CompletedTask;
-    }
+        => _storeCoordinator?.RunPendingMaintenanceAsync() ?? Task.CompletedTask;
 
     private async Task<bool> OpenFileInStorageAsync(FileCardViewModel card)
     {
@@ -1520,7 +1393,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Зеркало сессии: убираем файл из хранилища (кроме внутреннего reparse, который тут же перезапишет).
         if (removeFromStore)
-            RemoveFromStoreIfSession(new[] { fileHash });
+            _storeCoordinator?.RemoveIfSession([fileHash]);
 
         var sw = Stopwatch.StartNew();
 
@@ -1557,7 +1430,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         // Зеркало сессии: убираем закрытые файлы и из хранилища.
-        RemoveFromStoreIfSession(hashList);
+        _storeCoordinator?.RemoveIfSession(hashList);
 
         var sw = Stopwatch.StartNew();
 
@@ -2190,7 +2063,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _eventsByFileHash.Clear();
 
             // Зеркало сессии: пустая сессия → пустое хранилище.
-            ClearStoreIfSession();
+            _storeCoordinator?.ClearIfSession();
 
             StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
             Logger.Info("All files closed: {Count}", count);
@@ -2315,7 +2188,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // (для накопительного архива — подгрузка среза без повторного парсинга).
             var toLoad = await Dialogs.ShowDialogAsync<IReadOnlyList<TraceFileInfoModel>>(vm);
             if (toLoad is { Count: > 0 })
-                await RestoreFilesAsync(toLoad, dispatcher);
+                await RestoreFilesAsync(toLoad);
         }
         catch (Exception ex)
         {
@@ -2397,46 +2270,32 @@ public partial class MainWindowViewModel : ViewModelBase
     public async Task PromptSessionRecoveryAsync()
     {
         // Только зеркало сессии: восстанавливаем рабочий набор, а не весь накопительный архив.
-        if (_appSettings.StorageMode != StorageMode.Session)
-            return;
-
-        var dispatcher = StoreDispatcher();
-        if (dispatcher is null)
+        if (_appSettings.StorageMode != StorageMode.Session || _storeCoordinator is not { IsEnabled: true })
             return;
 
         // Уже есть открытые файлы — не мешаем начатой работе.
         if (FileCards.Count > 0)
             return;
 
-        List<TraceFileInfoModel> manifest;
-        try
-        {
-            manifest = (await dispatcher.RunAsync(store => store.ListFiles())).ToList();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "EventStore: ListFiles failed on startup");
-            return;
-        }
-
+        var manifest = await _storeCoordinator.ListFilesAsync();
         if (manifest.Count == 0)
             return;
 
         var recoveryViewModel = new SessionRecoveryViewModel();
-        recoveryViewModel.Initialize(manifest);
+        recoveryViewModel.Initialize(manifest.ToList());
 
         var selected = await Dialogs.ShowDialogAsync<IReadOnlyList<TraceFileInfoModel>>(recoveryViewModel);
         if (selected is null || selected.Count == 0)
             return;
 
-        await RestoreFilesAsync(selected, dispatcher);
+        await RestoreFilesAsync(selected);
     }
 
     /// <summary>
     /// Загружает выбранные при восстановлении файлы из хранилища в рабочий набор. Чтение с диска
     /// (без парсинга и без повторной записи в стор), карточки добавляются на UI-потоке.
     /// </summary>
-    private async Task RestoreFilesAsync(IReadOnlyList<TraceFileInfoModel> files, EventStoreDispatcher dispatcher)
+    private async Task RestoreFilesAsync(IReadOnlyList<TraceFileInfoModel> files)
     {
         var restored = 0;
 
@@ -2452,7 +2311,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 IReadOnlyList<EventBase> events;
                 try
                 {
-                    events = await dispatcher.RunAsync(store => store.ReadFile(model.FileHash));
+                    events = _storeCoordinator is null
+                        ? []
+                        : await _storeCoordinator.ReadFileAsync(model.FileHash);
                 }
                 catch (Exception ex)
                 {
