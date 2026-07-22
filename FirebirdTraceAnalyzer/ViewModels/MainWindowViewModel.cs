@@ -1021,10 +1021,12 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var historyViewModel = new ReportHistoryViewModel(_fileDialogService, _settingsService);
-            await historyViewModel.LoadReportsCommand.ExecuteAsync(null);
+            if (_navigation is null)
+                return;
 
-            await Dialogs.ShowDialogAsync<object>(historyViewModel);
+            // VM резолвится из DI навигатором (получает IReportHistoryStore); список грузим до показа.
+            await _navigation.ShowDialogAsync<ReportHistoryViewModel, object>(
+                vm => vm.LoadReportsCommand.ExecuteAsync(null));
         }
         catch (Exception ex)
         {

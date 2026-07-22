@@ -170,6 +170,7 @@ internal sealed class Program
         services.AddSingleton<ICredentialStorageService, CredentialStorageService>();
         
         // сервисы отчетов
+        services.AddSingleton<IReportHistoryStore, ReportHistoryStore>();
         services.AddSingleton<IReportTemplateService, ReportTemplateService>();
         services.AddSingleton<IReportProjectionService, ReportProjectionService>();
         services.AddSingleton<IReportGenerationService, ReportGenerationService>();

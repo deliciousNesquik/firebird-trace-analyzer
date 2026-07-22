@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
+using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using NLog;
@@ -18,7 +19,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IFileDialogService _fileDialogService;
 
-    private readonly ISettingsService? _settingsService;
+    private readonly IReportHistoryStore? _store;
 
     #region Observable Properties
 
@@ -36,16 +37,16 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
     public ObservableCollection<ReportHistoryItem> AllReports { get; } = new();
     public ObservableCollection<ReportHistoryItem> FilteredReports { get; } = new();
 
-    public ReportHistoryViewModel(IFileDialogService fileDialogService, ISettingsService settingsService)
+    public ReportHistoryViewModel(IFileDialogService fileDialogService, IReportHistoryStore store)
     {
         _fileDialogService = fileDialogService;
-        _settingsService = settingsService;
+        _store = store;
     }
 
     public ReportHistoryViewModel()
     {
         _fileDialogService = null!;
-        _settingsService = null;
+        _store = null;
     }
 
     /// <summary>Диалог просит закрыться (результат не используется).</summary>
@@ -53,26 +54,6 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this, null);
-
-    /// <summary>
-    /// Папка с историей отчётов: берётся из настроек (с дефолтом), создаётся при необходимости.
-    /// Резолвится при каждой загрузке, чтобы учитывать смену пути в настройках без перезапуска.
-    /// </summary>
-    private string ResolveReportsDirectory()
-    {
-        var directory = _settingsService?.GetReportsDirectory()
-                        ?? Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                            "FirebirdTraceAnalyzer", "Reports", "History");
-
-        if (!Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-            Logger.Info("Created reports history directory: {Path}", directory);
-        }
-
-        return directory;
-    }
 
     /// <summary>
     /// Загружает список сгенерированных отчётов
@@ -87,35 +68,20 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 
             AllReports.Clear();
 
-            var reportsDirectory = ResolveReportsDirectory();
+            // Файловый ввод-вывод инкапсулирован в IReportHistoryStore (SoC/тестируемость).
+            var entries = await Task.Run(() => _store?.List() ?? []);
 
-            await Task.Run(() =>
+            foreach (var e in entries)
             {
-                var files = Directory.GetFiles(reportsDirectory, "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(f => IsReportFile(f))
-                    .OrderByDescending(f => File.GetCreationTime(f));
-
-                foreach (var file in files)
+                AllReports.Add(new ReportHistoryItem
                 {
-                    try
-                    {
-                        var fileInfo = new FileInfo(file);
-
-                        AllReports.Add(new ReportHistoryItem
-                        {
-                            FileName = fileInfo.Name,
-                            FilePath = fileInfo.FullName,
-                            FileSize = fileInfo.Length,
-                            CreatedAt = fileInfo.CreationTime,
-                            Format = GetFormatFromExtension(fileInfo.Extension)
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn(ex, "Error loading report file: {File}", file);
-                    }
-                }
-            });
+                    FileName = e.FileName,
+                    FilePath = e.FilePath,
+                    FileSize = e.FileSize,
+                    CreatedAt = e.CreatedAt,
+                    Format = e.Format
+                });
+            }
 
             ApplyFilter();
 
@@ -218,7 +184,7 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 
         try
         {
-            File.Delete(report.FilePath);
+            _store?.Delete(report.FilePath);
 
             AllReports.Remove(report);
             FilteredReports.Remove(report);
@@ -235,23 +201,6 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         }
     }
 
-    private bool IsReportFile(string filePath)
-    {
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        return extension is ".pdf" or ".docx" or ".xlsx" or ".csv";
-    }
-
-    private string GetFormatFromExtension(string extension)
-    {
-        return extension.ToLowerInvariant() switch
-        {
-            ".pdf" => "PDF",
-            ".docx" => "DOCX",
-            ".xlsx" => "XLSX",
-            ".csv" => "CSV",
-            _ => "Unknown"
-        };
-    }
 }
 
 public partial class ReportHistoryItem : ObservableObject
