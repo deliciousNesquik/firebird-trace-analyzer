@@ -164,6 +164,7 @@ internal sealed class Program
         services.AddSingleton<IPluginManagerService, PluginManagerService>();
         
         services.AddSingleton<IFieldDiscoveryService, FieldDiscoveryService>();
+        services.AddSingleton<IFileIngestionService, FileIngestionService>();
         
         // SSH сервисы
         services.AddSingleton<IHostKeyStore, KnownHostsStore>();

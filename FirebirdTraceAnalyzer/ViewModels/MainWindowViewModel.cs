@@ -45,7 +45,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly AppSettings _appSettings;
     private readonly UiSectionSettings _uiSettings;
     private readonly IFileDialogService _fileDialogService;
-    private readonly ITraceLogParser _parser;
+    private readonly IFileIngestionService? _ingestion;
     private readonly IPluginManagerService _pluginManager;
     private readonly ISortingService _sortingService;
     private readonly IFilteringService _filteringService;
@@ -70,12 +70,6 @@ public partial class MainWindowViewModel : ViewModelBase
     #region Collections
 
     /// <summary>Все события из всех файлов (source of truth)</summary>
-    /// <summary>Размер буфера FileStream при чтении трейс-файла (1 МБ) — крупные последовательные чтения.</summary>
-    private const int FileStreamBufferBytes = 1024 * 1024;
-
-    /// <summary>Начальная ёмкость списка событий одного файла — реже перевыделяем при росте.</summary>
-    private const int InitialEventCapacity = 8192;
-
     /// <summary>Сколько держать 100%-статус завершения скачивания, чтобы пользователь его увидел.</summary>
     private static readonly TimeSpan DownloadCompletionLingerDelay = TimeSpan.FromSeconds(2);
 
@@ -181,7 +175,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsService = null!;
         _appSettings = new AppSettingsMock();
         _uiSettings = new UiSectionSettingsMock();
-        _parser = null!;
         _pluginManager = null!;
         _fileDialogService = null!;
         _sortingService = null!;
@@ -215,7 +208,6 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Runtime конструктор (DI)</summary>
     public MainWindowViewModel(
         IFileDialogService fileDialogService,
-        ITraceLogParser parser,
         ISortingService sortingService,
         IFilteringService filteringService,
         ISearchService searchService,
@@ -233,7 +225,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IWindowProvider windowProvider,
         INavigationService navigation,
         IReportTemplateService reportTemplateService,
-        IReportGenerationService reportGenerationService)
+        IReportGenerationService reportGenerationService,
+        IFileIngestionService ingestion)
     {
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
@@ -244,7 +237,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Dependency Injection
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
-        _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _pluginManager = pluginManager?? throw new ArgumentNullException(nameof(pluginManager));
         _sortingService = sortingService ?? throw new ArgumentNullException(nameof(sortingService));
         _filteringService = filteringService ?? throw new ArgumentNullException(nameof(filteringService));
@@ -267,6 +259,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
         _reportTemplateService = reportTemplateService ?? throw new ArgumentNullException(nameof(reportTemplateService));
         _reportGenerationService = reportGenerationService ?? throw new ArgumentNullException(nameof(reportGenerationService));
+        _ingestion = ingestion ?? throw new ArgumentNullException(nameof(ingestion));
 
 
         // Инициализация ViewModels
@@ -1173,7 +1166,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessingFileProgress"), i + 1, files.Count, Path.GetFileName(path));
                 LoadProgress = (double)(i + 1) / files.Count * 100;
 
-                var fileHash = await CalculateFileHashAsync(path, cancellationToken);
+                var fileHash = await _ingestion!.ComputeHashAsync(path, cancellationToken);
 
                 if (IsDuplicate(fileHash))
                 {
@@ -1230,42 +1223,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Logger.Info("Streaming parse started: {FileName}", fileInfo.Name);
 
-        var parseSw = Stopwatch.StartNew();
-
-        await using var stream = new FileStream(
-            fileInfo.FullName,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            FileStreamBufferBytes,
-            true);
-
-        // Разбор — CPU-работа; уводим её с UI-потока (Task.Run + ConfigureAwait(false)), иначе на
-        // файлах в миллионы событий UI либо блокируется, либо тонет в continuation-Post'ах.
-        var (events, startTrace, endTrace) = await Task.Run(async () =>
-        {
-            var list = new List<EventBase>(InitialEventCapacity);
-            var start = DateTime.MinValue;
-            var end = DateTime.MinValue;
-
-            await foreach (var evt in _parser.ParseStreamAsync(
-                               stream,
-                               cancellationToken: cancellationToken).ConfigureAwait(false))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (start == DateTime.MinValue)
-                    start = evt.Timestamp;
-
-                end = evt.Timestamp;
-
-                list.Add(evt);
-            }
-
-            return (list, start, end);
-        }, cancellationToken);
-
-        parseSw.Stop();
+        // Разбор+границы времени — в сервисе приёма (CPU-работа уводится с UI-потока внутри него).
+        var parsed = await _ingestion!.ParseAsync(fileInfo.FullName, cancellationToken);
+        var events = parsed.Events as List<EventBase> ?? parsed.Events.ToList();
 
         _eventsByFileHash[fileHash] = events;
 
@@ -1273,7 +1233,7 @@ public partial class MainWindowViewModel : ViewModelBase
         AllEvents.AddRange(events);
         ingestSw.Stop();
 
-        Telemetry?.RecordProduce(fileInfo.Name, parseSw.ElapsedMilliseconds, events.Count, fileInfo.Length, source, fromCache: false);
+        Telemetry?.RecordProduce(fileInfo.Name, parsed.ParseMs, events.Count, fileInfo.Length, source, fromCache: false);
         Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
 
         Logger.Info(
@@ -1285,8 +1245,8 @@ public partial class MainWindowViewModel : ViewModelBase
             fileInfo.Name,
             fileInfo.FullName,
             fileInfo.Length,
-            startTrace,
-            endTrace,
+            parsed.StartTrace,
+            parsed.EndTrace,
             events.Count,
             fileHash);
 
@@ -1823,7 +1783,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessingFile"), fileInfo.Name);
 
-        var fileHash = await CalculateFileHashAsync(path, cancellationToken);
+        var fileHash = await _ingestion!.ComputeHashAsync(path, cancellationToken);
 
         if (IsDuplicate(fileHash))
         {
@@ -2423,21 +2383,6 @@ public partial class MainWindowViewModel : ViewModelBase
             new StatisticInfoModel(Loc.Tr("Status.Main.StatAllEvents"), totalEvents.ToString("N0")),
             new StatisticInfoModel(Loc.Tr("Status.Main.StatVisibleEvents"), VisibleEvents.Count.ToString("N0"))
         ]);
-    }
-
-    private static async Task<string> CalculateFileHashAsync(string filePath,
-        CancellationToken cancellationToken)
-    {
-        await using var stream = new FileStream(
-            filePath,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            FileStreamBufferBytes,
-            true);
-
-        var hashBytes = await SHA256.HashDataAsync(stream, cancellationToken);
-        return Convert.ToHexString(hashBytes);
     }
 
     /// <summary>Размер файла в байтах или 0, если недоступен (для телеметрии — не критично).</summary>
