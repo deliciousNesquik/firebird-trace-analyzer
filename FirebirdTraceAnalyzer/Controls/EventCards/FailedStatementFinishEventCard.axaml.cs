@@ -5,40 +5,10 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class FailedStatementFinishEventCard : EventCardBase
+public class FailedStatementFinishEventCard : ConnectedEventCardBase
 {
     public static readonly StyledProperty<long> StatementIdProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, long>(nameof(StatementId), 0);
-    
-    public static readonly StyledProperty<string> DatabasePathProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(DatabasePath), "<not set>");
-    
-    public static readonly StyledProperty<string> UserProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(User), "<not set>");
-    
-    public static readonly StyledProperty<string> RoleProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Role), "<not set>");
-    
-    public static readonly StyledProperty<long> AttachmentIdProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, long>(nameof(AttachmentId), 0);
-    
-    public static readonly StyledProperty<string> ProtocolProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Protocol), "<not set>");
-    
-    public static readonly StyledProperty<string> AddressProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Address), "<not set>");
-    
-    public static readonly StyledProperty<int> PortProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, int>(nameof(Port), 0);
-    
-    public static readonly StyledProperty<string> CharsetProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(Charset), "<not set>");
-    
-    public static readonly StyledProperty<string> ProcessPathProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, string>(nameof(ProcessPath), "<not set>");
-    
-    public static readonly StyledProperty<int> ProcessIdProperty =
-        AvaloniaProperty.Register<FailedStatementFinishEventCard, int>(nameof(ProcessId), 0);
     
     public static readonly StyledProperty<long> TransactionIdProperty =
         AvaloniaProperty.Register<FailedStatementFinishEventCard, long>(nameof(TransactionId), 0);
@@ -80,66 +50,6 @@ public class FailedStatementFinishEventCard : EventCardBase
     {
         get => GetValue(StatementIdProperty);
         set => SetValue(StatementIdProperty, value);
-    }
-    
-    public string DatabasePath
-    {
-        get => GetValue(DatabasePathProperty);
-        set => SetValue(DatabasePathProperty, value);
-    }
-    
-    public string User
-    {
-        get => GetValue(UserProperty);
-        set => SetValue(UserProperty, value);
-    }
-    
-    public string Role
-    {
-        get => GetValue(RoleProperty);
-        set => SetValue(RoleProperty, value);
-    }
-    
-    public long AttachmentId
-    {
-        get => GetValue(AttachmentIdProperty);
-        set => SetValue(AttachmentIdProperty, value);
-    }
-    
-    public string Protocol
-    {
-        get => GetValue(ProtocolProperty);
-        set => SetValue(ProtocolProperty, value);
-    }
-    
-    public string Address
-    {
-        get => GetValue(AddressProperty);
-        set => SetValue(AddressProperty, value);
-    }
-    
-    public int Port
-    {
-        get => GetValue(PortProperty);
-        set => SetValue(PortProperty, value);
-    }
-    
-    public string Charset
-    {
-        get => GetValue(CharsetProperty);
-        set => SetValue(CharsetProperty, value);
-    }
-    
-    public string ProcessPath
-    {
-        get => GetValue(ProcessPathProperty);
-        set => SetValue(ProcessPathProperty, value);
-    }
-    
-    public int ProcessId
-    {
-        get => GetValue(ProcessIdProperty);
-        set => SetValue(ProcessIdProperty, value);
     }
     
     public long TransactionId

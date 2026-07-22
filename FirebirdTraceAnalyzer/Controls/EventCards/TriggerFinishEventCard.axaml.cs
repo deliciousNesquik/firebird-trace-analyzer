@@ -3,38 +3,8 @@ using Avalonia.Controls.Primitives;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class TriggerFinishEventCard : EventCardBase
+public class TriggerFinishEventCard : ConnectedEventCardBase
 {
-    public static readonly StyledProperty<string> DatabasePathProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(DatabasePath), "<not set>");
-    
-    public static readonly StyledProperty<string> UserProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(User), "<not set>");
-    
-    public static readonly StyledProperty<string> RoleProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(Role), "<not set>");
-    
-    public static readonly StyledProperty<long> AttachmentIdProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, long>(nameof(AttachmentId), 0);
-    
-    public static readonly StyledProperty<string> ProtocolProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(Protocol), "<not set>");
-    
-    public static readonly StyledProperty<string> AddressProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(Address), "<not set>");
-    
-    public static readonly StyledProperty<int> PortProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, int>(nameof(Port), 0);
-    
-    public static readonly StyledProperty<string> CharsetProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(Charset), "<not set>");
-    
-    public static readonly StyledProperty<string> ProcessPathProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, string>(nameof(ProcessPath), "<not set>");
-    
-    public static readonly StyledProperty<int> ProcessIdProperty =
-        AvaloniaProperty.Register<TriggerFinishEventCard, int>(nameof(ProcessId), 0);
-    
     public static readonly StyledProperty<long> TransactionIdProperty =
         AvaloniaProperty.Register<TriggerFinishEventCard, long>(nameof(TransactionId), 0);
     
@@ -76,66 +46,6 @@ public class TriggerFinishEventCard : EventCardBase
     
     public static readonly StyledProperty<int> MarkCountProperty =
         AvaloniaProperty.Register<TriggerFinishEventCard, int>(nameof(MarkCount), 0);
-    
-    public string DatabasePath
-    {
-        get => GetValue(DatabasePathProperty);
-        set => SetValue(DatabasePathProperty, value);
-    }
-    
-    public string User
-    {
-        get => GetValue(UserProperty);
-        set => SetValue(UserProperty, value);
-    }
-    
-    public string Role
-    {
-        get => GetValue(RoleProperty);
-        set => SetValue(RoleProperty, value);
-    }
-    
-    public long AttachmentId
-    {
-        get => GetValue(AttachmentIdProperty);
-        set => SetValue(AttachmentIdProperty, value);
-    }
-    
-    public string Protocol
-    {
-        get => GetValue(ProtocolProperty);
-        set => SetValue(ProtocolProperty, value);
-    }
-    
-    public string Address
-    {
-        get => GetValue(AddressProperty);
-        set => SetValue(AddressProperty, value);
-    }
-    
-    public int Port
-    {
-        get => GetValue(PortProperty);
-        set => SetValue(PortProperty, value);
-    }
-    
-    public string Charset
-    {
-        get => GetValue(CharsetProperty);
-        set => SetValue(CharsetProperty, value);
-    }
-    
-    public string ProcessPath
-    {
-        get => GetValue(ProcessPathProperty);
-        set => SetValue(ProcessPathProperty, value);
-    }
-    
-    public int ProcessId
-    {
-        get => GetValue(ProcessIdProperty);
-        set => SetValue(ProcessIdProperty, value);
-    }
     
     public long TransactionId
     {

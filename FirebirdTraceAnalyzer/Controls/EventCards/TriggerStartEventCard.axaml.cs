@@ -3,38 +3,8 @@ using Avalonia.Controls.Primitives;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class TriggerStartEventCard : EventCardBase
+public class TriggerStartEventCard : ConnectedEventCardBase
 {
-    public static readonly StyledProperty<string> DatabasePathProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(DatabasePath), "<not set>");
-    
-    public static readonly StyledProperty<string> UserProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(User), "<not set>");
-    
-    public static readonly StyledProperty<string> RoleProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Role), "<not set>");
-    
-    public static readonly StyledProperty<long> AttachmentIdProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, long>(nameof(AttachmentId), 0);
-    
-    public static readonly StyledProperty<string> ProtocolProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Protocol), "<not set>");
-    
-    public static readonly StyledProperty<string> AddressProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Address), "<not set>");
-    
-    public static readonly StyledProperty<int> PortProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, int>(nameof(Port), 0);
-    
-    public static readonly StyledProperty<string> CharsetProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Charset), "<not set>");
-    
-    public static readonly StyledProperty<string> ProcessPathProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(ProcessPath), "<not set>");
-    
-    public static readonly StyledProperty<int> ProcessIdProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, int>(nameof(ProcessId), 0);
-    
     public static readonly StyledProperty<long> TransactionIdProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, long>(nameof(TransactionId), 0);
     
@@ -62,66 +32,6 @@ public class TriggerStartEventCard : EventCardBase
     public static readonly StyledProperty<string> EventProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Event), "<not set>");
     
-    
-    public string DatabasePath
-    {
-        get => GetValue(DatabasePathProperty);
-        set => SetValue(DatabasePathProperty, value);
-    }
-    
-    public string User
-    {
-        get => GetValue(UserProperty);
-        set => SetValue(UserProperty, value);
-    }
-    
-    public string Role
-    {
-        get => GetValue(RoleProperty);
-        set => SetValue(RoleProperty, value);
-    }
-    
-    public long AttachmentId
-    {
-        get => GetValue(AttachmentIdProperty);
-        set => SetValue(AttachmentIdProperty, value);
-    }
-    
-    public string Protocol
-    {
-        get => GetValue(ProtocolProperty);
-        set => SetValue(ProtocolProperty, value);
-    }
-    
-    public string Address
-    {
-        get => GetValue(AddressProperty);
-        set => SetValue(AddressProperty, value);
-    }
-    
-    public int Port
-    {
-        get => GetValue(PortProperty);
-        set => SetValue(PortProperty, value);
-    }
-    
-    public string Charset
-    {
-        get => GetValue(CharsetProperty);
-        set => SetValue(CharsetProperty, value);
-    }
-    
-    public string ProcessPath
-    {
-        get => GetValue(ProcessPathProperty);
-        set => SetValue(ProcessPathProperty, value);
-    }
-    
-    public int ProcessId
-    {
-        get => GetValue(ProcessIdProperty);
-        set => SetValue(ProcessIdProperty, value);
-    }
     
     public long TransactionId
     {
