@@ -5,17 +5,8 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class ProcedureStartEventCard : TemplatedControl
+public class ProcedureStartEventCard : EventCardBase
 {
-    public static readonly StyledProperty<DateTime> TimestampProperty =
-        AvaloniaProperty.Register<ProcedureStartEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
-    
-    public static readonly StyledProperty<int> TraceIdProperty =
-        AvaloniaProperty.Register<ProcedureStartEventCard, int>(nameof(TraceId), 0);
-    
-    public static readonly StyledProperty<string> HexTraceIdProperty =
-        AvaloniaProperty.Register<ProcedureStartEventCard, string>(nameof(HexTraceId), "0");
-    
     public static readonly StyledProperty<string> DatabasePathProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, string>(nameof(DatabasePath), "<not set>");
     
@@ -66,24 +57,6 @@ public class ProcedureStartEventCard : TemplatedControl
     
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
         AvaloniaProperty.Register<ProcedureStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
-    
-    public DateTime Timestamp
-    {
-        get => GetValue(TimestampProperty);
-        set => SetValue(TimestampProperty, value);
-    }
-    
-    public int TraceId
-    {
-        get => GetValue(TraceIdProperty);
-        set => SetValue(TraceIdProperty, value);
-    }
-    
-    public string HexTraceId
-    {
-        get => GetValue(HexTraceIdProperty);
-        set => SetValue(HexTraceIdProperty, value);
-    }
     
     public string DatabasePath
     {

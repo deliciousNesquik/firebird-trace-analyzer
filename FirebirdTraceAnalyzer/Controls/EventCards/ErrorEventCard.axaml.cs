@@ -9,7 +9,7 @@ using NLog;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class ErrorEventCard : TemplatedControl
+public class ErrorEventCard : EventCardBase
 {
     private Button? _copyButton;
 
@@ -56,21 +56,6 @@ public class ErrorEventCard : TemplatedControl
         }
     }
 
-    public static readonly StyledProperty<DateTime> TimestampProperty =
-        AvaloniaProperty.Register<ErrorEventCard, DateTime>(
-            nameof(Timestamp),
-            DateTime.MinValue);
-
-    public static readonly StyledProperty<int> TraceIdProperty =
-        AvaloniaProperty.Register<ErrorEventCard, int>(
-            nameof(TraceId),
-            0);
-
-    public static readonly StyledProperty<string> HexTraceIdProperty =
-        AvaloniaProperty.Register<ErrorEventCard, string>(
-            nameof(HexTraceId),
-            "0");
-
     public static readonly StyledProperty<long> AttachmentIdProperty =
         AvaloniaProperty.Register<ErrorEventCard, long>(
             nameof(AttachmentId),
@@ -85,24 +70,6 @@ public class ErrorEventCard : TemplatedControl
         AvaloniaProperty.Register<ErrorEventCard, IReadOnlyList<ErrorLines>>(
             nameof(Errors),
             Array.Empty<ErrorLines>());
-
-    public DateTime Timestamp
-    {
-        get => GetValue(TimestampProperty);
-        set => SetValue(TimestampProperty, value);
-    }
-
-    public int TraceId
-    {
-        get => GetValue(TraceIdProperty);
-        set => SetValue(TraceIdProperty, value);
-    }
-
-    public string HexTraceId
-    {
-        get => GetValue(HexTraceIdProperty);
-        set => SetValue(HexTraceIdProperty, value);
-    }
 
     public long AttachmentId
     {

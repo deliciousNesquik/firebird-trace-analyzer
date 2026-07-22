@@ -3,17 +3,8 @@ using Avalonia.Controls.Primitives;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class TriggerStartEventCard : TemplatedControl
+public class TriggerStartEventCard : EventCardBase
 {
-    public static readonly StyledProperty<DateTime> TimestampProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
-    
-    public static readonly StyledProperty<int> TraceIdProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, int>(nameof(TraceId), 0);
-    
-    public static readonly StyledProperty<string> HexTraceIdProperty =
-        AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(HexTraceId), "0");
-    
     public static readonly StyledProperty<string> DatabasePathProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(DatabasePath), "<not set>");
     
@@ -71,24 +62,6 @@ public class TriggerStartEventCard : TemplatedControl
     public static readonly StyledProperty<string> EventProperty =
         AvaloniaProperty.Register<TriggerStartEventCard, string>(nameof(Event), "<not set>");
     
-    
-    public DateTime Timestamp
-    {
-        get => GetValue(TimestampProperty);
-        set => SetValue(TimestampProperty, value);
-    }
-    
-    public int TraceId
-    {
-        get => GetValue(TraceIdProperty);
-        set => SetValue(TraceIdProperty, value);
-    }
-    
-    public string HexTraceId
-    {
-        get => GetValue(HexTraceIdProperty);
-        set => SetValue(HexTraceIdProperty, value);
-    }
     
     public string DatabasePath
     {

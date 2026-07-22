@@ -5,17 +5,8 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Controls.EventCards;
 
-public class FailedProcedureFinishEventCard : TemplatedControl
+public class FailedProcedureFinishEventCard : EventCardBase
 {
-    public static readonly StyledProperty<DateTime> TimestampProperty =
-        AvaloniaProperty.Register<FailedProcedureFinishEventCard, DateTime>(nameof(Timestamp), DateTime.MinValue);
-    
-    public static readonly StyledProperty<int> TraceIdProperty =
-        AvaloniaProperty.Register<FailedProcedureFinishEventCard, int>(nameof(TraceId), 0);
-    
-    public static readonly StyledProperty<string> HexTraceIdProperty =
-        AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(HexTraceId), "0");
-    
     public static readonly StyledProperty<string> DatabasePathProperty =
         AvaloniaProperty.Register<FailedProcedureFinishEventCard, string>(nameof(DatabasePath), "<not set>");
     
@@ -81,24 +72,6 @@ public class FailedProcedureFinishEventCard : TemplatedControl
     
     public static readonly StyledProperty<int> MarkCountProperty =
         AvaloniaProperty.Register<FailedProcedureFinishEventCard, int>(nameof(MarkCount), 0);
-    
-    public DateTime Timestamp
-    {
-        get => GetValue(TimestampProperty);
-        set => SetValue(TimestampProperty, value);
-    }
-    
-    public int TraceId
-    {
-        get => GetValue(TraceIdProperty);
-        set => SetValue(TraceIdProperty, value);
-    }
-    
-    public string HexTraceId
-    {
-        get => GetValue(HexTraceIdProperty);
-        set => SetValue(HexTraceIdProperty, value);
-    }
     
     public string DatabasePath
     {
