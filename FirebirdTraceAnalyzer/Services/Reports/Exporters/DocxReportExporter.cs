@@ -232,19 +232,9 @@ public class DocxReportExporter : IReportExporter
     {
         body.AppendChild(new Paragraph(new Run(new Break())));
 
-        AddStatLine(body, Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString());
-        AddStatLine(body, Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0"));
-        AddStatLine(body, Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0"));
-
-        if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
-        {
-            AddStatLine(body, Loc.Tr("Report.Export.ActiveFilters"), metadata.ActiveFilters);
-        }
-
-        if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
-        {
-            AddStatLine(body, Loc.Tr("Report.Export.ActiveSort"), metadata.ActiveSort);
-        }
+        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+        foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
+            AddStatLine(body, label, value);
     }
 
     private void AddStatLine(Body body, string label, string value)

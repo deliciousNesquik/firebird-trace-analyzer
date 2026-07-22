@@ -265,39 +265,13 @@ public class PdfReportExporter : IReportExporter
         {
             column.Spacing(3);
 
-            column.Item().Row(row =>
-            {
-                row.RelativeItem().Text(Loc.Tr("Report.Export.TotalFiles")).Bold();
-                row.RelativeItem().Text(metadata.Files.Count.ToString());
-            });
-
-            column.Item().Row(row =>
-            {
-                row.RelativeItem().Text(Loc.Tr("Report.Export.TotalEventsBeforeFilters")).Bold();
-                row.RelativeItem().Text(metadata.TotalEventsCount.ToString("N0"));
-            });
-
-            column.Item().Row(row =>
-            {
-                row.RelativeItem().Text(Loc.Tr("Report.Export.EventsInReport")).Bold();
-                row.RelativeItem().Text(metadata.Events.Count.ToString("N0"));
-            });
-
-            if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
+            // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+            foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
             {
                 column.Item().Row(row =>
                 {
-                    row.RelativeItem().Text(Loc.Tr("Report.Export.ActiveFilters")).Bold();
-                    row.RelativeItem().Text(metadata.ActiveFilters);
-                });
-            }
-
-            if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
-            {
-                column.Item().Row(row =>
-                {
-                    row.RelativeItem().Text(Loc.Tr("Report.Export.ActiveSort")).Bold();
-                    row.RelativeItem().Text(metadata.ActiveSort);
+                    row.RelativeItem().Text(label).Bold();
+                    row.RelativeItem().Text(value);
                 });
             }
         });

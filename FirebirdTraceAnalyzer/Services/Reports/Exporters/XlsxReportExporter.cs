@@ -258,19 +258,9 @@ public class XlsxReportExporter : IReportExporter
     {
         var row = startRow;
 
-        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString());
-        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0"));
-        AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0"));
-
-        if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))
-        {
-            AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.ActiveFilters"), metadata.ActiveFilters);
-        }
-
-        if (!string.IsNullOrWhiteSpace(metadata.ActiveSort))
-        {
-            AddStatRow(worksheet, ref row, Loc.Tr("Report.Export.ActiveSort"), metadata.ActiveSort);
-        }
+        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+        foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
+            AddStatRow(worksheet, ref row, label, value);
 
         return row;
     }
