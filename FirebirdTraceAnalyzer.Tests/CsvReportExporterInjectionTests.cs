@@ -25,10 +25,14 @@ public sealed class CsvReportExporterInjectionTests : IDisposable
         public ReportTable BuildTable(ReportTemplate template, IReadOnlyList<EventBase> events) => table;
     }
 
-    [Fact]
-    public async Task Export_EscapesFormulaCell_SoItDoesNotRenderAsLiveFormula()
+    // Все опасные префиксы формул/DDE, а не только '=': если будущая правка сузит набор, тест это поймает.
+    [Theory]
+    [InlineData("=cmd|'/c calc.exe'!A1")]
+    [InlineData("+1+1")]
+    [InlineData("-2+3")]
+    [InlineData("@SUM(A1:A9)")]
+    public async Task Export_EscapesFormulaCell_SoItDoesNotRenderAsLiveFormula(string payload)
     {
-        const string payload = "=cmd|'/c calc.exe'!A1";
         var table = new ReportTable(
             new[] { new ReportColumn("SQL", null, null, TextAlignment.Left) },
             new IReadOnlyList<object?>[] { new object?[] { payload } });
@@ -50,9 +54,14 @@ public sealed class CsvReportExporterInjectionTests : IDisposable
 
         var lines = (await File.ReadAllTextAsync(_out)).Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        // Данные на месте.
-        Assert.Contains(lines, l => l.Contains("cmd|'/c calc.exe'!A1"));
-        // Но ни одно поле не начинается с '=' (после снятия возможных кавычек) — формула нейтрализована.
-        Assert.DoesNotContain(lines, l => l.TrimStart('"').StartsWith('='));
+        // Данные на месте (часть после опасного префикса).
+        Assert.Contains(lines, l => l.Contains(payload[1..]));
+        // Но ни одно поле (после снятия возможных кавычек) не начинается с формульного символа —
+        // нейтрализовано. (\t/\r не проверяем: сам escape-символ CsvHelper может быть табом.)
+        Assert.DoesNotContain(lines, l =>
+        {
+            var field = l.TrimStart('"');
+            return field.Length > 0 && "=+-@".Contains(field[0]);
+        });
     }
 }
