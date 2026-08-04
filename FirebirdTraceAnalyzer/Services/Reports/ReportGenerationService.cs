@@ -78,6 +78,10 @@ public class ReportGenerationService : IReportGenerationService
 
             return generatedReport;
         }
+        catch (OperationCanceledException)
+        {
+            throw; // отмена генерации — не ошибка: пробрасываем без Error-лога (UI покажет статус отмены)
+        }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error generating report: {TemplateName}", template.Name);

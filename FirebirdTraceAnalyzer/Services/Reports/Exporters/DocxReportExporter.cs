@@ -70,6 +70,10 @@ public class DocxReportExporter : IReportExporter
 
             Logger.Info("DOCX export completed: {Path}", outputPath);
         }
+        catch (OperationCanceledException)
+        {
+            throw; // отмена экспорта — не ошибка: пробрасываем без Error-лога (UI покажет статус отмены)
+        }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting to DOCX");

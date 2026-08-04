@@ -71,6 +71,10 @@ public class PdfReportExporter : IReportExporter
 
             Logger.Info("PDF export completed: {Path}", outputPath);
         }
+        catch (OperationCanceledException)
+        {
+            throw; // отмена экспорта — не ошибка: пробрасываем без Error-лога (UI покажет статус отмены)
+        }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting to PDF");
