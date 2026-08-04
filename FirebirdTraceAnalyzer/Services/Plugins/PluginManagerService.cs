@@ -28,11 +28,12 @@ public class PluginManagerService : IPluginManagerService
     private HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
     private List<string> _pendingDelete = new();
 
-    // Id плагинов, которые каждая DLL экспортировала при последней успешной загрузке. Учатся, когда
-    // плагин ещё включён и грузится штатно; позволяют на следующем старте ПРОПУСТИТЬ загрузку сборки
-    // (и её конструкторов), если ВСЕ её плагины выключены — иначе код «выключенного» плагина всё равно
-    // исполнялся бы при Activator.CreateInstance.
-    private Dictionary<string, List<string>> _knownTypesByPath = new(StringComparer.OrdinalIgnoreCase);
+    // Плагины (Id + снимок метаданных), которые каждая DLL экспортировала при последней успешной
+    // загрузке. Учатся, когда плагин ещё включён и грузится штатно; позволяют на следующем старте
+    // ПРОПУСТИТЬ загрузку сборки (и её конструкторов), если ВСЕ её плагины выключены — иначе код
+    // «выключенного» плагина исполнялся бы при Activator.CreateInstance. Метаданные нужны, чтобы заглушка
+    // выключенного плагина показывала настоящие Name/Author/Version/Kind, а не голый Id.
+    private Dictionary<string, List<KnownPluginMeta>> _knownTypesByPath = new(StringComparer.OrdinalIgnoreCase);
 
     // Разделитель для ключа экземпляра; NUL не встречается в путях/Id.
     private const char InstanceKeySep = '\0';
@@ -119,7 +120,7 @@ public class PluginManagerService : IPluginManagerService
             var pluginTypes = assembly.GetTypes()
                 .Where(t => typeof(IAnalyzerPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
-            var loadedIds = new List<string>();
+            var loadedMeta = new List<KnownPluginMeta>();
 
             foreach (var type in pluginTypes)
             {
@@ -142,12 +143,16 @@ public class PluginManagerService : IPluginManagerService
                     Instance = instance,
                     Status = PluginStatus.Active // уточняется в ResolveVersionsAndStatuses
                 });
-                loadedIds.Add(instance.Id);
+                loadedMeta.Add(new KnownPluginMeta
+                {
+                    Id = instance.Id, Name = instance.Name, Author = instance.Author,
+                    Version = instance.Version, Kind = (int)kind
+                });
             }
 
-            // Запоминаем состав типов этой DLL — чтобы на следующем старте можно было пропустить её
-            // загрузку, если все они окажутся выключены.
-            _knownTypesByPath[pluginDllPath] = loadedIds;
+            // Запоминаем состав типов этой DLL (с метаданными) — чтобы на следующем старте пропустить её
+            // загрузку, если все они выключены, и показать заглушки с настоящими метаданными.
+            _knownTypesByPath[pluginDllPath] = loadedMeta;
         }
         catch (Exception ex)
         {
@@ -174,26 +179,28 @@ public class PluginManagerService : IPluginManagerService
     /// Тогда сборка не грузится и конструкторы не исполняются.
     /// </summary>
     private bool AllKnownTypesDisabled(string dllPath) =>
-        _knownTypesByPath.TryGetValue(dllPath, out var ids)
-        && ids.Count > 0
-        && ids.All(id => _disabled.Contains(InstanceKey(dllPath, id)));
+        _knownTypesByPath.TryGetValue(dllPath, out var types)
+        && types.Count > 0
+        && types.All(t => _disabled.Contains(InstanceKey(dllPath, t.Id)));
 
     /// <summary>
     /// Добавляет записи-заглушки (Status=Disabled, Instance=null) для плагинов пропущенной DLL — чтобы
-    /// они были видны в UI и их можно было включить обратно (после чего DLL загрузится на следующем старте).
+    /// они были видны в UI с настоящими метаданными и их можно было включить обратно (тогда DLL
+    /// загрузится на следующем старте).
     /// </summary>
     private void AddDisabledPlaceholders(string dllPath)
     {
         Logger.Info("Skipping load of fully-disabled plugin DLL (no code executed): {Path}", dllPath);
-        foreach (var id in _knownTypesByPath[dllPath])
+        foreach (var meta in _knownTypesByPath[dllPath])
             _plugins.Add(new PluginInfo
             {
-                Id = id,
-                Name = id,
-                Author = "—",
-                Version = "—",
+                Id = meta.Id,
+                Name = string.IsNullOrEmpty(meta.Name) ? meta.Id : meta.Name,
+                Author = string.IsNullOrEmpty(meta.Author) ? "—" : meta.Author,
+                Version = string.IsNullOrEmpty(meta.Version) ? "—" : meta.Version,
                 FilePath = dllPath,
-                Kind = PluginKind.None,
+                Kind = (PluginKind)meta.Kind,
+                ParsedVersion = ParseVersion(meta.Version),
                 Instance = null,
                 Status = PluginStatus.Disabled
             });
@@ -428,6 +435,12 @@ public class PluginManagerService : IPluginManagerService
 
         var root = Path.GetFullPath(_pluginsDirectory);
         var rootWithSep = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+        // Регистрочувствительность — по ФС (как и остальные операции с путями плагинов): Windows/macOS
+        // регистронезависимы, Linux — регистрозависим. Ordinal на Windows ложно счёл бы вложенный путь
+        // с иным регистром «вне каталога».
+        var pathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
 
         foreach (var folder in _pendingDelete.ToList())
         {
@@ -437,7 +450,7 @@ public class PluginManagerService : IPluginManagerService
                 // подменён/повреждён), а Directory.Delete(recursive) по произвольному пути — это удаление
                 // чужих данных.
                 var full = Path.GetFullPath(folder);
-                if (!full.StartsWith(rootWithSep, StringComparison.Ordinal))
+                if (!full.StartsWith(rootWithSep, pathComparison))
                 {
                     Logger.Warn("Refusing to delete pending path outside plugins dir: {Path}", folder);
                     _pendingDelete.Remove(folder);
@@ -462,7 +475,7 @@ public class PluginManagerService : IPluginManagerService
     {
         _disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         _pendingDelete = new List<string>();
-        _knownTypesByPath = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        _knownTypesByPath = new Dictionary<string, List<KnownPluginMeta>>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -478,8 +491,8 @@ public class PluginManagerService : IPluginManagerService
                     _pendingDelete = state.PendingDelete;
                 if (state?.KnownTypes is { Count: > 0 })
                     foreach (var kt in state.KnownTypes)
-                        if (!string.IsNullOrEmpty(kt.File) && kt.Ids is { Count: > 0 })
-                            _knownTypesByPath[kt.File] = kt.Ids;
+                        if (!string.IsNullOrEmpty(kt.File) && kt.Types is { Count: > 0 })
+                            _knownTypesByPath[kt.File] = kt.Types;
             }
         }
         catch (Exception ex)
@@ -498,7 +511,7 @@ public class PluginManagerService : IPluginManagerService
                     Disabled = _disabled.Select(SplitKey).ToList(),
                     PendingDelete = _pendingDelete,
                     KnownTypes = _knownTypesByPath
-                        .Select(kv => new KnownTypesEntry { File = kv.Key, Ids = kv.Value })
+                        .Select(kv => new KnownTypesEntry { File = kv.Key, Types = kv.Value })
                         .ToList()
                 },
                 new JsonSerializerOptions { WriteIndented = true });
@@ -535,10 +548,19 @@ public class PluginManagerService : IPluginManagerService
         public string Id { get; set; } = "";
     }
 
+    private sealed class KnownPluginMeta
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Author { get; set; } = "";
+        public string Version { get; set; } = "";
+        public int Kind { get; set; } // (int)PluginKind — флаги
+    }
+
     private sealed class KnownTypesEntry
     {
         public string File { get; set; } = "";
-        public List<string> Ids { get; set; } = new();
+        public List<KnownPluginMeta> Types { get; set; } = new();
     }
 
     private sealed class PluginsState

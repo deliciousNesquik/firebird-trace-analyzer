@@ -48,6 +48,9 @@ public sealed class PluginManagerServiceTests
         Assert.Equal("X", p.Id);
         Assert.Equal(PluginStatus.Disabled, p.Status);
         Assert.Null(p.Instance);
+        // Заглушка показывает НАСТОЯЩИЕ метаданные из снимка, а не голый Id (регрессия F6).
+        Assert.Equal("Cool Sorter", p.Name);
+        Assert.Equal("1.2.0", p.Version);
     }
 
     [Fact]
@@ -69,18 +72,22 @@ public sealed class PluginManagerServiceTests
         File.WriteAllBytes(dll, [0x00, 0x01, 0x02]); // не валидная .NET-сборка
 
         var stateFile = Path.Combine(pluginsDir, "plugins.state.json");
+        var knownTypes = new[]
+        {
+            new { File = dll, Types = new[] { new { Id = "X", Name = "Cool Sorter", Author = "Acme", Version = "1.2.0", Kind = 0 } } }
+        };
         object state = disabled
             ? new
             {
                 Disabled = new[] { new { File = dll, Id = "X" } },
                 PendingDelete = Array.Empty<string>(),
-                KnownTypes = new[] { new { File = dll, Ids = new[] { "X" } } }
+                KnownTypes = knownTypes
             }
             : new
             {
                 Disabled = Array.Empty<object>(),
                 PendingDelete = Array.Empty<string>(),
-                KnownTypes = new[] { new { File = dll, Ids = new[] { "X" } } }
+                KnownTypes = knownTypes
             };
         File.WriteAllText(stateFile, JsonSerializer.Serialize(state));
 
