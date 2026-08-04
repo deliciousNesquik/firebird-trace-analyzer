@@ -2367,6 +2367,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private void NotifyCommandsCanExecuteChanged()
     {
         OpenLocalFileCommand.NotifyCanExecuteChanged();
+        // Обе команды открытия делят CanOpenFile=!IsFileLoading — Remote тоже надо переоценивать,
+        // иначе во время локальной загрузки её пункт остаётся активным и стартует вторая параллельная загрузка.
+        OpenRemoteFileCommand.NotifyCanExecuteChanged();
         CancelLoadingCommand.NotifyCanExecuteChanged();
         ReparseAllFilesCommand.NotifyCanExecuteChanged();
         ReparseSelectedFilesCommand.NotifyCanExecuteChanged();
