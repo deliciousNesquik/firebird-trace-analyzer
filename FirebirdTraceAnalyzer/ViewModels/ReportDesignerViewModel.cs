@@ -787,10 +787,14 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         try
         {
             var template = CreateTemplateFromCurrentSettings();
+            var source = _sessionContext.SourceEvents;
 
-            var preparedEvents = _generationService.PrepareEventsForReport(
-                _sessionContext.SourceEvents,
-                template);
+            // Фильтр + O(n log n) сортировка всех событий — CPU-работа. Уводим в фон, чтобы серия
+            // правок в дизайнере не морозила UI-поток на трассах в сотни тысяч событий.
+            // Продолжение (установка UI-bound свойств) возобновляется на UI-потоке.
+            var preparedEvents = await Task.Run(
+                () => _generationService.PrepareEventsForReport(source, template),
+                cancellationToken);
 
             var metadata = CreateReportMetadata(preparedEvents);
 

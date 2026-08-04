@@ -195,7 +195,11 @@ public partial class ReportPreviewViewModel : ViewModelBase
             .ToList();
 
         // Строим ту же таблицу, что и экспортёры: группировка/агрегаты/порядок колонок — из проекции.
-        var table = _projectionService.BuildTable(Template, Metadata.Events);
+        // Группировка идёт по ВСЕМ событиям (CPU-работа) — уводим в фон, чтобы не морозить UI-поток;
+        // продолжение (установка UI-bound свойств ниже) возобновляется на UI-потоке.
+        var template = Template;
+        var events = Metadata.Events;
+        var table = await Task.Run(() => _projectionService.BuildTable(template, events), cancellationToken);
 
         var columns = table.Columns
             .Select((col, i) => new PreviewColumnItem
