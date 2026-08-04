@@ -32,7 +32,7 @@ public class PdfReportExporter : IReportExporter
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    public Task ExportAsync(
+    public async Task ExportAsync(
         ReportTemplate template,
         ReportMetadata metadata,
         string outputPath,
@@ -42,36 +42,34 @@ public class PdfReportExporter : IReportExporter
         {
             Logger.Info("Exporting report to PDF: {Path}", outputPath);
 
-            // Таблицу событий считаем ОДИН раз на весь экспорт (группировка/сортировка/рефлексия по
-            // всем событиям — дорого): Lazy потокобезопасен и вычислится только при наличии Events-секции,
-            // а не заново на каждую такую секцию.
-            var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
-
-            var document = Document.Create(container =>
+            // Сборка таблицы событий и рендер PDF — блокирующая CPU-работа. Уводим в фон и наблюдаем
+            // токен: раньше это был fake async (GeneratePdf на UI-потоке, отмена игнорировалась).
+            await Task.Run(() =>
             {
-                container.Page(page =>
+                // Таблицу событий считаем ОДИН раз на весь экспорт (группировка/сортировка/рефлексия по
+                // всем событиям — дорого): Lazy потокобезопасен и вычислится только при наличии Events-секции.
+                var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
+
+                var document = Document.Create(container =>
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
-                    page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Black));
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(2, Unit.Centimetre);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Black));
 
-                    // Заголовок
-                    page.Header().Element(c => ComposeHeader(c, template, metadata));
-
-                    // Содержимое
-                    page.Content().Element(c => ComposeContent(c, template, metadata, eventsTable));
-
-                    // Футер
-                    page.Footer().Element(c => ComposeFooter(c, template));
+                        page.Header().Element(c => ComposeHeader(c, template, metadata));
+                        page.Content().Element(c => ComposeContent(c, template, metadata, eventsTable));
+                        page.Footer().Element(c => ComposeFooter(c, template));
+                    });
                 });
-            });
 
-            document.GeneratePdf(outputPath);
+                cancellationToken.ThrowIfCancellationRequested();
+                document.GeneratePdf(outputPath);
+            }, cancellationToken);
 
             Logger.Info("PDF export completed: {Path}", outputPath);
-
-            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

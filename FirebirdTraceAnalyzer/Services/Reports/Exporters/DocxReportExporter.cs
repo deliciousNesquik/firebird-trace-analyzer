@@ -26,7 +26,7 @@ public class DocxReportExporter : IReportExporter
         _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
-    public Task ExportAsync(
+    public async Task ExportAsync(
         ReportTemplate template,
         ReportMetadata metadata,
         string outputPath,
@@ -36,36 +36,35 @@ public class DocxReportExporter : IReportExporter
         {
             Logger.Info("Exporting report to DOCX: {Path}", outputPath);
 
-            using var document = WordprocessingDocument.Create(outputPath, WordprocessingDocumentType.Document);
-            
-            var mainPart = document.AddMainDocumentPart();
-            mainPart.Document = new Document();
-            var body = mainPart.Document.AppendChild(new Body());
-
-            // Заголовок
-            ComposeHeader(body, template, metadata);
-
-            // Разделитель
-            body.AppendChild(new Paragraph(new Run(new Break())));
-
-            // Секции отчёта
-            foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
+            // Сборка документа и сохранение — блокирующая работа. Уводим в фон и наблюдаем токен:
+            // раньше это был fake async (всё на UI-потоке, единственная большая секция неотменяема).
+            await Task.Run(() =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                ComposeSection(body, section, template, metadata);
-            }
+                using var document = WordprocessingDocument.Create(outputPath, WordprocessingDocumentType.Document);
 
-            // Футер
-            if (template.Footer.Show)
-            {
-                ComposeFooter(body, template);
-            }
+                var mainPart = document.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                var body = mainPart.Document.AppendChild(new Body());
 
-            mainPart.Document.Save();
+                ComposeHeader(body, template, metadata);
+
+                body.AppendChild(new Paragraph(new Run(new Break())));
+
+                foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ComposeSection(body, section, template, metadata);
+                }
+
+                if (template.Footer.Show)
+                {
+                    ComposeFooter(body, template);
+                }
+
+                mainPart.Document.Save();
+            }, cancellationToken);
 
             Logger.Info("DOCX export completed: {Path}", outputPath);
-
-            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

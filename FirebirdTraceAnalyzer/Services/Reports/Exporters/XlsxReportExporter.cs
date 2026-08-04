@@ -29,7 +29,7 @@ public class XlsxReportExporter : IReportExporter
         _projectionService = projectionService ?? throw new ArgumentNullException(nameof(projectionService));
     }
 
-    public Task ExportAsync(
+    public async Task ExportAsync(
         ReportTemplate template,
         ReportMetadata metadata,
         string outputPath,
@@ -39,42 +39,42 @@ public class XlsxReportExporter : IReportExporter
         {
             Logger.Info("Exporting report to XLSX: {Path}", outputPath);
 
-            using var workbook = new XLWorkbook();
-            
-            // Создаём лист с данными
-            var worksheet = workbook.Worksheets.Add(Loc.Tr("Report.Export.WorksheetName"));
-
-            var currentRow = 1;
-
-            // Заголовок
-            currentRow = ComposeHeader(worksheet, currentRow, template, metadata);
-            currentRow += 2; // Пропускаем 2 строки
-
-            // Секции отчёта
-            foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
+            // Сборка книги и сохранение — блокирующая работа. Уводим в фон и наблюдаем токен:
+            // раньше это был fake async (всё на UI-потоке, единственная большая секция неотменяема).
+            await Task.Run(() =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                currentRow = ComposeSection(worksheet, currentRow, section, template, metadata);
-                currentRow += 2; // Разделитель между секциями
-            }
+                using var workbook = new XLWorkbook();
 
-            // Футер
-            if (template.Footer.Show)
-            {
-                ComposeFooter(worksheet, currentRow, template);
-            }
+                // Создаём лист с данными
+                var worksheet = workbook.Worksheets.Add(Loc.Tr("Report.Export.WorksheetName"));
 
-            // Автоподбор ширины колонок по ВЫБОРКЕ строк (заголовок + первые N), а не по всем ячейкам:
-            // AdjustToContents() без границ сканирует каждую ячейку — O(строк×колонок), что на больших
-            // отчётах (миллионы строк) недопустимо. Выборки достаточно для разумной ширины.
-            var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
-            worksheet.Columns().AdjustToContents(1, Math.Min(lastRow, WidthSampleRows));
+                var currentRow = 1;
 
-            workbook.SaveAs(outputPath);
+                currentRow = ComposeHeader(worksheet, currentRow, template, metadata);
+                currentRow += 2; // Пропускаем 2 строки
+
+                foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    currentRow = ComposeSection(worksheet, currentRow, section, template, metadata);
+                    currentRow += 2; // Разделитель между секциями
+                }
+
+                if (template.Footer.Show)
+                {
+                    ComposeFooter(worksheet, currentRow, template);
+                }
+
+                // Автоподбор ширины колонок по ВЫБОРКЕ строк (заголовок + первые N), а не по всем ячейкам:
+                // AdjustToContents() без границ сканирует каждую ячейку — O(строк×колонок), что на больших
+                // отчётах (миллионы строк) недопустимо. Выборки достаточно для разумной ширины.
+                var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+                worksheet.Columns().AdjustToContents(1, Math.Min(lastRow, WidthSampleRows));
+
+                workbook.SaveAs(outputPath);
+            }, cancellationToken);
 
             Logger.Info("XLSX export completed: {Path}", outputPath);
-
-            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
