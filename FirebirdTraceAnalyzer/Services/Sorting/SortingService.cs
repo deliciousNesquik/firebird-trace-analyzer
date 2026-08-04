@@ -14,7 +14,12 @@ public sealed class SortingService : ISortingService
     private readonly IEventPropertyAccessor _propertyAccessor;
     private readonly IFieldDiscoveryService _fieldDiscovery;
 
+    // Только явно зарегистрированные (плагины/пользователь) — постоянные, не зависят от набора файлов.
     private readonly Dictionary<string, SortDescriptor> _customSorts = new();
+
+    // Сгенерированные по полям текущего набора событий — пересобираются при смене типов, НЕ подмешиваются
+    // в _customSorts, иначе сортировки прошлого файла копятся и всплывают в дропдауне следующего.
+    private readonly Dictionary<string, SortDescriptor> _generatedSorts = new();
 
     private List<SortDescriptor>? _lastGeneratedSorts;
     private HashSet<Type>? _lastEventTypes;
@@ -65,7 +70,8 @@ public sealed class SortingService : ISortingService
 
         Logger.Info("Event types have changed, we are generating new sortings");
 
-        var availableSorts = new List<SortDescriptor>(_customSorts.Values);
+        // Пересобираем генерируемые сортировки для ТЕКУЩИХ типов начисто — прежние (для другого файла) выкидываем.
+        _generatedSorts.Clear();
 
         // Используем новый сервис для получения сортируемых полей
         var sortableFields = _fieldDiscovery.GetSortableFields(eventList);
@@ -75,14 +81,13 @@ public sealed class SortingService : ISortingService
             var sortId = _propertyAccessor.ToSortId(field.PropertyPath);
 
             if (_customSorts.ContainsKey(sortId))
-                continue;
+                continue; // зарегистрированная кастомная сортировка имеет приоритет
 
-            var descriptor = CreateFieldSort(field);
-            availableSorts.Add(descriptor);
-            _customSorts.Add(sortId, descriptor);
+            _generatedSorts[sortId] = CreateFieldSort(field);
         }
 
-        var result = availableSorts
+        var result = _customSorts.Values
+            .Concat(_generatedSorts.Values)
             .OrderBy(s => s.Category)
             .ThenBy(s => s.DisplayOrder)
             .ToList();
@@ -126,7 +131,8 @@ public sealed class SortingService : ISortingService
         string sortId,
         bool descending = false)
     {
-        if (!_customSorts.TryGetValue(sortId, out var descriptor))
+        if (!_customSorts.TryGetValue(sortId, out var descriptor) &&
+            !_generatedSorts.TryGetValue(sortId, out descriptor))
         {
             Logger.Warn("Sort is not found: {SortId}", sortId);
             return events;

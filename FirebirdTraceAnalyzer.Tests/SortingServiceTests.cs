@@ -66,6 +66,38 @@ public sealed class SortingServiceTests
         Assert.Equal(events, svc.ApplySort(events, "nope").ToArray());
     }
 
+    private static EventBase Attach(DateTime ts) =>
+        new AttachDatabaseEvent
+        {
+            Timestamp = ts, TraceId = 2, HexTraceId = "0x02", EventType = EventType.AttachDatabase,
+            Attachment = new AttachmentInfo
+            {
+                AttachmentId = 7, DatabasePath = "/db/x.fdb", User = "U", Role = "NONE",
+                Charset = "WIN1251", Protocol = "TCPv4", Address = "10.0.0.1/1", Port = 3050,
+                ProcessPath = null, ProcessId = null
+            }
+        };
+
+    [Fact]
+    public void GeneratedSorts_DoNotLeakAcrossFiles()
+    {
+        // Файл A (AttachDatabase) даёт больше сортируемых полей (Attachment.*), чем файл B (TraceInit).
+        var fileA = new[] { Attach(T1) };
+        var fileB = new[] { At(T1), At(T2) };
+
+        // Сервис, который сначала открыл A, затем B.
+        var reused = NewService();
+        reused.GetAvailableSorts(fileA);
+        var afterA = reused.GetAvailableSorts(fileB).Select(s => s.Id).OrderBy(x => x).ToList();
+
+        // Эталон: свежий сервис, открывший только B (утечки быть не может).
+        var fresh = NewService();
+        var expected = fresh.GetAvailableSorts(fileB).Select(s => s.Id).OrderBy(x => x).ToList();
+
+        // Открытие A не должно расширять список сортировок для B (иначе поля A утекли в дропдаун B).
+        Assert.Equal(expected, afterA);
+    }
+
     private static int Comparer(EventBase a, EventBase b, bool descending)
     {
         var r = a.Timestamp.CompareTo(b.Timestamp);
