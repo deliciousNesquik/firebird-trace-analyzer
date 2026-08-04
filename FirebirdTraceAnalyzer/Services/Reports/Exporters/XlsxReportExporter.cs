@@ -1,4 +1,5 @@
-﻿using ClosedXML.Excel;
+﻿using System.Globalization;
+using ClosedXML.Excel;
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
 using FirebirdTraceAnalyzer.Interfaces.Reports.Exporters;
@@ -227,7 +228,11 @@ public class XlsxReportExporter : IReportExporter
                         cell.Value = Convert.ToDouble(value);
                         if (!string.IsNullOrWhiteSpace(column.Format))
                         {
-                            cell.Style.NumberFormat.Format = column.Format;
+                            // Excel НЕ понимает .NET-спецификаторы ("N0" он покажет как "N1234").
+                            // Переводим в код формата Excel; нераспознанный формат не ставим (число как есть).
+                            var excelFormat = ToExcelNumberFormat(column.Format);
+                            if (excelFormat != null)
+                                cell.Style.NumberFormat.Format = excelFormat;
                         }
                     }
                     else
@@ -252,6 +257,39 @@ public class XlsxReportExporter : IReportExporter
         }
 
         return row;
+    }
+
+    /// <summary>
+    /// Переводит .NET-строку числового формата ("N0", "F2", "P1", "D5") в код формата Excel
+    /// ("#,##0", "0.00", "0.0%", "00000"). Excel не понимает .NET-спецификаторы и показал бы "N0"
+    /// буквально ("N1234"). Возвращает null для нераспознанного — тогда число рисуется без формата.
+    /// </summary>
+    private static string? ToExcelNumberFormat(string netFormat)
+    {
+        var f = netFormat.Trim();
+        if (f.Length == 0)
+            return null;
+
+        var specifier = char.ToUpperInvariant(f[0]);
+
+        // Уже код Excel (плейсхолдеры), а не .NET-спецификатор — используем как есть.
+        if (specifier is not ('N' or 'F' or 'D' or 'P' or 'E' or 'G' or 'C') && f.IndexOfAny(['#', '0', '%']) >= 0)
+            return f;
+
+        var digits = -1; // -1 = точность не указана явно
+        if (f.Length > 1 && int.TryParse(f.AsSpan(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            digits = parsed;
+
+        static string Decimals(int count) => count > 0 ? "." + new string('0', count) : string.Empty;
+
+        return specifier switch
+        {
+            'N' => "#,##0" + Decimals(digits >= 0 ? digits : 2), // группировка тысяч + N знаков (по умолч. 2)
+            'F' => "0" + Decimals(digits >= 0 ? digits : 2),      // фикс. точка без группировки
+            'P' => "0" + Decimals(digits >= 0 ? digits : 2) + "%", // проценты
+            'D' => new string('0', digits > 0 ? digits : 1),      // целое с мин. числом цифр (ведущие нули)
+            _ => null
+        };
     }
 
     private int ComposeStatistics(IXLWorksheet worksheet, int startRow, ReportMetadata metadata)
