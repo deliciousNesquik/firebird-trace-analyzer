@@ -144,14 +144,18 @@ public sealed class SortingService : ISortingService
         {
             // decorate-sort-undecorate: извлекаем ключ ОДИН раз на событие, затем сортируем по ключам,
             // вместо пересчёта геттера через рефлексию на каждом из O(N·logN) сравнений.
-            var keyed = new (object? Key, EventBase Event)[sorted.Count];
+            // Индекс — tiebreaker: Array.Sort нестабилен, а при равных ключах порядок должен сохраняться.
+            var keyed = new (object? Key, int Index, EventBase Event)[sorted.Count];
             for (var i = 0; i < sorted.Count; i++)
-                keyed[i] = (keySelector(sorted[i]), sorted[i]);
+                keyed[i] = (keySelector(sorted[i]), i, sorted[i]);
 
             Array.Sort(keyed, (a, b) =>
             {
                 var result = _propertyAccessor.Compare(a.Key, b.Key);
-                return descending ? -result : result;
+                if (result != 0)
+                    return descending ? -result : result;
+                // Ключи равны — сохраняем исходный порядок (не зависит от направления сортировки).
+                return a.Index.CompareTo(b.Index);
             });
 
             for (var i = 0; i < keyed.Length; i++)
@@ -159,7 +163,19 @@ public sealed class SortingService : ISortingService
         }
         else
         {
-            sorted.Sort((a, b) => descriptor.Comparer(a, b, descending));
+            // Тот же приём стабильности для кастомного Comparer (List.Sort тоже нестабилен).
+            var indexed = new (int Index, EventBase Event)[sorted.Count];
+            for (var i = 0; i < sorted.Count; i++)
+                indexed[i] = (i, sorted[i]);
+
+            Array.Sort(indexed, (a, b) =>
+            {
+                var result = descriptor.Comparer(a.Event, b.Event, descending);
+                return result != 0 ? result : a.Index.CompareTo(b.Index);
+            });
+
+            for (var i = 0; i < indexed.Length; i++)
+                sorted[i] = indexed[i].Event;
         }
 
         Logger.Info("Sorting applied: {DisplayName}, descending={Descending}",

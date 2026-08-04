@@ -98,6 +98,33 @@ public sealed class SortingServiceTests
         Assert.Equal(expected, afterA);
     }
 
+    private static EventBase AtId(DateTime ts, int traceId) =>
+        new TraceInitEvent
+        {
+            Timestamp = ts, TraceId = traceId, HexTraceId = "0x01", EventType = EventType.TraceInit,
+            Session = new TraceSessionInfo { SessionId = 100 }
+        };
+
+    [Fact]
+    public void EqualKeys_PreserveInputOrder_Stable()
+    {
+        var svc = NewService();
+        svc.RegisterCustomSort(new SortDescriptor("ts", "By time", Comparer, isDefault: false)
+        {
+            KeySelector = e => e.Timestamp
+        });
+
+        // Одинаковый Timestamp у всех → ключи равны; различаем по TraceId.
+        var input = new[] { AtId(T1, 20), AtId(T1, 30), AtId(T1, 10) };
+
+        var asc = svc.ApplySort(input, "ts").ToList();
+        Assert.Equal([20, 30, 10], asc.Select(e => e.TraceId).ToArray()); // порядок входа сохранён
+
+        // И при descending равные ключи НЕ переворачиваются (стабильность).
+        var desc = svc.ApplySort(input, "ts", descending: true).ToList();
+        Assert.Equal([20, 30, 10], desc.Select(e => e.TraceId).ToArray());
+    }
+
     private static int Comparer(EventBase a, EventBase b, bool descending)
     {
         var r = a.Timestamp.CompareTo(b.Timestamp);
