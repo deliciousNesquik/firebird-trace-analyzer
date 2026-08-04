@@ -36,7 +36,7 @@ public class SshConnectionService : ISshConnectionService
     public SshConnectionSettings? CurrentSettings { get; private set; }
 
     /// <summary>Получить SFTP клиента (для использования в RemoteFileService)</summary>
-    internal SftpClient? GetSftpClient() => _sftpClient;
+    public ISftpClient? GetSftpClient() => _sftpClient;
 
     public async Task ConnectAsync(SshConnectionSettings settings, CancellationToken cancellationToken = default)
     {

@@ -17,12 +17,11 @@ public class RemoteFileService : IRemoteFileService
     /// буфер (тысячи раз), без троттлинга это заваливает UI-поток.</summary>
     private const long ProgressThrottleMs = 100;
 
-    private readonly SshConnectionService _connectionService;
+    private readonly ISshConnectionService _connectionService;
 
     public RemoteFileService(ISshConnectionService connectionService)
     {
-        _connectionService = connectionService as SshConnectionService 
-            ?? throw new ArgumentException("Must be SshConnectionService", nameof(connectionService));
+        _connectionService = connectionService ?? throw new ArgumentNullException(nameof(connectionService));
     }
 
     public Task<IReadOnlyList<RemoteFileInfo>> GetFilesAsync(
@@ -101,7 +100,7 @@ public class RemoteFileService : IRemoteFileService
     ///     Пытается прочитать /etc/passwd с сервера и построить карту uid → имя пользователя.
     ///     Возвращает null, если файл недоступен (не Linux, нет прав и т.п.) — тогда показываем UID.
     /// </summary>
-    private static Dictionary<int, string>? TryLoadOwnerNames(SftpClient sftpClient)
+    private static Dictionary<int, string>? TryLoadOwnerNames(ISftpClient sftpClient)
     {
         try
         {

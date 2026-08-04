@@ -1,4 +1,7 @@
+using FirebirdTraceAnalyzer.Interfaces.Remote;
+using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using Renci.SshNet;
 
 namespace FirebirdTraceAnalyzer.Tests;
 
@@ -45,5 +48,29 @@ public sealed class RemoteFileServicePathTests
     {
         var ex = Record.Exception(() => RemoteFileService.ResolveSafeLocalPath(Root, name));
         Assert.IsType<InvalidOperationException>(ex);
+    }
+
+    [Fact]
+    public async Task Ctor_AcceptsAnyISshConnectionService_AndFailsGracefullyWithoutClient()
+    {
+        // DIP (M7): раньше конструктор кастовал к конкретному SshConnectionService и бросал
+        // ArgumentException для любого мока. Теперь принимается любая реализация интерфейса.
+        var svc = new RemoteFileService(new FakeSsh());
+
+        // Клиента нет → внятная ошибка на операции, а не падение в конструкторе.
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await svc.GetFilesAsync("/logs"));
+    }
+
+    private sealed class FakeSsh : ISshConnectionService
+    {
+        public bool IsConnected => false;
+        public SshConnectionSettings? CurrentSettings => null;
+        public Task ConnectAsync(SshConnectionSettings settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public void Disconnect() { }
+        public Task<bool> FileExistsAsync(string remotePath, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<bool> DirectoryExistsAsync(string remotePath, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<bool> CanReadAsync(string remotePath, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public ISftpClient? GetSftpClient() => null;
+        public void Dispose() { }
     }
 }

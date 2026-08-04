@@ -1,4 +1,5 @@
 ﻿using FirebirdTraceAnalyzer.Models;
+using Renci.SshNet;
 
 namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
@@ -27,4 +28,10 @@ public interface ISshConnectionService : IDisposable
     
     /// <summary>Проверить права на чтение</summary>
     Task<bool> CanReadAsync(string remotePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Активный SFTP-клиент (или <c>null</c>, если не подключены). Через абстракцию — чтобы
+    /// зависимые сервисы (RemoteFileService) не кастовали к конкретному классу и были тестируемы.
+    /// </summary>
+    ISftpClient? GetSftpClient();
 }
