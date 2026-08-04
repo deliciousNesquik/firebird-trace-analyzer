@@ -125,6 +125,23 @@ public sealed class SortingServiceTests
         Assert.Equal([20, 30, 10], desc.Select(e => e.TraceId).ToArray());
     }
 
+    [Fact]
+    public void ComparerPath_EqualKeys_PreserveInputOrder_Stable()
+    {
+        // Путь кастомного Comparer (БЕЗ KeySelector) — как у плагинов. Равные ключи должны сохранять
+        // исходный порядок (индекс-tiebreaker в else-ветке ApplySort), в т.ч. при descending.
+        var svc = NewService();
+        svc.RegisterCustomSort(new SortDescriptor("ts", "By time", Comparer, isDefault: false));
+
+        var input = new[] { AtId(T1, 20), AtId(T1, 30), AtId(T1, 10) };
+
+        var asc = svc.ApplySort(input, "ts").ToList();
+        Assert.Equal([20, 30, 10], asc.Select(e => e.TraceId).ToArray());
+
+        var desc = svc.ApplySort(input, "ts", descending: true).ToList();
+        Assert.Equal([20, 30, 10], desc.Select(e => e.TraceId).ToArray());
+    }
+
     private static int Comparer(EventBase a, EventBase b, bool descending)
     {
         var r = a.Timestamp.CompareTo(b.Timestamp);
