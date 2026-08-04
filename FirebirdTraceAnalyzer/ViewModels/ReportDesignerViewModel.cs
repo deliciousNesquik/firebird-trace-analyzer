@@ -733,9 +733,14 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     /// </summary>
     public void MarkPreviewDirty()
     {
-        _previewDebounceCts?.Cancel();
+        // Отменяем и ОСВОБОЖДАЕМ прежний источник: без Dispose каждая правка в дизайнере копила
+        // неосвобождённые CancellationTokenSource (утечка таймер-регистраций).
+        var previous = _previewDebounceCts;
         _previewDebounceCts = new CancellationTokenSource();
         var token = _previewDebounceCts.Token;
+
+        previous?.Cancel();
+        previous?.Dispose();
 
         _ = DebouncedRefreshAsync(token);
     }
