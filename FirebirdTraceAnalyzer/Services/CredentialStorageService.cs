@@ -478,7 +478,18 @@ public class CredentialStorageService : ICredentialStorageService
         var key = RandomNumberGenerator.GetBytes(32);
         if (!Directory.Exists(_storageDirectory))
             Directory.CreateDirectory(_storageDirectory);
-        File.WriteAllText(keyPath, Convert.ToBase64String(key));
+
+        // Создаём файл СРАЗУ с правами 0600 (UnixCreateMode применяется при создании), чтобы между
+        // записью ключа и chmod не было окна, когда файл читаем другими пользователями (TOCTOU).
+        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows())
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
+        using (var stream = new FileStream(keyPath, options))
+        using (var writer = new StreamWriter(stream))
+            writer.Write(Convert.ToBase64String(key));
+
+        // На случай перезаписи уже существовавшего файла (UnixCreateMode применяется только к новому).
         RestrictFilePermissions(keyPath);
         return key;
     }
