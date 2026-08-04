@@ -1,3 +1,4 @@
+using System.Globalization;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 
@@ -17,9 +18,11 @@ public static class ReportStatisticsRows
     {
         var rows = new List<(string Label, string Value)>
         {
-            (Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString()),
-            (Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0")),
-            (Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0"))
+            // InvariantCulture — как и ячейки таблицы в экспортёрах: числа в одном отчёте должны
+            // форматироваться единообразно (иначе разделители тысяч в статистике и в таблице расходятся).
+            (Loc.Tr("Report.Export.TotalFiles"), metadata.Files.Count.ToString(CultureInfo.InvariantCulture)),
+            (Loc.Tr("Report.Export.TotalEventsBeforeFilters"), metadata.TotalEventsCount.ToString("N0", CultureInfo.InvariantCulture)),
+            (Loc.Tr("Report.Export.EventsInReport"), metadata.Events.Count.ToString("N0", CultureInfo.InvariantCulture))
         };
 
         if (!string.IsNullOrWhiteSpace(metadata.ActiveFilters))

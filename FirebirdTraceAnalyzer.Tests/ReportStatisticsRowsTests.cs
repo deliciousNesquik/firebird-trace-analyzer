@@ -1,3 +1,4 @@
+using System.Globalization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Reports;
@@ -27,8 +28,26 @@ public sealed class ReportStatisticsRowsTests
 
         Assert.Equal(3, rows.Count);
         Assert.Equal("2", rows[0].Value);
-        Assert.Equal(1234.ToString("N0"), rows[1].Value);   // то же форматирование, что в экспортёрах
-        Assert.Equal(42.ToString("N0"), rows[2].Value);
+        // Invariant — как ячейки таблицы в экспортёрах (единообразие чисел в отчёте).
+        Assert.Equal(1234.ToString("N0", CultureInfo.InvariantCulture), rows[1].Value);
+        Assert.Equal(42.ToString("N0", CultureInfo.InvariantCulture), rows[2].Value);
+    }
+
+    [Fact]
+    public void NumberFormatting_IsInvariant_RegardlessOfThreadCulture()
+    {
+        var original = CultureInfo.CurrentCulture;
+        try
+        {
+            // de-DE использует '.' как разделитель тысяч; вывод должен остаться invariant (',').
+            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+            var rows = ReportStatisticsRows.Build(Meta(files: 1, total: 1_000_000, inReport: 1, filters: null, sort: null));
+            Assert.Equal("1,000,000", rows[1].Value);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
     }
 
     [Fact]
