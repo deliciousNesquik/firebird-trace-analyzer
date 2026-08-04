@@ -1089,6 +1089,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _loadingCts = cts;
+            // _loadingCts уже ненулевой — переоценить CanCancelLoading, иначе пункт «Отмена» так и останется disabled.
+            CancelLoadingCommand.NotifyCanExecuteChanged();
 
             var files = await _fileDialogService.PickTraceFilesAsync();
 
@@ -1452,6 +1454,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _loadingCts = cts;
+            // _loadingCts уже ненулевой — переоценить CanCancelLoading, иначе пункт «Отмена» так и останется disabled.
+            CancelLoadingCommand.NotifyCanExecuteChanged();
 
             // Показываем диалог подключения как встроенный оверлей внутри главного окна
             var connectionResult = _navigation is not null &&
