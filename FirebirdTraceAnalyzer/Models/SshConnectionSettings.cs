@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text;
+using System.Text.Json.Serialization;
 using FirebirdTraceAnalyzer.Enums;
 
 namespace FirebirdTraceAnalyzer.Models;
@@ -42,6 +43,26 @@ public sealed record SshConnectionSettings
     
     /// <summary>Таймаут подключения (секунды)</summary>
     public int ConnectionTimeout { get; init; } = 30;
+
+    /// <summary>
+    /// Печать record без секретов: авто-ToString() у record выводит ВСЕ свойства, поэтому пароль и
+    /// парольная фраза утекли бы в логи при интерполяции/логировании записи. Маскируем их.
+    /// </summary>
+    private bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Hostname = ").Append(Hostname);
+        builder.Append(", Port = ").Append(Port);
+        builder.Append(", Username = ").Append(Username);
+        builder.Append(", AuthMethod = ").Append(AuthMethod);
+        builder.Append(", Password = ").Append(Password is null ? "null" : "***");
+        builder.Append(", PrivateKeyPath = ").Append(PrivateKeyPath);
+        builder.Append(", KeyPassphrase = ").Append(KeyPassphrase is null ? "null" : "***");
+        builder.Append(", RemoteDirectory = ").Append(RemoteDirectory);
+        builder.Append(", DeleteAfterProcessingFromServer = ").Append(DeleteAfterProcessingFromServer);
+        builder.Append(", DeleteAfterProcessingOnLocaleMachine = ").Append(DeleteAfterProcessingOnLocaleMachine);
+        builder.Append(", ConnectionTimeout = ").Append(ConnectionTimeout);
+        return true;
+    }
 
     /// <summary>Валидация настроек</summary>
     public bool IsValid(out string? errorMessage)

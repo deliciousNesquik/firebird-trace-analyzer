@@ -40,4 +40,25 @@ public sealed class SshConnectionSettingsSerializationTests
         Assert.Equal("db.example.local", back.Hostname);
         Assert.Equal(2222, back.Port);
     }
+
+    [Fact]
+    public void ToString_DoesNotLeakSecrets()
+    {
+        var settings = new SshConnectionSettings
+        {
+            Hostname = "db.example.local",
+            Username = "trace",
+            Password = "sup3r-secret",
+            KeyPassphrase = "top-secret-passphrase"
+        };
+
+        var text = settings.ToString();
+
+        // Секреты не попадают в ToString() (иначе утекли бы в логи при интерполяции записи).
+        Assert.DoesNotContain("sup3r-secret", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("top-secret-passphrase", text, StringComparison.Ordinal);
+        Assert.Contains("***", text, StringComparison.Ordinal);
+        // Несекретные поля печатаются.
+        Assert.Contains("db.example.local", text, StringComparison.Ordinal);
+    }
 }
