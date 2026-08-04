@@ -8,16 +8,16 @@ namespace FirebirdTraceAnalyzer.Controls.EventCards;
 public class StatementRestartEventCard : TransactionalEventCardBase
 {
     public static readonly StyledProperty<long> StatementIdProperty =
-        AvaloniaProperty.Register<StatementStartEventCard, long>(nameof(StatementId), 0);
+        AvaloniaProperty.Register<StatementRestartEventCard, long>(nameof(StatementId), 0);
     
     public static readonly StyledProperty<int> RestartCountProperty =
-        AvaloniaProperty.Register<StatementStartEventCard, int>(nameof(RestartCount), 0);
+        AvaloniaProperty.Register<StatementRestartEventCard, int>(nameof(RestartCount), 0);
     
     public static readonly StyledProperty<string> SqlProperty =
-        AvaloniaProperty.Register<StatementStartEventCard, string>(nameof(Sql), "<not set>");
+        AvaloniaProperty.Register<StatementRestartEventCard, string>(nameof(Sql), "<not set>");
     
     public static readonly StyledProperty<IReadOnlyList<SqlParameters>> ParamsProperty =
-        AvaloniaProperty.Register<StatementStartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
+        AvaloniaProperty.Register<StatementRestartEventCard, IReadOnlyList<SqlParameters>>(nameof(Params));
     
     public long StatementId
     {
