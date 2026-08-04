@@ -5,10 +5,11 @@ namespace FirebirdTraceAnalyzer.Core;
 
 public sealed class ExecuteStatementsBuilder
 {
-    public static string Build(string sql, IReadOnlyList<SqlParameters?> parameters)
+    public static string Build(string sql, IReadOnlyList<SqlParameters?>? parameters)
     {
-        // Если параметры отсутвуют тогда можно вернуть только sql statements text
-        if (parameters.Count == 0)
+        // Нет параметров (или список null) — возвращаем сам текст запроса. Null-safe, как ExecuteProcedureBuilder
+        // (иначе parameters.Count бросал бы NRE: у карточек ParamsProperty без дефолта = null).
+        if (parameters is not { Count: > 0 })
             return sql;
 
         // Создаем строителя строк для сборки параметров и запроса в единое целое
@@ -26,7 +27,9 @@ public sealed class ExecuteStatementsBuilder
         foreach (var ch in sql)
             if (ch == '?' && indexParameter < parameters.Count)
             {
-                sqlBuilder.Append(SqlParameterFormatter.Format(parameters[indexParameter]));
+                var parameter = parameters[indexParameter];
+                // null-элемент оставляем как '?': подставить нечего (в trace значение отсутствовало).
+                sqlBuilder.Append(parameter is null ? "?" : SqlParameterFormatter.Format(parameter));
                 indexParameter++;
             }
             else
