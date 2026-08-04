@@ -35,10 +35,14 @@ public sealed class SettingsService : ISettingsService
     public UiSectionSettings Ui { get; }
     public WindowSettings Window { get; }
 
-    public SettingsService(IOptions<AppSettings> defaultApp, IOptions<UiSectionSettings> defaultUi)
+    public SettingsService(IOptions<AppSettings> defaultApp, IOptions<UiSectionSettings> defaultUi,
+        string? settingsDirectory = null)
     {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _settingsFilePath = Path.Combine(appDataPath, "FirebirdTraceAnalyzer", "settings.json");
+        // settingsDirectory — шов для тестов; в проде null → %AppData%/FirebirdTraceAnalyzer.
+        var baseDir = settingsDirectory
+                      ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                          "FirebirdTraceAnalyzer");
+        _settingsFilePath = Path.Combine(baseDir, "settings.json");
 
         _defaults = new UserSettings
         {
@@ -76,7 +80,23 @@ public sealed class SettingsService : ISettingsService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load user settings, falling back to defaults");
+            // Перед откатом на дефолты делаем резервную копию: иначе первый же Save() перезапишет
+            // повреждённый (но, возможно, чинибельный вручную) файл дефолтами — молчаливая потеря настроек.
+            TryBackupCorruptFile();
+            Logger.Error(ex, "Failed to load user settings, falling back to defaults (corrupt file backed up)");
+        }
+    }
+
+    private void TryBackupCorruptFile()
+    {
+        try
+        {
+            if (File.Exists(_settingsFilePath))
+                File.Copy(_settingsFilePath, _settingsFilePath + ".bak", overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to back up corrupt settings file");
         }
     }
 
@@ -91,7 +111,12 @@ public sealed class SettingsService : ISettingsService
             var json = JsonSerializer.Serialize(
                 new UserSettings { App = App, Ui = Ui, Window = Window },
                 JsonOptions);
-            File.WriteAllText(_settingsFilePath, json);
+
+            // Атомарная запись: пишем во временный файл и переименовываем поверх. Иначе краш/частичная
+            // запись усекли бы живой settings.json (и следующий Load() потерял бы настройки).
+            var tmp = _settingsFilePath + ".tmp";
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, _settingsFilePath, overwrite: true);
 
             Logger.Debug("User settings saved to {Path}", _settingsFilePath);
         }
