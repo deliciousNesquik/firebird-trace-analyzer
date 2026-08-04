@@ -271,6 +271,26 @@ public sealed class EventStoreRoundTripTests
     }
 
     [Fact]
+    public void ExportTo_ActiveStorePath_Throws_AndKeepsData()
+    {
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H1", "1.log"), SampleEvents());
+
+            // Экспорт в собственный активный файл должен быть отклонён ДО удаления файлов БД,
+            // иначе весь архив был бы затёрт экспортируемым срезом.
+            Assert.Throws<InvalidOperationException>(() => store.ExportTo(db, store.ListFiles()));
+
+            // Данные на месте — архив не потерян.
+            Assert.Equal(1, store.GetStatistics().FileCount);
+            Assert.Equal(16, store.ReadFile("H1").Count);
+        }
+        finally { TryDelete(db); }
+    }
+
+    [Fact]
     public void Import_SkipsFilesAlreadyPresent()
     {
         var srcDb = TempDb();

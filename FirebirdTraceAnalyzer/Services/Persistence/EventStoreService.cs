@@ -510,6 +510,13 @@ RETURNING seq;");
         if (string.IsNullOrWhiteSpace(targetDbPath))
             throw new ArgumentException("Target path is empty.", nameof(targetDbPath));
 
+        // Путь экспорта выбирает пользователь через SaveFilePicker. Если он укажет активное
+        // хранилище — DeleteDbFiles снёс бы живой файл при открытом соединении, а затем в него
+        // записался бы лишь экспортируемый срез: весь накопленный архив был бы молча потерян.
+        if (string.Equals(Path.GetFullPath(targetDbPath), Path.GetFullPath(_dbPath),
+                StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Целевой файл экспорта совпадает с активным хранилищем.");
+
         // Чистый экспорт: если файл существует — удаляем его (и WAL-спутники), чтобы получить
         // самодостаточную БД ровно с выбранными файлами.
         DeleteDbFiles(targetDbPath);
