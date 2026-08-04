@@ -160,6 +160,10 @@ public partial class ReportPreviewViewModel : ViewModelBase
             StatusMessage = Loc.Tr("Status.ReportPreview.PreviewReady");
             Logger.Info("Preview initialized for template: {Name}", template.Name);
         }
+        catch (OperationCanceledException)
+        {
+            // Превью отменено следующей правкой (debounce) — это норма, не ошибка: без лога и без error-статуса.
+        }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error initializing preview");
