@@ -84,8 +84,10 @@ public class SshConnectionService : ISshConnectionService
                         settings.Hostname, settings.Port);
             };
 
-            // Подключаемся (синхронно, т.к. SSH.NET не имеет async версии Connect)
-            await Task.Run(() => _sftpClient.Connect(), cancellationToken);
+            // Отменяемое подключение (SSH.NET 2025.x): токен реально прерывает Connect. Task.Run(Connect)
+            // отменял лишь ЗАПУСК задачи, а блокирующий Connect висел до ConnectionTimeout (~30с), из-за
+            // чего кнопка «Отмена» не срабатывала.
+            await _sftpClient.ConnectAsync(cancellationToken);
 
             if (!_sftpClient.IsConnected)
                 throw new SshConnectionException("Failed to establish SFTP connection");
