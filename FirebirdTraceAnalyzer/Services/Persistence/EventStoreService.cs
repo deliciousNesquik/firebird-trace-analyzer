@@ -602,6 +602,9 @@ RETURNING seq;");
         return result;
     }
 
+    // КОНТРАКТ: см. IEventStoreReader.Query — держит открытый reader на общем соединении, поэтому
+    // перечисление обязано завершиться в рамках одного обращения к диспетчеру, до любой другой операции
+    // со стором (у SQLite один reader на соединение; перемежение команд повредит стрим/соединение).
     public IEnumerable<EventBase> Query(DateTime? from = null, DateTime? to = null)
     {
         var attCache = new Dictionary<long, AttachmentInfo>();
