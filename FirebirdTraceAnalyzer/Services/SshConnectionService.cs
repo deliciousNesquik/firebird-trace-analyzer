@@ -204,8 +204,26 @@ public class SshConnectionService : ISshConnectionService
             try
             {
                 var file = _sftpClient!.Get(remotePath);
-                // Проверяем права на чтение (owner read = 0400)
-                return file.Attributes.OwnerCanRead;
+
+                // Бит владельца (OwnerCanRead) — это права ВЛАДЕЛЬЦА объекта, а не эффективный доступ
+                // подключённого пользователя (напр. /var/log/firebird root:0750 → OwnerCanRead=true,
+                // но чужой пользователь читать не может). Проверяем реальной операцией.
+                if (file.IsDirectory)
+                {
+                    // Открытие каталога на листинг завершится SftpPermissionDeniedException, если доступа нет.
+                    using var e = _sftpClient.ListDirectory(remotePath).GetEnumerator();
+                    e.MoveNext();
+                }
+                else
+                {
+                    using var stream = _sftpClient.OpenRead(remotePath);
+                }
+
+                return true;
+            }
+            catch (Renci.SshNet.Common.SftpPermissionDeniedException)
+            {
+                return false;
             }
             catch (Exception ex)
             {
