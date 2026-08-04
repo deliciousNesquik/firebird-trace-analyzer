@@ -85,12 +85,15 @@ public sealed class EventStoreCoordinator : IEventStoreCoordinator
         });
     }
 
-    public async Task<IReadOnlyList<EventBase>> ReadFileAsync(string fileHash)
+    public async Task<IReadOnlyList<EventBase>> ReadFileAsync(string fileHash, CancellationToken cancellationToken = default)
     {
         var dispatcher = Dispatcher;
         if (dispatcher is null)
             return [];
 
+        // Чтение из SQLite синхронно и непрерываемо, но уже запрошенную отмену не игнорируем:
+        // не начинаем крупное чтение, если операция отменена.
+        cancellationToken.ThrowIfCancellationRequested();
         return await dispatcher.RunAsync(store => store.ReadFile(fileHash));
     }
 

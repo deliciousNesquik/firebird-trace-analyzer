@@ -1186,7 +1186,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 // Кэш переоткрытия: если файл с этим хэшем уже в хранилище — читаем события с диска
                 // вместо повторного парсинга (мгновенное переоткрытие / восстановление после падения).
                 var traceModel = _storeCoordinator is { IsEnabled: true } && await _storeCoordinator.ContainsAsync(fileHash)
-                    ? await LoadFromStoreAsync(fileInfo, fileHash)
+                    ? await LoadFromStoreAsync(fileInfo, fileHash, cancellationToken)
                     : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
                 var cardName = traceModel.FileName;
@@ -1277,7 +1277,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// но без парсинга и без повторной записи в стор. Диапазон времени берём из первого/последнего события
     /// (порядок записи = порядок разбора).
     /// </summary>
-    private async Task<TraceFileInfoModel> LoadFromStoreAsync(FileInfo fileInfo, string fileHash)
+    private async Task<TraceFileInfoModel> LoadFromStoreAsync(FileInfo fileInfo, string fileHash, CancellationToken cancellationToken)
     {
         StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingFromStore"), fileInfo.Name);
         Logger.Info("Loading from store (cache hit): {FileName}", fileInfo.Name);
@@ -1285,7 +1285,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var readSw = Stopwatch.StartNew();
         var restored = _storeCoordinator is null
             ? (IReadOnlyList<EventBase>)[]
-            : await _storeCoordinator.ReadFileAsync(fileHash);
+            : await _storeCoordinator.ReadFileAsync(fileHash, cancellationToken);
         readSw.Stop();
 
         var events = restored as List<EventBase> ?? restored.ToList();

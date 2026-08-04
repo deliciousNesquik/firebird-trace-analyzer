@@ -24,7 +24,7 @@ public interface IEventStoreCoordinator
     void Persist(TraceFileInfoModel file, IReadOnlyList<EventBase> events);
 
     /// <summary>Читает события файла из хранилища (порядок = порядок записи). Пустой список, если хранилище выключено.</summary>
-    Task<IReadOnlyList<EventBase>> ReadFileAsync(string fileHash);
+    Task<IReadOnlyList<EventBase>> ReadFileAsync(string fileHash, CancellationToken cancellationToken = default);
 
     /// <summary>Манифест файлов в хранилище (для восстановления сессии). Пустой список при сбое/выключенном хранилище.</summary>
     Task<IReadOnlyList<TraceFileInfoModel>> ListFilesAsync();
