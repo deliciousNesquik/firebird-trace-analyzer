@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Reflection;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
@@ -269,8 +270,11 @@ public sealed class FilteringService : IFilteringService
             }
             case FilterType.NumericRange:
             {
-                var min = filter.CurrentMinValue as IComparable;
-                var max = filter.CurrentMaxValue as IComparable;
+                // Границы приходят из TwoWay-биндинга TextBox → могут быть строкой. Приводим ОДИН раз
+                // к типу поля (MinValue/MaxValue хранят исходные значения нужного типа), как в DateTimeRange.
+                var targetType = (filter.MinValue ?? filter.MaxValue)?.GetType();
+                var min = CoerceComparable(filter.CurrentMinValue, targetType);
+                var max = CoerceComparable(filter.CurrentMaxValue, targetType);
                 return evt =>
                 {
                     if (_propertyAccessor.GetValue(evt, path) is not IComparable value)
@@ -293,6 +297,28 @@ public sealed class FilteringService : IFilteringService
             }
             default:
                 return filter.FilterPredicate;
+        }
+    }
+
+    /// <summary>
+    /// Приводит границу числового диапазона к типу поля. Граница может прийти СТРОКОЙ из
+    /// TwoWay-биндинга TextBox — тогда <c>value.CompareTo(bound)</c> бросил бы ArgumentException
+    /// (напр. <c>int.CompareTo("100")</c>). Непарсимая граница → <c>null</c> (трактуем как «не задана»),
+    /// чтобы один кривой ввод не ронял весь конвейер фильтров.
+    /// </summary>
+    private static IComparable? CoerceComparable(object? bound, Type? targetType)
+    {
+        if (bound is null || targetType is null)
+            return null;
+        if (bound.GetType() == targetType)
+            return bound as IComparable;
+        try
+        {
+            return Convert.ChangeType(bound, targetType, CultureInfo.CurrentCulture) as IComparable;
+        }
+        catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException or ArgumentException)
+        {
+            return null;
         }
     }
 
@@ -352,10 +378,14 @@ public sealed class FilteringService : IFilteringService
                     if (_propertyAccessor.GetValue(evt, clone.PropertyPath) is not IComparable value)
                         return false;
 
-                    if (clone.CurrentMinValue is IComparable min && value.CompareTo(min) < 0)
+                    // Границы могут быть строкой из TextBox — приводим к типу значения, чтобы CompareTo не бросал.
+                    var min = CoerceComparable(clone.CurrentMinValue, value.GetType());
+                    var max = CoerceComparable(clone.CurrentMaxValue, value.GetType());
+
+                    if (min != null && value.CompareTo(min) < 0)
                         return false;
 
-                    if (clone.CurrentMaxValue is IComparable max && value.CompareTo(max) > 0)
+                    if (max != null && value.CompareTo(max) > 0)
                         return false;
 
                     return true;
@@ -549,8 +579,9 @@ public sealed class FilteringService : IFilteringService
             if (value == null)
                 return false;
 
-            var currentMin = descriptor.CurrentMinValue as IComparable;
-            var currentMax = descriptor.CurrentMaxValue as IComparable;
+            // Границы могут быть строкой из TextBox — приводим к типу значения, чтобы CompareTo не бросал.
+            var currentMin = CoerceComparable(descriptor.CurrentMinValue, value.GetType());
+            var currentMax = CoerceComparable(descriptor.CurrentMaxValue, value.GetType());
 
             if (currentMin != null && value.CompareTo(currentMin) < 0)
                 return false;

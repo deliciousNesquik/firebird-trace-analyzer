@@ -32,6 +32,13 @@ public sealed class FilteringServiceApplyTests
             Session = new TraceSessionInfo { SessionId = 100 }
         };
 
+    private static EventBase InitId(int traceId) =>
+        new TraceInitEvent
+        {
+            Timestamp = new DateTime(2026, 7, 21, 10, 0, 0), TraceId = traceId, HexTraceId = "0x01",
+            EventType = EventType.TraceInit, Session = new TraceSessionInfo { SessionId = 100 }
+        };
+
     [Fact]
     public void NoActiveFilters_ReturnsAll()
     {
@@ -97,6 +104,46 @@ public sealed class FilteringServiceApplyTests
 
         var result = svc.ApplyFilters(events, new[] { filter }).ToList();
         Assert.Single(result); // граница проигнорирована, событие проходит
+    }
+
+    [Fact]
+    public void NumericRange_WithStringBounds_FiltersCorrectly_AndDoesNotThrow()
+    {
+        var svc = NewService();
+        var events = new[] { InitId(10), InitId(20), InitId(30) };
+
+        var filter = new FilterDescriptor("tid", "TID", FilterType.NumericRange, "TraceId", _ => true)
+        {
+            IsActive = true,
+            MinValue = 10, // тип поля (int) — образец для приведения границ
+            MaxValue = 30,
+            // Границы — СТРОКИ, как их кладёт TwoWay TextBox. Раньше int.CompareTo("15") бросал ArgumentException.
+            CurrentMinValue = "15",
+            CurrentMaxValue = "25"
+        };
+
+        var result = svc.ApplyFilters(events, new[] { filter }).ToList();
+        Assert.Single(result);
+        Assert.Equal(20, result[0].TraceId);
+    }
+
+    [Fact]
+    public void NumericRange_UnparseableBound_DoesNotThrow_AndIsIgnored()
+    {
+        var svc = NewService();
+        var events = new[] { InitId(10), InitId(20) };
+
+        var filter = new FilterDescriptor("tid", "TID", FilterType.NumericRange, "TraceId", _ => true)
+        {
+            IsActive = true,
+            MinValue = 10,
+            MaxValue = 20,
+            CurrentMinValue = "abc", // абсурд: непарсимая нижняя граница не должна ронять фильтр
+            CurrentMaxValue = "25"   // верхняя валидна → обе записи проходят
+        };
+
+        var result = svc.ApplyFilters(events, new[] { filter }).ToList();
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
