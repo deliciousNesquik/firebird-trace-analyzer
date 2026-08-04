@@ -50,10 +50,14 @@ public class DocxReportExporter : IReportExporter
 
                 body.AppendChild(new Paragraph(new Run(new Break())));
 
+                // Проекцию событий считаем ОДИН раз на весь экспорт (как PDF): Lazy вычисляется только
+                // при наличии Events-секции и не пересобирается для каждой такой секции.
+                var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
+
                 foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    ComposeSection(body, section, template, metadata);
+                    ComposeSection(body, section, metadata, eventsTable);
                 }
 
                 if (template.Footer.Show)
@@ -135,7 +139,7 @@ public class DocxReportExporter : IReportExporter
         }
     }
 
-    private void ComposeSection(Body body, ReportSection section, ReportTemplate template, ReportMetadata metadata)
+    private void ComposeSection(Body body, ReportSection section, ReportMetadata metadata, Lazy<ReportTable> eventsTable)
     {
         body.AppendChild(new Paragraph(new Run(new Break())));
 
@@ -166,7 +170,7 @@ public class DocxReportExporter : IReportExporter
         switch (section.ContentType)
         {
             case SectionContentType.Events:
-                ComposeEventsTable(body, template, metadata.Events);
+                ComposeEventsTable(body, eventsTable.Value);
                 break;
 
             case SectionContentType.Statistics:
@@ -175,9 +179,8 @@ public class DocxReportExporter : IReportExporter
         }
     }
 
-    private void ComposeEventsTable(Body body, ReportTemplate template, IReadOnlyList<EventBase> events)
+    private void ComposeEventsTable(Body body, ReportTable data)
     {
-        var data = _projectionService.BuildTable(template, events);
 
         var table = body.AppendChild(new Table());
 

@@ -53,10 +53,14 @@ public class XlsxReportExporter : IReportExporter
                 currentRow = ComposeHeader(worksheet, currentRow, template, metadata);
                 currentRow += 2; // Пропускаем 2 строки
 
+                // Проекцию событий считаем ОДИН раз на весь экспорт (как PDF): Lazy вычисляется только
+                // при наличии Events-секции и не пересобирается для каждой такой секции.
+                var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
+
                 foreach (var section in template.Body.Sections.OrderBy(s => s.Order))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    currentRow = ComposeSection(worksheet, currentRow, section, template, metadata);
+                    currentRow = ComposeSection(worksheet, currentRow, section, metadata, eventsTable);
                     currentRow += 2; // Разделитель между секциями
                 }
 
@@ -140,7 +144,7 @@ public class XlsxReportExporter : IReportExporter
         return row;
     }
 
-    private int ComposeSection(IXLWorksheet worksheet, int startRow, ReportSection section, ReportTemplate template, ReportMetadata metadata)
+    private int ComposeSection(IXLWorksheet worksheet, int startRow, ReportSection section, ReportMetadata metadata, Lazy<ReportTable> eventsTable)
     {
         var row = startRow;
 
@@ -173,7 +177,7 @@ public class XlsxReportExporter : IReportExporter
         switch (section.ContentType)
         {
             case SectionContentType.Events:
-                row = ComposeEventsTable(worksheet, row, template, metadata.Events);
+                row = ComposeEventsTable(worksheet, row, eventsTable.Value);
                 break;
 
             case SectionContentType.Statistics:
@@ -184,9 +188,8 @@ public class XlsxReportExporter : IReportExporter
         return row;
     }
 
-    private int ComposeEventsTable(IXLWorksheet worksheet, int startRow, ReportTemplate template, IReadOnlyList<EventBase> events)
+    private int ComposeEventsTable(IXLWorksheet worksheet, int startRow, ReportTable data)
     {
-        var data = _projectionService.BuildTable(template, events);
         var row = startRow;
 
         // Заголовки столбцов
