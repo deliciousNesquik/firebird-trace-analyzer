@@ -518,8 +518,12 @@ RETURNING seq;");
         // Путь экспорта выбирает пользователь через SaveFilePicker. Если он укажет активное
         // хранилище — DeleteDbFiles снёс бы живой файл при открытом соединении, а затем в него
         // записался бы лишь экспортируемый срез: весь накопленный архив был бы молча потерян.
-        if (string.Equals(Path.GetFullPath(targetDbPath), Path.GetFullPath(_dbPath),
-                StringComparison.OrdinalIgnoreCase))
+        // Регистрочувствительность — по ФС: Windows/macOS регистронезависимы, Linux — регистрозависим
+        // (иначе на Linux экспорт в Store.db отклонялся бы как «== store.db», хотя это другой файл).
+        var pathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        if (string.Equals(Path.GetFullPath(targetDbPath), Path.GetFullPath(_dbPath), pathComparison))
             throw new InvalidOperationException("Целевой файл экспорта совпадает с активным хранилищем.");
 
         // Чистый экспорт: если файл существует — удаляем его (и WAL-спутники), чтобы получить
