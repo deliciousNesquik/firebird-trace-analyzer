@@ -620,7 +620,11 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
             ShowSummary = template.Body.ShowSummary;
             DefaultFormat = template.DefaultFormat;
 
-            // Форматы
+            // Форматы: сначала сбрасываем все, затем включаем только объявленные в шаблоне — иначе
+            // прежде включённые форматы оставались бы активными, и список только «расширялся».
+            foreach (var f in SupportedFormats)
+                f.IsSupported = false;
+
             foreach (var format in template.SupportedFormats)
             {
                 var item = SupportedFormats.FirstOrDefault(f => f.Format == format);
