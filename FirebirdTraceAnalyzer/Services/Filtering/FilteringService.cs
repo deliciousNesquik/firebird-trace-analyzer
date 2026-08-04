@@ -358,7 +358,9 @@ public sealed class FilteringService : IFilteringService
                 result = default;
                 return false;
             default:
-                return DateTime.TryParse(boxed.ToString(), out result);
+                // Явная культура (та же, что рендерит TextBox) — чтобы парсинг не зависел от культуры
+                // потока; непарсимое → false (граница не применяется, без падения конвейера).
+                return DateTime.TryParse(boxed.ToString(), CultureInfo.CurrentCulture, DateTimeStyles.None, out result);
         }
     }
 
