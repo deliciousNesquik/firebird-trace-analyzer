@@ -39,7 +39,11 @@ public class CsvReportExporter : IReportExporter
             await using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 Delimiter = ",",
-                HasHeaderRecord = true
+                HasHeaderRecord = true,
+                // Данные приходят из trace (текст SQL, параметры, имена приложений/пользователей) —
+                // подконтрольны удалённому клиенту БД. Экранируем ячейки, начинающиеся с = + - @ TAB CR,
+                // чтобы Excel/LibreOffice не исполнял их как формулы/DDE (CWE-1236).
+                InjectionOptions = InjectionOptions.Escape
             });
 
             // Записываем метаданные в начало файла
