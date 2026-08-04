@@ -6,7 +6,9 @@ namespace FirebirdTraceAnalyzer.Services;
 
 /// <summary>
 /// TOFU-хранилище ключей SSH-хостов в файле <c>known_hosts</c> (%AppData%/FirebirdTraceAnalyzer).
-/// Первый ключ хоста запоминается; при несовпадении отпечатка — отказ (защита от MITM).
+/// Доверие ключуется по <c>(host, port)</c>: первый ключ хоста запоминается, а любой другой
+/// отпечаток ИЛИ алгоритм для уже известного хоста трактуется как отказ (защита от MITM —
+/// иначе активный посредник, навязав другой тип ключа, обошёл бы проверку через TOFU-ветку).
 /// Формат строки: <c>host\tport\tkeyName\tfingerprintSha256</c>.
 /// </summary>
 public sealed class KnownHostsStore : IHostKeyStore
@@ -42,7 +44,10 @@ public sealed class KnownHostsStore : IHostKeyStore
             return false;
         }
 
-        var key = MakeKey(host, port, keyName);
+        var key = MakeKey(host, port);
+        // Алгоритм входит в СРАВНИВАЕМОЕ значение (не в ключ доверия): смена типа ключа на
+        // известном хосте — это несовпадение и отказ, а не «новый хост».
+        var presented = $"{keyName}\t{fingerprintSha256}";
 
         lock (_sync)
         {
@@ -52,23 +57,23 @@ public sealed class KnownHostsStore : IHostKeyStore
             {
                 // Постоянно-временное сравнение здесь не критично (значения не секретны),
                 // но Ordinal обязателен: base64 регистрозависим.
-                var match = string.Equals(stored, fingerprintSha256, StringComparison.Ordinal);
+                var match = string.Equals(stored, presented, StringComparison.Ordinal);
                 if (!match)
-                    Logger.Error("Host key MISMATCH for {Host}:{Port} ({KeyName}): stored != presented — possible MITM",
+                    Logger.Error("Host key MISMATCH for {Host}:{Port}: stored != presented ({KeyName}) — possible MITM",
                         host, port, keyName);
                 return match;
             }
 
-            // TOFU: первый ключ запоминаем и доверяем.
-            known[key] = fingerprintSha256;
+            // TOFU: первый ключ хоста (алгоритм + отпечаток) запоминаем и доверяем.
+            known[key] = presented;
             Save(known);
             Logger.Info("Trusted new host key for {Host}:{Port} ({KeyName}) on first use", host, port, keyName);
             return true;
         }
     }
 
-    private static string MakeKey(string host, int port, string keyName) =>
-        $"{host}\t{port}\t{keyName}";
+    private static string MakeKey(string host, int port) =>
+        $"{host}\t{port}";
 
     private Dictionary<string, string> Load()
     {
@@ -86,7 +91,8 @@ public sealed class KnownHostsStore : IHostKeyStore
             if (parts.Length != 4)
                 continue;
 
-            result[MakeKey(parts[0], int.TryParse(parts[1], out var p) ? p : 0, parts[2])] = parts[3];
+            // Ключ доверия — (host, port); значение — алгоритм + отпечаток.
+            result[MakeKey(parts[0], int.TryParse(parts[1], out var p) ? p : 0)] = $"{parts[2]}\t{parts[3]}";
         }
 
         return result;
@@ -100,8 +106,9 @@ public sealed class KnownHostsStore : IHostKeyStore
 
         var sb = new StringBuilder();
         sb.AppendLine("# FirebirdTraceAnalyzer known SSH host keys (host\\tport\\tkeyName\\tsha256). Do not edit.");
-        foreach (var (compositeKey, fingerprint) in known)
-            sb.Append(compositeKey).Append('\t').Append(fingerprint).Append('\n');
+        // compositeKey = host\tport, algoAndFingerprint = keyName\tsha256 → строка из 4 полей.
+        foreach (var (compositeKey, algoAndFingerprint) in known)
+            sb.Append(compositeKey).Append('\t').Append(algoAndFingerprint).Append('\n');
 
         File.WriteAllText(_filePath, sb.ToString());
         RestrictPermissions(_filePath);

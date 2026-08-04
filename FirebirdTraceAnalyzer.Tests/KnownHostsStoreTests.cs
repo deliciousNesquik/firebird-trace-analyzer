@@ -49,15 +49,27 @@ public sealed class KnownHostsStoreTests : IDisposable
     }
 
     [Fact]
-    public void DifferentHostPortKeyType_AreIndependent()
+    public void DifferentHostPort_AreIndependent()
     {
         var store = new KnownHostsStore(_path);
         Assert.True(store.Verify("host", 22, "ssh-ed25519", "A"));
-        Assert.True(store.Verify("host", 2222, "ssh-ed25519", "B"));   // другой порт
-        Assert.True(store.Verify("other", 22, "ssh-ed25519", "C"));    // другой хост
-        Assert.True(store.Verify("host", 22, "ssh-rsa", "D"));         // другой тип ключа
+        Assert.True(store.Verify("host", 2222, "ssh-ed25519", "B"));   // другой порт — независим
+        Assert.True(store.Verify("other", 22, "ssh-ed25519", "C"));    // другой хост — независим
         // А исходная запись не перетёрлась.
         Assert.False(store.Verify("host", 22, "ssh-ed25519", "TAMPERED"));
+    }
+
+    [Fact]
+    public void ChangedKeyType_OnKnownHost_IsRejected()
+    {
+        // Доверие ключуется по (host, port): смена АЛГОРИТМА на известном хосте — это MITM,
+        // а не «новый хост». Иначе посредник, навязав другой тип ключа, обошёл бы проверку.
+        var store = new KnownHostsStore(_path);
+        Assert.True(store.Verify("host", 22, "ssh-ed25519", "GOOD"));
+        Assert.False(store.Verify("host", 22, "ssh-rsa", "ATTACKER"));           // другой тип ключа — отказ
+        Assert.False(new KnownHostsStore(_path).Verify("host", 22, "ssh-rsa", "ATTACKER")); // и после перезагрузки
+        // Легитимный исходный ключ по-прежнему принимается.
+        Assert.True(store.Verify("host", 22, "ssh-ed25519", "GOOD"));
     }
 
     [Fact]
