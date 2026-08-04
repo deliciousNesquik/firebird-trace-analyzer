@@ -105,6 +105,12 @@ public sealed class SortingServiceTests
             Session = new TraceSessionInfo { SessionId = 100 }
         };
 
+    // 32 события с ОДИНАКОВЫМ Timestamp (все ключи равны) и разными TraceId в фиксированном
+    // «перемешанном» порядке. N>16 → Array.Sort использует НЕстабильный introsort (при N≤16 —
+    // insertion sort, который стабилен сам по себе и не проверял бы наш индекс-tiebreaker).
+    private static EventBase[] EqualKeyInputs() =>
+        Enumerable.Range(0, 32).Select(i => AtId(T1, (i * 7) % 32)).ToArray();
+
     [Fact]
     public void EqualKeys_PreserveInputOrder_Stable()
     {
@@ -114,15 +120,15 @@ public sealed class SortingServiceTests
             KeySelector = e => e.Timestamp
         });
 
-        // Одинаковый Timestamp у всех → ключи равны; различаем по TraceId.
-        var input = new[] { AtId(T1, 20), AtId(T1, 30), AtId(T1, 10) };
+        var input = EqualKeyInputs();
+        var expected = input.Select(e => e.TraceId).ToArray();
 
         var asc = svc.ApplySort(input, "ts").ToList();
-        Assert.Equal([20, 30, 10], asc.Select(e => e.TraceId).ToArray()); // порядок входа сохранён
+        Assert.Equal(expected, asc.Select(e => e.TraceId).ToArray()); // порядок входа сохранён
 
         // И при descending равные ключи НЕ переворачиваются (стабильность).
         var desc = svc.ApplySort(input, "ts", descending: true).ToList();
-        Assert.Equal([20, 30, 10], desc.Select(e => e.TraceId).ToArray());
+        Assert.Equal(expected, desc.Select(e => e.TraceId).ToArray());
     }
 
     [Fact]
@@ -133,13 +139,14 @@ public sealed class SortingServiceTests
         var svc = NewService();
         svc.RegisterCustomSort(new SortDescriptor("ts", "By time", Comparer, isDefault: false));
 
-        var input = new[] { AtId(T1, 20), AtId(T1, 30), AtId(T1, 10) };
+        var input = EqualKeyInputs();
+        var expected = input.Select(e => e.TraceId).ToArray();
 
         var asc = svc.ApplySort(input, "ts").ToList();
-        Assert.Equal([20, 30, 10], asc.Select(e => e.TraceId).ToArray());
+        Assert.Equal(expected, asc.Select(e => e.TraceId).ToArray());
 
         var desc = svc.ApplySort(input, "ts", descending: true).ToList();
-        Assert.Equal([20, 30, 10], desc.Select(e => e.TraceId).ToArray());
+        Assert.Equal(expected, desc.Select(e => e.TraceId).ToArray());
     }
 
     private static int Comparer(EventBase a, EventBase b, bool descending)
