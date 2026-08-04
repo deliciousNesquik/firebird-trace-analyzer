@@ -271,6 +271,37 @@ public sealed class EventStoreRoundTripTests
     }
 
     [Fact]
+    public void Attachments_DifferingOnlyBySpacePlacement_AreNotMerged()
+    {
+        // Склейка ключа дедупа пробелом давала коллизию: "/db a"+"b" == "/db"+"a b".
+        // Разделитель Unit Separator (U+001F) устраняет её — это РАЗНЫЕ подключения.
+        AttachmentInfo AttA() => new()
+        {
+            AttachmentId = 1, DatabasePath = "/db a", User = "b", Role = "R", Charset = "UTF8",
+            Protocol = "TCPv4", Address = "addr", Port = 3050, ProcessPath = null, ProcessId = null
+        };
+        AttachmentInfo AttB() => new()
+        {
+            AttachmentId = 1, DatabasePath = "/db", User = "a b", Role = "R", Charset = "UTF8",
+            Protocol = "TCPv4", Address = "addr", Port = 3050, ProcessPath = null, ProcessId = null
+        };
+
+        var db = TempDb();
+        try
+        {
+            using var store = new EventStoreService(db);
+            store.WriteFile(File("H", "f.log"),
+            [
+                new AttachDatabaseEvent { Timestamp = T(0), TraceId = 2, HexTraceId = "0x02", EventType = EventType.AttachDatabase, Attachment = AttA() },
+                new AttachDatabaseEvent { Timestamp = T(1), TraceId = 3, HexTraceId = "0x03", EventType = EventType.AttachDatabase, Attachment = AttB() }
+            ]);
+
+            Assert.Equal(2, store.GetStatistics().UniqueAttachmentCount);
+        }
+        finally { TryDelete(db); }
+    }
+
+    [Fact]
     public void ExportTo_ActiveStorePath_Throws_AndKeepsData()
     {
         var db = TempDb();

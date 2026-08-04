@@ -395,7 +395,12 @@ RETURNING seq;");
 
         private long InternAttachment(AttachmentInfo a)
         {
-            var key = $"{a.AttachmentId} {a.DatabasePath} {a.User} {a.Role} {a.Charset} {a.Protocol} {a.Address} {a.Port} {a.ProcessPath} {a.ProcessId}";
+            // Разделитель — Unit Separator (U+001F), а не пробел: DatabasePath/User/ProcessPath могут
+            // содержать пробелы, и склейка пробелом давала коллизии ("a b"+"c" == "a"+"b c") — разные
+            // подключения сливались в одно.
+            var key = string.Join('\u001f',
+                a.AttachmentId, a.DatabasePath, a.User, a.Role, a.Charset, a.Protocol, a.Address, a.Port,
+                a.ProcessPath, a.ProcessId);
             if (_attCache.TryGetValue(key, out var cached)) return cached;
 
             var sha = Sha(key);
