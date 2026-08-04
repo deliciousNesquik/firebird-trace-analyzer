@@ -372,14 +372,28 @@ public class PluginManagerService : IPluginManagerService
         if (_pendingDelete.Count == 0)
             return;
 
+        var root = Path.GetFullPath(_pluginsDirectory);
+        var rootWithSep = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+
         foreach (var folder in _pendingDelete.ToList())
         {
             try
             {
-                if (Directory.Exists(folder))
-                    Directory.Delete(folder, recursive: true);
+                // Удаляем ТОЛЬКО пути внутри каталога плагинов: state.json недоверенный (мог быть
+                // подменён/повреждён), а Directory.Delete(recursive) по произвольному пути — это удаление
+                // чужих данных.
+                var full = Path.GetFullPath(folder);
+                if (!full.StartsWith(rootWithSep, StringComparison.Ordinal))
+                {
+                    Logger.Warn("Refusing to delete pending path outside plugins dir: {Path}", folder);
+                    _pendingDelete.Remove(folder);
+                    continue;
+                }
+
+                if (Directory.Exists(full))
+                    Directory.Delete(full, recursive: true);
                 _pendingDelete.Remove(folder);
-                Logger.Info("Deleted pending plugin package: {Path}", folder);
+                Logger.Info("Deleted pending plugin package: {Path}", full);
             }
             catch (Exception ex)
             {
