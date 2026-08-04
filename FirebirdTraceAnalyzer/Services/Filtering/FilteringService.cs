@@ -112,7 +112,9 @@ public sealed class FilteringService : IFilteringService
             {
                 case FilterType.EnumMultiSelect or FilterType.StringMultiSelect:
                 {
-                    var valueCounts = new Dictionary<object, int>();
+                    // Для строк считаем OrdinalIgnoreCase — как CreateStringFilter и предикат, иначе
+                    // 'isql' и 'ISQL' расходятся: счётчик занижается и появляется строка-дубль.
+                    var valueCounts = new Dictionary<object, int>(MultiSelectComparer(filter.FilterType));
                     foreach (var evt in events)
                     {
                         var value = _propertyAccessor.GetValue(evt, filter.PropertyPath);
@@ -161,7 +163,8 @@ public sealed class FilteringService : IFilteringService
                     foreach (var item in filter.AvailableValues)
                         item.Count = valueCounts.GetValueOrDefault(item.Value, 0);
 
-                    var existingValues = filter.AvailableValues.Select(v => v.Value).ToHashSet();
+                    var existingValues = filter.AvailableValues.Select(v => v.Value)
+                        .ToHashSet(MultiSelectComparer(filter.FilterType));
                     foreach (var (value, count) in valueCounts.Where(kv => !existingValues.Contains(kv.Key)))
                     {
                         var displayName = value is Enum ? GetEnumDisplayName(value) : value.ToString()!;
@@ -320,6 +323,27 @@ public sealed class FilteringService : IFilteringService
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Компаратор ключей мультиселекта: для строкового фильтра — OrdinalIgnoreCase (как при создании
+    /// фильтра и в предикате), для остальных (enum) — по умолчанию (<c>null</c>).
+    /// </summary>
+    private static IEqualityComparer<object>? MultiSelectComparer(FilterType type) =>
+        type == FilterType.StringMultiSelect ? ObjectOrdinalIgnoreCaseComparer.Instance : null;
+
+    /// <summary>Сравнивает object-ключи как OrdinalIgnoreCase для строк (для остальных типов — по умолчанию).</summary>
+    private sealed class ObjectOrdinalIgnoreCaseComparer : IEqualityComparer<object>
+    {
+        public static readonly ObjectOrdinalIgnoreCaseComparer Instance = new();
+
+        public new bool Equals(object? x, object? y) =>
+            x is string sx && y is string sy
+                ? string.Equals(sx, sy, StringComparison.OrdinalIgnoreCase)
+                : object.Equals(x, y);
+
+        public int GetHashCode(object obj) =>
+            obj is string s ? StringComparer.OrdinalIgnoreCase.GetHashCode(s) : obj.GetHashCode();
     }
 
     /// <summary>Приводит границу диапазона (DateTime, либо строка из TextBox) к <see cref="DateTime"/>.</summary>

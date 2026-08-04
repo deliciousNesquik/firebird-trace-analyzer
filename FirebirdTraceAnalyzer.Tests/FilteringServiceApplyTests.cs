@@ -39,6 +39,13 @@ public sealed class FilteringServiceApplyTests
             EventType = EventType.TraceInit, Session = new TraceSessionInfo { SessionId = 100 }
         };
 
+    private static EventBase InitHex(string hex) =>
+        new TraceInitEvent
+        {
+            Timestamp = new DateTime(2026, 7, 21, 10, 0, 0), TraceId = 1, HexTraceId = hex,
+            EventType = EventType.TraceInit, Session = new TraceSessionInfo { SessionId = 100 }
+        };
+
     [Fact]
     public void NoActiveFilters_ReturnsAll()
     {
@@ -144,6 +151,26 @@ public sealed class FilteringServiceApplyTests
 
         var result = svc.ApplyFilters(events, new[] { filter }).ToList();
         Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public void StringMultiSelect_ScanCountsCaseInsensitively_NoDuplicateRow()
+    {
+        var svc = NewService();
+        // Одно логическое значение в разном регистре ('0xAB' и '0xab') + отдельное '0xCD'.
+        var events = new[] { InitHex("0xAB"), InitHex("0xab"), InitHex("0xCD") };
+
+        var filter = new FilterDescriptor("hx", "HX", FilterType.StringMultiSelect, "HexTraceId", _ => true);
+        filter.AvailableValues.Add(new FilterValueItem("0xAB", "0xAB")); // как после CreateStringFilter
+
+        var scan = svc.ScanFilterValues(events, new[] { filter });
+        svc.ApplyFilterValues(new[] { filter }, scan);
+
+        // '0xAB' и '0xab' слиты в одну строку со счётчиком 2; '0xCD' добавлен отдельно — без дубля.
+        Assert.Equal(2, filter.AvailableValues.Count);
+        var merged = filter.AvailableValues.Single(v =>
+            string.Equals(v.Value?.ToString(), "0xAB", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(2, merged.Count);
     }
 
     [Fact]
