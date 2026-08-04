@@ -127,6 +127,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isFileLoading;
+
+    /// <summary>Идёт генерация быстрого отчёта — отдельный busy-флаг, чтобы его finally не сбрасывал
+    /// состояние загрузки файлов (у них общий гвард команд, но разные операции).</summary>
+    [ObservableProperty] private bool _isReportGenerating;
     [ObservableProperty] private double _loadProgress;
 
     /// <summary>Идёт формирование фильтров/сортировок (тяжёлый расчёт в фоне) — для индикатора загрузки.</summary>
@@ -771,12 +775,12 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanOpenFile))]
     private async Task GenerateQuickReportAsync(string templateId, CancellationToken cancellationToken)
     {
         try
         {
-            IsFileLoading = true;
+            IsReportGenerating = true;
             StatusMessage = Loc.Tr("Status.Main.GeneratingReport");
             Logger.Info("Quick report requested: {TemplateId}", templateId);
 
@@ -841,7 +845,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            IsFileLoading = false;
+            IsReportGenerating = false;
         }
     }
 
@@ -1073,7 +1077,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private bool CanOpenFile()
     {
-        return !IsFileLoading;
+        return !IsFileLoading && !IsReportGenerating;
     }
 
     /// <summary>Открывает диалог выбора файлов</summary>
@@ -2368,6 +2372,12 @@ public partial class MainWindowViewModel : ViewModelBase
         NotifyCommandsCanExecuteChanged();
     }
 
+    partial void OnIsReportGeneratingChanged(bool value)
+    {
+        // Генерация отчёта делит гвард CanOpenFile — переоценить те же команды, что и при загрузке.
+        NotifyCommandsCanExecuteChanged();
+    }
+
     private void NotifyCommandsCanExecuteChanged()
     {
         OpenLocalFileCommand.NotifyCanExecuteChanged();
@@ -2379,6 +2389,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ReparseSelectedFilesCommand.NotifyCanExecuteChanged();
         CloseAllFilesCommand.NotifyCanExecuteChanged();
         CloseSelectedFilesCommand.NotifyCanExecuteChanged();
+        // Быстрый отчёт тоже на CanOpenFile: блокируется во время загрузки и другой генерации.
+        GenerateQuickReportCommand.NotifyCanExecuteChanged();
     }
 
     private void UpdateStatistics()
