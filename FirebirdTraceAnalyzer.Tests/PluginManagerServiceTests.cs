@@ -36,4 +36,61 @@ public sealed class PluginManagerServiceTests
             try { Directory.Delete(outside, true); } catch { /* ignore */ }
         }
     }
+
+    [Fact]
+    public void FullyDisabledDll_IsSkipped_NotLoaded_NoCodeExecuted()
+    {
+        // Все типы DLL известны и выключены → сборка не грузится (ctor не исполняется). Заглушка Disabled,
+        // а НЕ LoadError: если бы её пытались загрузить, битая «сборка» дала бы LoadError.
+        var plugins = LoadWithBogusDll(disabled: true);
+
+        var p = Assert.Single(plugins);
+        Assert.Equal("X", p.Id);
+        Assert.Equal(PluginStatus.Disabled, p.Status);
+        Assert.Null(p.Instance);
+    }
+
+    [Fact]
+    public void EnabledDll_IsAttemptedToLoad_AndBogusOneFailsWithLoadError()
+    {
+        // Контраст: не выключено → DLL грузится → битая «сборка» даёт LoadError (значит скип выше — реальный).
+        var plugins = LoadWithBogusDll(disabled: false);
+
+        var p = Assert.Single(plugins);
+        Assert.Equal(PluginStatus.LoadError, p.Status);
+    }
+
+    private static IReadOnlyList<PluginInfo> LoadWithBogusDll(bool disabled)
+    {
+        var pluginsDir = Path.Combine(Path.GetTempPath(), "fta_plugins_" + Guid.NewGuid().ToString("N"));
+        var sub = Path.Combine(pluginsDir, "myplugin");
+        Directory.CreateDirectory(sub);
+        var dll = Path.Combine(sub, "myplugin.dll");
+        File.WriteAllBytes(dll, [0x00, 0x01, 0x02]); // не валидная .NET-сборка
+
+        var stateFile = Path.Combine(pluginsDir, "plugins.state.json");
+        object state = disabled
+            ? new
+            {
+                Disabled = new[] { new { File = dll, Id = "X" } },
+                PendingDelete = Array.Empty<string>(),
+                KnownTypes = new[] { new { File = dll, Ids = new[] { "X" } } }
+            }
+            : new
+            {
+                Disabled = Array.Empty<object>(),
+                PendingDelete = Array.Empty<string>(),
+                KnownTypes = new[] { new { File = dll, Ids = new[] { "X" } } }
+            };
+        File.WriteAllText(stateFile, JsonSerializer.Serialize(state));
+
+        try
+        {
+            return new PluginManagerService(pluginsDir).LoadAllPlugins();
+        }
+        finally
+        {
+            try { Directory.Delete(pluginsDir, true); } catch { /* ignore */ }
+        }
+    }
 }

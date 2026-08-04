@@ -28,6 +28,12 @@ public class PluginManagerService : IPluginManagerService
     private HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
     private List<string> _pendingDelete = new();
 
+    // Id плагинов, которые каждая DLL экспортировала при последней успешной загрузке. Учатся, когда
+    // плагин ещё включён и грузится штатно; позволяют на следующем старте ПРОПУСТИТЬ загрузку сборки
+    // (и её конструкторов), если ВСЕ её плагины выключены — иначе код «выключенного» плагина всё равно
+    // исполнялся бы при Activator.CreateInstance.
+    private Dictionary<string, List<string>> _knownTypesByPath = new(StringComparer.OrdinalIgnoreCase);
+
     // Разделитель для ключа экземпляра; NUL не встречается в путях/Id.
     private const char InstanceKeySep = '\0';
     private static string InstanceKey(string filePath, string id) => filePath + InstanceKeySep + id;
@@ -77,11 +83,22 @@ public class PluginManagerService : IPluginManagerService
                 if (fileName.Equals("FirebirdTraceParser.dll", StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                // Если ВСЕ типы этой DLL (по памяти прошлой загрузки) выключены — НЕ загружаем сборку,
+                // чтобы конструктор выключенного плагина не исполнялся. Показываем их как Disabled из памяти.
+                if (AllKnownTypesDisabled(pluginDllPath))
+                {
+                    AddDisabledPlaceholders(pluginDllPath);
+                    continue;
+                }
+
                 LoadFromDll(pluginDllPath, fileName);
             }
         }
 
         ResolveVersionsAndStatuses();
+
+        // Персистим выученные типы по путям (для скипа выключенных DLL на следующем старте).
+        SaveState();
         return _plugins;
     }
 
@@ -101,6 +118,8 @@ public class PluginManagerService : IPluginManagerService
 
             var pluginTypes = assembly.GetTypes()
                 .Where(t => typeof(IAnalyzerPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            var loadedIds = new List<string>();
 
             foreach (var type in pluginTypes)
             {
@@ -123,7 +142,12 @@ public class PluginManagerService : IPluginManagerService
                     Instance = instance,
                     Status = PluginStatus.Active // уточняется в ResolveVersionsAndStatuses
                 });
+                loadedIds.Add(instance.Id);
             }
+
+            // Запоминаем состав типов этой DLL — чтобы на следующем старте можно было пропустить её
+            // загрузку, если все они окажутся выключены.
+            _knownTypesByPath[pluginDllPath] = loadedIds;
         }
         catch (Exception ex)
         {
@@ -143,6 +167,36 @@ public class PluginManagerService : IPluginManagerService
                 Instance = null
             });
         }
+    }
+
+    /// <summary>
+    /// Можно ли пропустить загрузку DLL: известен её состав типов с прошлой загрузки И все они выключены.
+    /// Тогда сборка не грузится и конструкторы не исполняются.
+    /// </summary>
+    private bool AllKnownTypesDisabled(string dllPath) =>
+        _knownTypesByPath.TryGetValue(dllPath, out var ids)
+        && ids.Count > 0
+        && ids.All(id => _disabled.Contains(InstanceKey(dllPath, id)));
+
+    /// <summary>
+    /// Добавляет записи-заглушки (Status=Disabled, Instance=null) для плагинов пропущенной DLL — чтобы
+    /// они были видны в UI и их можно было включить обратно (после чего DLL загрузится на следующем старте).
+    /// </summary>
+    private void AddDisabledPlaceholders(string dllPath)
+    {
+        Logger.Info("Skipping load of fully-disabled plugin DLL (no code executed): {Path}", dllPath);
+        foreach (var id in _knownTypesByPath[dllPath])
+            _plugins.Add(new PluginInfo
+            {
+                Id = id,
+                Name = id,
+                Author = "—",
+                Version = "—",
+                FilePath = dllPath,
+                Kind = PluginKind.None,
+                Instance = null,
+                Status = PluginStatus.Disabled
+            });
     }
 
     /// <summary>
@@ -408,6 +462,7 @@ public class PluginManagerService : IPluginManagerService
     {
         _disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         _pendingDelete = new List<string>();
+        _knownTypesByPath = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -421,6 +476,10 @@ public class PluginManagerService : IPluginManagerService
                             _disabled.Add(InstanceKey(d.File, d.Id));
                 if (state?.PendingDelete is { Count: > 0 })
                     _pendingDelete = state.PendingDelete;
+                if (state?.KnownTypes is { Count: > 0 })
+                    foreach (var kt in state.KnownTypes)
+                        if (!string.IsNullOrEmpty(kt.File) && kt.Ids is { Count: > 0 })
+                            _knownTypesByPath[kt.File] = kt.Ids;
             }
         }
         catch (Exception ex)
@@ -437,7 +496,10 @@ public class PluginManagerService : IPluginManagerService
                 new PluginsState
                 {
                     Disabled = _disabled.Select(SplitKey).ToList(),
-                    PendingDelete = _pendingDelete
+                    PendingDelete = _pendingDelete,
+                    KnownTypes = _knownTypesByPath
+                        .Select(kv => new KnownTypesEntry { File = kv.Key, Ids = kv.Value })
+                        .ToList()
                 },
                 new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_stateFile, json);
@@ -473,9 +535,16 @@ public class PluginManagerService : IPluginManagerService
         public string Id { get; set; } = "";
     }
 
+    private sealed class KnownTypesEntry
+    {
+        public string File { get; set; } = "";
+        public List<string> Ids { get; set; } = new();
+    }
+
     private sealed class PluginsState
     {
         public List<DisabledEntry> Disabled { get; set; } = new();
         public List<string> PendingDelete { get; set; } = new();
+        public List<KnownTypesEntry> KnownTypes { get; set; } = new();
     }
 }
