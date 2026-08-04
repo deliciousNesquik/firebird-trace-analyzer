@@ -133,7 +133,11 @@ public sealed class ReportProjectionService : IReportProjectionService
         return SortRows(rows, fields, sortByColumn, sortDescending);
     }
 
-    /// <summary>Сортирует строки-группы по колонке (по её DisplayName). Колонка не найдена — без сортировки.</summary>
+    /// <summary>
+    /// Сортирует строки-группы по колонке. Идентификатор колонки — её Order (уникален даже при
+    /// дублирующихся DisplayName); для обратной совместимости со старыми шаблонами, где сохранён
+    /// DisplayName, — откат на матч по имени. Колонка не найдена — без сортировки.
+    /// </summary>
     private static List<IReadOnlyList<object?>> SortRows(
         List<IReadOnlyList<object?>> rows,
         IReadOnlyList<EventField> fields,
@@ -144,12 +148,30 @@ public sealed class ReportProjectionService : IReportProjectionService
             return rows;
 
         var index = -1;
-        for (var i = 0; i < fields.Count; i++)
+
+        // Новые шаблоны: Order колонки (число).
+        if (int.TryParse(sortByColumn, NumberStyles.Integer, CultureInfo.InvariantCulture, out var order))
         {
-            if (string.Equals(fields[i].DisplayName, sortByColumn, StringComparison.Ordinal))
+            for (var i = 0; i < fields.Count; i++)
             {
-                index = i;
-                break;
+                if (fields[i].Order == order)
+                {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        // Старые шаблоны (или коллизия): матч по DisplayName.
+        if (index < 0)
+        {
+            for (var i = 0; i < fields.Count; i++)
+            {
+                if (string.Equals(fields[i].DisplayName, sortByColumn, StringComparison.Ordinal))
+                {
+                    index = i;
+                    break;
+                }
             }
         }
 

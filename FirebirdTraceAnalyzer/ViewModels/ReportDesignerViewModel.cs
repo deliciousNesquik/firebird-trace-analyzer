@@ -406,13 +406,17 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Пересобирает список колонок-целей сортировки из колонок отчёта, сохраняя выбор.</summary>
     private void RefreshSortableColumns()
     {
-        var previous = SelectedSortColumn?.DisplayName;
+        // Восстанавливаем выбор по Order (уникален), а не по DisplayName — при дублирующихся именах
+        // колонок иначе выбралась бы не та колонка.
+        var previousOrder = SelectedSortColumn?.Order;
 
         SortableColumns.Clear();
         foreach (var column in ReportColumns.OrderBy(c => c.Order))
             SortableColumns.Add(column);
 
-        SelectedSortColumn = SortableColumns.FirstOrDefault(c => c.DisplayName == previous);
+        SelectedSortColumn = previousOrder is { } order
+            ? SortableColumns.FirstOrDefault(c => c.Order == order)
+            : null;
     }
 
     /// <summary>
@@ -808,7 +812,11 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
                 .Select(f => f.PropertyPath)
                 .ToList(),
             // Сортировка сгруппированного результата по выбранной колонке (только при группировке).
-            SortByColumn = IsGrouped ? SelectedSortColumn?.DisplayName : null,
+            // Идентифицируем колонку по её Order (уникален), а не по DisplayName — иначе при дублирующихся
+            // именах колонок (одно поле как Sum и как Avg) сортировка уходила бы в первую по имени.
+            SortByColumn = IsGrouped
+                ? SelectedSortColumn?.Order.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : null,
             VisibleFields = columns
                 .Select(f => new EventField
                 {
