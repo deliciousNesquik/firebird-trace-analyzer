@@ -990,49 +990,50 @@ RETURNING seq;");
 
         var sw = Stopwatch.StartNew();
 
-        // Физический запрет записи на время запроса (соединение общее, но диспетчер сериализует).
-        Exec("PRAGMA query_only=ON;");
-        try
+        // ОТДЕЛЬНОЕ соединение (не основное пишущее): тяжёлая аналитика не встаёт в очередь диспетчера
+        // и не блокирует запись — в WAL читатель не мешает писателю. query_only=ON запрещает запись на нём.
+        // Это соединение локально для запроса и никак не пересекается с _connection.
+        using var conn = new SqliteConnection($"Data Source={_dbPath}");
+        conn.Open();
+        using (var pragma = conn.CreateCommand())
         {
-            using var cmd = _connection.CreateCommand();
-            cmd.CommandText = sql;
-            cmd.CommandTimeout = 30;
-            using var reader = cmd.ExecuteReader();
+            pragma.CommandText = "PRAGMA query_only=ON;";
+            pragma.ExecuteNonQuery();
+        }
 
-            var columns = new string[reader.FieldCount];
-            for (var i = 0; i < reader.FieldCount; i++)
-                columns[i] = reader.GetName(i);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.CommandTimeout = 30;
+        using var reader = cmd.ExecuteReader();
 
-            var rows = new List<object?[]>();
-            var truncated = false;
+        var columns = new string[reader.FieldCount];
+        for (var i = 0; i < reader.FieldCount; i++)
+            columns[i] = reader.GetName(i);
 
-            while (reader.Read())
+        var rows = new List<object?[]>();
+        var truncated = false;
+
+        while (reader.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (rows.Count >= maxRows)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (rows.Count >= maxRows)
-                {
-                    truncated = true;
-                    break;
-                }
-
-                var row = new object?[reader.FieldCount];
-                for (var i = 0; i < reader.FieldCount; i++)
-                {
-                    var value = reader.GetValue(i);
-                    row[i] = value is DBNull ? null : value;
-                }
-                rows.Add(row);
+                truncated = true;
+                break;
             }
 
-            sw.Stop();
-            return new StorageQueryResult(columns, rows, truncated, sw.ElapsedMilliseconds);
+            var row = new object?[reader.FieldCount];
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                var value = reader.GetValue(i);
+                row[i] = value is DBNull ? null : value;
+            }
+            rows.Add(row);
         }
-        finally
-        {
-            // Возвращаем режим записи — дальше стор используется для парсинга/мутаций.
-            Exec("PRAGMA query_only=OFF;");
-        }
+
+        sw.Stop();
+        return new StorageQueryResult(columns, rows, truncated, sw.ElapsedMilliseconds);
     }
 
     /// <summary>Пропускает только одиночный читающий запрос (SELECT/WITH). Реальный барьер —

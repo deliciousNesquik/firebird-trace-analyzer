@@ -56,6 +56,14 @@ public sealed class EventStoreDispatcher
     /// <summary>Ставит операцию в очередь и возвращает её результат по завершении.</summary>
     public Task<T> RunAsync<T>(Func<IEventStore, T> job) => Enqueue(() => job(_store));
 
+    /// <summary>
+    /// Выполняет операцию ВНЕ очереди (параллельно с ней). Допустимо ТОЛЬКО для операций, которые НЕ
+    /// трогают основное соединение стора — например <see cref="IEventStore.ExecuteQuery"/>, открывающий
+    /// собственное соединение. Иначе будет гонка за единственным соединением. Нужно, чтобы тяжёлая
+    /// аналитика не вставала в очередь за записью и не блокировала её (в WAL читатель не мешает писателю).
+    /// </summary>
+    public Task<T> RunUnqueuedAsync<T>(Func<IEventStore, T> job) => Task.Run(() => job(_store));
+
     private Task<T> Enqueue<T>(Func<T> job)
     {
         lock (_lock)

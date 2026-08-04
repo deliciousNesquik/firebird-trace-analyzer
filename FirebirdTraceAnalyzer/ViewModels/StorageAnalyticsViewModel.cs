@@ -127,7 +127,9 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         try
         {
             var sql = SqlText;
-            var result = await _dispatcher.RunAsync(store => store.ExecuteQuery(sql, MaxRows, cancellationToken));
+            // Вне очереди диспетчера: ExecuteQuery работает на собственном соединении, поэтому тяжёлая
+            // аналитика не блокирует запись (в WAL читатель не мешает писателю).
+            var result = await _dispatcher.RunUnqueuedAsync(store => store.ExecuteQuery(sql, MaxRows, cancellationToken));
 
             ApplyResult(result);
 
