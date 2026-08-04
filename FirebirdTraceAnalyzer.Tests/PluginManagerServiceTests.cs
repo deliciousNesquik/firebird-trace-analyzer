@@ -63,6 +63,41 @@ public sealed class PluginManagerServiceTests
         Assert.Equal(PluginStatus.LoadError, p.Status);
     }
 
+    [Fact]
+    public void LegacyStateFormat_Ids_MigratesAndStillSkipsDisabledDll()
+    {
+        // Старый plugins.state.json хранил KnownTypes:[{File, Ids:[...]}] (без метаданных). После апгрейда
+        // schema (Ids→Types) skip-гвард обязан пережить миграцию, иначе конструктор выключенного плагина
+        // исполнился бы. Пишем ЛЕГАСИ-формат и проверяем, что DLL по-прежнему пропущена (не LoadError).
+        var pluginsDir = Path.Combine(Path.GetTempPath(), "fta_plugins_" + Guid.NewGuid().ToString("N"));
+        var sub = Path.Combine(pluginsDir, "myplugin");
+        Directory.CreateDirectory(sub);
+        var dll = Path.Combine(sub, "myplugin.dll");
+        File.WriteAllBytes(dll, [0x00, 0x01, 0x02]);
+
+        var legacyState = new
+        {
+            Disabled = new[] { new { File = dll, Id = "X" } },
+            PendingDelete = Array.Empty<string>(),
+            KnownTypes = new[] { new { File = dll, Ids = new[] { "X" } } } // старый формат: Ids, не Types
+        };
+        File.WriteAllText(Path.Combine(pluginsDir, "plugins.state.json"), JsonSerializer.Serialize(legacyState));
+
+        try
+        {
+            var plugins = new PluginManagerService(pluginsDir).LoadAllPlugins();
+
+            var p = Assert.Single(plugins);
+            Assert.Equal("X", p.Id);
+            Assert.Equal(PluginStatus.Disabled, p.Status); // пропущено (ctor не исполнён), а не LoadError
+            Assert.Null(p.Instance);
+        }
+        finally
+        {
+            try { Directory.Delete(pluginsDir, true); } catch { /* ignore */ }
+        }
+    }
+
     private static IReadOnlyList<PluginInfo> LoadWithBogusDll(bool disabled)
     {
         var pluginsDir = Path.Combine(Path.GetTempPath(), "fta_plugins_" + Guid.NewGuid().ToString("N"));

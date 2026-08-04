@@ -491,8 +491,17 @@ public class PluginManagerService : IPluginManagerService
                     _pendingDelete = state.PendingDelete;
                 if (state?.KnownTypes is { Count: > 0 })
                     foreach (var kt in state.KnownTypes)
-                        if (!string.IsNullOrEmpty(kt.File) && kt.Types is { Count: > 0 })
+                    {
+                        if (string.IsNullOrEmpty(kt.File))
+                            continue;
+                        if (kt.Types is { Count: > 0 })
                             _knownTypesByPath[kt.File] = kt.Types;
+                        else if (kt.Ids is { Count: > 0 })
+                            // Старый формат {File, Ids:[...]} — мигрируем, чтобы skip-гвард пережил апгрейд
+                            // (иначе конструктор выключенного плагина исполнился бы). Метаданные заполнятся
+                            // при следующей штатной загрузке.
+                            _knownTypesByPath[kt.File] = kt.Ids.Select(id => new KnownPluginMeta { Id = id }).ToList();
+                    }
             }
         }
         catch (Exception ex)
@@ -561,6 +570,10 @@ public class PluginManagerService : IPluginManagerService
     {
         public string File { get; set; } = "";
         public List<KnownPluginMeta> Types { get; set; } = new();
+
+        // Легаси-поле прежнего формата (только Id, без метаданных). Читается ради миграции старого
+        // plugins.state.json; при следующем SaveState файл перезаписывается в формате Types.
+        public List<string>? Ids { get; set; }
     }
 
     private sealed class PluginsState
