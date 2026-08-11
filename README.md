@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔥 Firebird Trace Analyzer
+# Firebird Trace Analyzer
 
 **A cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.**
 
@@ -12,7 +12,7 @@
 
 <img src="https://github.com/user-attachments/assets/adb9cb09-3454-4411-b55b-6f2b1293a204" alt="Firebird Trace Analyzer overview" width="820">
 
-### 📖 [**Read the documentation →**](https://deliciousnesquik.github.io/firebird-trace-analyzer/)
+### [**Read the documentation**](https://deliciousnesquik.github.io/firebird-trace-analyzer/)
 
 </div>
 
@@ -24,14 +24,14 @@ It runs natively on **Windows, macOS and Linux**, loads logs from disk or straig
 
 ## Highlights
 
-- 📥 **Load logs multiple ways** — local files or remotely over **SSH/SFTP** (with trust-on-first-use host-key verification and secure credential storage).
-- ⚡ **Streaming parser** built for **large trace files** — parsing runs off the UI thread, so multi-million-event logs stay responsive.
-- 🧩 **Typed event cards** for every Firebird trace event type.
-- 🔎 **Rich filtering & search** — multi-select, numeric/date ranges, full-text search and stable sorting.
-- 🗄️ **Optional local event store** (SQLite/WAL) with deduplication, storage analytics, on-demand compaction and a read-only SQL console.
-- 📊 **Live report designer** — group, aggregate and preview, then export to **PDF, DOCX, XLSX or CSV**.
-- 🔌 **Extensible** via drop-in sort/filter plugins.
-- 🎨 **Light / Dark / Auto themes** and **English / Russian** localization.
+- **Load logs multiple ways** — local files or remotely over **SSH/SFTP** (with trust-on-first-use host-key verification and secure credential storage).
+- **Streaming parser** built for **large trace files** — parsing runs off the UI thread, so multi-million-event logs stay responsive.
+- **Typed event cards** for every Firebird trace event type.
+- **Rich filtering & search** — multi-select, numeric/date ranges, full-text search and stable sorting.
+- **Optional local event store** (SQLite/WAL) with deduplication, storage analytics, on-demand compaction and a read-only SQL console.
+- **Live report designer** — group, aggregate and preview, then export to **PDF, DOCX, XLSX or CSV**.
+- **Extensible** via drop-in sort/filter plugins.
+- **Light / Dark / Auto themes** and **English / Russian** localization.
 
 ## Getting started
 
@@ -56,7 +56,7 @@ dotnet test FirebirdTrace.sln                   # run the tests
 
 Full usage guides — loading logs (locally and over SSH, every field explained), exploring & filtering, the event store, reports and plugins — live in the documentation site:
 
-**➡️ https://deliciousnesquik.github.io/firebird-trace-analyzer/**
+**https://deliciousnesquik.github.io/firebird-trace-analyzer/**
 
 The site's source is in [`docs/`](docs/).
 
