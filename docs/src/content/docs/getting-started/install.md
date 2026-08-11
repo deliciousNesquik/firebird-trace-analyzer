@@ -40,4 +40,4 @@ On the first run the app creates its configuration and data folders under your u
 (for example, settings, the optional event store and downloaded remote files). Nothing is
 written outside your user profile unless you explicitly choose an export location.
 
-Head to [**Loading logs**](/guides/loading-logs/) to open your first trace file.
+Head to [**Loading logs**](../guides/loading-logs.mdx) to open your first trace file.
