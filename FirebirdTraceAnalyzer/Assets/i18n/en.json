@@ -427,6 +427,7 @@
   "Status.Remote.ConnectedSuccessfully": "Connected successfully!",
   "Status.Remote.ConnectionCancelled": "Connection cancelled",
   "Status.Remote.ConnectionFailed": "Connection failed",
+  "Remote.Error.KeyPassphrase": "Could not decrypt the private key: the passphrase is incorrect or missing. Check it and re-enter it (it is not stored with the profile).",
   "Status.Remote.SelectPrivateKeyTitle": "Select Private Key",
   "Status.Remote.ErrorSelectingFile": "Error selecting file: {0}",
   "Status.Remote.ProfileNameRequired": "Profile name is required",

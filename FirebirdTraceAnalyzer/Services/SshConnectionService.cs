@@ -1,4 +1,5 @@
 ﻿using FirebirdTraceAnalyzer.Interfaces.Remote;
+using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
 using Renci.SshNet;
@@ -113,6 +114,13 @@ public class SshConnectionService : ISshConnectionService
         catch (OperationCanceledException)
         {
             Logger.Info("Connection cancelled");
+            Disconnect();
+            throw;
+        }
+        catch (InvalidOperationException)
+        {
+            // Уже понятное сообщение (напр. ошибка парольной фразы ключа) — пробрасываем как есть,
+            // не оборачивая в "Connection error: ...".
             Disconnect();
             throw;
         }
@@ -258,9 +266,21 @@ public class SshConnectionService : ISshConnectionService
         if (!File.Exists(settings.PrivateKeyPath))
             throw new FileNotFoundException($"Private key not found: {settings.PrivateKeyPath}");
 
-        var keyFile = string.IsNullOrWhiteSpace(settings.KeyPassphrase)
-            ? new PrivateKeyFile(settings.PrivateKeyPath)
-            : new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
+        PrivateKeyFile keyFile;
+        try
+        {
+            keyFile = string.IsNullOrWhiteSpace(settings.KeyPassphrase)
+                ? new PrivateKeyFile(settings.PrivateKeyPath)
+                : new PrivateKeyFile(settings.PrivateKeyPath, settings.KeyPassphrase);
+        }
+        catch (SshException ex)
+        {
+            // SSH.NET не смог расшифровать/разобрать ключ — почти всегда это неверная или отсутствующая
+            // парольная фраза (напр. «random check bytes ... do not match» или SshPassPhraseNullOrEmpty).
+            // Показываем пользователю понятную причину вместо сырого сообщения библиотеки.
+            Logger.Error(ex, "Failed to load private key {Path}", settings.PrivateKeyPath);
+            throw new InvalidOperationException(Loc.Tr("Remote.Error.KeyPassphrase"), ex);
+        }
 
         // Сохраняем ссылку: ключ нужен на время аутентификации, освобождаем в Disconnect().
         _privateKeyFile = keyFile;

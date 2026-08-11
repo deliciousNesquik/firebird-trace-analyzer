@@ -427,6 +427,7 @@
   "Status.Remote.ConnectedSuccessfully": "Подключение установлено!",
   "Status.Remote.ConnectionCancelled": "Подключение отменено",
   "Status.Remote.ConnectionFailed": "Не удалось подключиться",
+  "Remote.Error.KeyPassphrase": "Не удалось расшифровать приватный ключ: неверная или отсутствует парольная фраза. Проверьте фразу и введите её заново (она не сохраняется вместе с профилем).",
   "Status.Remote.SelectPrivateKeyTitle": "Выбор приватного ключа",
   "Status.Remote.ErrorSelectingFile": "Ошибка выбора файла: {0}",
   "Status.Remote.ProfileNameRequired": "Требуется имя профиля",
