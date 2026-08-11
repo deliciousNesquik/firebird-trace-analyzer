@@ -5,12 +5,12 @@ description: Read events as typed cards and slice them with filters, sorting and
 
 import { Aside } from '@astrojs/starlight/components';
 
-export const base = import.meta.env.BASE_URL;
+export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
 Once logs are loaded, every trace record is rendered as a **typed event card**, grouped by the
 trace file it came from. From there you narrow things down with filters, sorting and search.
 
-<img src={`${base}media/explore-filter.gif`} alt="Filtering, searching and browsing events" />
+<img src={`${base}/media/explore-filter.gif`} alt="Filtering, searching and browsing events" />
 
 {/* Замени файл: docs/public/media/explore-filter.gif */}
 

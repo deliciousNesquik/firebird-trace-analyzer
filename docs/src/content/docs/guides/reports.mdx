@@ -5,12 +5,12 @@ description: Build reports in the live designer and export them to PDF, DOCX, XL
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-export const base = import.meta.env.BASE_URL;
+export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
 There are two ways to produce a report: **quick reports** from ready-made templates, and the
 **report designer** for building your own.
 
-<img src={`${base}media/reports.gif`} alt="Designing and exporting a report" />
+<img src={`${base}/media/reports.gif`} alt="Designing and exporting a report" />
 
 {/* Замени файл: docs/public/media/reports.gif */}
 

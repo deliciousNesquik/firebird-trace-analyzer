@@ -16,8 +16,6 @@ hero:
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-export const base = import.meta.env.BASE_URL;
-
 Firebird's trace API is powerful, but its output is a firehose of flat text.
 **Firebird Trace Analyzer** turns those logs into something you can actually work with —
 streaming any-size trace file, rendering each event as a readable card, letting you
@@ -44,8 +42,8 @@ filter, search and sort across millions of events, and exporting the result to
 ## Where to next
 
 <CardGrid>
-  <LinkCard title="Overview" href={base + 'getting-started/overview/'} description="What the app is and what it can do." />
-  <LinkCard title="Install & run" href={base + 'getting-started/install/'} description="Download a release or build from source." />
-  <LinkCard title="Loading logs" href={base + 'guides/loading-logs/'} description="Open trace files locally or over SSH — every button explained." />
-  <LinkCard title="Reports" href={base + 'guides/reports/'} description="Design and export PDF / DOCX / XLSX / CSV reports." />
+  <LinkCard title="Overview" href="getting-started/overview/" description="What the app is and what it can do." />
+  <LinkCard title="Install & run" href="getting-started/install/" description="Download a release or build from source." />
+  <LinkCard title="Loading logs" href="guides/loading-logs/" description="Open trace files locally or over SSH — every button explained." />
+  <LinkCard title="Reports" href="guides/reports/" description="Design and export PDF / DOCX / XLSX / CSV reports." />
 </CardGrid>
