@@ -1,0 +1,145 @@
+---
+title: Loading logs
+description: Open Firebird trace files from disk or download them over SSH — every button and field explained.
+---
+
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL;
+
+All loading is driven from the top menu **Open** (`Open [O]` — the letters in brackets are
+keyboard access keys):
+
+| Menu item | Key | Action |
+| --- | --- | --- |
+| **Open → Local File** | `L` | Pick trace files from disk |
+| **Open → Remote File** | `R` | Download trace files from a server over SSH |
+| **Open → Cancel Loading** | `C` | Cancel the load that's currently running |
+
+<Aside type="note">
+Files are loaded through these menu items — there is **no drag-and-drop**. Related actions live
+under **Edit → Reparse** and **Edit → Close** (both offer *All files* / *Selected files*).
+</Aside>
+
+## Local files
+
+**Open → Local File** opens a native file picker.
+
+<Steps>
+
+1. **Pick one or more files.** Multiple selection is allowed, so you can load a whole batch at
+   once. The file-type filter is **“Trace Logs” (`*.log`, `*.txt`)**, with an **“All files”**
+   fallback.
+
+2. **The app de-duplicates.** Each file is fingerprinted with SHA-256; a file that's already
+   open (or already saved in the local store) is reused instead of being parsed twice.
+
+3. **Parsing runs in the background** with a progress indicator, and can be stopped at any time
+   via **Open → Cancel Loading**.
+
+</Steps>
+
+<img src={`${base}media/load-local.gif`} alt="Loading trace files from disk" />
+
+{/* Замени файл: docs/public/media/load-local.gif */}
+
+## Remote files over SSH
+
+**Open → Remote File** opens the **“Connect to a remote server”** dialog (an in-window overlay).
+Fields marked `*` are required. The form is grouped into cards.
+
+<img src={`${base}media/load-ssh.gif`} alt="Downloading trace logs over SSH" />
+
+{/* Замени файл: docs/public/media/load-ssh.gif */}
+
+### Profiles
+
+Reusable connections, saved to a local profiles file.
+
+- **Load a saved profile** — the dropdown lists your profiles (name + hostname). Selecting one
+  fills in *every* field below: hostname, port, username, authentication method, key path,
+  remote directory, the “after processing” flags and the timeout.
+- Per-profile buttons (shown when a profile is selected):
+  - **Open profiles file** — reveals the profiles JSON in your file manager.
+  - **Duplicate** — clones it as `<name>_copy` (`_copy2`, `_copy3`… on collision).
+  - **Delete** — removes the profile.
+- **Save current settings as** — type a name and press **Save** to store the current form as a
+  profile. Saving under an existing name overwrites it.
+
+<Aside type="caution" title="Secrets are never written to the profile file">
+- The **key passphrase** is not persisted — you re-enter it each session.
+- The **password** is only restored if you previously ticked *Remember password*, in which case
+  it's read back from the operating-system credential store — never from the profile file.
+</Aside>
+
+### Server
+
+- **Hostname or IP address `*`** — e.g. `192.168.1.100` or `server.example.com`.
+- **Username `*`** — the SSH account, e.g. `root`.
+- **Port `*`** — `1–65535` (SSH default is `22`).
+
+### Authentication
+
+Choose one method with the radio buttons.
+
+<Tabs>
+  <TabItem label="Password">
+    - **Password `*`** — masked; **Show password** reveals it.
+    - **Remember password (stored securely)** — saves the password to the OS credential store
+      (Keychain / Credential Manager / libsecret), *not* in the profile file. Next time you load
+      that profile, the password is fetched back automatically.
+  </TabItem>
+  <TabItem label="Private key">
+    - **Private key file `*`** — absolute path to the key; **Browse…** opens a picker
+      (matches `id_rsa`, `id_ed25519`, `*.pem`, …).
+    - **Key passphrase (optional)** — masked; **Show passphrase** reveals it. Leave empty for
+      keys without a passphrase.
+
+    <Aside type="tip">
+    A wrong or missing passphrase produces a clear message
+    (*“the passphrase is incorrect or missing…”*), not a cryptic library error.
+    </Aside>
+  </TabItem>
+</Tabs>
+
+### Trace files
+
+- **Remote directory `*`** — the folder on the server that holds the logs,
+  e.g. `/var/log/firebird/trace`.
+
+### After processing
+
+- **Delete files from the server** — permanently removes the trace files from the remote host
+  after they're downloaded and parsed. Checking it shows a red **“This cannot be undone”** warning.
+- **Delete downloaded copies from this computer** — when checked, files download to a temporary
+  folder that's wiped afterwards; when unchecked, they're kept in your configured downloads folder.
+
+### Footer actions
+
+- **Validate parameters** — checks the form for completeness/validity **without connecting**
+  (host, username, port, key path, remote directory) and reports the result.
+- **Connect** — validates, opens the SSH session (with **trust-on-first-use host-key
+  verification**), confirms the remote directory exists and is readable, then continues to file
+  selection. A status line and an indeterminate progress bar show activity; errors appear in a
+  red banner.
+- **Cancel** — closes the dialog.
+
+### Choosing what to download
+
+After a successful connect, the app lists the trace files in the remote directory and opens the
+**file-selection** window:
+
+<Steps>
+
+1. **Find files** with the search box and quick date filters — *Today / Yesterday / Last 7 days /
+   Last 30 days / All files* — plus **Refresh** to re-read the directory.
+
+2. **Select files** with **Select all / Deselect all**, or per-file checkboxes showing the name,
+   last-modified date and size. A running **selected count** is shown, and (if *Delete from
+   server* is on) a warning banner appears here too.
+
+3. **Download & parse.** Confirm your selection — the app downloads the files (progress window,
+   cancellable), parses them through the same pipeline as local files, applies your
+   “after processing” choices, and disconnects.
+
+</Steps>

@@ -1,0 +1,47 @@
+---
+title: Exploring & filtering
+description: Read events as typed cards and slice them with filters, sorting and search.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL;
+
+Once logs are loaded, every trace record is rendered as a **typed event card**, grouped by the
+trace file it came from. From there you narrow things down with filters, sorting and search.
+
+<img src={`${base}media/explore-filter.gif`} alt="Filtering, searching and browsing events" />
+
+{/* Замени файл: docs/public/media/explore-filter.gif */}
+
+## Filters
+
+Filter values are discovered from the data you loaded, so you only ever filter by things that
+actually appear in your logs. The available filter types are:
+
+- **Multi-select** — tick the exact values to include (e.g. event types, user names,
+  applications). String matching is **case-insensitive**.
+- **Numeric range** — from/to bounds for numeric fields (e.g. execution time, reads/writes).
+- **Date / time range** — from/to bounds on timestamps.
+- **Text search** — substring match within a field.
+
+<Aside type="tip">
+Type a bound into a range filter and it applies as you go. An unparseable or out-of-format bound
+is simply ignored rather than breaking the whole filter.
+</Aside>
+
+## Sorting
+
+Sort the visible events by any discovered field, ascending or descending. Sorting is **stable** —
+events that compare equal keep their original relative order.
+
+## Search
+
+Full-text search jumps across the loaded events so you can find a specific statement, table or
+error message quickly.
+
+## Arranging the workspace
+
+The **Window** menu toggles the major panels — *Files*, *Search*, *Events*, *Statistics* and
+*Logs* — so you can hide what you don't need and give the events more room. **Window → Reset**
+restores the default layout.

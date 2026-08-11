@@ -1,0 +1,49 @@
+---
+title: Firebird Trace Analyzer
+description: Read, explore and report on Firebird trace & audit logs — cross-platform.
+template: splash
+hero:
+  tagline: Turn Firebird trace & audit logs into readable events, powerful filters and polished reports.
+  actions:
+    - text: Get started
+      link: /getting-started/overview/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/deliciousNesquik/firebird-trace-analyzer
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Firebird's trace API is powerful, but its output is a firehose of flat text.
+**Firebird Trace Analyzer** turns those logs into something you can actually work with —
+streaming any-size trace file, rendering each event as a readable card, letting you
+filter, search and sort across millions of events, and exporting the result to
+**PDF / DOCX / XLSX / CSV**.
+
+<CardGrid stagger>
+  <Card title="Load from anywhere" icon="download">
+    Open trace files from disk, or pull them straight off a server over **SSH/SFTP** — with
+    trust-on-first-use host-key verification and secure credential storage.
+  </Card>
+  <Card title="Built for big logs" icon="rocket">
+    A streaming parser processes multi-million-event files off the UI thread, so the app
+    stays responsive.
+  </Card>
+  <Card title="Explore & filter" icon="magnifier">
+    Typed event cards, multi-select / range / text filters, stable sorting and full-text search.
+  </Card>
+  <Card title="Report & export" icon="document">
+    A live report designer with grouping and aggregation, reusable templates and one-click export.
+  </Card>
+</CardGrid>
+
+## Where to next
+
+<CardGrid>
+  <LinkCard title="Overview" href="/getting-started/overview/" description="What the app is and what it can do." />
+  <LinkCard title="Install & run" href="/getting-started/install/" description="Download a release or build from source." />
+  <LinkCard title="Loading logs" href="/guides/loading-logs/" description="Open trace files locally or over SSH — every button explained." />
+  <LinkCard title="Reports" href="/guides/reports/" description="Design and export PDF / DOCX / XLSX / CSV reports." />
+</CardGrid>

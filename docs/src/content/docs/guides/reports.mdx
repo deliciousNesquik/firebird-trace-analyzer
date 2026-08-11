@@ -1,0 +1,70 @@
+---
+title: Reports
+description: Build reports in the live designer and export them to PDF, DOCX, XLSX or CSV.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL;
+
+There are two ways to produce a report: **quick reports** from ready-made templates, and the
+**report designer** for building your own.
+
+<img src={`${base}media/reports.gif`} alt="Designing and exporting a report" />
+
+{/* Замени файл: docs/public/media/reports.gif */}
+
+## Quick reports
+
+**Reports → Quick** lists the built-in templates — pick one and it's generated from the events
+you currently have loaded, then exported in its default format.
+
+## The report designer
+
+Open the designer from the **Reports** menu to build a report visually, with a **live preview**
+that updates as you type.
+
+<Steps>
+
+1. **Choose columns.** Add fields as columns. Each column has a **role**:
+   - **Field** — a plain column showing the value as-is.
+   - **Group key** — groups rows (like `GROUP BY`).
+   - **Aggregate** — a computed column: **Count, Sum, Average, …** over each group.
+
+2. **Group & aggregate.** Aggregates are computed **per group**, so an aggregate only produces a
+   value when the report has at least one **Group key** column.
+
+3. **Sort & filter.** Choose a column to sort grouped results by, and attach filters so the
+   report only includes the events you care about.
+
+4. **Tune header/footer.** Set the title, subtitle, visible variables and footer.
+
+5. **Save or export.** Save the layout as a reusable template, or export it directly.
+
+</Steps>
+
+<Aside type="caution" title="Aggregation needs a group key">
+If you mark a column as an aggregate but haven't added a **Group key** column, there's nothing to
+group by, so the aggregate isn't computed — the report just lists one row per event. The designer
+shows an inline hint when this happens.
+</Aside>
+
+## Templates & history
+
+- **Built-in and custom templates** — start from a built-in template or your own saved layouts.
+- **Manage templates** — rename, duplicate or delete saved templates.
+- **Recent reports** — re-open reports you generated earlier.
+
+## Export formats
+
+Reports export to:
+
+| Format | Notes |
+| --- | --- |
+| **PDF** | Print-ready document. |
+| **DOCX** | Editable Word document. |
+| **XLSX** | Spreadsheet; numeric formats are translated to real Excel format codes. |
+| **CSV** | Plain data; cells are escaped against spreadsheet **formula/DDE injection**. |
+
+Exports run off the UI thread, so generating a large report doesn't freeze the window, and can be
+cancelled.
