@@ -16,11 +16,32 @@ hero:
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
+export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
 Firebird's trace API is powerful, but its output is a firehose of flat text.
 **Firebird Trace Analyzer** turns those logs into something you can actually work with —
 streaming any-size trace file, rendering each event as a readable card, letting you
 filter, search and sort across millions of events, and exporting the result to
 **PDF / DOCX / XLSX / CSV**.
+
+{/* Скриншот главного окна: светлый/тёмный переключаются автоматически по теме сайта.
+    Положи файлы в docs/public/shared/: home-light.png и home-dark.png. */}
+<div align="center">
+  <img
+    src={`${base}/shared/home-light.png`}
+    alt="Firebird Trace Analyzer — light theme"
+    class="dark:sl-hidden"
+    width="960"
+    style="max-width:100%;height:auto;border-radius:8px"
+  />
+  <img
+    src={`${base}/shared/home-dark.png`}
+    alt="Firebird Trace Analyzer — dark theme"
+    class="light:sl-hidden"
+    width="960"
+    style="max-width:100%;height:auto;border-radius:8px"
+  />
+</div>
 
 <CardGrid stagger>
   <Card title="Load from anywhere" icon="download">
@@ -42,8 +63,8 @@ filter, search and sort across millions of events, and exporting the result to
 ## Where to next
 
 <CardGrid>
-  <LinkCard title="Overview" href="getting-started/overview/" description="What the app is and what it can do." />
-  <LinkCard title="Install & run" href="getting-started/install/" description="Download a release or build from source." />
-  <LinkCard title="Loading logs" href="guides/loading-logs/" description="Open trace files locally or over SSH — every button explained." />
-  <LinkCard title="Reports" href="guides/reports/" description="Design and export PDF / DOCX / XLSX / CSV reports." />
+  <LinkCard title="Overview" href={`${base}/getting-started/overview/`} description="What the app is and what it can do." />
+  <LinkCard title="Install & run" href={`${base}/getting-started/install/`} description="Download a release or build from source." />
+  <LinkCard title="Loading logs" href={`${base}/guides/loading-logs/`} description="Open trace files locally or over SSH — every button explained." />
+  <LinkCard title="Reports" href={`${base}/guides/reports/`} description="Design and export PDF / DOCX / XLSX / CSV reports." />
 </CardGrid>
