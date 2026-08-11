@@ -252,6 +252,15 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+
+                                <!-- Подсказка: агрегаты считаются только при группировке (есть колонка-ключ) -->
+                                <Border IsVisible="{Binding ShowAggregationHint}"
+                                        Background="{DynamicResource BorderSubtleBrush}"
+                                        CornerRadius="4" Padding="8,6" Margin="0,2,0,0">
+                                    <TextBlock Text="{loc:Tr ReportDesigner.AggregationNeedsGroupKey}"
+                                               FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </Border>
                             </StackPanel>
                         </Expander>
 

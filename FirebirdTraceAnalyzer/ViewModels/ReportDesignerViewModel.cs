@@ -124,6 +124,13 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     /// <summary>Активна ли группировка (есть хотя бы одна видимая колонка-ключ группировки).</summary>
     public bool IsGrouped => ReportColumns.Any(c => c.Kind == ColumnKind.GroupKey);
 
+    /// <summary>
+    /// Есть агрегатные колонки, но НЕТ ключа группировки → агрегаты не вычислятся (агрегация работает
+    /// только с GROUP BY). Управляет видимостью подсказки в дизайнере.
+    /// </summary>
+    public bool ShowAggregationHint =>
+        !IsGrouped && ReportColumns.Any(c => c.Kind == ColumnKind.Aggregate);
+
     [ObservableProperty]
     private int? _eventLimit;
 
@@ -369,6 +376,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
         RefreshSortableColumns();
         OnPropertyChanged(nameof(IsGrouped));
+        OnPropertyChanged(nameof(ShowAggregationHint));
         HasUnsavedChanges = true;
         MarkPreviewDirty();
     }
@@ -385,6 +393,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
         RefreshSortableColumns();
         OnPropertyChanged(nameof(IsGrouped));
+        OnPropertyChanged(nameof(ShowAggregationHint));
         HasUnsavedChanges = true;
         MarkPreviewDirty();
     }
@@ -396,6 +405,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
         {
             RefreshSortableColumns();
             OnPropertyChanged(nameof(IsGrouped));
+            OnPropertyChanged(nameof(ShowAggregationHint));
         }
 
         // Любое изменение колонки влияет на таблицу отчёта — перерисовываем превью.
@@ -555,6 +565,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
 
             RefreshSortableColumns();
             OnPropertyChanged(nameof(IsGrouped));
+            OnPropertyChanged(nameof(ShowAggregationHint));
 
             // Восстанавливаем колонку сортировки сгруппированного результата.
             if (!string.IsNullOrWhiteSpace(template.Body.SortByColumn))

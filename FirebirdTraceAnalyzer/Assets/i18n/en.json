@@ -197,6 +197,7 @@
   "ReportDesigner.ReportColumnsLabel": "Report columns *",
   "ReportDesigner.ColumnsRoleHint": "Role: Field = plain column · Group key = group rows · Aggregate = Count/Sum/… per group. One field can be added several times.",
   "ReportDesigner.NoColumnsYet": "No columns yet — add fields above with +.",
+  "ReportDesigner.AggregationNeedsGroupKey": "⚠ There are aggregate columns but no group key — aggregates (Count/Sum/Avg…) won't be computed. Mark at least one column with the \"Group key\" role.",
   "ReportDesigner.ColumnHeaderTooltip": "Column header",
   "ReportDesigner.RemoveColumnTooltip": "Remove column",
   "ReportDesigner.RoleTooltip": "Role: Field / Group key / Aggregate",

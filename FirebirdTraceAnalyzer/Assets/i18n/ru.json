@@ -197,6 +197,7 @@
   "ReportDesigner.ReportColumnsLabel": "Столбцы отчёта *",
   "ReportDesigner.ColumnsRoleHint": "Роль: Поле = обычный столбец · Ключ группировки = группировка строк · Агрегат = Count/Sum/… по группе. Одно поле можно добавить несколько раз.",
   "ReportDesigner.NoColumnsYet": "Столбцов пока нет — добавьте поля выше кнопкой +.",
+  "ReportDesigner.AggregationNeedsGroupKey": "⚠ Есть агрегатные столбцы, но нет ключа группировки — агрегаты (Count/Sum/Avg…) не вычислятся. Отметьте хотя бы один столбец ролью «Ключ группировки».",
   "ReportDesigner.ColumnHeaderTooltip": "Заголовок столбца",
   "ReportDesigner.RemoveColumnTooltip": "Удалить столбец",
   "ReportDesigner.RoleTooltip": "Роль: Поле / Ключ группировки / Агрегат",
