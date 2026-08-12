@@ -24,25 +24,6 @@ streaming any-size trace file, rendering each event as a readable card, letting 
 filter, search and sort across millions of events, and exporting the result to
 **PDF / DOCX / XLSX / CSV**.
 
-{/* Скриншот главного окна: светлый/тёмный переключаются автоматически по теме сайта.
-    Положи файлы в docs/public/shared/: home-light.png и home-dark.png. */}
-<div align="center">
-  <img
-    src={`${base}/shared/home-light.png`}
-    alt="Firebird Trace Analyzer — light theme"
-    class="dark:sl-hidden"
-    width="960"
-    style="max-width:100%;height:auto;border-radius:8px"
-  />
-  <img
-    src={`${base}/shared/home-dark.png`}
-    alt="Firebird Trace Analyzer — dark theme"
-    class="light:sl-hidden"
-    width="960"
-    style="max-width:100%;height:auto;border-radius:8px"
-  />
-</div>
-
 <CardGrid stagger>
   <Card title="Load from anywhere" icon="download">
     Open trace files from disk, or pull them straight off a server over **SSH/SFTP** — with

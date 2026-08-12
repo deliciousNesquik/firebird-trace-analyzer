@@ -1,0 +1,33 @@
+/* Лендинг (splash): скриншот приложения — фоном за текстом hero, с переключением по теме.
+   Оверлей (плоский полупрозрачный слой поверх скриншота) гасит фон, чтобы текст читался.
+   Пути к картинкам абсолютные с префиксом base (файлы в public/). */
+
+:root {
+  --fta-hero-overlay: rgba(255, 255, 255, 0.72);
+  --fta-hero-shot: url('/firebird-trace-analyzer/shared/home-light.png');
+}
+:root[data-theme='dark'] {
+  --fta-hero-overlay: rgba(12, 14, 18, 0.74);
+  --fta-hero-shot: url('/firebird-trace-analyzer/shared/home-dark.png');
+}
+
+/* Наш customCss не в слое starlight.core, поэтому переопределяет его правила. */
+.hero {
+  grid-template-columns: 100%;
+  border-radius: 14px;
+  padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem);
+  border: 1px solid var(--sl-color-gray-5);
+  background-image: linear-gradient(var(--fta-hero-overlay), var(--fta-hero-overlay)), var(--fta-hero-shot);
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+}
+
+/* Текст по центру поверх фона (на широких экранах Starlight иначе прижимает влево). */
+.hero .stack {
+  text-align: center;
+  align-items: center;
+}
+.hero .copy {
+  align-items: center;
+}

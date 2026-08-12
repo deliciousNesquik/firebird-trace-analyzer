@@ -14,6 +14,7 @@ export default defineConfig({
       description:
         'Cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.',
       lastUpdated: true,
+      customCss: ['./src/styles/landing.css'],
       social: [
         {
           icon: 'github',
