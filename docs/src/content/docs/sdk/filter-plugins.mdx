@@ -22,28 +22,56 @@ an exception skips the whole plugin (logged as an error) while the app keeps run
 
 ## `FilterDescriptor`
 
-Namespace: `FirebirdTraceAnalyzer.Services.Filtering`.
+Namespace: `FirebirdTraceAnalyzer.Services.Filtering`. There are two constructors — choose by whether
+you need an interactive editor.
+
+### Predicate-only (the common case)
+
+"Keep every event where my predicate is true." No `propertyPath` needed: the short constructor sets
+`FilterType.Boolean` (an on/off toggle) and does all its filtering in the predicate.
 
 ```csharp
-new FilterDescriptor(
-    id:              "my_filter",             // unique identifier of this filter
-    displayName:     "My filter",             // label shown in the UI
-    filterType:      FilterType.Boolean,      // which editor the UI shows (see below)
-    propertyPath:    "Performance.ExecuteMs",  // metadata only — label + discovery, does NOT filter
-    filterPredicate: KeepEvent,               // "keep this event?" function — this does the filtering
-    category:        "Analytics",
-    displayOrder:    2);                       // list position (lower = higher)
+// FilterDescriptor(id, displayName, filterPredicate, category = "General", displayOrder = 100)
+yield return new FilterDescriptor(
+    "acme.filter.slow_statements",
+    "Slow statements (>= 1000 ms)",
+    e => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000,
+    "Analytics");
 ```
 
 | Parameter         | Type                    | Required | Default     | Meaning |
 | ----------------- | ----------------------- | -------- | ----------- | ------- |
 | `id`              | `string`                | yes      | —           | Unique key. Duplicate ids overwrite each other. |
 | `displayName`     | `string`                | yes      | —           | Text shown in the filter list. |
-| `filterType`      | `FilterType`            | yes      | —           | Chooses the editor rendered in the UI. |
-| `propertyPath`    | `string`                | yes      | —           | Metadata, not a filter key. See the note below. |
-| `filterPredicate` | `Func<EventBase, bool>` | yes      | —           | Returns `true` to keep an event when the filter is active. This is what actually filters. |
+| `filterPredicate` | `Func<EventBase, bool>` | yes      | —           | Returns `true` to keep an event while the filter is active. This is what filters. |
 | `category`        | `string`                | no       | `"General"` | Group heading in the list. |
 | `displayOrder`    | `int`                   | no       | `100`       | List position only — lower appears higher. |
+
+### Full constructor (interactive editors)
+
+Use this only when you want an interactive editor — a value list or a from/to range — where the app
+must know which property to read to discover the values / bounds:
+
+```csharp
+new FilterDescriptor(
+    id:              "my_filter",
+    displayName:     "My filter",
+    filterType:      FilterType.NumericRange,   // which editor the UI shows (see below)
+    propertyPath:    "Performance.ExecuteMs",    // property the app scans for values/bounds — NOT the filter
+    filterPredicate: KeepEvent,                 // still does the actual filtering
+    category:        "Analytics",
+    displayOrder:    2);
+```
+
+It adds two parameters over the short form:
+
+| Parameter      | Type         | Required | Default | Meaning |
+| -------------- | ------------ | -------- | ------- | ------- |
+| `filterType`   | `FilterType` | yes      | —       | Chooses the editor rendered in the UI (see below). |
+| `propertyPath` | `string`     | yes      | —       | Metadata, not a filter key (see the note). Drives value/range discovery for the interactive types. |
+
+For a working interactive filter whose predicate reads the user's live input, see
+[Runtime-tunable filters](#runtime-tunable-filters) below.
 
 <Aside type="note" title="propertyPath does not filter">
 For a plugin filter the **predicate** does the filtering — over the whole `EventBase`, across as
@@ -55,24 +83,6 @@ custom filter the service returns your predicate untouched — `propertyPath` ne
 filtering. So a condition like "`StatementFinishEvent` **and** `Transaction.LockMode == "WAIT"`" is
 expressed entirely in the predicate; a single path does not limit you.
 </Aside>
-
-### Predicate-only filters: skip `propertyPath`
-
-Because `propertyPath` plays no part in filtering a pure-predicate filter, there is a shorter
-constructor overload for the common "keep every event where my predicate is true" case. It sets
-`FilterType.Boolean` (an on/off toggle) and leaves `propertyPath` empty:
-
-```csharp
-// FilterDescriptor(id, displayName, filterPredicate, category = "General", displayOrder = 100)
-yield return new FilterDescriptor(
-    "acme.filter.slow_statements",
-    "Slow statements (>= 1000 ms)",
-    e => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000,
-    "Analytics");
-```
-
-Use the full constructor (with `propertyPath`) only for the interactive value-list / range types,
-where the app needs the path to discover values and bounds.
 
 ## `FilterType`
 
