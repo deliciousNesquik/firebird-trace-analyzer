@@ -45,6 +45,16 @@ export default defineConfig({
             { label: 'Plugins', slug: 'guides/plugins' },
           ],
         },
+        {
+          label: 'SDK',
+          items: [
+            { label: 'Overview', slug: 'sdk/overview' },
+            { label: 'Sort plugins', slug: 'sdk/sort-plugins' },
+            { label: 'Filter plugins', slug: 'sdk/filter-plugins' },
+            { label: 'Event model', slug: 'sdk/event-model' },
+            { label: 'Building & loading', slug: 'sdk/building-and-loading' },
+          ],
+        },
       ],
     }),
   ],

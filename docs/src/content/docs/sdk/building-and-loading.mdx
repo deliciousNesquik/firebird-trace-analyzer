@@ -1,0 +1,154 @@
+---
+title: Building & loading
+description: The plugin .csproj, how to install a DLL, how discovery works, version collisions, and troubleshooting.
+---
+
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## The project file
+
+A plugin is a plain `net10.0` class library that references the two SDK projects (or the shipped
+assemblies). The key detail is `Private="false"`: the host already loads
+`FirebirdTraceAnalyzer` and `FirebirdTraceParser`, so your package must **not** carry its own copies —
+duplicating them gives the runtime two different identities of the same type and casts to
+`IAnalyzerPlugin` fail.
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Private="false" PrivateAssets="all"
+                      Include="..\FirebirdTraceAnalyzer\FirebirdTraceAnalyzer.csproj" />
+    <ProjectReference Private="false" PrivateAssets="all"
+                      Include="..\FirebirdTraceParser\FirebirdTraceParser.csproj" />
+  </ItemGroup>
+
+</Project>
+```
+
+If you build against the shipped DLLs instead of the source projects, use `<Reference>` elements with
+the same `Private="false"` — the effect is identical: reference for compilation, do not copy to
+output.
+
+## Build
+
+```bash
+dotnet build TemplatePlugin
+```
+
+The output you ship is the single plugin DLL (for example `TemplatePlugin.dll`). If your plugin pulls
+in **its own** third-party packages, those DLLs travel with it — see the install step.
+
+## Install
+
+<Tabs>
+  <TabItem label="From the app">
+    Open the **Plugins** screen and use **Install**. It accepts a single `.dll` or a `.zip` package
+    (a zipped folder containing the DLL and any of its own dependencies). The app copies it into its
+    own subfolder for you. Changes take effect on the **next launch**.
+  </TabItem>
+  <TabItem label="Manual copy">
+    Copy the plugin DLL into its **own subfolder** of the plugins directory. The DLL must sit in a
+    subfolder, not directly in `Plugins/` — the scanner reads subfolders only.
+
+    | OS      | Path |
+    | ------- | ---- |
+    | Windows | `%AppData%\FirebirdTraceAnalyzer\Plugins\<name>\YourPlugin.dll` |
+    | macOS   | `~/Library/Application Support/FirebirdTraceAnalyzer/Plugins/<name>/YourPlugin.dll` |
+    | Linux   | `~/.config/FirebirdTraceAnalyzer/Plugins/<name>/YourPlugin.dll` |
+
+    The Plugins screen has an **Open plugins folder** action that takes you straight there.
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Do not ship the SDK assemblies">
+Never place `FirebirdTraceParser.dll` or `FirebirdTraceAnalyzer.dll` in a plugin folder — the app
+provides them. Do include your plugin's **own** third-party dependencies next to its DLL in the same
+subfolder.
+</Aside>
+
+After installing, **restart the app**. Discovery and registration happen once on startup — there is
+no hot reload.
+
+## How loading works
+
+<Steps>
+
+1. **Scan.** On startup the app scans the plugins directory and **each of its subfolders**, taking
+   every top-level `*.dll`.
+
+2. **Isolate.** Each assembly loads into its own `AssemblyLoadContext` so a plugin's dependency
+   versions cannot break the app. Shared SDK types resolve back to the host's already-loaded copies.
+
+3. **Instantiate.** Every non-abstract public class implementing `IAnalyzerPlugin` is created via
+   `Activator.CreateInstance()`. **The class must have a public parameterless constructor.**
+
+4. **Skip the SDK.** `FirebirdTraceParser.dll` is skipped deliberately if it is found in a plugin
+   folder.
+
+5. **Register.** Sorts go to the sort service, filters to the filter service. `GetSorts()` and
+   `GetFilters()` are each called inside a per-plugin `try/catch` — a throwing plugin is skipped and
+   logged, and the app still starts.
+
+</Steps>
+
+## Enabling, disabling and collisions
+
+The **Plugins** screen lists everything discovered — name, author, version and status (Active,
+Disabled, Shadowed, Load error) — and lets you enable or disable each one. A disabled plugin's
+assembly is not even loaded, so its code never runs. See the
+[Plugins guide](../guides/plugins.md) for the management UI.
+
+The loader keys registration on the descriptor **`Id`**, and it resolves same-`Id` collisions by
+keeping the **highest `Version`** and shadowing the rest. `Version` and `Author` are informational —
+they appear only in the log, never in the sort/filter lists.
+
+| Situation | Result |
+| --------- | ------ |
+| Replace the old DLL with a new one, same descriptor ids | Clean update: the new logic registers on next launch; the UI item is unchanged. |
+| Keep both versions side by side, same descriptor ids | Collision: one wins (the dictionary overwrites), the other disappears; the overwrite is logged. Remove the old DLL. |
+| Both versions side by side, different descriptor ids | Both appear as independent, duplicate entries. |
+
+To update a plugin: **replace** its DLL (keeping the descriptor ids), then restart.
+
+## Troubleshooting
+
+Logs live next to the plugins folder — `application.log` under
+`%AppData%\FirebirdTraceAnalyzer\logs` (Windows),
+`~/Library/Application Support/FirebirdTraceAnalyzer/logs` (macOS), or
+`~/.config/FirebirdTraceAnalyzer/logs` (Linux). A successful load leaves
+`Loaded sorts/filters from plugin: {Name} (v{Version})` and `Total custom … registered: N`.
+
+### The plugin does not appear (app still runs)
+
+| Symptom (in the log) | Cause | Fix |
+| -------------------- | ----- | --- |
+| `Plugin '{Name}' … failed in GetSorts()/GetFilters() — skipped` | `GetSorts()`/`GetFilters()` threw. The call is wrapped per plugin, so it is skipped. | Keep those methods pure — just `yield return` descriptors. Move heavy logic into the comparer/predicate. |
+| Assembly load error for the DLL | No public parameterless constructor (or it throws), so `Activator.CreateInstance` fails and the whole DLL is skipped. | Make the constructor `public` and parameterless; do no heavy or throwing work in it. |
+| `ReflectionTypeLoadException` / missing dependency | A dependency is missing next to the DLL, or SDK assemblies were shipped alongside it. | Put your own third-party deps in the subfolder; do **not** ship `FirebirdTraceParser.dll` / `FirebirdTraceAnalyzer.dll`. |
+| No log line about your plugin at all | The DLL is in the root `Plugins/` folder, not a subfolder — only subfolders are scanned. | Move it to `Plugins/<name>/YourPlugin.dll`. |
+| No log line, no error | The class is `abstract`/an interface, or does not implement `ISortPlugin`/`IFilterPlugin`. | Make it a concrete `public` class implementing the interface. |
+| `… with Id '{Id}' overwrites existing one …`; fewer items than expected | Duplicate descriptor ids overwrite each other. | Give every descriptor a unique, namespaced `id`. |
+| Changes not picked up after replacing the DLL | The app was not restarted, or an old DLL with the same ids is still present. | Replace the DLL, remove the old one, and restart. |
+
+### Errors while sorting or filtering (item already in the UI)
+
+| Symptom | Cause | Fix |
+| ------- | ----- | --- |
+| The list does not sort/filter; the status bar shows a filtering error; the list may go empty | The comparer/predicate threw at runtime — usually a null reference on a foreign event type. Caught, so the app does not crash, but no result is built. | Always `is`-match the subtype before reading fields; guard nulls; return a neutral value (`false`/`0`) for other events. |
+
+## Checklist
+
+- The class is `public`, not `abstract`, with a parameterless constructor.
+- It implements `ISortPlugin` and/or `IFilterPlugin`.
+- Every plugin and descriptor `id` is unique and namespaced.
+- The comparer honors the `descending` flag; the predicate returns `true` to keep an event.
+- The comparer/predicate pattern-matches the event subtype before reading fields.
+- Only your DLL (plus your own third-party deps) is in the subfolder — no SDK assemblies.
+- The app was restarted after installing.

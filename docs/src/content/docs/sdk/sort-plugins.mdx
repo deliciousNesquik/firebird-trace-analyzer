@@ -1,0 +1,152 @@
+---
+title: Sort plugins
+description: Technical reference for ISortPlugin and SortDescriptor — the comparer contract, the descending flag, and the optional key selector.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A sort plugin adds one or more ordering options to the sort panel. Implement `ISortPlugin` and
+return a `SortDescriptor` for each option.
+
+```csharp
+namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+
+public interface ISortPlugin : IAnalyzerPlugin
+{
+    IEnumerable<SortDescriptor> GetSorts();
+}
+```
+
+`GetSorts()` is called **once, at startup**. Keep it pure — just build and return descriptors. Do
+not touch files, the network, or shared state, and do not throw: an exception here causes the whole
+plugin to be **skipped** (logged as an error) while the app keeps running.
+
+## `SortDescriptor`
+
+Namespace: `FirebirdTraceAnalyzer.Services.Sorting`.
+
+```csharp
+new SortDescriptor(
+    id:           "my_sort",      // unique identifier of this sort
+    displayName:  "My sort",      // label shown in the UI
+    comparer:     Compare,        // comparison function (see below)
+    isDefault:    false,          // whether it is selected by default
+    category:     "Analytics",    // group heading in the sort list
+    displayOrder: 2);             // POSITION of the item in the list (lower = higher)
+```
+
+| Parameter      | Type                                | Required | Default     | Meaning |
+| -------------- | ----------------------------------- | -------- | ----------- | ------- |
+| `id`           | `string`                            | yes      | —           | Unique key. Duplicate ids overwrite each other (see below). |
+| `displayName`  | `string`                            | yes      | —           | Text shown in the sort list. |
+| `comparer`     | `Func<EventBase, EventBase, bool, int>` | yes  | —           | The comparison function. Always required (see the key-selector note). |
+| `isDefault`    | `bool`                              | yes      | —           | If `true`, this sort is preselected. |
+| `category`     | `string`                            | no       | `"General"` | Group heading in the list. |
+| `displayOrder` | `int`                               | no       | `100`       | List position only — lower appears higher. |
+
+<Aside type="note" title="displayOrder is not the sort direction">
+`displayOrder` controls only where the item sits in the sort **list**. It has nothing to do with how
+events are ordered — that is the comparer's job.
+</Aside>
+
+## The comparer contract
+
+```csharp
+Func<EventBase, EventBase, bool, int>   // (a, b, descending) => int
+```
+
+- Return `< 0` if `a` should come **before** `b`, `0` if they are equal, `> 0` if `a` comes
+  **after** `b`.
+- The `descending` flag carries the current sort direction chosen in the UI. Your comparer **must
+  honor it** — usually by flipping the sign of the result: `return descending ? -result : result;`
+- The comparer runs for many pairs. Match the event subtype with `is` before touching a field, and
+  return a neutral value (for example `0`) for events that do not have it — never throw.
+
+Sorting is **stable**: the app breaks ties by original position, so you do not have to.
+
+```csharp
+private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
+{
+    static int ExecuteMs(EventBase e) =>
+        e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
+
+    var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+    return descending ? -result : result;
+}
+```
+
+## Optional: `KeySelector` (performance)
+
+`SortDescriptor` exposes an optional init-only property:
+
+```csharp
+public Func<EventBase, object?>? KeySelector { get; init; }
+```
+
+When you set `KeySelector`, the sort service extracts the key **once per event**
+(decorate-sort-undecorate) instead of calling the comparer on every one of the `O(N·log N)`
+comparisons. In that mode:
+
+- the app compares keys with its own value comparer and applies the `descending` flag and tie
+  stability **for you** — your `comparer` is **not** invoked;
+- `comparer` is still a **required** constructor argument, so pass one anyway (it simply is not
+  called while a key selector is present).
+
+```csharp
+yield return new SortDescriptor(
+    "my_sort_by_reads", "Reads", Compare, isDefault: false, category: "Analytics")
+{
+    KeySelector = e => e is StatementFinishEvent s ? s.Performance.ReadCount : (object?)null,
+};
+```
+
+Prefer a `KeySelector` when the key is a simple comparable value (a number, a string, a date). Use a
+plain `comparer` when ordering needs custom logic that a single key cannot express.
+
+## Full example
+
+```csharp
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
+using FirebirdTraceAnalyzer.Services.Sorting;
+using FirebirdTraceParser.Models.Events;
+
+namespace MyPlugin;
+
+public class SlowestFirstSortPlugin : ISortPlugin
+{
+    public string Id => "acme.sort.execute_time";
+    public string Name => "Execute time";
+    public string Author => "ACME";
+    public string Version => "1.0.0";
+
+    public IEnumerable<SortDescriptor> GetSorts()
+    {
+        yield return new SortDescriptor(
+            "acme.sort.execute_time",
+            "Execute time",
+            CompareByExecuteTime,
+            isDefault: false,
+            category: "Analytics",
+            displayOrder: 2);
+    }
+
+    private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
+    {
+        static int ExecuteMs(EventBase e) =>
+            e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
+
+        var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+        return descending ? -result : result;
+    }
+}
+```
+
+<Aside type="caution" title="Keep ids unique">
+Descriptors are stored in a dictionary keyed by `id`. Two sorts with the same `id` overwrite each
+other and one silently disappears. Each overwrite is logged as
+`Sort with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'`. Namespacing ids
+(for example `acme.sort.execute_time`) avoids clashing with built-ins or other plugins.
+</Aside>
+
+See the [event model](./event-model.mdx) for the fields you can sort on, and
+[building & loading](./building-and-loading.mdx) to ship the DLL.

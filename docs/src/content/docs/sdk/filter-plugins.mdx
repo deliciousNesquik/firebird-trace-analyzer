@@ -1,0 +1,129 @@
+---
+title: Filter plugins
+description: Technical reference for IFilterPlugin and FilterDescriptor — filter types, the predicate contract, and the property path.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A filter plugin adds one or more entries to the filter panel. Implement `IFilterPlugin` and return a
+`FilterDescriptor` for each filter.
+
+```csharp
+namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+
+public interface IFilterPlugin : IAnalyzerPlugin
+{
+    IEnumerable<FilterDescriptor> GetFilters();
+}
+```
+
+Like `GetSorts()`, `GetFilters()` is called **once, at startup**. Keep it pure and non-throwing —
+an exception skips the whole plugin (logged as an error) while the app keeps running.
+
+## `FilterDescriptor`
+
+Namespace: `FirebirdTraceAnalyzer.Services.Filtering`.
+
+```csharp
+new FilterDescriptor(
+    id:              "my_filter",             // unique identifier of this filter
+    displayName:     "My filter",             // label shown in the UI
+    filterType:      FilterType.Boolean,      // which editor the UI shows (see below)
+    propertyPath:    "Performance.ExecuteMs",  // property this filter targets
+    filterPredicate: KeepEvent,               // "keep this event?" function (see below)
+    category:        "Analytics",
+    displayOrder:    2);                       // list position (lower = higher)
+```
+
+| Parameter         | Type                    | Required | Default     | Meaning |
+| ----------------- | ----------------------- | -------- | ----------- | ------- |
+| `id`              | `string`                | yes      | —           | Unique key. Duplicate ids overwrite each other. |
+| `displayName`     | `string`                | yes      | —           | Text shown in the filter list. |
+| `filterType`      | `FilterType`            | yes      | —           | Chooses the editor rendered in the UI. |
+| `propertyPath`    | `string`                | yes      | —           | Dotted path to the target property (used for the label and, for value-list filters, to discover selectable values). |
+| `filterPredicate` | `Func<EventBase, bool>` | yes      | —           | Returns `true` to keep an event when the filter is active. |
+| `category`        | `string`                | no       | `"General"` | Group heading in the list. |
+| `displayOrder`    | `int`                   | no       | `100`       | List position only — lower appears higher. |
+
+## `FilterType`
+
+Namespace: `FirebirdTraceParser.Enums`. The value selects the editor the UI renders for the filter.
+
+| Value               | Editor shown |
+| ------------------- | ------------ |
+| `Auto`              | Inferred from the property type. Prefer a concrete type instead. |
+| `Boolean`           | A simple on/off toggle. |
+| `EnumMultiSelect`   | A checkbox list of enum values. |
+| `StringMultiSelect` | A searchable checkbox list of strings. |
+| `NumericRange`      | A from/to numeric range (`int`, `long`, `decimal`). |
+| `DateTimeRange`     | A from/to date range. |
+| `TextSearch`        | A free-text substring search (for SQL and long text). |
+
+The value-list editors (`EnumMultiSelect`, `StringMultiSelect`) support three states per value:
+included, excluded, or neither.
+
+## The predicate contract
+
+```csharp
+Func<EventBase, bool>   // event => keep?
+```
+
+Return `true` when the event **should remain** while the filter is active, and `false` to hide it.
+The predicate runs for every event, so:
+
+- match the event subtype with `is` before touching a field;
+- guard against `null`;
+- never throw — for events that do not have the field, return a neutral result (usually `false`).
+
+A predicate that throws is caught at runtime: the app does not crash, but the result is not built
+and the status bar shows a filtering error.
+
+```csharp
+private static bool IsSlowStatement(EventBase e)
+    => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000;
+```
+
+## Full example
+
+```csharp
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
+using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceParser.Enums;
+using FirebirdTraceParser.Models.Events;
+
+namespace MyPlugin;
+
+public class SlowStatementsFilterPlugin : IFilterPlugin
+{
+    public string Id => "acme.filter.slow_statements";
+    public string Name => "Slow statements";
+    public string Author => "ACME";
+    public string Version => "1.0.0";
+
+    private const int SlowThresholdMs = 1000;
+
+    public IEnumerable<FilterDescriptor> GetFilters()
+    {
+        yield return new FilterDescriptor(
+            "acme.filter.slow_statements",
+            "Slow statements (>= 1000 ms)",
+            FilterType.Boolean,
+            "Performance.ExecuteMs",
+            IsSlowStatement,
+            category: "Analytics",
+            displayOrder: 2);
+    }
+
+    private static bool IsSlowStatement(EventBase e)
+        => e is StatementFinishEvent s && s.Performance.ExecuteMs >= SlowThresholdMs;
+}
+```
+
+<Aside type="caution" title="Keep ids unique">
+Filters are stored in a dictionary keyed by `id`; duplicate ids overwrite each other and one
+disappears (logged as `Filter with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'`). Namespace
+your ids to avoid clashing with built-ins or other plugins.
+</Aside>
+
+See the [event model](./event-model.mdx) for the fields you can filter on, and
+[building & loading](./building-and-loading.mdx) to ship the DLL.

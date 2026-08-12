@@ -1,0 +1,114 @@
+---
+title: SDK overview
+description: Build custom sort and filter plugins for Firebird Trace Analyzer — what you need, where the template is, and how to ship a DLL.
+---
+
+import { Steps, Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+A **plugin** is an ordinary .NET assembly (`*.dll`) that adds new **sorts** and/or **filters** to
+the event list without changing — or rebuilding — the application itself. On startup the app scans
+a plugins folder, loads each assembly into an isolated context, and registers whatever it provides.
+Your sorts and filters then show up in the UI (the sort and filter panels, and the report designer)
+side by side with the built-in ones.
+
+Use plugins to add analysis that is specific to your work — "slow statements", a sort by your own
+metric, a filter for a particular database or user — and to share it as a single `.dll`.
+
+## The two extension points
+
+| Interface       | Method                                    | What it adds     |
+| --------------- | ----------------------------------------- | ---------------- |
+| `ISortPlugin`   | `GetSorts()` → `IEnumerable<SortDescriptor>`   | sort options |
+| `IFilterPlugin` | `GetFilters()` → `IEnumerable<FilterDescriptor>` | filters    |
+
+Both derive from a common base, `IAnalyzerPlugin`, which carries the plugin metadata:
+
+```csharp
+public interface IAnalyzerPlugin
+{
+    string Id { get; }       // globally unique plugin identifier
+    string Name { get; }     // human-readable name
+    string Author { get; }   // author
+    string Version { get; }  // version, free-form (e.g. SemVer)
+}
+```
+
+A single DLL may contain **any number** of plugin classes, and each class may implement **one or
+both** interfaces. The loader instantiates every plugin class and collects all of its descriptors.
+
+<Aside type="danger" title="Plugins run with full privileges">
+A plugin executes with the **full privileges of the application** — there is no sandbox. Installing
+a plugin is equivalent to running any other program on your machine. **Only build and install
+plugins from source you trust.**
+</Aside>
+
+## What you need
+
+<Steps>
+
+1. **.NET 10 SDK** — the same target framework the app is built on (`net10.0`).
+
+2. **An IDE or editor** — JetBrains Rider, Visual Studio 2022+, or VS Code with the C# Dev Kit. Any
+   of them will do; the plugin is a plain class library.
+
+3. **The two SDK assemblies to reference** — `FirebirdTraceAnalyzer` (the interfaces and
+   descriptors) and `FirebirdTraceParser` (the event model). The template already references both.
+
+</Steps>
+
+## Get the template
+
+The repository ships a ready-to-copy **`TemplatePlugin`** project. It demonstrates both extension
+points — a custom sort and a custom filter — and builds against the SDK assemblies out of the box.
+Copy it, replace the logic with your own, and the app will pick up the result.
+
+<CardGrid>
+  <LinkCard
+    title="TemplatePlugin (project)"
+    description="The full template project — copy this to start."
+    href="https://github.com/deliciousNesquik/firebird-trace-analyzer/tree/master/TemplatePlugin"
+  />
+  <LinkCard
+    title="Template.cs (example)"
+    description="A sort plugin and a filter plugin, fully commented."
+    href="https://github.com/deliciousNesquik/firebird-trace-analyzer/blob/master/TemplatePlugin/Template.cs"
+  />
+</CardGrid>
+
+## Quick start
+
+<Steps>
+
+1. **Copy the template.** Clone the repository and duplicate the `TemplatePlugin` project, or create
+   a new `net10.0` class library that references `FirebirdTraceAnalyzer` and `FirebirdTraceParser`
+   (see [Building & loading](./building-and-loading.mdx) for the exact `.csproj`).
+
+2. **Write the plugin.** Add a `public` class with a parameterless constructor that implements
+   `ISortPlugin` and/or `IFilterPlugin`, fill in the metadata (`Id`, `Name`, `Author`, `Version`),
+   and return your descriptors from `GetSorts()` / `GetFilters()`.
+
+3. **Build the DLL.**
+
+   ```bash
+   dotnet build TemplatePlugin
+   ```
+
+4. **Install it.** Copy **only your plugin's DLL** into its own subfolder of the app's plugins
+   directory (or use the **Install** button on the Plugins screen). Do not copy the SDK assemblies —
+   the app provides them.
+
+5. **Restart the app.** Plugins are discovered and registered on startup; there is no hot reload.
+   Your sorts and filters now appear in the UI.
+
+</Steps>
+
+## Where to next
+
+<CardGrid>
+  <LinkCard title="Sort plugins" description="ISortPlugin, SortDescriptor, the comparer contract." href={`${base}/sdk/sort-plugins/`} />
+  <LinkCard title="Filter plugins" description="IFilterPlugin, FilterDescriptor, filter types and predicates." href={`${base}/sdk/filter-plugins/`} />
+  <LinkCard title="Event model" description="EventBase, every event subtype, and the value objects." href={`${base}/sdk/event-model/`} />
+  <LinkCard title="Building & loading" description="The .csproj, install layout, discovery rules and troubleshooting." href={`${base}/sdk/building-and-loading/`} />
+</CardGrid>

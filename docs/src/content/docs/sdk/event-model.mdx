@@ -1,0 +1,154 @@
+---
+title: Event model
+description: Every field a plugin can read — EventBase, the event subtypes, and the value objects they carry.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Your comparer and predicate receive an `EventBase`. The base type carries only the fields common to
+every trace record; everything specific lives on a subtype. Match the subtype with `is` and read its
+fields — this page lists what is available.
+
+Namespace: `FirebirdTraceParser.Models.Events` (events) and `FirebirdTraceParser.Models.ValueObjects`
+(the value objects below).
+
+## `EventBase`
+
+Common to every event.
+
+| Field         | Type        | Notes |
+| ------------- | ----------- | ----- |
+| `Timestamp`   | `DateTime`  | Event time. |
+| `TraceId`     | `int`       | Trace-session id (decimal). |
+| `HexTraceId`  | `string`    | Trace-session id (hexadecimal). |
+| `EventType`   | `EventType` | The event kind (enum, see below). |
+
+## Event subtypes
+
+Every subtype inherits the four `EventBase` fields above and adds the following.
+
+### Statements — `FirebirdTraceParser.Models.Events`
+
+`StatementEventBase` adds:
+
+| Field         | Type                          | Notes |
+| ------------- | ----------------------------- | ----- |
+| `Attachment`  | `AttachmentInfo`              | Connection details. |
+| `Transaction` | `TransactionInfo?`            | May be null. |
+| `StatementId` | `long?`                       | |
+| `Sql`         | `string`                      | The statement text. |
+| `Parameters`  | `IReadOnlyList<SqlParameters>` | Bound parameters. |
+
+| Subtype                       | Adds |
+| ----------------------------- | ---- |
+| `StatementStartEvent`         | — |
+| `StatementRestartEvent`       | `RestartCount` (`int?`) |
+| `StatementFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedStatementFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Procedures
+
+`ProcedureEventBase` adds `Attachment` (`AttachmentInfo`), `Transaction` (`TransactionInfo`),
+`ProcedureName` (`string`), `Parameters` (`IReadOnlyList<SqlParameters>`).
+
+| Subtype                       | Adds |
+| ----------------------------- | ---- |
+| `ProcedureStartEvent`         | — |
+| `ProcedureFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedProcedureFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Triggers
+
+`TriggerEventBase` adds `Attachment` (`AttachmentInfo`), `Transaction` (`TransactionInfo`),
+`TriggerName` (`string`), `Table` (`string?`), `Timing` (`string?`), `Event` (`string`).
+
+| Subtype                     | Adds |
+| --------------------------- | ---- |
+| `TriggerStartEvent`         | — |
+| `TriggerFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedTriggerFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Errors, sessions, attachments
+
+| Subtype              | Fields |
+| -------------------- | ------ |
+| `ErrorEvent`         | `Attachment` (`AttachmentInfo`), `Component` (`string`), `Errors` (`IReadOnlyList<ErrorLines>`) |
+| `TraceInitEvent`     | `Session` (`TraceSessionInfo`) |
+| `TraceFinishEvent`   | `Session` (`TraceSessionInfo`) |
+| `AttachDatabaseEvent`| `Attachment` (`AttachmentInfo`) |
+| `DetachDatabaseEvent`| `Attachment` (`AttachmentInfo`) |
+
+## Value objects
+
+### `PerformanceInfo`
+
+Present on the `*FinishEvent` subtypes. A record with all-`int` counters.
+
+| Field        | Type  |
+| ------------ | ----- |
+| `ExecuteMs`  | `int` |
+| `FetchCount` | `int` |
+| `ReadCount`  | `int` |
+| `WriteCount` | `int` |
+| `MarkCount`  | `int` |
+
+### `AttachmentInfo`
+
+| Field         | Type      |
+| ------------- | --------- |
+| `DatabasePath`| `string`  |
+| `AttachmentId`| `long`    |
+| `User`        | `string`  |
+| `Role`        | `string`  |
+| `Charset`     | `string`  |
+| `Protocol`    | `string`  |
+| `Address`     | `string`  |
+| `Port`        | `int`     |
+| `ProcessPath` | `string?` |
+| `ProcessId`   | `int?`    |
+
+### `TransactionInfo`
+
+A record; every field is nullable.
+
+| Field             | Type      |
+| ----------------- | --------- |
+| `TransactionId`   | `long?`   |
+| `IsolationLevel`  | `string?` |
+| `ConsistencyMode` | `string?` |
+| `LockMode`        | `string?` |
+| `AccessMode`      | `string?` |
+
+Other value objects you may encounter: `SqlParameters` (bound parameter values), `ErrorLines`
+(one code/message line of an error chain), `PerformanceTable` (per-table read/write breakdown), and
+`TraceSessionInfo` (trace-session metadata).
+
+## `EventType`
+
+Namespace: `FirebirdTraceParser.Models.Enums`.
+
+`TraceInit`, `TraceFinish`, `AttachDatabase`, `DetachDatabase`, `ExecuteStatementStart`,
+`ExecuteStatementRestart`, `ExecuteStatementFinish`, `ExecuteProcedureStart`,
+`ExecuteProcedureRestart`, `ExecuteProcedureFinish`, `ExecuteTriggerStart`, `ExecuteTriggerFinish`,
+`FailedExecuteStatementFinish`, `FailedExecuteProcedureFinish`, `FailedExecuteTriggerFinish`,
+`Error`.
+
+## Reading fields safely
+
+Pattern-match the subtype before touching its fields, so you only work with events that actually
+have the field and never fault on a foreign type:
+
+```csharp
+static int ExecuteMs(EventBase e) => e switch
+{
+    StatementFinishEvent s => s.Performance.ExecuteMs,
+    ProcedureFinishEvent p => p.Performance.ExecuteMs,
+    TriggerFinishEvent t   => t.Performance.ExecuteMs,
+    _                      => -1,   // neutral for everything else
+};
+```
+
+<Aside type="tip">
+Some fields are declared on shared bases (`Attachment`, `Sql`, `Performance`), so a single `is`
+check against the finish subtype gives you both the connection and the timing in one branch.
+</Aside>
