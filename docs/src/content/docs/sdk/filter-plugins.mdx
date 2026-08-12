@@ -29,8 +29,8 @@ new FilterDescriptor(
     id:              "my_filter",             // unique identifier of this filter
     displayName:     "My filter",             // label shown in the UI
     filterType:      FilterType.Boolean,      // which editor the UI shows (see below)
-    propertyPath:    "Performance.ExecuteMs",  // property this filter targets
-    filterPredicate: KeepEvent,               // "keep this event?" function (see below)
+    propertyPath:    "Performance.ExecuteMs",  // metadata only — label + discovery, does NOT filter
+    filterPredicate: KeepEvent,               // "keep this event?" function — this does the filtering
     category:        "Analytics",
     displayOrder:    2);                       // list position (lower = higher)
 ```
@@ -40,10 +40,20 @@ new FilterDescriptor(
 | `id`              | `string`                | yes      | —           | Unique key. Duplicate ids overwrite each other. |
 | `displayName`     | `string`                | yes      | —           | Text shown in the filter list. |
 | `filterType`      | `FilterType`            | yes      | —           | Chooses the editor rendered in the UI. |
-| `propertyPath`    | `string`                | yes      | —           | Dotted path to the target property (used for the label and, for value-list filters, to discover selectable values). |
-| `filterPredicate` | `Func<EventBase, bool>` | yes      | —           | Returns `true` to keep an event when the filter is active. |
+| `propertyPath`    | `string`                | yes      | —           | Metadata, not a filter key. See the note below. |
+| `filterPredicate` | `Func<EventBase, bool>` | yes      | —           | Returns `true` to keep an event when the filter is active. This is what actually filters. |
 | `category`        | `string`                | no       | `"General"` | Group heading in the list. |
 | `displayOrder`    | `int`                   | no       | `100`       | List position only — lower appears higher. |
+
+<Aside type="note" title="propertyPath does not filter">
+For a plugin filter the **predicate** does the filtering — over the whole `EventBase`, across as
+many fields as you like. `propertyPath` is used only to (1) label the filter and (2) for the
+interactive types (`*MultiSelect`, `NumericRange`, `DateTimeRange`) let the app discover the pick-list
+values / min-max bounds and decide which editor to show. Internally, for a registered custom filter
+the service returns your predicate untouched — `propertyPath` never enters the filtering itself. So a
+condition like "`StatementFinishEvent` **and** `Transaction.LockMode == "WAIT"`" is expressed
+entirely in the predicate; a single path does not limit you.
+</Aside>
 
 ## `FilterType`
 
@@ -118,6 +128,74 @@ public class SlowStatementsFilterPlugin : IFilterPlugin
         => e is StatementFinishEvent s && s.Performance.ExecuteMs >= SlowThresholdMs;
 }
 ```
+
+## Runtime-tunable filters
+
+A plugin filter can combine a compound condition with a parameter the **user adjusts at runtime**.
+The trick: the predicate reads the descriptor's **live** state each time filters are applied.
+
+Example — "all `StatementFinish` events on a **WAIT** transaction whose execution time falls in a
+user-set range":
+
+```csharp
+public IEnumerable<FilterDescriptor> GetFilters()
+{
+    // NumericRange renders the From/To editor; MinValue != null makes it visible immediately.
+    // propertyPath here drives the label and the auto-discovered default bounds — not the filtering.
+    var descriptor = new FilterDescriptor(
+        "acme.filter.slow_wait_statements",
+        "Slow WAIT statements",
+        FilterType.NumericRange,
+        "Performance.ExecuteMs",
+        _ => true,                 // placeholder — real predicate set below (it needs the descriptor)
+        category: "Analytics")
+    {
+        MinValue = 0,
+        MaxValue = 100_000,
+    };
+
+    // Capture the descriptor and read its live CurrentMinValue/CurrentMaxValue on every apply.
+    descriptor.UpdatePredicate(e => Match(e, descriptor));
+    yield return descriptor;
+}
+
+private static bool Match(EventBase e, FilterDescriptor filter)
+{
+    if (e is not StatementFinishEvent s) return false;
+    if (!string.Equals(s.Transaction?.LockMode, "WAIT", StringComparison.OrdinalIgnoreCase)) return false;
+
+    var ms = s.Performance.ExecuteMs;
+    if (AsInt(filter.CurrentMinValue) is { } from && ms < from) return false;
+    if (AsInt(filter.CurrentMaxValue) is { } to   && ms > to)   return false;
+    return true;
+}
+
+// Bounds arrive from the TextBox TwoWay binding — an int OR a string; unparseable = "no bound".
+private static int? AsInt(object? v) =>
+    v switch { null => null, int i => i, _ => int.TryParse(v.ToString(), out var n) ? n : null };
+```
+
+How it works:
+
+- `FilterType.NumericRange` (or `DateTimeRange`) makes the app render a From/To editor when
+  `MinValue` is set. For text, use `FilterType.TextSearch` and read `SearchText` in the predicate.
+- When the user edits a bound, the panel marks the filters changed; on apply, the service
+  **recompiles** each predicate, so it observes the new `CurrentMinValue`/`CurrentMaxValue`.
+- `CurrentMinValue`/`CurrentMaxValue` can be a boxed number **or** a string (they come from a text
+  box), so coerce them. `Transaction.LockMode` is `"WAIT"` / `"NOWAIT"` / `"NONE"`.
+
+This exact plugin ships in the template — see
+[`TemplatePlugin/Template.cs`](https://github.com/deliciousNesquik/firebird-trace-analyzer/blob/master/TemplatePlugin/Template.cs)
+(`TemplateTunableFilterPlugin`).
+
+<Aside type="caution" title="Two limits of tunable plugin filters">
+- **Multi-select selection is not wired in for you.** For `EnumMultiSelect`/`StringMultiSelect`, the
+  app does not feed the user's ticked values into a custom predicate — if you want that, your
+  predicate must read `filter.AvailableValues` (which items are `IsSelected`/`IsExcluded`) itself.
+- **Report designer.** When a filter is cloned for the report designer, its predicate is
+  re-derived generically by type, so a compound custom filter falls back there. Use tunable custom
+  filters on the main event panel.
+</Aside>
 
 <Aside type="caution" title="Keep ids unique">
 Filters are stored in a dictionary keyed by `id`; duplicate ids overwrite each other and one
