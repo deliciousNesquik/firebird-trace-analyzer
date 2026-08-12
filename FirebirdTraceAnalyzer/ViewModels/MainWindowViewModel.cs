@@ -2357,7 +2357,18 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void GoToFactorySettingsSection()
     {
-        ApplyUiSectionVisibilityFromSettings();
+        // Сброс должен вернуть ЗАВОДСКИЕ значения (из appsettings.json), а не перечитать
+        // сохранённые настройки — те совпадают с текущим состоянием, поэтому раньше сброс был no-op.
+        var defaults = _settingsService?.GetDefaults().Ui;
+        IsTraceFilesSectionVisible = defaults?.Files ?? true;
+        IsSearchSectionVisible = defaults?.Search ?? true;
+        IsEventsSectionVisible = defaults?.Events ?? true;
+        IsStatisticsSectionVisible = defaults?.Statistics ?? true;
+        IsLogsSectionVisible = defaults?.Logs ?? false;
+
+        // Гарантированно зафиксировать сброшенное состояние (если ни одно свойство не изменилось,
+        // OnChanged не сработает — сохраняем явно).
+        PersistUiSettings();
 
         Logger.Info("Factory settings restored.");
         StatusMessage = Loc.Tr("Status.Main.FactorySettingsRestored");
