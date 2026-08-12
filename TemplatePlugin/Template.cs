@@ -59,14 +59,16 @@ public class TemplateFilterPlugin : IFilterPlugin
 
     private const int SlowThresholdMs = 1000;
 
-    /// <summary>Фильтры плагина: FilterDescriptor(id, displayName, filterType, propertyPath, predicate, category, displayOrder).</summary>
+    /// <summary>
+    /// Фильтры плагина. Для чистого предиката (Boolean, чекбокс вкл/выкл) берём короткий конструктор
+    /// БЕЗ propertyPath: FilterDescriptor(id, displayName, predicate, category, displayOrder) —
+    /// фильтрует только предикат. Полная форма с propertyPath нужна лишь для интерактивных типов.
+    /// </summary>
     public IEnumerable<FilterDescriptor> GetFilters()
     {
         yield return new FilterDescriptor(
             "template_slow_statements",
-            "Slow statements (≥ 1000 ms)",
-            FilterType.Boolean,
-            "Performance.ExecuteMs",
+            "Slow statements (>= 1000 ms)",
             IsSlowStatement,
             "Analytics",
             2);

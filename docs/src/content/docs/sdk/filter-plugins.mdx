@@ -47,13 +47,32 @@ new FilterDescriptor(
 
 <Aside type="note" title="propertyPath does not filter">
 For a plugin filter the **predicate** does the filtering — over the whole `EventBase`, across as
-many fields as you like. `propertyPath` is used only to (1) label the filter and (2) for the
-interactive types (`*MultiSelect`, `NumericRange`, `DateTimeRange`) let the app discover the pick-list
-values / min-max bounds and decide which editor to show. Internally, for a registered custom filter
-the service returns your predicate untouched — `propertyPath` never enters the filtering itself. So a
-condition like "`StatementFinishEvent` **and** `Transaction.LockMode == "WAIT"`" is expressed
-entirely in the predicate; a single path does not limit you.
+many fields as you like. `propertyPath` is **not** the filter's label (that is `displayName`) and it
+does not appear in the UI. It is used only (1) for the interactive types (`*MultiSelect`,
+`NumericRange`, `DateTimeRange`) to let the app discover the pick-list values / min-max bounds and
+choose the editor, and (2) as a matching key when a report template is restored. For a registered
+custom filter the service returns your predicate untouched — `propertyPath` never enters the
+filtering. So a condition like "`StatementFinishEvent` **and** `Transaction.LockMode == "WAIT"`" is
+expressed entirely in the predicate; a single path does not limit you.
 </Aside>
+
+### Predicate-only filters: skip `propertyPath`
+
+Because `propertyPath` plays no part in filtering a pure-predicate filter, there is a shorter
+constructor overload for the common "keep every event where my predicate is true" case. It sets
+`FilterType.Boolean` (an on/off toggle) and leaves `propertyPath` empty:
+
+```csharp
+// FilterDescriptor(id, displayName, filterPredicate, category = "General", displayOrder = 100)
+yield return new FilterDescriptor(
+    "acme.filter.slow_statements",
+    "Slow statements (>= 1000 ms)",
+    e => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000,
+    "Analytics");
+```
+
+Use the full constructor (with `propertyPath`) only for the interactive value-list / range types,
+where the app needs the path to discover values and bounds.
 
 ## `FilterType`
 
@@ -114,11 +133,10 @@ public class SlowStatementsFilterPlugin : IFilterPlugin
 
     public IEnumerable<FilterDescriptor> GetFilters()
     {
+        // Pure predicate — no propertyPath needed (short overload, renders as an on/off toggle).
         yield return new FilterDescriptor(
             "acme.filter.slow_statements",
             "Slow statements (>= 1000 ms)",
-            FilterType.Boolean,
-            "Performance.ExecuteMs",
             IsSlowStatement,
             category: "Analytics",
             displayOrder: 2);

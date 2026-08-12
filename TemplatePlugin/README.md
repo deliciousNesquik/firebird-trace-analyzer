@@ -178,10 +178,23 @@ new FilterDescriptor(
     id:            "my_filter",           // уникальный идентификатор фильтра
     displayName:   "My filter",           // имя в UI
     filterType:    FilterType.Boolean,    // тип редактора в UI (см. ниже)
-    propertyPath:  "Performance.ExecuteMs", // путь к свойству события (для подписи/подбора значений)
-    filterPredicate: KeepEvent,           // функция «оставлять ли событие» (см. ниже)
+    propertyPath:  "Performance.ExecuteMs", // для интерактивных типов: подбор значений/границ (НЕ фильтрует)
+    filterPredicate: KeepEvent,           // функция «оставлять ли событие» — она и фильтрует
     category:      "Analytics",
     displayOrder:  2);                    // порядок пункта в списке фильтров (меньше = выше)
+```
+
+**Чистый предикат — без `propertyPath`.** Для фильтра «оставить всё, где предикат = true» есть
+короткий конструктор: он ставит `FilterType.Boolean` (чекбокс вкл/выкл) и пустой `propertyPath`
+(для кастомного фильтра путь в фильтрации не участвует). Так сделан `TemplateFilterPlugin`:
+
+```csharp
+new FilterDescriptor(
+    id:              "template_slow_statements",
+    displayName:     "Slow statements (>= 1000 ms)",
+    filterPredicate: IsSlowStatement,     // фильтрует только предикат
+    category:        "Analytics",
+    displayOrder:    2);
 ```
 
 **Значения `FilterType`** (какой редактор покажет UI):
