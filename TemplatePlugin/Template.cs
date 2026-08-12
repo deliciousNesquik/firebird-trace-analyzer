@@ -76,3 +76,66 @@ public class TemplateFilterPlugin : IFilterPlugin
     private static bool IsSlowStatement(EventBase e)
         => e is StatementFinishEvent s && s.Performance.ExecuteMs >= SlowThresholdMs;
 }
+
+/// <summary>
+/// Пример фильтра с ПАРАМЕТРОМ, настраиваемым пользователем в рантайме: «все StatementFinish на
+/// WAIT-транзакции, у которых время исполнения попадает в заданный диапазон». Тип NumericRange
+/// рисует редактор From/To; предикат читает ЖИВЫЕ границы дескриптора при каждом применении.
+/// Полное объяснение — в разделе «Runtime-tunable filters» документации SDK.
+/// </summary>
+public class TemplateTunableFilterPlugin : IFilterPlugin
+{
+    public string Id => "template_tunable_filter_plugin";
+    public string Name => "Template Tunable Filter (Plugin)";
+    public string Author => "system";
+    public string Version => "1.0.0";
+
+    public IEnumerable<FilterDescriptor> GetFilters()
+    {
+        // NumericRange → редактор From/To; MinValue != null → редактор виден сразу.
+        // propertyPath ('Performance.ExecuteMs') задаёт подпись и авто-подбор границ по данным —
+        // САМУ фильтрацию делает предикат ниже, а не propertyPath.
+        var descriptor = new FilterDescriptor(
+            "template_slow_wait_statements",
+            "Slow WAIT statements",
+            FilterType.NumericRange,
+            "Performance.ExecuteMs",
+            _ => true,                 // плейсхолдер: реальный предикат ставим ниже (нужен дескриптор для замыкания)
+            "Analytics",
+            3)
+        {
+            MinValue = 0,
+            MaxValue = 100_000,
+        };
+
+        // Предикат читает ЖИВОЕ состояние дескриптора: пользователь правит From/To — при следующем
+        // применении фильтра видны новые границы (ApplyFilters пересобирает предикаты каждый раз).
+        descriptor.UpdatePredicate(e => Match(e, descriptor));
+
+        yield return descriptor;
+    }
+
+    /// <summary>Оставить событие, если это StatementFinish на WAIT-транзакции и ExecuteMs в границах [From, To].</summary>
+    private static bool Match(EventBase e, FilterDescriptor filter)
+    {
+        if (e is not StatementFinishEvent s)
+            return false;
+        if (!string.Equals(s.Transaction?.LockMode, "WAIT", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var ms = s.Performance.ExecuteMs;
+        if (AsInt(filter.CurrentMinValue) is { } from && ms < from)
+            return false;
+        if (AsInt(filter.CurrentMaxValue) is { } to && ms > to)
+            return false;
+        return true;
+    }
+
+    // Границы приходят из TwoWay-биндинга TextBox — могут быть int ЛИБО строкой; непарсимое = «нет границы».
+    private static int? AsInt(object? value) => value switch
+    {
+        null => null,
+        int i => i,
+        _ => int.TryParse(value.ToString(), out var n) ? n : null,
+    };
+}

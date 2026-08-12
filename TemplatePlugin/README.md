@@ -205,6 +205,66 @@ private static bool IsSlowStatement(EventBase e)
     => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000;
 ```
 
+> **`propertyPath` НЕ фильтрует.** Для плагин-фильтра фильтрацию целиком выполняет **предикат** —
+> `propertyPath` нужен только (1) для подписи и (2) для интерактивных типов (`*MultiSelect`,
+> `NumericRange`, `DateTimeRange`) — по нему приложение подбирает значения/границы и решает, какой
+> редактор показать. Внутри `FilteringService` для кастомных фильтров возвращается ваш предикат как
+> есть (`CompilePredicate`), `propertyPath` в фильтрации не участвует.
+
+---
+
+## Фильтр с параметром, настраиваемым в рантайме
+
+Составное условие можно совместить с **порогом, который пользователь крутит в UI**. Пример из
+[`Template.cs`](./Template.cs) — `TemplateTunableFilterPlugin`: «все `StatementFinish` на
+**WAIT**-транзакции, у которых `ExecuteMs` в заданном диапазоне».
+
+Как это устроено:
+
+1. Объявите интерактивный тип — `FilterType.NumericRange` — и задайте `MinValue`/`MaxValue`, чтобы
+   редактор диапазона From/To отрисовался (он виден, когда `MinValue != null`).
+2. Замените предикат через `UpdatePredicate`, **замкнув его на дескриптор**, и читайте в нём **живые**
+   `CurrentMinValue`/`CurrentMaxValue` (для `TextSearch` — `SearchText`). Плейсхолдер `_ => true` в
+   конструкторе нужен лишь потому, что дескриптор ещё не создан в момент вызова конструктора.
+3. Границы приходят из TwoWay-биндинга TextBox — могут быть `int` **либо строкой**; приводите их
+   безопасно (непарсимое = «граница не задана»).
+
+```csharp
+var descriptor = new FilterDescriptor(
+    "template_slow_wait_statements", "Slow WAIT statements",
+    FilterType.NumericRange, "Performance.ExecuteMs",
+    _ => true, "Analytics", 3)
+{
+    MinValue = 0,
+    MaxValue = 100_000,
+};
+descriptor.UpdatePredicate(e => Match(e, descriptor)); // предикат читает живые границы дескриптора
+yield return descriptor;
+
+static bool Match(EventBase e, FilterDescriptor filter)
+{
+    if (e is not StatementFinishEvent s) return false;
+    if (!string.Equals(s.Transaction?.LockMode, "WAIT", StringComparison.OrdinalIgnoreCase)) return false;
+    var ms = s.Performance.ExecuteMs;
+    if (AsInt(filter.CurrentMinValue) is { } from && ms < from) return false;
+    if (AsInt(filter.CurrentMaxValue) is { } to   && ms > to)   return false;
+    return true;
+}
+
+static int? AsInt(object? v) =>
+    v switch { null => null, int i => i, _ => int.TryParse(v.ToString(), out var n) ? n : null };
+```
+
+Пользователь правит From/To → приложение помечает фильтры изменёнными и при применении
+пересобирает предикаты (`ApplyFilters`), поэтому предикат видит новые границы. Значения
+`Transaction.LockMode`: `WAIT` / `NOWAIT` / `NONE`.
+
+**Ограничения.** Для `*MultiSelect` галочки пользователя приложение в предикат кастомного фильтра
+**не пробрасывает** — если нужен выбор из списка, предикат должен сам читать
+`filter.AvailableValues` (какие `IsSelected`/`IsExcluded`). В конструкторе отчётов клонирование
+фильтров пересобирает предикат по типу (`CreateConfigurableClone`), поэтому составной кастомный
+фильтр там сведётся к типовому — используйте такие фильтры на главной панели событий.
+
 ---
 
 ## Сборка и установка плагина
