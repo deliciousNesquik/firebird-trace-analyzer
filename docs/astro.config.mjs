@@ -11,7 +11,11 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Firebird Trace Analyzer Docs',
-      logo: { src: './src/assets/app-logo.svg' },
+      logo: {
+        light: './src/assets/app-logo-light.svg',
+        dark: './src/assets/app-logo-dark.svg',
+        alt: 'Firebird Trace Analyzer',
+      },
       description:
         'Cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.',
       lastUpdated: true,

@@ -32,7 +32,9 @@
   align-items: center;
 }
 
-/* Шапка: [лого] Firebird Trace Analyzer Docs — заголовок чуть меньше дефолтного (h4). */
+/* Шапка: [лого] Firebird Trace Analyzer Docs — заголовок чуть меньше дефолтного (h4),
+   меньший отступ между лого и названием (по умолчанию --sl-nav-gap великоват). */
 .site-title {
   font-size: var(--sl-text-lg);
+  gap: 0.45rem;
 }
