@@ -14,6 +14,11 @@ This app parses that output into structured, typed **events**, lets you slice th
 filters and search, and turns the result into shareable reports — without writing scripts or
 loading everything into a spreadsheet.
 
+<figure class="fta-figure">
+  <img src="/firebird-trace-analyzer/shared/raw-trace-log.png" alt="Raw Firebird trace log text" />
+  <figcaption>Raw trace log text — technically complete, but exhausting to read straight from the file.</figcaption>
+</figure>
+
 ## What it does
 
 - **Loads logs three ways** — from local files, remotely over **SSH/SFTP**, or re-opened from

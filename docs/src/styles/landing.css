@@ -39,3 +39,21 @@
   font-size: var(--sl-text-lg);
   gap: 0.25em;
 }
+
+/* Иллюстрация с подписью в контенте (напр. голый текст лога в overview). */
+.fta-figure {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+.fta-figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+}
+.fta-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+  font-style: italic;
+}
