@@ -69,6 +69,22 @@ public partial class FilterDescriptor : ViewModelBase
         DisplayOrder = displayOrder;
     }
 
+    /// <summary>
+    /// Фильтр с произвольным предикатом (Boolean-стиль: чекбокс вкл/выкл). <c>propertyPath</c> не нужен —
+    /// фильтрует только предикат, а не путь к свойству. Для интерактивных типов (списки значений и
+    /// диапазоны) берите основной конструктор с явным <c>propertyPath</c>: по нему приложение подбирает
+    /// значения/границы и решает, какой редактор показать.
+    /// </summary>
+    public FilterDescriptor(
+        string id,
+        string displayName,
+        Func<EventBase, bool> filterPredicate,
+        string category = "General",
+        int displayOrder = 100)
+        : this(id, displayName, FilterType.Boolean, string.Empty, filterPredicate, category, displayOrder)
+    {
+    }
+
     public void UpdatePredicate(Func<EventBase, bool> newPredicate)
     {
         FilterPredicate = newPredicate ?? throw new ArgumentNullException(nameof(newPredicate));

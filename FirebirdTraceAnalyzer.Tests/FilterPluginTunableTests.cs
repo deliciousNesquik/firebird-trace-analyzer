@@ -179,4 +179,28 @@ public sealed class FilterPluginTunableTests
         Assert.All(kinds, e => Assert.Equal("WAIT", ((StatementFinishEvent)e).Transaction?.LockMode));
         Assert.Equal(3, kinds.Count); // 500 / 1500 / 5000 — все WAIT-statement
     }
+
+    [Fact]
+    public void PredicateOverload_OmitsPropertyPath_AndFiltersByPredicate()
+    {
+        var svc = NewService();
+
+        // Короткий конструктор для чистого предиката: propertyPath не передаём.
+        var filter = new FilterDescriptor(
+            "acme.filter.wait_statements",
+            "WAIT statements",
+            static e => e is StatementFinishEvent s
+                        && string.Equals(s.Transaction?.LockMode, "WAIT", StringComparison.OrdinalIgnoreCase),
+            "Analytics");
+
+        Assert.Equal(string.Empty, filter.PropertyPath); // путь не нужен и по умолчанию пустой
+        Assert.Equal(FilterType.Boolean, filter.FilterType);
+
+        svc.RegisterCustomFilter(filter);
+        filter.IsActive = true;
+
+        var result = svc.ApplyFilters(Mixed(), new[] { filter }).ToList();
+        Assert.Equal(3, result.Count); // 500 / 1500 / 5000 — все WAIT-statement
+        Assert.All(result, e => Assert.IsType<StatementFinishEvent>(e));
+    }
 }
