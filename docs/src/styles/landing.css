@@ -31,3 +31,8 @@
 .hero .copy {
   align-items: center;
 }
+
+/* Шапка: [лого] Firebird Trace Analyzer Docs — заголовок чуть меньше дефолтного (h4). */
+.site-title {
+  font-size: var(--sl-text-lg);
+}

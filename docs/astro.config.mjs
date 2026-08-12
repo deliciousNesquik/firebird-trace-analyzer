@@ -10,7 +10,8 @@ export default defineConfig({
   base: '/firebird-trace-analyzer',
   integrations: [
     starlight({
-      title: 'Firebird Trace Analyzer',
+      title: 'Firebird Trace Analyzer Docs',
+      logo: { src: './src/assets/app-logo.svg' },
       description:
         'Cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.',
       lastUpdated: true,
@@ -22,10 +23,6 @@ export default defineConfig({
           href: 'https://github.com/deliciousNesquik/firebird-trace-analyzer',
         },
       ],
-      editLink: {
-        baseUrl:
-          'https://github.com/deliciousNesquik/firebird-trace-analyzer/edit/master/docs/',
-      },
       sidebar: [
         {
           label: 'Getting started',
