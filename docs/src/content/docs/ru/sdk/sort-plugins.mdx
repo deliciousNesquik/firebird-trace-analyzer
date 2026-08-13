@@ -1,0 +1,153 @@
+---
+title: Плагины сортировки
+description: Техническая справка по ISortPlugin и SortDescriptor — контракт компаратора, флаг descending и опциональный извлекатель ключа.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Плагин сортировки добавляет один или несколько вариантов упорядочивания в панель сортировки.
+Реализуйте `ISortPlugin` и верните по одному `SortDescriptor` на каждый вариант.
+
+```csharp
+namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+
+public interface ISortPlugin : IAnalyzerPlugin
+{
+    IEnumerable<SortDescriptor> GetSorts();
+}
+```
+
+`GetSorts()` вызывается **один раз, при старте**. Держите его чистым — только собирайте и возвращайте
+дескрипторы. Не трогайте файлы, сеть или общее состояние и не бросайте исключений: исключение здесь
+приводит к тому, что весь плагин **пропускается** (с записью ошибки в лог), а приложение продолжает
+работать.
+
+## `SortDescriptor`
+
+Пространство имён: `FirebirdTraceAnalyzer.Services.Sorting`.
+
+```csharp
+new SortDescriptor(
+    id:           "my_sort",      // unique identifier of this sort
+    displayName:  "My sort",      // label shown in the UI
+    comparer:     Compare,        // comparison function (see below)
+    isDefault:    false,          // whether it is selected by default
+    category:     "Analytics",    // group heading in the sort list
+    displayOrder: 2);             // POSITION of the item in the list (lower = higher)
+```
+
+| Параметр       | Тип                                 | Обязательный | По умолчанию | Значение |
+| -------------- | ----------------------------------- | ------------ | ------------ | -------- |
+| `id`           | `string`                            | да           | —            | Уникальный ключ. Совпадающие id перезаписывают друг друга (см. ниже). |
+| `displayName`  | `string`                            | да           | —            | Текст в списке сортировок. |
+| `comparer`     | `Func<EventBase, EventBase, bool, int>` | да       | —            | Функция сравнения. Нужна всегда (см. заметку про извлекатель ключа). |
+| `isDefault`    | `bool`                              | да           | —            | Если `true`, сортировка выбрана по умолчанию. |
+| `category`     | `string`                            | нет          | `"General"`  | Заголовок группы в списке. |
+| `displayOrder` | `int`                               | нет          | `100`        | Только позиция в списке — меньше выше. |
+
+<Aside type="note" title="displayOrder — это не направление сортировки">
+`displayOrder` управляет только положением пункта в **списке** сортировок. К тому, как упорядочиваются
+события, он отношения не имеет — это работа компаратора.
+</Aside>
+
+## Контракт компаратора
+
+```csharp
+Func<EventBase, EventBase, bool, int>   // (a, b, descending) => int
+```
+
+- Верните `< 0`, если `a` должно идти **раньше** `b`, `0` — если равны, `> 0` — если `a` идёт
+  **позже** `b`.
+- Флаг `descending` несёт текущее направление сортировки, выбранное в UI. Ваш компаратор **обязан его
+  учесть** — обычно инвертированием знака результата: `return descending ? -result : result;`
+- Компаратор вызывается для многих пар. Сопоставляйте подтип события через `is` перед доступом к полю
+  и возвращайте нейтральное значение (например `0`) для событий без него — никогда не бросайте исключений.
+
+Сортировка **стабильна**: приложение разрешает равенство по исходной позиции, так что вам это делать
+не нужно.
+
+```csharp
+private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
+{
+    static int ExecuteMs(EventBase e) =>
+        e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
+
+    var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+    return descending ? -result : result;
+}
+```
+
+## Опционально: `KeySelector` (производительность)
+
+`SortDescriptor` предоставляет необязательное init-свойство:
+
+```csharp
+public Func<EventBase, object?>? KeySelector { get; init; }
+```
+
+Когда вы задаёте `KeySelector`, сервис сортировки извлекает ключ **один раз на событие**
+(decorate-sort-undecorate) вместо вызова компаратора на каждом из `O(N·log N)` сравнений. В этом режиме:
+
+- приложение сравнивает ключи собственным компаратором значений и применяет флаг `descending` и
+  стабильность при равенстве **за вас** — ваш `comparer` **не** вызывается;
+- `comparer` по-прежнему **обязательный** аргумент конструктора, поэтому передайте его всё равно (он
+  просто не вызывается, пока задан извлекатель ключа).
+
+```csharp
+yield return new SortDescriptor(
+    "my_sort_by_reads", "Reads", Compare, isDefault: false, category: "Analytics")
+{
+    KeySelector = e => e is StatementFinishEvent s ? s.Performance.ReadCount : (object?)null,
+};
+```
+
+Предпочитайте `KeySelector`, когда ключ — простое сравнимое значение (число, строка, дата). Обычный
+`comparer` берите, когда упорядочивание требует своей логики, которую не выразить одним ключом.
+
+## Полный пример
+
+```csharp
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
+using FirebirdTraceAnalyzer.Services.Sorting;
+using FirebirdTraceParser.Models.Events;
+
+namespace MyPlugin;
+
+public class SlowestFirstSortPlugin : ISortPlugin
+{
+    public string Id => "acme.sort.execute_time";
+    public string Name => "Execute time";
+    public string Author => "ACME";
+    public string Version => "1.0.0";
+
+    public IEnumerable<SortDescriptor> GetSorts()
+    {
+        yield return new SortDescriptor(
+            "acme.sort.execute_time",
+            "Execute time",
+            CompareByExecuteTime,
+            isDefault: false,
+            category: "Analytics",
+            displayOrder: 2);
+    }
+
+    private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
+    {
+        static int ExecuteMs(EventBase e) =>
+            e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
+
+        var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+        return descending ? -result : result;
+    }
+}
+```
+
+<Aside type="caution" title="Держите id уникальными">
+Дескрипторы хранятся в словаре по `id`. Две сортировки с одинаковым `id` перезаписывают друг друга, и
+одна молча исчезает. Каждая перезапись пишется в лог как
+`Sort with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'`. Пространство имён в id
+(например `acme.sort.execute_time`) исключает коллизии со встроенными или чужими плагинами.
+</Aside>
+
+Поля, по которым можно сортировать, — в разделе [Модель событий](./event-model.mdx); как выпустить DLL —
+в разделе [Сборка и загрузка](./building-and-loading.mdx).

@@ -1,0 +1,154 @@
+---
+title: Модель событий
+description: Все поля, которые может читать плагин — EventBase, подтипы событий и их value-объекты.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Ваш компаратор и предикат получают `EventBase`. Базовый тип несёт только поля, общие для каждой записи
+трассировки; всё специфичное живёт в подтипе. Сопоставляйте подтип через `is` и читайте его поля — эта
+страница перечисляет доступное.
+
+Пространство имён: `FirebirdTraceParser.Models.Events` (события) и
+`FirebirdTraceParser.Models.ValueObjects` (value-объекты ниже).
+
+## `EventBase`
+
+Общее для каждого события.
+
+| Поле          | Тип         | Примечания |
+| ------------- | ----------- | ---------- |
+| `Timestamp`   | `DateTime`  | Время события. |
+| `TraceId`     | `int`       | Идентификатор трейс-сессии (десятичный). |
+| `HexTraceId`  | `string`    | Идентификатор трейс-сессии (шестнадцатеричный). |
+| `EventType`   | `EventType` | Вид события (enum, см. ниже). |
+
+## Подтипы событий
+
+Каждый подтип наследует четыре поля `EventBase` выше и добавляет следующее.
+
+### Стейтменты — `FirebirdTraceParser.Models.Events`
+
+`StatementEventBase` добавляет:
+
+| Поле          | Тип                           | Примечания |
+| ------------- | ----------------------------- | ---------- |
+| `Attachment`  | `AttachmentInfo`              | Детали подключения. |
+| `Transaction` | `TransactionInfo?`            | Может быть null. |
+| `StatementId` | `long?`                       | |
+| `Sql`         | `string`                      | Текст стейтмента. |
+| `Parameters`  | `IReadOnlyList<SqlParameters>` | Привязанные параметры. |
+
+| Подтип                        | Добавляет |
+| ----------------------------- | --------- |
+| `StatementStartEvent`         | — |
+| `StatementRestartEvent`       | `RestartCount` (`int?`) |
+| `StatementFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedStatementFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Процедуры
+
+`ProcedureEventBase` добавляет `Attachment` (`AttachmentInfo`), `Transaction` (`TransactionInfo`),
+`ProcedureName` (`string`), `Parameters` (`IReadOnlyList<SqlParameters>`).
+
+| Подтип                        | Добавляет |
+| ----------------------------- | --------- |
+| `ProcedureStartEvent`         | — |
+| `ProcedureFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedProcedureFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Триггеры
+
+`TriggerEventBase` добавляет `Attachment` (`AttachmentInfo`), `Transaction` (`TransactionInfo`),
+`TriggerName` (`string`), `Table` (`string?`), `Timing` (`string?`), `Event` (`string`).
+
+| Подтип                      | Добавляет |
+| --------------------------- | --------- |
+| `TriggerStartEvent`         | — |
+| `TriggerFinishEvent`        | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+| `FailedTriggerFinishEvent`  | `Performance` (`PerformanceInfo`), `PerformanceTable` (`PerformanceTable?`) |
+
+### Ошибки, сессии, подключения
+
+| Подтип               | Поля |
+| -------------------- | ---- |
+| `ErrorEvent`         | `Attachment` (`AttachmentInfo`), `Component` (`string`), `Errors` (`IReadOnlyList<ErrorLines>`) |
+| `TraceInitEvent`     | `Session` (`TraceSessionInfo`) |
+| `TraceFinishEvent`   | `Session` (`TraceSessionInfo`) |
+| `AttachDatabaseEvent`| `Attachment` (`AttachmentInfo`) |
+| `DetachDatabaseEvent`| `Attachment` (`AttachmentInfo`) |
+
+## Value-объекты
+
+### `PerformanceInfo`
+
+Присутствует у подтипов `*FinishEvent`. Record со счётчиками, все — `int`.
+
+| Поле         | Тип   |
+| ------------ | ----- |
+| `ExecuteMs`  | `int` |
+| `FetchCount` | `int` |
+| `ReadCount`  | `int` |
+| `WriteCount` | `int` |
+| `MarkCount`  | `int` |
+
+### `AttachmentInfo`
+
+| Поле          | Тип       |
+| ------------- | --------- |
+| `DatabasePath`| `string`  |
+| `AttachmentId`| `long`    |
+| `User`        | `string`  |
+| `Role`        | `string`  |
+| `Charset`     | `string`  |
+| `Protocol`    | `string`  |
+| `Address`     | `string`  |
+| `Port`        | `int`     |
+| `ProcessPath` | `string?` |
+| `ProcessId`   | `int?`    |
+
+### `TransactionInfo`
+
+Record; каждое поле nullable.
+
+| Поле              | Тип       |
+| ----------------- | --------- |
+| `TransactionId`   | `long?`   |
+| `IsolationLevel`  | `string?` |
+| `ConsistencyMode` | `string?` |
+| `LockMode`        | `string?` |
+| `AccessMode`      | `string?` |
+
+Другие value-объекты, которые могут встретиться: `SqlParameters` (значения привязанных параметров),
+`ErrorLines` (одна строка «код/сообщение» из цепочки ошибки), `PerformanceTable` (разбивка
+чтений/записей по таблицам) и `TraceSessionInfo` (метаданные трейс-сессии).
+
+## `EventType`
+
+Пространство имён: `FirebirdTraceParser.Models.Enums`.
+
+`TraceInit`, `TraceFinish`, `AttachDatabase`, `DetachDatabase`, `ExecuteStatementStart`,
+`ExecuteStatementRestart`, `ExecuteStatementFinish`, `ExecuteProcedureStart`,
+`ExecuteProcedureRestart`, `ExecuteProcedureFinish`, `ExecuteTriggerStart`, `ExecuteTriggerFinish`,
+`FailedExecuteStatementFinish`, `FailedExecuteProcedureFinish`, `FailedExecuteTriggerFinish`,
+`Error`.
+
+## Безопасное чтение полей
+
+Сопоставляйте подтип перед доступом к его полям, чтобы работать только с событиями, у которых поле
+действительно есть, и никогда не падать на чужом типе:
+
+```csharp
+static int ExecuteMs(EventBase e) => e switch
+{
+    StatementFinishEvent s => s.Performance.ExecuteMs,
+    ProcedureFinishEvent p => p.Performance.ExecuteMs,
+    TriggerFinishEvent t   => t.Performance.ExecuteMs,
+    _                      => -1,   // neutral for everything else
+};
+```
+
+<Aside type="tip">
+Часть полей объявлена на общих базах (`Attachment`, `Sql`, `Performance`), поэтому одна проверка `is`
+на подтип `*Finish` даёт вам сразу и подключение, и тайминг в одной ветке.
+</Aside>

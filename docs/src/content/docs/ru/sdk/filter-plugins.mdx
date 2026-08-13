@@ -1,0 +1,237 @@
+---
+title: Плагины фильтрации
+description: Техническая справка по IFilterPlugin и FilterDescriptor — типы фильтров, контракт предиката и путь к свойству.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Плагин фильтрации добавляет один или несколько пунктов в панель фильтров. Реализуйте `IFilterPlugin`
+и верните по одному `FilterDescriptor` на каждый фильтр.
+
+```csharp
+namespace FirebirdTraceAnalyzer.Interfaces.Plugins;
+
+public interface IFilterPlugin : IAnalyzerPlugin
+{
+    IEnumerable<FilterDescriptor> GetFilters();
+}
+```
+
+Как и `GetSorts()`, `GetFilters()` вызывается **один раз, при старте**. Держите его чистым и без
+исключений — исключение пропускает весь плагин (с записью ошибки в лог), а приложение продолжает работать.
+
+## `FilterDescriptor`
+
+Пространство имён: `FirebirdTraceAnalyzer.Services.Filtering`. Есть два конструктора — выбирайте по
+тому, нужен ли интерактивный редактор.
+
+### Только предикат (частый случай)
+
+«Оставить каждое событие, где мой предикат = true.» `propertyPath` не нужен: короткий конструктор
+ставит `FilterType.Boolean` (переключатель вкл/выкл) и всю фильтрацию делает в предикате.
+
+```csharp
+// FilterDescriptor(id, displayName, filterPredicate, category = "General", displayOrder = 100)
+yield return new FilterDescriptor(
+    "acme.filter.slow_statements",
+    "Slow statements (>= 1000 ms)",
+    e => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000,
+    "Analytics");
+```
+
+| Параметр          | Тип                     | Обязательный | По умолчанию | Значение |
+| ----------------- | ----------------------- | ------------ | ------------ | -------- |
+| `id`              | `string`                | да           | —            | Уникальный ключ. Совпадающие id перезаписывают друг друга. |
+| `displayName`     | `string`                | да           | —            | Текст в списке фильтров. |
+| `filterPredicate` | `Func<EventBase, bool>` | да           | —            | Возвращает `true`, чтобы оставить событие, пока фильтр активен. Именно он фильтрует. |
+| `category`        | `string`                | нет          | `"General"`  | Заголовок группы в списке. |
+| `displayOrder`    | `int`                   | нет          | `100`        | Только позиция в списке — меньше выше. |
+
+### Полный конструктор (интерактивные редакторы)
+
+Берите его только когда нужен интерактивный редактор — список значений или диапазон от/до — где
+приложению нужно знать, какое свойство читать, чтобы подобрать значения / границы:
+
+```csharp
+new FilterDescriptor(
+    id:              "my_filter",
+    displayName:     "My filter",
+    filterType:      FilterType.NumericRange,   // which editor the UI shows (see below)
+    propertyPath:    "Performance.ExecuteMs",    // property the app scans for values/bounds — NOT the filter
+    filterPredicate: KeepEvent,                 // still does the actual filtering
+    category:        "Analytics",
+    displayOrder:    2);
+```
+
+Он добавляет два параметра к короткой форме:
+
+| Параметр       | Тип          | Обязательный | По умолчанию | Значение |
+| -------------- | ------------ | ------------ | ------------ | -------- |
+| `filterType`   | `FilterType` | да           | —            | Выбирает редактор, отрисованный в UI (см. ниже). |
+| `propertyPath` | `string`     | да           | —            | Метаданные, не ключ фильтрации (см. заметку). Управляет подбором значений/границ для интерактивных типов. |
+
+Рабочий интерактивный фильтр, предикат которого читает живой ввод пользователя, — в разделе
+**«Фильтры, настраиваемые в рантайме»** ниже.
+
+<Aside type="note" title="propertyPath не фильтрует">
+У плагин-фильтра фильтрует **предикат** — по всему `EventBase`, по любому числу полей. `propertyPath`
+— это **не** подпись фильтра (подпись даёт `displayName`) и в UI он не выводится. Он используется только
+(1) для интерактивных типов (`*MultiSelect`, `NumericRange`, `DateTimeRange`), чтобы приложение
+подобрало значения списка / границы min-max и выбрало редактор, и (2) как ключ сопоставления при
+восстановлении шаблона отчёта. Для зарегистрированного кастомного фильтра сервис возвращает ваш
+предикат нетронутым — `propertyPath` в фильтрацию не попадает. Поэтому условие вроде
+«`StatementFinishEvent` **и** `Transaction.LockMode == "WAIT"`» выражается целиком в предикате; один
+путь вас не ограничивает.
+</Aside>
+
+## `FilterType`
+
+Пространство имён: `FirebirdTraceParser.Enums`. Значение выбирает редактор, который UI рисует для фильтра.
+
+| Значение            | Показанный редактор |
+| ------------------- | ------------------- |
+| `Auto`              | Выводится из типа свойства. Лучше указать конкретный тип. |
+| `Boolean`           | Простой переключатель вкл/выкл. |
+| `EnumMultiSelect`   | Список enum-значений с чекбоксами. |
+| `StringMultiSelect` | Список строк с поиском и чекбоксами. |
+| `NumericRange`      | Числовой диапазон от/до (`int`, `long`, `decimal`). |
+| `DateTimeRange`     | Диапазон дат от/до. |
+| `TextSearch`        | Свободный поиск подстроки (для SQL и длинных текстов). |
+
+Редакторы со списком значений (`EnumMultiSelect`, `StringMultiSelect`) поддерживают три состояния на
+значение: включено, исключено или ни то ни другое.
+
+## Контракт предиката
+
+```csharp
+Func<EventBase, bool>   // event => keep?
+```
+
+Верните `true`, когда событие **должно остаться**, пока фильтр активен, и `false`, чтобы скрыть его.
+Предикат вызывается для каждого события, поэтому:
+
+- сопоставляйте подтип события через `is` перед доступом к полю;
+- защищайтесь от `null`;
+- никогда не бросайте исключений — для событий без нужного поля возвращайте нейтральный результат
+  (обычно `false`).
+
+Предикат, бросивший исключение, перехватывается в рантайме: приложение не падает, но результат не
+строится, а в строке статуса показывается ошибка фильтрации.
+
+```csharp
+private static bool IsSlowStatement(EventBase e)
+    => e is StatementFinishEvent s && s.Performance.ExecuteMs >= 1000;
+```
+
+## Полный пример
+
+```csharp
+using FirebirdTraceAnalyzer.Interfaces.Plugins;
+using FirebirdTraceAnalyzer.Services.Filtering;
+using FirebirdTraceParser.Enums;
+using FirebirdTraceParser.Models.Events;
+
+namespace MyPlugin;
+
+public class SlowStatementsFilterPlugin : IFilterPlugin
+{
+    public string Id => "acme.filter.slow_statements";
+    public string Name => "Slow statements";
+    public string Author => "ACME";
+    public string Version => "1.0.0";
+
+    private const int SlowThresholdMs = 1000;
+
+    public IEnumerable<FilterDescriptor> GetFilters()
+    {
+        // Pure predicate — no propertyPath needed (short overload, renders as an on/off toggle).
+        yield return new FilterDescriptor(
+            "acme.filter.slow_statements",
+            "Slow statements (>= 1000 ms)",
+            IsSlowStatement,
+            category: "Analytics",
+            displayOrder: 2);
+    }
+
+    private static bool IsSlowStatement(EventBase e)
+        => e is StatementFinishEvent s && s.Performance.ExecuteMs >= SlowThresholdMs;
+}
+```
+
+## Фильтры, настраиваемые в рантайме
+
+Плагин-фильтр может совместить составное условие с параметром, который **пользователь крутит в
+рантайме**. Приём: предикат читает **живое** состояние дескриптора при каждом применении фильтров.
+
+Пример — «все события `StatementFinish` на **WAIT**-транзакции, у которых время исполнения попадает в
+заданный пользователем диапазон»:
+
+```csharp
+public IEnumerable<FilterDescriptor> GetFilters()
+{
+    // NumericRange renders the From/To editor; MinValue != null makes it visible immediately.
+    // propertyPath here drives the label and the auto-discovered default bounds — not the filtering.
+    var descriptor = new FilterDescriptor(
+        "acme.filter.slow_wait_statements",
+        "Slow WAIT statements",
+        FilterType.NumericRange,
+        "Performance.ExecuteMs",
+        _ => true,                 // placeholder — real predicate set below (it needs the descriptor)
+        category: "Analytics")
+    {
+        MinValue = 0,
+        MaxValue = 100_000,
+    };
+
+    // Capture the descriptor and read its live CurrentMinValue/CurrentMaxValue on every apply.
+    descriptor.UpdatePredicate(e => Match(e, descriptor));
+    yield return descriptor;
+}
+
+private static bool Match(EventBase e, FilterDescriptor filter)
+{
+    if (e is not StatementFinishEvent s) return false;
+    if (!string.Equals(s.Transaction?.LockMode, "WAIT", StringComparison.OrdinalIgnoreCase)) return false;
+
+    var ms = s.Performance.ExecuteMs;
+    if (AsInt(filter.CurrentMinValue) is { } from && ms < from) return false;
+    if (AsInt(filter.CurrentMaxValue) is { } to   && ms > to)   return false;
+    return true;
+}
+
+// Bounds arrive from the TextBox TwoWay binding — an int OR a string; unparseable = "no bound".
+private static int? AsInt(object? v) =>
+    v switch { null => null, int i => i, _ => int.TryParse(v.ToString(), out var n) ? n : null };
+```
+
+Как это работает:
+
+- `FilterType.NumericRange` (или `DateTimeRange`) заставляет приложение отрисовать редактор From/To,
+  когда задан `MinValue`. Для текста используйте `FilterType.TextSearch` и читайте `SearchText` в
+  предикате.
+- Когда пользователь правит границу, панель помечает фильтры изменёнными; при применении сервис
+  **пересобирает** каждый предикат, поэтому он видит новые `CurrentMinValue`/`CurrentMaxValue`.
+- `CurrentMinValue`/`CurrentMaxValue` могут быть упакованным числом **или** строкой (они приходят из
+  текстового поля), поэтому приводите их. `Transaction.LockMode` — это `"WAIT"` / `"NOWAIT"` / `"NONE"`.
+
+Ровно этот плагин есть в шаблоне — см.
+[`TemplatePlugin/Template.cs`](https://github.com/deliciousNesquik/firebird-trace-analyzer/blob/master/TemplatePlugin/Template.cs)
+(`TemplateTunableFilterPlugin`).
+
+<Aside type="caution" title="Два ограничения настраиваемых плагин-фильтров">
+- **Выбор в мультиселекте не пробрасывается за вас.** Для `EnumMultiSelect`/`StringMultiSelect`
+  приложение не передаёт отмеченные пользователем значения в кастомный предикат — если это нужно, ваш
+  предикат должен сам читать `filter.AvailableValues` (какие элементы `IsSelected`/`IsExcluded`).
+- **Конструктор отчётов.** При клонировании фильтра для конструктора отчётов его предикат
+  пересобирается по типу, поэтому составной кастомный фильтр там сводится к типовому. Используйте
+  настраиваемые кастомные фильтры на главной панели событий.
+</Aside>
+
+<Aside type="caution" title="Держите id уникальными">
+Фильтры хранятся в словаре по `id`; совпадающие id перезаписывают друг друга, и один исчезает (с
+записью в лог `Filter with Id '{Id}' overwrites existing one: '{Old}' -> '{New}'`). Используйте
+пространство имён в id, чтобы не пересечься со встроенными или чужими плагинами.
+</Aside>
+
+Поля, по которым можно фильтровать, — в разделе [Модель событий](./event-model.mdx); как выпустить DLL —
+в разделе [Сборка и загрузка](./building-and-loading.mdx).
