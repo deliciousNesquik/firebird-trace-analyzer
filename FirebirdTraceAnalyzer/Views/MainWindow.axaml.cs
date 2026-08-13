@@ -1,9 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using NLog;
 
 namespace FirebirdTraceAnalyzer.Views;
 
@@ -11,9 +14,17 @@ public partial class MainWindow : Window
 {
     private readonly ISettingsService? _settingsService;
 
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     public MainWindow()
     {
         InitializeComponent();
+
+        // Drag-and-drop файлов: цель — корневой Panel (DragDrop.AllowDrop в XAML), обработчики висят
+        // на окне и ловят события всплытием.
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
+        AddHandler(DragDrop.DropEvent, OnDrop);
 
         _settingsService = App.Services?.GetService<ISettingsService>();
 
@@ -41,6 +52,50 @@ public partial class MainWindow : Window
 
         // Отложенное обслуживание хранилища (чистка сирот + VACUUM после частичных удалений).
         await vm.RunPendingStorageMaintenanceAsync();
+    }
+
+    // --- Drag-and-drop файлов -------------------------------------------------------------------
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        // Avalonia 12: полезная нагрузка — IDataTransfer; наличие файлов проверяем через DataFormat.File.
+        var hasFiles = e.DataTransfer is { } dt && dt.Contains(DataFormat.File);
+        e.DragEffects = hasFiles ? DragDropEffects.Copy : DragDropEffects.None;
+        if (DataContext is MainWindowViewModel vm)
+            vm.IsDragOver = hasFiles;
+        e.Handled = true;
+    }
+
+    private void OnDragLeave(object? sender, DragEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            vm.IsDragOver = false;
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        e.Handled = true;
+
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        vm.IsDragOver = false;
+
+        try
+        {
+            // TryGetFiles() отдаёт и файлы, и папки — берём только файлы (OfType<IStorageFile>).
+            var files = e.DataTransfer?.TryGetFiles()?.OfType<IStorageFile>().ToList();
+            if (files is not { Count: > 0 })
+                return;
+
+            await vm.LoadDroppedFilesAsync(files);
+        }
+        catch (Exception ex)
+        {
+            // Обёртка async void: сбой обработки drop не должен ронять приложение
+            // (внутренняя загрузка и так ловит ошибки; здесь — страховка на извлечение файлов).
+            Logger.Error(ex, "Drag-and-drop file load failed");
+        }
     }
 
     private void ApplyWindowGeometry(WindowSettings ws)

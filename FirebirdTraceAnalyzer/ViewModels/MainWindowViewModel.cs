@@ -128,6 +128,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isFileLoading;
 
+    /// <summary>Над окном тащат файлы (drag-over) — показать подсказку «Отпустите файлы для загрузки».</summary>
+    [ObservableProperty] private bool _isDragOver;
+
     /// <summary>Идёт генерация быстрого отчёта — отдельный busy-флаг, чтобы его finally не сбрасывал
     /// состояние загрузки файлов (у них общий гвард команд, но разные операции).</summary>
     [ObservableProperty] private bool _isReportGenerating;
@@ -1080,9 +1083,38 @@ public partial class MainWindowViewModel : ViewModelBase
         return !IsFileLoading && !IsReportGenerating;
     }
 
-    /// <summary>Открывает диалог выбора файлов</summary>
+    /// <summary>Открывает диалог выбора файлов и грузит выбранное локальным конвейером.</summary>
     [RelayCommand(CanExecute = nameof(CanOpenFile))]
-    private async Task OpenLocalFileAsync(CancellationToken cancellationToken)
+    private Task OpenLocalFileAsync(CancellationToken cancellationToken) =>
+        RunLocalLoadAsync(_ => _fileDialogService.PickTraceFilesAsync(), cancellationToken);
+
+    /// <summary>
+    /// Публичный вход для перетаскивания файлов в окно (drag-and-drop). Уважает тот же гвард, что и
+    /// меню (<see cref="CanOpenFile"/>): drop во время активной загрузки/генерации отчёта игнорируется
+    /// со статусом. Дальше — тот же конвейер, что и у выбора через диалог (дедуп, кэш переоткрытия, парсинг).
+    /// </summary>
+    public async Task LoadDroppedFilesAsync(IReadOnlyList<IStorageFile> files)
+    {
+        if (!CanOpenFile())
+        {
+            StatusMessage = Loc.Tr("Status.Main.BusyLoading");
+            return;
+        }
+
+        if (files.Count == 0)
+            return;
+
+        await RunLocalLoadAsync(_ => Task.FromResult(files), CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Общий конвейер локальной загрузки: выставляет <see cref="IsFileLoading"/>, готовит отменяемый
+    /// токен и прогоняет полученные файлы через <see cref="ProcessSelectedFilesAsync"/>. Источник файлов
+    /// (диалог выбора или drag-and-drop) передаётся через <paramref name="acquire"/>.
+    /// </summary>
+    private async Task RunLocalLoadAsync(
+        Func<CancellationToken, Task<IReadOnlyList<IStorageFile>>> acquire,
+        CancellationToken cancellationToken)
     {
         IsFileLoading = true;
         OpenLocalFileCommand.NotifyCanExecuteChanged();
@@ -1096,7 +1128,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // _loadingCts уже ненулевой — переоценить CanCancelLoading, иначе пункт «Отмена» так и останется disabled.
             CancelLoadingCommand.NotifyCanExecuteChanged();
 
-            var files = await _fileDialogService.PickTraceFilesAsync();
+            var files = await acquire(cts.Token);
 
             if (files.Count == 0)
             {

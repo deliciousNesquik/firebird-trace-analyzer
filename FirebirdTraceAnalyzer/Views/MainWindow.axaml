@@ -129,7 +129,7 @@
     </NativeMenu.Menu>
 
 
-    <Panel>
+    <Panel DragDrop.AllowDrop="True">
     <Grid Background="{DynamicResource AppBackgroundBrush}" RowDefinitions="Auto Auto Auto * Auto, Auto">
         <usercontrols:MainMenuView Grid.Row="0"/>
 
@@ -308,6 +308,32 @@
                 DataContext="{Binding ActiveDownload}"
                 IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsDownloadDockVisible}" />
         </StackPanel>
+
+        <!-- Подсказка перетаскивания: видна во время drag-over файлов. IsHitTestVisible=False —
+             чтобы оверлей не перехватывал сам drop (события должны дойти до Panel с AllowDrop). -->
+        <Border IsVisible="{Binding IsDragOver}"
+                IsHitTestVisible="False"
+                Background="#99000000">
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource AccentBrush}"
+                    BorderThickness="2"
+                    CornerRadius="14"
+                    Padding="40,28"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="{loc:Tr DragDrop.Hint}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Tr DragDrop.HintSub}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontSize="12"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
 
         <!-- Оверлей модальных диалогов внутри окна -->
         <usercontrols:DialogHost DataContext="{Binding Dialogs}" />
