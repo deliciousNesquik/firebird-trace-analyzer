@@ -1,0 +1,230 @@
+---
+title: What's new
+description: Release notes for Firebird Trace Analyzer — every version, newest first.
+---
+
+Release notes, newest first. Versions follow the project's git tags; minor releases are described in
+detail, patch releases summarized.
+
+## 1.13.0 — August 13, 2026
+
+Localization fixes, a Window → Reset fix, and an SDK and documentation update.
+
+- **Localization:** the filter three-state checkbox tooltip and the download-window title are now
+  localized (they were previously hardcoded).
+- **Window → Reset** restores the default layout again — every panel except *Logs* (it previously
+  had no effect).
+- **SDK:** a shorter `FilterDescriptor` constructor for predicate-only filters (no `propertyPath`),
+  and documented runtime-tunable plugin filters.
+- **Documentation:** a full documentation site (English + Russian) covering the app and the plugin SDK.
+
+## 1.12.0 — July 23, 2026
+
+A broad core-and-app review focused on security, performance and reliability, plus a large internal
+architecture cleanup.
+
+- **Security:** SSH host-key verification (trust-on-first-use via `known_hosts`) against
+  man-in-the-middle; passwords and key passphrases are never written to SSH profiles; the fallback
+  credential store is encrypted with AES-256-GCM; path-traversal protection for downloaded filenames
+  and report-template ids; the macOS keychain password is passed via stdin rather than the command line.
+- **Performance:** trace parsing runs off the UI thread; filter predicates are compiled once per pass
+  and sort keys extracted once per event; faster PDF and XLSX export; parser hot-path optimizations
+  (regex caching, fewer allocations); removed an N+1 in the event store.
+- **Reliability:** global crash handlers route background failures to the log instead of failing
+  silently; the filter pipeline runs on a snapshot (fixes a race when loading or closing files);
+  OOM protection on malformed logs via a block-size cap.
+- **Under the hood:** the main view-model was split into focused, dependency-injected services,
+  `IEventStore` was split by role, event cards share common base classes, and a new parser test suite
+  was added.
+
+## 1.11.0 — July 17, 2026
+
+Event-store analytics and maintenance: a read-only SQL console and disk-space compaction.
+
+- **Storage analysis:** a read-only SQL console over the event store — SQL syntax highlighting,
+  autocomplete (keywords, schema, table/alias columns, table list after `FROM`/`JOIN`), a searchable
+  schema-cards view, and editor font zoom (`Ctrl`+wheel, `Ctrl` +/-/0).
+- **Storage maintenance:** **Compact** reclaims disk space (`VACUUM` + orphan cleanup) and also runs
+  automatically in the background on the next launch after deletions; confirmation prompts before
+  deleting selected files or clearing the whole store.
+- **Filtering:** filters and sorts are computed in the background with a loading indicator.
+- **Parser:** performance tables are parsed correctly, including for procedures and triggers.
+- **UI:** modernized storage window; fixed the event-card grid.
+
+## 1.10.1 — July 13, 2026
+
+A security and remote-connection patch.
+
+- **Security:** the password is kept in the OS credential store (Secret Service / `secret-tool` on
+  Linux) and is no longer retained in memory after connecting; updated SQLitePCLRaw to 3.0.3
+  (fixes GHSA-2m69-gcr7-jv3q).
+- **Remote:** faster SFTP downloads (256 KB buffer, throttled progress) and cleaner resource release
+  on disconnect.
+
+## 1.10.0 — July 13, 2026
+
+The optional local event store, new filter types, and a substantial speed-up.
+
+- **Local event store (SQLite/WAL):** persist parsed sessions and re-open them instantly instead of
+  re-parsing; a storage-mode setting; a session-recovery dialog on startup.
+- **Storage management:** statistics, a database size breakdown, export/import between machines, and
+  "load to session" from the store.
+- **Filters:** a "contains" text filter (`TextSearch`) in the panel and the report designer;
+  boolean-field filters; SQL treated as a text filter.
+- **Performance:** an integer `file_id` instead of a file hash plus index cleanup (large
+  database-size reduction), a background write queue (disk off the parse critical path), and
+  SQL-text memoization (removed an N+1).
+- **Diagnostics:** parser statistics by phase, with a developer mode.
+- **UI:** a reusable background-task indicator with store-write status; select remote files by
+  clicking the card.
+- **Fixes:** filenames removed from the PDF title; corrected built-in report column widths; fixed the
+  default-sort flag.
+
+## 1.9.2 — July 7, 2026
+
+Interface localization.
+
+- A language switcher (English / Russian) with full UI localization.
+
+## 1.9.1 — July 7, 2026
+
+Report designer cleanup.
+
+- Removed the "category" concept from the report UI and model; the designer keeps a single table layout.
+- Format preselect; container fields hidden from the field palette; only shared fields shown when unfiltered.
+- An inspector button in the event-card footer.
+
+## 1.9.0 — July 6, 2026
+
+Plugin collision handling.
+
+- A collision window resolves plugins that share an id — keep one instance by disabling the others;
+  shown automatically on startup when needed.
+- A plugin that throws in `GetSorts()`/`GetFilters()` no longer breaks startup — it is skipped and logged.
+
+## 1.8.9 — July 5, 2026
+
+Plugin installation and management.
+
+- Install a plugin from a `.dll` or `.zip`, and remove a plugin package, from within the app.
+- A plugin-management window with version resolution by id (highest wins, others shadowed) and a log
+  warning on id collisions.
+- A plugin example and authoring README; the project LICENSE and a Contributor Code of Conduct.
+
+## 1.8.8 — July 3, 2026
+
+Removed execution-time aggregates from the report header variables.
+
+## 1.8.7 — July 3, 2026
+
+The report designer can add several columns from the same field.
+
+## 1.8.6 — July 3, 2026
+
+The column role (aggregate / group key) is shown in the report header.
+
+## 1.8.5 — July 3, 2026
+
+The app version is derived from git tags via MinVer; fixed an unresolved placeholder in the logging
+folder path.
+
+## 1.8.4 — July 3, 2026
+
+SSH-profile fixes (existence check, `LastUsedAt`, connection timeout) and small code cleanups; the
+profile picker is skipped when only one profile exists.
+
+## 1.8.3 — July 3, 2026
+
+A high-contrast theme.
+
+## 1.8.2 — July 3, 2026
+
+The report editor opens as an in-window overlay.
+
+## 1.8.1 — July 3, 2026
+
+A window to manage custom report templates.
+
+## 1.8.0 — July 3, 2026
+
+A unified live report editor and custom filter plugins.
+
+- A single live report editor with a preview and an inspector; per-format previews; a report-name
+  field; a resizable inspector.
+- Load and register custom filter plugins.
+- An empty-state in the report history.
+
+## 1.7.0 — July 2, 2026
+
+Background downloads and a redesigned download window.
+
+- Trace files are processed in the background while others are still downloading.
+- Redesigned download window: a file list with per-file statuses and a docked progress panel.
+- A refreshed settings window; a search-mode change is reflected in the main window after Save.
+
+## 1.6.2 — July 2, 2026
+
+Dialogs moved into in-window overlays.
+
+- Settings, report history, remote connection and remote file selection now open as overlays via a
+  shared dialog host.
+- An inspector note when an event chain is incomplete (no attach/detach).
+
+## 1.6.1 — July 1, 2026
+
+Event Inspector: a single chain corresponds to one connection.
+
+## 1.6.0 — July 1, 2026
+
+The Event Inspector — navigate an event's full lifecycle.
+
+## 1.5.0 — June 30, 2026
+
+A third filter state, "excluded", on the main form and in reports (include / exclude / neither).
+
+## 1.4.0 — June 30, 2026
+
+SSH profiles, a redesigned file picker, and parser configurability.
+
+- Full create/read/update/delete for SSH connection profiles.
+- A redesigned remote file-selection dialog and a free-space check before downloading.
+- A separate parser log with configurable log paths; parser rules in a user folder, with import/open
+  from settings.
+
+## 1.3.3 — June 30, 2026
+
+Report sorting uses a Schwartzian (decorate-sort) transform by default.
+
+## 1.3.2 — June 30, 2026
+
+Faster report generation via compiled property getters and template filters.
+
+## 1.3.1 — June 30, 2026
+
+Fixed a PDF layout crash on long unbreakable text; polished the remote-connection dialog (error shown
+in the footer, key-existence check).
+
+## 1.3.0 — June 19, 2026
+
+Report aggregations: group by a key with Count / Sum / Average / …, sorting of grouped results, and
+aggregate built-in templates.
+
+## 1.2.0 — June 19, 2026
+
+A configurable reports path and persisted window geometry.
+
+## 1.1.0 — June 19, 2026
+
+A settings window with theme modes (light / dark / auto) and a search-mode toggle; a persisted
+user-settings service; a "delete local files after processing" option for remote loads.
+
+## 1.0.0 — June 18, 2026
+
+The first release — a cross-platform desktop app that turns Firebird trace and audit logs into
+structured, typed events.
+
+- Streams and parses trace files of any size off the UI thread.
+- Loads logs from local files or remotely over SSH/SFTP.
+- Typed event cards for every trace event type.
+- Multi-select, numeric/date-range and text filters, stable multi-key sorting, and full-text search.
+- A report designer with the same filters as the main view, and export to PDF, DOCX, XLSX and CSV.
