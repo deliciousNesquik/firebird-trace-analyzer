@@ -8,7 +8,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="580"
         x:Class="FirebirdTraceAnalyzer.Views.DownloadProgressWindow"
         x:DataType="vm:DownloadProgressViewModel"
-        Title="Downloading Files"
+        Title="{loc:Tr Download.Title}"
         Width="600"
         Height="580"
         MinWidth="480"

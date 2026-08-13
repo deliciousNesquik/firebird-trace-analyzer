@@ -76,7 +76,7 @@
                                                         <DataTemplate>
                                                             <CheckBox Margin="0,4"
                                                                       IsThreeState="True"
-                                                                      ToolTip.Tip="Не выбран → выбран → исключён">
+                                                                      ToolTip.Tip="{loc:Tr Filter.ThreeStateTooltip}">
                                                                 <CheckBox.Content>
                                                                     <StackPanel
                                                                         Orientation="Horizontal"

@@ -349,6 +349,7 @@
   "Filter.SearchPlaceholder": "Введите для поиска...",
   "Filter.TextSearchPlaceholder": "Содержит текст…",
   "Filter.Excluded": "исключено",
+  "Filter.ThreeStateTooltip": "Не выбран → выбран → исключён",
   "Filter.Range": "Диапазон:",
   "Filter.From": "От:",
   "Filter.To": "До:",
