@@ -65,6 +65,13 @@ export default defineConfig({
             { label: 'Building & loading', translations: { ru: 'Сборка и загрузка' }, slug: 'sdk/building-and-loading' },
           ],
         },
+        {
+          label: 'Changes',
+          translations: { ru: 'Изменения' },
+          items: [
+            { label: "What's new", translations: { ru: 'Что нового' }, slug: 'changes/whats-new' },
+          ],
+        },
       ],
     }),
   ],
