@@ -1104,7 +1104,29 @@ public partial class MainWindowViewModel : ViewModelBase
         if (files.Count == 0)
             return;
 
-        await RunLocalLoadAsync(_ => Task.FromResult(files), CancellationToken.None);
+        // Перетаскивание не проходит через фильтр диалога выбора, поэтому фильтруем сами: берём только
+        // трейс-файлы (.log/.txt), иначе случайно брошенные png/jpg/dmg и т.п. добавлялись бы пустыми
+        // карточками (имя+размер есть, событий нет). Через меню «Все файлы» произвольное расширение по-прежнему доступно.
+        var accepted = files.Where(IsTraceFile).ToList();
+
+        if (accepted.Count == 0)
+        {
+            StatusMessage = Loc.Tr("Status.Main.NoTraceFilesDropped");
+            return;
+        }
+
+        if (accepted.Count < files.Count)
+            Logger.Info("Drag-and-drop: {Skipped} non-trace file(s) skipped", files.Count - accepted.Count);
+
+        await RunLocalLoadAsync(_ => Task.FromResult((IReadOnlyList<IStorageFile>)accepted), CancellationToken.None);
+    }
+
+    /// <summary>Трейс-файл по расширению (.log/.txt) — тот же набор, что и фильтр «Trace Logs» в диалоге выбора.</summary>
+    private static bool IsTraceFile(IStorageFile file)
+    {
+        var ext = Path.GetExtension(file.Name);
+        return ext.Equals(".log", StringComparison.OrdinalIgnoreCase)
+               || ext.Equals(".txt", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
