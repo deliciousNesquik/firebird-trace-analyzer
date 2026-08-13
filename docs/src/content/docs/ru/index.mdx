@@ -1,0 +1,52 @@
+---
+title: Firebird Trace Analyzer
+description: Чтение, анализ и отчёты по трейс- и аудит-логам Firebird — кроссплатформенно.
+template: splash
+hero:
+  tagline: Превращайте трейс- и аудит-логи Firebird в читаемые события, мощные фильтры и аккуратные отчёты.
+  actions:
+    - text: Начать
+      link: getting-started/overview/
+      icon: right-arrow
+    - text: Открыть на GitHub
+      link: https://github.com/deliciousNesquik/firebird-trace-analyzer
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+Трейс-API Firebird мощный, но его вывод — сплошной поток плоского текста.
+**Firebird Trace Analyzer** превращает эти логи в то, с чем реально можно работать: потоково
+читает трейс-файл любого размера, показывает каждое событие читаемой карточкой, даёт
+фильтровать, искать и сортировать по миллионам событий и выгружать результат в
+**PDF / DOCX / XLSX / CSV**.
+
+<CardGrid stagger>
+  <Card title="Загрузка откуда угодно" icon="download">
+    Открывайте трейс-файлы с диска или скачивайте прямо с сервера по **SSH/SFTP** — с проверкой
+    ключа хоста по принципу «доверие при первом подключении» и безопасным хранением учётных данных.
+  </Card>
+  <Card title="Рассчитан на большие логи" icon="rocket">
+    Потоковый парсер обрабатывает файлы на миллионы событий вне UI-потока, поэтому приложение
+    остаётся отзывчивым.
+  </Card>
+  <Card title="Просмотр и фильтрация" icon="magnifier">
+    Типизированные карточки событий, фильтры (мультивыбор / диапазон / текст), стабильная
+    сортировка и полнотекстовый поиск.
+  </Card>
+  <Card title="Отчёты и экспорт" icon="document">
+    Живой конструктор отчётов с группировкой и агрегацией, переиспользуемые шаблоны и экспорт в один клик.
+  </Card>
+</CardGrid>
+
+## Куда дальше
+
+<CardGrid>
+  <LinkCard title="Обзор" href={`${base}/ru/getting-started/overview/`} description="Что это за приложение и что оно умеет." />
+  <LinkCard title="Установка и запуск" href={`${base}/ru/getting-started/install/`} description="Скачать релиз или собрать из исходников." />
+  <LinkCard title="Загрузка логов" href={`${base}/ru/guides/loading-logs/`} description="Открытие трейс-файлов локально или по SSH — каждая кнопка разобрана." />
+  <LinkCard title="Отчёты" href={`${base}/ru/guides/reports/`} description="Проектирование и экспорт отчётов PDF / DOCX / XLSX / CSV." />
+</CardGrid>

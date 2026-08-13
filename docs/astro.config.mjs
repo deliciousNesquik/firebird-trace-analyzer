@@ -19,6 +19,13 @@ export default defineConfig({
       description:
         'Cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.',
       lastUpdated: true,
+      // Двуязычная документация. root = английский (страницы лежат в корне content/docs без префикса),
+      // ru = русский (страницы в content/docs/ru/**). Непереведённые страницы автоматически
+      // откатываются на английский контент по тому же URL (встроенный fallback Starlight).
+      locales: {
+        root: { label: 'English', lang: 'en' },
+        ru: { label: 'Русский', lang: 'ru' },
+      },
       customCss: ['./src/styles/landing.css'],
       social: [
         {
@@ -30,29 +37,32 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Getting started',
+          translations: { ru: 'Начало работы' },
           items: [
-            { label: 'Overview', slug: 'getting-started/overview' },
-            { label: 'Install & run', slug: 'getting-started/install' },
+            { label: 'Overview', translations: { ru: 'Обзор' }, slug: 'getting-started/overview' },
+            { label: 'Install & run', translations: { ru: 'Установка и запуск' }, slug: 'getting-started/install' },
           ],
         },
         {
           label: 'Guides',
+          translations: { ru: 'Руководства' },
           items: [
-            { label: 'Loading logs', slug: 'guides/loading-logs' },
-            { label: 'Exploring & filtering', slug: 'guides/exploring' },
-            { label: 'Local event store', slug: 'guides/event-store' },
-            { label: 'Reports', slug: 'guides/reports' },
-            { label: 'Plugins', slug: 'guides/plugins' },
+            { label: 'Loading logs', translations: { ru: 'Загрузка логов' }, slug: 'guides/loading-logs' },
+            { label: 'Exploring & filtering', translations: { ru: 'Просмотр и фильтрация' }, slug: 'guides/exploring' },
+            { label: 'Local event store', translations: { ru: 'Локальное хранилище событий' }, slug: 'guides/event-store' },
+            { label: 'Reports', translations: { ru: 'Отчёты' }, slug: 'guides/reports' },
+            { label: 'Plugins', translations: { ru: 'Плагины' }, slug: 'guides/plugins' },
           ],
         },
         {
           label: 'SDK',
+          translations: { ru: 'SDK' },
           items: [
-            { label: 'Overview', slug: 'sdk/overview' },
-            { label: 'Sort plugins', slug: 'sdk/sort-plugins' },
-            { label: 'Filter plugins', slug: 'sdk/filter-plugins' },
-            { label: 'Event model', slug: 'sdk/event-model' },
-            { label: 'Building & loading', slug: 'sdk/building-and-loading' },
+            { label: 'Overview', translations: { ru: 'Обзор' }, slug: 'sdk/overview' },
+            { label: 'Sort plugins', translations: { ru: 'Плагины сортировки' }, slug: 'sdk/sort-plugins' },
+            { label: 'Filter plugins', translations: { ru: 'Плагины фильтрации' }, slug: 'sdk/filter-plugins' },
+            { label: 'Event model', translations: { ru: 'Модель событий' }, slug: 'sdk/event-model' },
+            { label: 'Building & loading', translations: { ru: 'Сборка и загрузка' }, slug: 'sdk/building-and-loading' },
           ],
         },
       ],
