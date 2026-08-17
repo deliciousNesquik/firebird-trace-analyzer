@@ -58,7 +58,7 @@
                                                 <TextBox
                                                     PlaceholderText="{loc:Tr Filter.SearchPlaceholder}"
                                                     Text="{Binding ValueSearchText, Mode=TwoWay}"
-                                                    IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                                                    IsVisible="{Binding AvailableValues.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=10}"
                                                     Margin="0,0,0,12" />
 
                                                 <ItemsControl
