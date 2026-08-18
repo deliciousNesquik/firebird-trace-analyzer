@@ -4,33 +4,23 @@ using System.ComponentModel;
 
 namespace FirebirdTraceAnalyzer.Core;
 
+/// <summary>
+/// A class derived from ObservableCollection, optimized for high-performance handling of large collections and batch insertions.
+/// </summary>
+/// <typeparam name="T">The type of elements in the collection.</typeparam>
 public sealed class RangeObservableCollection<T> : ObservableCollection<T>
 {
-    public void AddRange(IEnumerable<T> items)
-    {
-        if (items == null)
-            return;
-
-        CheckReentrancy();
-
-        var startIndex = Count;
-
-        var addedItems = items.ToList();
-
-        foreach (var item in addedItems)
-            Items.Add(item);
-
-        OnCollectionChanged(
-            new NotifyCollectionChangedEventArgs(
-                NotifyCollectionChangedAction.Add,
-                addedItems,
-                startIndex));
-
-        OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
-        OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
-    }
-    
-    public void ReplaceRange(IEnumerable<T> items)
+    /// <summary>
+    /// Replaces the entire collection with the specified items.
+    /// </summary>
+    /// <param name="items">The items to replace the collection with.</param>
+    /// <example>
+    ///     <code>
+    ///         var collection = new RangeObservableCollection&lt;string&gt; { "item1", "item2" };
+    ///         collection.ReplaceRange(new[] { "newItem1", "newItem2" });
+    ///     </code>
+    /// </example>
+    public void ReplaceRange(IEnumerable<T>? items)
     {
         if (items == null)
             return;
