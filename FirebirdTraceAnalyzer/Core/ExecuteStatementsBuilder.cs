@@ -3,7 +3,7 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Core;
 
-public sealed class ExecuteStatementsBuilder
+public static class ExecuteStatementsBuilder
 {
     /// <summary>
     /// Builds a SQL statement by replacing placeholders with actual parameter values.
