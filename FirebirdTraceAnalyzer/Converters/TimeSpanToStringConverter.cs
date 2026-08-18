@@ -4,34 +4,26 @@ using Avalonia.Data.Converters;
 namespace FirebirdTraceAnalyzer.Converters;
 
 /// <summary>
-/// Конвертирует TimeSpan в читаемую строку (mm:ss или hh:mm:ss)
+/// Converts a TimeSpan to a string representation in the format "hh:mm:ss" or "mm:ss".
 /// </summary>
 public class TimeSpanToStringConverter : IValueConverter
 {
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is TimeSpan timeSpan)
-        {
-            // Если время неизвестно или отрицательное
-            if (timeSpan <= TimeSpan.Zero)
-            {
-                return "--:--";
-            }
+        if (value is not TimeSpan timeSpan) 
+            return "--:--";
+        
+        if (timeSpan <= TimeSpan.Zero)
+            return "00:00";
+        
+        if (timeSpan.TotalHours >= 1)
+            return timeSpan.ToString(@"hh\:mm\:ss");
+        
+        return timeSpan.ToString(@"mm\:ss");
 
-            // Если больше часа - показываем часы
-            if (timeSpan.TotalHours >= 1)
-            {
-                return timeSpan.ToString(@"hh\:mm\:ss");
-            }
-
-            // Иначе только минуты и секунды
-            return timeSpan.ToString(@"mm\:ss");
-        }
-
-        return "--:--";
     }
 
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }
