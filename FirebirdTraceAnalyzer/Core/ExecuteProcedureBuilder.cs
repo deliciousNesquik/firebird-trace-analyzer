@@ -3,15 +3,36 @@ using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Core;
 
-/// <summary>
-/// Собирает вызов «EXECUTE PROCEDURE name(p1, p2, …)» с форматированием параметров по типу.
-/// Аналог <see cref="ExecuteStatementsBuilder"/>, но для процедур. Заменяет три копии свойства
-/// ExecuteProcedure в карточках событий (ранее угадывавших тип через TryParse).
-/// </summary>
 public static class ExecuteProcedureBuilder
 {
+    /// <summary>
+    /// Build the SQL command to execute a stored procedure with the given parameters.
+    /// </summary>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">The list of parameters for the stored procedure. <see cref="SqlParameters"/></param>
+    /// <returns>The SQL command as a string.</returns>
+    /// <example>
+    ///     <code>
+    ///         var sql = ExecuteProcedureBuilder.Build(
+    ///             "MyProcedure",
+    ///             new List&lt;SqlParameters&gt; {
+    ///                 new SqlParameters(){
+    ///                     Name="param1",
+    ///                     Value="10",
+    ///                     Dtype="integer"},
+    ///                 new SqlParameters(){
+    ///                     Name="param2",
+    ///                     Value="my procedure",
+    ///                     Dtype="varchar"}
+    ///             }
+    ///         );
+    ///     </code>
+    /// results in <c>sql</c>'s having the value <c>"EXECUTE PROCEDURE MyProcedure(10, 'my procedure')"</c>.     
+    /// </example>
     public static string Build(string procedureName, IReadOnlyList<SqlParameters>? parameters)
     {
+        // TODO: anytime we add build rule, space around the comma or brackets. Uppercase keywords, etc. should be configurable.
+        
         var execute = new StringBuilder();
         execute.Append($"EXECUTE PROCEDURE {procedureName}(");
 
