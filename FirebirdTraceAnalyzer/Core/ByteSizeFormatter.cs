@@ -1,17 +1,31 @@
 namespace FirebirdTraceAnalyzer.Core;
 
 /// <summary>
-/// Единое форматирование размеров и скоростей в человекочитаемый вид.
-/// Заменяет разбросанные по проекту копии FormatFileSize/FormatBytes/FormatSize и FormatSpeed.
+/// Provides methods to format byte sizes and speeds into human-readable strings.
 /// </summary>
 public static class ByteSizeFormatter
 {
     private static readonly string[] Units = ["B", "KB", "MB", "GB", "TB", "PB"];
-
+    
     /// <summary>
-    /// Форматирует размер в байтах: сырые байты — как целое (N0), крупнее — с двумя знаками (0.##).
-    /// Например: 512 → "512 B", 1536 → "1,5 KB", 1073741824 → "1 GB".
+    /// Formats a size in bytes: raw bytes as an integer (N0), larger sizes with two decimal places (0.##).
     /// </summary>
+    /// <param name="bytes">The size in bytes.</param>
+    /// <returns>The formatted size string.</returns>
+    /// <example>
+    ///     <code>
+    ///         var size = ByteSizeFormatter.FormatBytes(512);
+    ///     </code>
+    /// results in <c>size</c>'s having the value "512 B".     
+    ///     <code>
+    ///         size = ByteSizeFormatter.FormatBytes(1536);
+    ///     </code>
+    /// results in <c>size</c>'s having the value "1,5 KB".     
+    ///     <code>
+    ///         size = ByteSizeFormatter.FormatBytes(1073741824); 
+    ///     </code>
+    /// results in <c>size</c>'s having the value "1 GB".     
+    /// </example>
     public static string FormatBytes(long bytes)
     {
         double size = bytes;
@@ -29,8 +43,16 @@ public static class ByteSizeFormatter
     }
 
     /// <summary>
-    /// Форматирует скорость в байтах/сек: B/s, KB/s или MB/s.
+    /// Formats the speed in bytes/s: B/s, KB/s, or MB/s.
     /// </summary>
+    /// <param name="bytesPerSecond">The speed in bytes per second.</param>
+    /// <returns>The formatted speed string.</returns>
+    /// <example>
+    ///     <code>
+    ///         var speed = ByteSizeFormatter.FormatSpeed(1024);
+    ///     </code>
+    /// results in <c>speed</c>'s having the value "1,02 KB/s".
+    /// </example>
     public static string FormatSpeed(double bytesPerSecond)
     {
         if (bytesPerSecond < 1024)
