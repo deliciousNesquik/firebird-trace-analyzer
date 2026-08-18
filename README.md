@@ -1,6 +1,4 @@
-<div align="center">
-
-# Firebird Trace Analyzer
+# <img src="FirebirdTraceAnalyzer/Assets/app-logo-rounded.svg" width="30" height="30" alt="Firebird Trace Analyzer logo" />&nbsp; Firebird Trace Analyzer
 
 **A cross-platform desktop toolkit for reading, exploring and reporting on Firebird trace & audit logs.**
 
@@ -14,7 +12,6 @@
 
 ### [**Read the documentation**](https://deliciousnesquik.github.io/firebird-trace-analyzer/)
 
-</div>
 
 ---
 
