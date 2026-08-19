@@ -1,16 +1,22 @@
 namespace FirebirdTraceAnalyzer.Enums.Reports;
 
 /// <summary>
-/// Роль колонки отчёта.
+/// Enumeration representing the kind of column in a report.
 /// </summary>
 public enum ColumnKind
 {
-    /// <summary>Обычное поле события (значение по PropertyPath). Поведение по умолчанию.</summary>
+    /// <summary>
+    /// Represents a field column in the report, which corresponds to a specific data field from the source data.
+    /// </summary>
     Field,
 
-    /// <summary>Ключ группировки (значение, по которому события группируются).</summary>
+    /// <summary>
+    /// Represents a group key column in the report, which corresponds to a specific data field from the source data.
+    /// </summary>
     GroupKey,
 
-    /// <summary>Агрегат над группой (Count/Sum/Average/…).</summary>
+    /// <summary>
+    /// Represents an aggregate column in the report, which corresponds to an aggregated value over a group of events.
+    /// </summary>
     Aggregate
 }
