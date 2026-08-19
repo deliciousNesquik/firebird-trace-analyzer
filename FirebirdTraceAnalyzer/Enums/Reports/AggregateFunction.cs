@@ -1,25 +1,25 @@
 namespace FirebirdTraceAnalyzer.Enums.Reports;
 
 /// <summary>
-/// Агрегатная функция над группой событий (как GROUP BY в SQL).
+/// Enumeration representing the available aggregate functions for report generation.
 /// </summary>
 public enum AggregateFunction
 {
-    /// <summary>Количество событий в группе.</summary>
+    /// <summary>Count aggregation function</summary>
     Count,
 
-    /// <summary>Количество уникальных значений поля в группе.</summary>
+    /// <summary>Unique count aggregation function</summary>
     CountDistinct,
 
-    /// <summary>Сумма значений поля.</summary>
+    /// <summary>Sum aggregation function</summary>
     Sum,
 
-    /// <summary>Среднее значение поля.</summary>
+    /// <summary>Average aggregation function</summary>
     Average,
 
-    /// <summary>Минимальное значение поля.</summary>
+    /// <summary>Minimum aggregation function</summary>
     Min,
 
-    /// <summary>Максимальное значение поля.</summary>
+    /// <summary>Maximum aggregation function</summary>
     Max
 }
