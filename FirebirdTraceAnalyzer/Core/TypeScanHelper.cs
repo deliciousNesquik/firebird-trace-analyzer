@@ -1,27 +1,19 @@
 namespace FirebirdTraceAnalyzer.Core;
 
-/// <summary>
-/// Правило обхода вложенных типов при рефлексии по моделям событий.
-/// Единая копия для <c>EventPropertyAccessor</c> и <c>FieldDiscoveryService</c>.
-/// </summary>
 public static class TypeScanHelper
 {
     /// <summary>
-    /// Нужно ли углубляться в тип (класс модели парсера), либо это лист (примитив, строка,
-    /// enum, generic или системный тип).
+    /// Determines whether to scan a nested type when traversing event models.
     /// </summary>
+    /// <param name="type">The type to check.</param>
+    /// <returns>true if the type should be scanned; otherwise, false.</returns>
     public static bool ShouldScanNestedType(Type type)
     {
-        if (type.IsPrimitive || type == typeof(string) || type.IsEnum)
+        // Enums, structs and generics also live under FirebirdTraceParser (e.g. EventType,
+        // ParsingResult<T>), so these guards must precede the namespace check.
+        if (!type.IsClass || type.IsGenericType)
             return false;
 
-        if (type.IsGenericType)
-            return false;
-
-        if (type.Namespace?.StartsWith("System", StringComparison.Ordinal) == true)
-            return false;
-
-        return type.IsClass &&
-               type.Namespace?.StartsWith("FirebirdTraceParser", StringComparison.Ordinal) == true;
+        return type.Namespace?.StartsWith("FirebirdTraceParser", StringComparison.Ordinal) == true;
     }
 }
