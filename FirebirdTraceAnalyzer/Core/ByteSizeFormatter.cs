@@ -26,11 +26,13 @@ public static class ByteSizeFormatter
     ///     </code>
     /// results in <c>size</c>'s having the value "1 GB".     
     /// </example>
-    public static string FormatBytes(long bytes)
+    public static string FormatBytes(double bytes)
     {
-        double size = bytes;
+        
+        double size = Math.Abs(bytes);
         var unitIndex = 0;
-
+        var isNegative = bytes < 0;
+        
         while (size >= 1024 && unitIndex < Units.Length - 1)
         {
             size /= 1024;
@@ -38,8 +40,8 @@ public static class ByteSizeFormatter
         }
 
         return unitIndex == 0
-            ? $"{bytes:N0} {Units[unitIndex]}"
-            : $"{size:0.##} {Units[unitIndex]}";
+            ? $"{(isNegative ? "-" : "")}{bytes:N0} {Units[unitIndex]}"
+            : $"{(isNegative ? "-" : "")}{size:0.##} {Units[unitIndex]}";
     }
 
     /// <summary>
@@ -55,12 +57,6 @@ public static class ByteSizeFormatter
     /// </example>
     public static string FormatSpeed(double bytesPerSecond)
     {
-        if (bytesPerSecond < 1024)
-            return $"{bytesPerSecond:F0} B/s";
-
-        if (bytesPerSecond < 1024 * 1024)
-            return $"{bytesPerSecond / 1024:F2} KB/s";
-
-        return $"{bytesPerSecond / (1024 * 1024):F2} MB/s";
+        return $"{FormatBytes((long)bytesPerSecond)}/s";
     }
 }

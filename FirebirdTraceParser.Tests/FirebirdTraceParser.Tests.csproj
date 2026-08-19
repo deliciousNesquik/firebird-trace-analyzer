@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FirebirdTraceAnalyzer\FirebirdTraceAnalyzer.csproj" />
     <ProjectReference Include="..\FirebirdTraceParser\FirebirdTraceParser.csproj" />
   </ItemGroup>
 
