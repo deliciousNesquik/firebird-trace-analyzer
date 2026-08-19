@@ -1,13 +1,17 @@
 ﻿namespace FirebirdTraceAnalyzer.Enums;
 
 /// <summary>
-/// Метод аутентификации SSH
+/// Defines the authentication methods for connecting to a remote machine.
 /// </summary>
 public enum AuthenticationMethod
 {
-    /// <summary>Аутентификация по паролю</summary>
+    /// <summary>
+    /// Authentication by password
+    /// </summary>
     Password,
     
-    /// <summary>Аутентификация по приватному ключу</summary>
+    /// <summary>
+    /// Authentication by private key
+    /// </summary>
     PrivateKey
 }
