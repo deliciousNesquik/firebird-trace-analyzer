@@ -1,13 +1,12 @@
 namespace FirebirdTraceAnalyzer.Interfaces.Dialogs;
 
 /// <summary>
-/// ViewModel диалога, встраиваемого в модальный оверлей (<c>DialogHost</c>).
-/// Сообщает хосту о желании закрыться и отдаёт результат.
+/// Represents a view model for a dialog, which can request to close itself and provide a result.
 /// </summary>
 public interface IDialogViewModel
 {
     /// <summary>
-    /// Диалог просит себя закрыть. Аргумент — результат диалога (<c>null</c> трактуется как отмена).
+    /// The dialog requests to close itself. The argument is the result of the dialog (<c>null</c> is treated as cancellation).
     /// </summary>
     event EventHandler<object?>? CloseRequested;
 }
