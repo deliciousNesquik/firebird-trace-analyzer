@@ -1,5 +1,8 @@
 ﻿namespace FirebirdTraceAnalyzer.Enums.Reports;
 
+/// <summary>
+/// Represents the types of variables that can be used in reports.
+/// </summary>
 public enum ReportVariableType
 {
     #region Files
