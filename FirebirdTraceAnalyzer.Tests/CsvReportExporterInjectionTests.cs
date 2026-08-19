@@ -7,7 +7,7 @@ using FirebirdTraceParser.Models.Events;
 namespace FirebirdTraceAnalyzer.Tests;
 
 /// <summary>
-/// M10 (security): CSV-экспорт должен экранировать ячейки-формулы (=,+,-,@,TAB,CR). Данные приходят
+/// M10 (security): Csv-экспорт должен экранировать ячейки-формулы (=,+,-,@,TAB,CR). Данные приходят
 /// из trace (текст SQL, параметры, имена приложений) и подконтрольны удалённому клиенту БД —
 /// без экранирования Excel/LibreOffice исполнит их как формулы/DDE (CWE-1236).
 /// </summary>

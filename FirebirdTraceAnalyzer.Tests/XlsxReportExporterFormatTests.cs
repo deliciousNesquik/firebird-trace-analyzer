@@ -8,7 +8,7 @@ using FirebirdTraceParser.Models.Events;
 namespace FirebirdTraceAnalyzer.Tests;
 
 /// <summary>
-/// M11: XLSX-экспорт должен переводить .NET-формат колонки ("N0") в код формата Excel ("#,##0").
+/// M11: Xlsx-экспорт должен переводить .NET-формат колонки ("N0") в код формата Excel ("#,##0").
 /// Иначе Excel показывает "N0" буквально — число 1234 рисуется как "N1234".
 /// </summary>
 public sealed class XlsxReportExporterFormatTests : IDisposable

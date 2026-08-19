@@ -12,14 +12,14 @@ using NLog;
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 
 /// <summary>
-/// Экспортер отчётов в DOCX формат
+/// Экспортер отчётов в Docx формат
 /// </summary>
 public class DocxReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IReportProjectionService _projectionService;
 
-    public ReportFormat Format => ReportFormat.DOCX;
+    public ReportFormat Format => ReportFormat.Docx;
 
     public DocxReportExporter(IReportProjectionService projectionService)
     {
@@ -34,7 +34,7 @@ public class DocxReportExporter : IReportExporter
     {
         try
         {
-            Logger.Info("Exporting report to DOCX: {Path}", outputPath);
+            Logger.Info("Exporting report to Docx: {Path}", outputPath);
 
             // Сборка документа и сохранение — блокирующая работа. Уводим в фон и наблюдаем токен:
             // раньше это был fake async (всё на UI-потоке, единственная большая секция неотменяема).
@@ -50,7 +50,7 @@ public class DocxReportExporter : IReportExporter
 
                 body.AppendChild(new Paragraph(new Run(new Break())));
 
-                // Проекцию событий считаем ОДИН раз на весь экспорт (как PDF): Lazy вычисляется только
+                // Проекцию событий считаем ОДИН раз на весь экспорт (как Pdf): Lazy вычисляется только
                 // при наличии Events-секции и не пересобирается для каждой такой секции.
                 var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
 
@@ -68,7 +68,7 @@ public class DocxReportExporter : IReportExporter
                 mainPart.Document.Save();
             }, cancellationToken);
 
-            Logger.Info("DOCX export completed: {Path}", outputPath);
+            Logger.Info("Docx export completed: {Path}", outputPath);
         }
         catch (OperationCanceledException)
         {
@@ -76,7 +76,7 @@ public class DocxReportExporter : IReportExporter
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error exporting to DOCX");
+            Logger.Error(ex, "Error exporting to Docx");
             throw;
         }
     }
@@ -238,7 +238,7 @@ public class DocxReportExporter : IReportExporter
     {
         body.AppendChild(new Paragraph(new Run(new Break())));
 
-        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для Pdf/Docx/Xlsx.
         foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
             AddStatLine(body, label, value);
     }

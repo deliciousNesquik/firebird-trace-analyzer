@@ -68,10 +68,10 @@ public sealed class ReportHistoryStore : IReportHistoryStore
 
     private static string GetFormatFromExtension(string extension) => extension.ToLowerInvariant() switch
     {
-        ".pdf" => "PDF",
-        ".docx" => "DOCX",
-        ".xlsx" => "XLSX",
-        ".csv" => "CSV",
+        ".pdf" => "Pdf",
+        ".docx" => "Docx",
+        ".xlsx" => "Xlsx",
+        ".csv" => "Csv",
         _ => "Unknown"
     };
 }

@@ -12,16 +12,16 @@ namespace FirebirdTraceAnalyzer.Views;
 /// Живое превью отчёта (левая панель редактора). DataContext — <c>ReportPreviewViewModel</c>.
 /// Рендерит ту же проекцию (<c>ReportProjectionService</c>), что и экспортёры, поэтому превью
 /// совпадает с итоговым файлом (WYSIWYG). Таблица событий строится единым Grid, чтобы колонки
-/// заголовка и строк были выровнены точно как в PDF.
+/// заголовка и строк были выровнены точно как в Pdf.
 /// </summary>
 public partial class ReportPreviewView : UserControl
 {
-    // Цвета из PDF-экспорта (QuestPDF Material palette) — фиксированные, лист всегда белый.
+    // Цвета из Pdf-экспорта (QuestPDF Material palette) — фиксированные, лист всегда белый.
     private static readonly IBrush HeaderCellBackground = new SolidColorBrush(Color.Parse("#EEEEEE")); // Grey.Lighten3
     private static readonly IBrush HeaderCellBorder = new SolidColorBrush(Color.Parse("#BDBDBD"));     // Grey.Lighten1
     private static readonly IBrush DataCellBorder = new SolidColorBrush(Color.Parse("#E0E0E0"));       // Grey.Lighten2
 
-    // Цвета «экселевого» листа для XLSX-превью.
+    // Цвета «экселевого» листа для Xlsx-превью.
     private static readonly IBrush SheetGutterBackground = new SolidColorBrush(Color.Parse("#F5F5F5"));
     private static readonly IBrush SheetGridLine = new SolidColorBrush(Color.Parse("#D4D4D4"));
     private static readonly IBrush SheetHeaderBackground = new SolidColorBrush(Color.Parse("#D9D9D9")); // LightGray
@@ -72,7 +72,7 @@ public partial class ReportPreviewView : UserControl
 
     /// <summary>
     /// Перестраивает таблицу событий одним Grid: строка-заголовок + строки данных используют
-    /// одни и те же звёздные колонки (веса = WidthPercent, как RelativeColumn в PDF).
+    /// одни и те же звёздные колонки (веса = WidthPercent, как RelativeColumn в Pdf).
     /// </summary>
     private void RebuildTable()
     {
@@ -90,7 +90,7 @@ public partial class ReportPreviewView : UserControl
         if (columns.Count == 0)
             return;
 
-        // Колонки: звёздные веса = WidthPercent (или 1) — как columns.RelativeColumn(...) в PDF.
+        // Колонки: звёздные веса = WidthPercent (или 1) — как columns.RelativeColumn(...) в Pdf.
         foreach (var col in columns)
         {
             var weight = col.WidthPercent is > 0 ? col.WidthPercent.Value : 1;
@@ -107,7 +107,7 @@ public partial class ReportPreviewView : UserControl
             grid.Children.Add(cell);
         }
 
-        // Строки данных: границы, 8pt, левое выравнивание (как в PDF).
+        // Строки данных: границы, 8pt, левое выравнивание (как в Pdf).
         var rowIndex = 1;
         foreach (var row in rows)
         {
@@ -142,12 +142,12 @@ public partial class ReportPreviewView : UserControl
             }
         };
 
-    // ==================== XLSX «лист Excel» ====================
+    // ==================== Xlsx «лист Excel» ====================
 
     private int _sheetColumnCount;
 
     /// <summary>
-    /// Строит превью формата XLSX как лист Excel: гаттер с номерами строк, шапка с буквами колонок,
+    /// Строит превью формата Xlsx как лист Excel: гаттер с номерами строк, шапка с буквами колонок,
     /// затем содержимое как в <c>XlsxReportExporter</c> (заголовок, переменные, таблица, summary, футер).
     /// </summary>
     private void BuildSheet()

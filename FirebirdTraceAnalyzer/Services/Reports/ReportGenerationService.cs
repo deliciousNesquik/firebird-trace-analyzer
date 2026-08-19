@@ -375,10 +375,10 @@ public class ReportGenerationService : IReportGenerationService
     {
         return format switch
         {
-            ReportFormat.PDF => ".pdf",
-            ReportFormat.DOCX => ".docx",
-            ReportFormat.XLSX => ".xlsx",
-            ReportFormat.CSV => ".csv",
+            ReportFormat.Pdf => ".pdf",
+            ReportFormat.Docx => ".docx",
+            ReportFormat.Xlsx => ".xlsx",
+            ReportFormat.Csv => ".csv",
             _ => ".txt"
         };
     }

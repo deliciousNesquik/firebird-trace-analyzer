@@ -37,11 +37,11 @@ public sealed class ReportTemplate
     /// <summary>Настройки футера отчёта</summary>
     public ReportFooter Footer { get; init; } = new();
     
-    /// <summary>Форматы экспорта (PDF, DOCX, XLSX, CSV)</summary>
+    /// <summary>Форматы экспорта (Pdf, Docx, Xlsx, Csv)</summary>
     public List<ReportFormat> SupportedFormats { get; init; } = new();
     
     /// <summary>Формат по умолчанию</summary>
-    public ReportFormat DefaultFormat { get; init; } = ReportFormat.PDF;
+    public ReportFormat DefaultFormat { get; init; } = ReportFormat.Pdf;
     
     /// <summary>Фильтры для применения к событиям (опционально)</summary>
     public List<ReportFilterConfig>? Filters { get; init; }

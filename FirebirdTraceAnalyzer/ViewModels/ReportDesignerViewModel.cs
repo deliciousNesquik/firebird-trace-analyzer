@@ -141,7 +141,7 @@ public partial class ReportDesignerViewModel : ViewModelBase, IDialogViewModel
     public ObservableCollection<ReportFormatItem> SupportedFormats { get; } = new();
 
     [ObservableProperty]
-    private ReportFormat _defaultFormat = ReportFormat.PDF;
+    private ReportFormat _defaultFormat = ReportFormat.Pdf;
 
     #endregion
 

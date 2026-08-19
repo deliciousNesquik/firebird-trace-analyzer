@@ -11,7 +11,7 @@ using NLog;
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 
 /// <summary>
-/// Экспортер отчётов в XLSX формат
+/// Экспортер отчётов в Xlsx формат
 /// </summary>
 public class XlsxReportExporter : IReportExporter
 {
@@ -22,7 +22,7 @@ public class XlsxReportExporter : IReportExporter
 
     private readonly IReportProjectionService _projectionService;
 
-    public ReportFormat Format => ReportFormat.XLSX;
+    public ReportFormat Format => ReportFormat.Xlsx;
 
     public XlsxReportExporter(IReportProjectionService projectionService)
     {
@@ -37,7 +37,7 @@ public class XlsxReportExporter : IReportExporter
     {
         try
         {
-            Logger.Info("Exporting report to XLSX: {Path}", outputPath);
+            Logger.Info("Exporting report to Xlsx: {Path}", outputPath);
 
             // Сборка книги и сохранение — блокирующая работа. Уводим в фон и наблюдаем токен:
             // раньше это был fake async (всё на UI-потоке, единственная большая секция неотменяема).
@@ -53,7 +53,7 @@ public class XlsxReportExporter : IReportExporter
                 currentRow = ComposeHeader(worksheet, currentRow, template, metadata);
                 currentRow += 2; // Пропускаем 2 строки
 
-                // Проекцию событий считаем ОДИН раз на весь экспорт (как PDF): Lazy вычисляется только
+                // Проекцию событий считаем ОДИН раз на весь экспорт (как Pdf): Lazy вычисляется только
                 // при наличии Events-секции и не пересобирается для каждой такой секции.
                 var eventsTable = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
 
@@ -78,7 +78,7 @@ public class XlsxReportExporter : IReportExporter
                 workbook.SaveAs(outputPath);
             }, cancellationToken);
 
-            Logger.Info("XLSX export completed: {Path}", outputPath);
+            Logger.Info("Xlsx export completed: {Path}", outputPath);
         }
         catch (OperationCanceledException)
         {
@@ -86,7 +86,7 @@ public class XlsxReportExporter : IReportExporter
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error exporting to XLSX");
+            Logger.Error(ex, "Error exporting to Xlsx");
             throw;
         }
     }
@@ -303,7 +303,7 @@ public class XlsxReportExporter : IReportExporter
     {
         var row = startRow;
 
-        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+        // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для Pdf/Docx/Xlsx.
         foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
             AddStatRow(worksheet, ref row, label, value);
 

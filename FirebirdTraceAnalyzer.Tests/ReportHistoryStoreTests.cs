@@ -40,8 +40,8 @@ public sealed class ReportHistoryStoreTests : IDisposable
         var entries = NewStore().List();
 
         Assert.Equal(2, entries.Count);
-        Assert.Contains(entries, e => e.FileName == "a.pdf" && e.Format == "PDF");
-        Assert.Contains(entries, e => e.FileName == "b.csv" && e.Format == "CSV");
+        Assert.Contains(entries, e => e.FileName == "a.pdf" && e.Format == "Pdf");
+        Assert.Contains(entries, e => e.FileName == "b.csv" && e.Format == "Csv");
         Assert.DoesNotContain(entries, e => e.FileName is "c.txt" or "d.log");
     }
 

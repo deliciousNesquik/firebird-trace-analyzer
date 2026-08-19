@@ -25,7 +25,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
     private readonly IReportGenerationService _generationService;
 
-    // Та же проекция, что рисуют экспортёры (PDF/CSV/DOCX/XLSX) — благодаря ей превью совпадает
+    // Та же проекция, что рисуют экспортёры (Pdf/Csv/Docx/Xlsx) — благодаря ей превью совпадает
     // с итоговым файлом, включая группировку и агрегаты (WYSIWYG).
     private readonly IReportProjectionService _projectionService;
 
@@ -43,20 +43,20 @@ public partial class ReportPreviewViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsDocumentPreview))]
     [NotifyPropertyChangedFor(nameof(IsSheetPreview))]
     [NotifyPropertyChangedFor(nameof(IsTextPreview))]
-    private ReportFormat _selectedFormat = ReportFormat.PDF;
+    private ReportFormat _selectedFormat = ReportFormat.Pdf;
 
     public List<ReportFormat> AvailableFormats { get; } = Enum.GetValues<ReportFormat>().ToList();
 
-    /// <summary>PDF и DOCX рисуются как «документ» (лист А4).</summary>
-    public bool IsDocumentPreview => SelectedFormat is ReportFormat.PDF or ReportFormat.DOCX;
+    /// <summary>Pdf и Docx рисуются как «документ» (лист А4).</summary>
+    public bool IsDocumentPreview => SelectedFormat is ReportFormat.Pdf or ReportFormat.Docx;
 
-    /// <summary>XLSX — как лист Excel (сетка с буквами колонок и номерами строк).</summary>
-    public bool IsSheetPreview => SelectedFormat == ReportFormat.XLSX;
+    /// <summary>Xlsx — как лист Excel (сетка с буквами колонок и номерами строк).</summary>
+    public bool IsSheetPreview => SelectedFormat == ReportFormat.Xlsx;
 
-    /// <summary>CSV — как plain-текст файла.</summary>
-    public bool IsTextPreview => SelectedFormat == ReportFormat.CSV;
+    /// <summary>Csv — как plain-текст файла.</summary>
+    public bool IsTextPreview => SelectedFormat == ReportFormat.Csv;
 
-    /// <summary>Точный текст CSV-файла (для превью формата CSV).</summary>
+    /// <summary>Точный текст Csv-файла (для превью формата Csv).</summary>
     [ObservableProperty] private string _csvText = string.Empty;
 
     /// <summary>Масштаб «листа» превью (1.0 = 100%).</summary>
@@ -78,7 +78,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>
     /// Инкрементируется после каждой перегенерации данных превью. Code-behind вью подписывается
     /// на изменение и перестраивает таблицу событий одним Grid (гарантированное выравнивание колонок
-    /// заголовка и строк — как единая таблица в PDF).
+    /// заголовка и строк — как единая таблица в Pdf).
     /// </summary>
     [ObservableProperty] private int _previewRevision;
 
@@ -92,7 +92,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
     /// <summary>Подзаголовок отчёта</summary>
     [ObservableProperty] private string _previewSubtitle = string.Empty;
 
-    /// <summary>Строка даты генерации ("Generated: ..."), как в PDF (пусто, если отключена).</summary>
+    /// <summary>Строка даты генерации ("Generated: ..."), как в Pdf (пусто, если отключена).</summary>
     [ObservableProperty] private string _generatedDateText = string.Empty;
 
     /// <summary>Переменные заголовка с их значениями</summary>
@@ -183,7 +183,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
         var title = Template.Header.Title;
         var subtitle = Template.Header.Subtitle ?? string.Empty;
 
-        // Как в PDF: "Generated: {date}" (только если включено в шапке).
+        // Как в Pdf: "Generated: {date}" (только если включено в шапке).
         var generatedDate = Template.Header.ShowGeneratedDate
             ? $"Generated: {Metadata.GeneratedAt.ToString(Template.Header.DateFormat)}"
             : string.Empty;
@@ -269,7 +269,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
 
         var footer = Template.Footer.Show ? Template.Footer.Text : string.Empty;
 
-        // Точный текст CSV-файла (для превью формата CSV) — те же строки, что пишет CsvReportExporter.
+        // Точный текст Csv-файла (для превью формата Csv) — те же строки, что пишет CsvReportExporter.
         var csvText = BuildCsvText(columns, rows);
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -309,7 +309,7 @@ public partial class ReportPreviewViewModel : ViewModelBase
         => ReportValueFormatter.Format(value, format);
 
     /// <summary>
-    /// Собирает точный текст CSV-файла из колонок и (усечённых) строк превью — построчно повторяет
+    /// Собирает точный текст Csv-файла из колонок и (усечённых) строк превью — построчно повторяет
     /// вывод <c>CsvReportExporter</c> (метаданные с «#», заголовки, значения через запятую, summary).
     /// </summary>
     private string BuildCsvText(IReadOnlyList<PreviewColumnItem> columns, IReadOnlyList<PreviewEventRow> rows)

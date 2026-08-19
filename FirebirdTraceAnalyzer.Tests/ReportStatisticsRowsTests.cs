@@ -7,7 +7,7 @@ using FirebirdTraceParser.Models.Events;
 namespace FirebirdTraceAnalyzer.Tests;
 
 /// <summary>
-/// A6: общий источник строк статистики для PDF/DOCX/XLSX. Фиксируем состав, порядок и форматирование
+/// A6: общий источник строк статистики для Pdf/Docx/Xlsx. Фиксируем состав, порядок и форматирование
 /// значений — чтобы дедуп не изменил вывод отчётов (обязательные 3 поля + 2 условных).
 /// </summary>
 public sealed class ReportStatisticsRowsTests

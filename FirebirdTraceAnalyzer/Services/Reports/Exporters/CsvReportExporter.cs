@@ -11,14 +11,14 @@ using NLog;
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 
 /// <summary>
-/// Экспортер отчётов в CSV формат
+/// Экспортер отчётов в Csv формат
 /// </summary>
 public class CsvReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IReportProjectionService _projectionService;
 
-    public ReportFormat Format => ReportFormat.CSV;
+    public ReportFormat Format => ReportFormat.Csv;
 
     public CsvReportExporter(IReportProjectionService projectionService)
     {
@@ -33,7 +33,7 @@ public class CsvReportExporter : IReportExporter
     {
         try
         {
-            Logger.Info("Exporting report to CSV: {Path}", outputPath);
+            Logger.Info("Exporting report to Csv: {Path}", outputPath);
 
             await using var writer = new StreamWriter(outputPath);
             await using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -52,8 +52,8 @@ public class CsvReportExporter : IReportExporter
             // Пустая строка для разделения
             await csv.NextRecordAsync();
 
-            // Идём по секциям в том же порядке и по тому же ContentType, что и PDF/DOCX/XLSX, чтобы
-            // один шаблон давал согласованное содержимое во всех форматах (раньше CSV игнорировал
+            // Идём по секциям в том же порядке и по тому же ContentType, что и Pdf/Docx/Xlsx, чтобы
+            // один шаблон давал согласованное содержимое во всех форматах (раньше Csv игнорировал
             // Sections: всегда писал события и статистику только по флагу ShowSummary).
             var table = new Lazy<ReportTable>(() => _projectionService.BuildTable(template, metadata.Events));
             var wroteAny = false;
@@ -80,11 +80,11 @@ public class CsvReportExporter : IReportExporter
                 }
             }
 
-            Logger.Info("CSV export completed: {Path}", outputPath);
+            Logger.Info("Csv export completed: {Path}", outputPath);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error exporting to CSV");
+            Logger.Error(ex, "Error exporting to Csv");
             throw;
         }
     }

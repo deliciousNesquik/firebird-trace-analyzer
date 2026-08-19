@@ -12,14 +12,14 @@ using QuestPDF.Infrastructure;
 namespace FirebirdTraceAnalyzer.Services.Reports.Exporters;
 
 /// <summary>
-/// Экспортер отчётов в PDF формат с использованием QuestPDF
+/// Экспортер отчётов в Pdf формат с использованием QuestPDF
 /// </summary>
 public class PdfReportExporter : IReportExporter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IReportProjectionService _projectionService;
 
-    public ReportFormat Format => ReportFormat.PDF;
+    public ReportFormat Format => ReportFormat.Pdf;
 
     public PdfReportExporter(IReportProjectionService projectionService)
     {
@@ -40,9 +40,9 @@ public class PdfReportExporter : IReportExporter
     {
         try
         {
-            Logger.Info("Exporting report to PDF: {Path}", outputPath);
+            Logger.Info("Exporting report to Pdf: {Path}", outputPath);
 
-            // Сборка таблицы событий и рендер PDF — блокирующая CPU-работа. Уводим в фон и наблюдаем
+            // Сборка таблицы событий и рендер Pdf — блокирующая CPU-работа. Уводим в фон и наблюдаем
             // токен: раньше это был fake async (GeneratePdf на UI-потоке, отмена игнорировалась).
             await Task.Run(() =>
             {
@@ -69,7 +69,7 @@ public class PdfReportExporter : IReportExporter
                 document.GeneratePdf(outputPath);
             }, cancellationToken);
 
-            Logger.Info("PDF export completed: {Path}", outputPath);
+            Logger.Info("Pdf export completed: {Path}", outputPath);
         }
         catch (OperationCanceledException)
         {
@@ -77,7 +77,7 @@ public class PdfReportExporter : IReportExporter
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error exporting to PDF");
+            Logger.Error(ex, "Error exporting to Pdf");
             throw;
         }
     }
@@ -267,7 +267,7 @@ public class PdfReportExporter : IReportExporter
         {
             column.Spacing(3);
 
-            // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для PDF/DOCX/XLSX.
+            // Поля статистики — из общего источника (см. ReportStatisticsRows), идентичного для Pdf/Docx/Xlsx.
             foreach (var (label, value) in ReportStatisticsRows.Build(metadata))
             {
                 column.Item().Row(row =>
@@ -314,7 +314,7 @@ public class PdfReportExporter : IReportExporter
         });
     }
 
-    // Вспомогательные методы (аналогичные CSV экспортеру)
+    // Вспомогательные методы (аналогичные Csv экспортеру)
     private string GetVariableValue(ReportVariable variable, ReportMetadata metadata)
         => ReportMetadataFormatter.GetVariableValue(variable, metadata);
 

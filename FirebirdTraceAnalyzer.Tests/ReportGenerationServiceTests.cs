@@ -48,30 +48,30 @@ public sealed class ReportGenerationServiceTests : IDisposable
     [Fact]
     public async Task DispatchesToExporter_MatchingFormat()
     {
-        var pdf = new FakeExporter(ReportFormat.PDF);
-        var csv = new FakeExporter(ReportFormat.CSV);
+        var pdf = new FakeExporter(ReportFormat.Pdf);
+        var csv = new FakeExporter(ReportFormat.Csv);
         var svc = NewService(pdf, csv);
 
-        var report = await svc.GenerateReportAsync(Template(), Metadata(), ReportFormat.CSV, _out);
+        var report = await svc.GenerateReportAsync(Template(), Metadata(), ReportFormat.Csv, _out);
 
         Assert.True(csv.Called);
         Assert.False(pdf.Called);
-        Assert.Equal(ReportFormat.CSV, report.Format);
+        Assert.Equal(ReportFormat.Csv, report.Format);
     }
 
     [Fact]
     public async Task UnregisteredFormat_Throws()
     {
-        var svc = NewService(new FakeExporter(ReportFormat.PDF));
+        var svc = NewService(new FakeExporter(ReportFormat.Pdf));
         await Assert.ThrowsAsync<NotSupportedException>(
-            () => svc.GenerateReportAsync(Template(), Metadata(), ReportFormat.DOCX, _out));
+            () => svc.GenerateReportAsync(Template(), Metadata(), ReportFormat.Docx, _out));
     }
 
     [Fact]
     public void DuplicateFormat_FirstWins_NoThrow()
     {
-        var first = new FakeExporter(ReportFormat.PDF);
-        var second = new FakeExporter(ReportFormat.PDF);
+        var first = new FakeExporter(ReportFormat.Pdf);
+        var second = new FakeExporter(ReportFormat.Pdf);
         // Конструктор не должен падать при дубле формата (второй игнорируется с предупреждением).
         var ex = Record.Exception(() => NewService(first, second));
         Assert.Null(ex);

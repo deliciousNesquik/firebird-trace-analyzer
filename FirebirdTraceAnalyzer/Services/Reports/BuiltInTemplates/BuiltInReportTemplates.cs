@@ -208,8 +208,8 @@ public static class BuiltInReportTemplates
             SortDescending = true,
             EventLimit = 5,
             
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
             
             Tags = new List<string> { "performance", "sql", "statements", "top5" }
         };
@@ -380,8 +380,8 @@ public static class BuiltInReportTemplates
             SortDescending = true,
             EventLimit = 10,
             
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
             
             Tags = new List<string> { "performance", "procedures", "top10" }
         };
@@ -502,8 +502,8 @@ public static class BuiltInReportTemplates
             SortDescending = false,
             EventLimit = 10,
             
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
             
             Tags = new List<string> { "errors", "troubleshooting" }
         };
@@ -623,8 +623,8 @@ public static class BuiltInReportTemplates
             // Сортировка результата — по убыванию (по колонке Error count). Лимит по событиям не задаём.
             SortDescending = true,
 
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
 
             Tags = new List<string> { "errors", "aggregate", "by-user" }
         };
@@ -733,8 +733,8 @@ public static class BuiltInReportTemplates
             ],
             SortDescending = true,
 
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
 
             Tags = new List<string> { "sql", "performance", "aggregate", "sum" }
         };
@@ -843,8 +843,8 @@ public static class BuiltInReportTemplates
             ],
             SortDescending = true,
 
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
 
             Tags = new List<string> { "procedures", "performance", "aggregate", "sum" }
         };
@@ -952,8 +952,8 @@ public static class BuiltInReportTemplates
             ],
             SortDescending = true,
 
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
 
             Tags = new List<string> { "sql", "aggregate", "count", "calls" }
         };
@@ -1061,8 +1061,8 @@ public static class BuiltInReportTemplates
             ],
             SortDescending = true,
 
-            SupportedFormats = new List<ReportFormat> { ReportFormat.PDF, ReportFormat.DOCX, ReportFormat.XLSX, ReportFormat.CSV },
-            DefaultFormat = ReportFormat.PDF,
+            SupportedFormats = new List<ReportFormat> { ReportFormat.Pdf, ReportFormat.Docx, ReportFormat.Xlsx, ReportFormat.Csv },
+            DefaultFormat = ReportFormat.Pdf,
 
             Tags = new List<string> { "procedures", "aggregate", "count", "calls" }
         };

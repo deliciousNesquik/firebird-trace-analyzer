@@ -15,7 +15,7 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 /// <summary>
 /// Окно «Анализ хранилища»: произвольный SELECT по накопительному хранилищу (агрегаты считаются
 /// в SQLite, без загрузки событий в память) + готовые запросы + динамический грид результата и
-/// экспорт в CSV. Доступ к БД — только через <see cref="EventStoreDispatcher"/> (одно соединение).
+/// экспорт в Csv. Доступ к БД — только через <see cref="EventStoreDispatcher"/> (одно соединение).
 /// </summary>
 public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
 {
@@ -170,7 +170,7 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
             Title = Loc.Tr("Store.Analyze.ExportTitle"),
             SuggestedFileName = "storage-analysis.csv",
             DefaultExtension = "csv",
-            FileTypeChoices = [new FilePickerFileType("CSV") { Patterns = ["*.csv"] }]
+            FileTypeChoices = [new FilePickerFileType("Csv") { Patterns = ["*.csv"] }]
         });
         if (picked is null)
             return;
@@ -186,7 +186,7 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Storage analytics: CSV export failed");
+            Logger.Error(ex, "Storage analytics: Csv export failed");
             StatusMessage = string.Format(Loc.Tr("Store.Analyze.Error"), ex.Message);
         }
     }
