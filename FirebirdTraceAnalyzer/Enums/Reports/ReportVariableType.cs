@@ -2,33 +2,118 @@
 
 public enum ReportVariableType
 {
-    // Файлы
-    FileNames,              // Имена файлов
-    FilePaths,              // Полные пути
-    FileCount,              // Количество файлов
-    FileSizeTotal,          // Общий размер
+    #region Files
+
+    /// <summary>
+    /// File names loaded in report
+    /// </summary>
+    FileNames,
     
-    // События
-    TotalEventsCount,       // Всего событий
-    FilteredEventsCount,    // После фильтрации
-    VisibleEventsCount,     // Видимых (после сортировки/лимита)
+    /// <summary>
+    /// Full paths of files loaded in report
+    /// </summary>
+    FilePaths,
     
-    // Временные диапазоны
-    TraceStartTime,         // Начало трассировки
-    TraceEndTime,           // Конец трассировки
-    TraceDuration,          // Длительность
+    /// <summary>
+    /// Count of files loaded in report
+    /// </summary>
+    FileCount,
     
-    // Фильтры
-    ActiveFilters,          // Активные фильтры
-    ActiveSort,             // Активная сортировка
+    /// <summary>
+    /// Total size of files loaded in report
+    /// </summary>
+    FileSizeTotal,
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// Total count of events in report
+    /// </summary>
+    TotalEventsCount,
     
-    // Статистика
-    AverageExecutionTime,   // Среднее время выполнения
-    MaxExecutionTime,       // Максимальное время
-    MinExecutionTime,       // Минимальное время
+    /// <summary>
+    /// Count of events after filtering in report
+    /// </summary>
+    FilteredEventsCount,
     
-    // Мета
-    GeneratedDate,          // Дата создания отчёта
-    GeneratedBy,            // Кто создал
-    ApplicationVersion      // Версия приложения
+    /// <summary>
+    /// Count of events after sorting/limiting in report
+    /// </summary>
+    VisibleEventsCount,
+
+    #endregion
+
+    #region Time Ranges
+
+    /// <summary>
+    /// Start time of the trace
+    /// </summary>
+    TraceStartTime,
+    
+    /// <summary>
+    /// End time of the trace
+    /// </summary>
+    TraceEndTime,
+    
+    /// <summary>
+    /// Total duration of the trace
+    /// </summary>
+    TraceDuration,
+
+    #endregion
+
+    #region Filters & Sorting
+
+    /// <summary>
+    /// Active filters applied to the report
+    /// </summary>
+    ActiveFilters,
+    
+    /// <summary>
+    /// Active sorting applied to the report
+    /// </summary>
+    ActiveSort,
+
+    #endregion
+
+    #region Statistics
+
+    /// <summary>
+    /// Average execution time of events in the report
+    /// </summary>
+    AverageExecutionTime,
+    
+    /// <summary>
+    /// Maximum execution time of events in the report
+    /// </summary>
+    MaxExecutionTime,
+    
+    /// <summary>
+    /// Minimum execution time of events in the report
+    /// </summary>
+    MinExecutionTime,
+
+    #endregion
+
+    #region Meta
+
+    /// <summary>
+    /// Date when the report was generated
+    /// </summary>
+    GeneratedDate,
+    
+    /// <summary>
+    /// Name of the user who generated the report
+    /// </summary>
+    GeneratedBy,
+    
+    /// <summary>
+    /// Version of the application that generated the report
+    /// </summary>
+    ApplicationVersion
+
+    #endregion
+    
 }
