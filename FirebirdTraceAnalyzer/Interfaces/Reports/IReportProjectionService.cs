@@ -4,11 +4,15 @@ using FirebirdTraceParser.Models.Events;
 namespace FirebirdTraceAnalyzer.Interfaces.Reports;
 
 /// <summary>
-/// Строит из подготовленных событий и шаблона готовую к отрисовке таблицу (<see cref="ReportTable"/>).
-/// Сейчас — одна строка на событие (как делают экспортёры сегодня); позже здесь же появится
-/// ветка группировки/агрегации, прозрачно для экспортёров.
+/// Defines a service for projecting events into a report table (<see cref="ReportTable"/>) based on a specified template.
 /// </summary>
 public interface IReportProjectionService
 {
+    /// <summary>
+    /// Builds a report table from the provided template and events.
+    /// </summary>
+    /// <param name="template">The report template.</param>
+    /// <param name="events">The list of events to include in the report.</param>
+    /// <returns>The generated report table.</returns>
     ReportTable BuildTable(ReportTemplate template, IReadOnlyList<EventBase> events);
 }
