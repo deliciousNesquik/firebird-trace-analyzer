@@ -1,12 +1,14 @@
 namespace FirebirdTraceAnalyzer.Localization;
 
 /// <summary>
-/// Статический помощник перевода для использования из C# (ViewModels, сервисы), где неудобно
-/// внедрять <see cref="ILocalizationService"/>. Делегирует в тот же синглтон <see cref="Localizer"/>,
-/// что и XAML-расширение <c>{loc:Tr}</c>, поэтому язык и словари общие. Фолбэк — сам ключ.
+/// Provides a static class for localization, allowing translation of strings using a shared Localizer instance.
 /// </summary>
 public static class Loc
 {
-    /// <summary>Перевод по ключу на текущем языке (фолбэк: английский → сам ключ).</summary>
+    /// <summary>
+    /// Translates the specified key using the shared Localizer instance.
+    /// </summary>
+    /// <param name="key">The translation key.</param>
+    /// <returns>The translated string. If the key is not found, it returns the key itself as a fallback.</returns>
     public static string Tr(string key) => Localizer.Instance.Translate(key);
 }
