@@ -5,23 +5,30 @@ using FirebirdTraceAnalyzer.Models;
 namespace FirebirdTraceAnalyzer.Interfaces;
 
 /// <summary>
-/// Реестр видимых фоновых задач. Немодальная мини-панель в главном окне показывает, что идёт
-/// фоновая работа (напр. запись в хранилище), не мешая основной работе. Переиспользуемо: любую
-/// фоновую операцию можно отметить одним <see cref="Begin"/>.
+/// Represents a service that manages background tasks and provides a read-only collection of active tasks.
+/// Reusable: any background operation can be marked with a single <see cref="Begin"/>.
 /// </summary>
 public interface IBackgroundTaskService : INotifyPropertyChanged
 {
-    /// <summary>Активные задачи (для биндинга списка в панели).</summary>
+    /// <summary>
+    /// Get the list of background tasks. The list is read-only and can be observed for changes.
+    /// </summary>
     ReadOnlyObservableCollection<BackgroundTaskItem> Items { get; }
 
-    /// <summary>Есть ли активные фоновые задачи (для видимости панели и предупреждения при закрытии).</summary>
-    bool HasActive { get; }
-
     /// <summary>
-    /// Отмечает начало фоновой операции. Повторный вызов с тем же <paramref name="key"/> объединяется в
-    /// один пункт со счётчиком (для очередей — напр. пакет записей файлов). <see cref="IDisposable.Dispose"/>
-    /// отмечает завершение; когда счётчик достигает нуля, пункт исчезает.
-    /// Потокобезопасно: можно звать с любого потока, обновления UI маршалятся на UI-поток.
+    /// Returns true if there are any active background tasks. This can be used to show or hide the background task panel.
     /// </summary>
+    bool HasActive { get; }
+    
+    /// <summary>
+    /// Marks the start of a background operation. Repeated calls with the same <paramref name="key"/>
+    /// are consolidated into a single entry with a counter (e.g., for queues, a batch of file records).
+    /// <see cref="IDisposable.Dispose"/> marks completion; the entry is removed when the counter reaches zero.
+    /// Thread-safe: can be called from any thread; UI updates are marshaled to the UI thread.
+    /// </summary>
+    /// <param name="key">The key for the background task.</param>
+    /// <param name="title">The title of the background task.</param>
+    /// <param name="detail">The detail information for the background task.</param>
+    /// <returns>An IDisposable that can be used to end the task when disposed.</returns>
     IDisposable Begin(string key, string title, string? detail = null);
 }
