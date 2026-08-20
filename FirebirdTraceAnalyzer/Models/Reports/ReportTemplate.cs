@@ -3,61 +3,61 @@
 namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Шаблон отчёта
+/// A report template.
 /// </summary>
 public sealed class ReportTemplate
 {
-    /// <summary>Уникальный ID шаблона</summary>
+    /// <summary>Unique template identifier.</summary>
     public string Id { get; init; } = Guid.NewGuid().ToString();
-    
-    /// <summary>Название шаблона</summary>
+
+    /// <summary>Template name.</summary>
     public string Name { get; init; } = string.Empty;
-    
-    /// <summary>Описание шаблона</summary>
+
+    /// <summary>Template description.</summary>
     public string Description { get; init; } = string.Empty;
-    
-    /// <summary>Автор шаблона</summary>
+
+    /// <summary>Template author.</summary>
     public string Author { get; init; } = Environment.UserName;
-    
-    /// <summary>Дата создания</summary>
+
+    /// <summary>Creation date.</summary>
     public DateTime CreatedAt { get; init; } = DateTime.Now;
-    
-    /// <summary>Дата последнего изменения</summary>
+
+    /// <summary>Last-modified date.</summary>
     public DateTime ModifiedAt { get; init; } = DateTime.Now;
-    
-    /// <summary>Версия шаблона</summary>
+
+    /// <summary>Template version.</summary>
     public string Version { get; init; } = "1.0";
-    
-    /// <summary>Настройки заголовка отчёта</summary>
+
+    /// <summary>Report header settings.</summary>
     public ReportHeader Header { get; init; } = new();
-    
-    /// <summary>Настройки тела отчёта</summary>
+
+    /// <summary>Report body settings.</summary>
     public ReportBody Body { get; init; } = new();
-    
-    /// <summary>Настройки футера отчёта</summary>
+
+    /// <summary>Report footer settings.</summary>
     public ReportFooter Footer { get; init; } = new();
-    
-    /// <summary>Форматы экспорта (Pdf, Docx, Xlsx, Csv)</summary>
+
+    /// <summary>Supported export formats (Pdf, Docx, Xlsx, Csv).</summary>
     public List<ReportFormat> SupportedFormats { get; init; } = new();
-    
-    /// <summary>Формат по умолчанию</summary>
+
+    /// <summary>Default export format.</summary>
     public ReportFormat DefaultFormat { get; init; } = ReportFormat.Pdf;
-    
-    /// <summary>Фильтры для применения к событиям (опционально)</summary>
+
+    /// <summary>Filters to apply to events (optional).</summary>
     public List<ReportFilterConfig>? Filters { get; init; }
-    
-    /// <summary>Поле для сортировки</summary>
+
+    /// <summary>Field to sort by.</summary>
     public string? SortByField { get; init; }
-    
-    /// <summary>Сортировка по убыванию?</summary>
+
+    /// <summary>Whether to sort in descending order.</summary>
     public bool SortDescending { get; init; } = true;
-    
-    /// <summary>Лимит событий (для Top N отчётов)</summary>
+
+    /// <summary>Event limit (for Top N reports).</summary>
     public int? EventLimit { get; init; }
-    
-    /// <summary>Теги для поиска</summary>
+
+    /// <summary>Tags used for search.</summary>
     public List<string> Tags { get; init; } = new();
-    
-    /// <summary>Это встроенный шаблон?</summary>
+
+    /// <summary>Whether this is a built-in template.</summary>
     public bool IsBuiltIn { get; init; }
 }
