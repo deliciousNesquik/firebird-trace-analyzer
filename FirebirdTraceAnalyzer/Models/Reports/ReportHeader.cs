@@ -1,25 +1,25 @@
 ﻿namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Заголовок отчёта с мета-информацией
+/// Report header with meta-information.
 /// </summary>
 public sealed class ReportHeader
 {
-    /// <summary>Название отчёта (шаблонизируемое)</summary>
+    /// <summary>Report title (templatable).</summary>
     public string Title { get; init; } = "Trace Analysis Report";
-    
-    /// <summary>Подзаголовок</summary>
+
+    /// <summary>Subtitle.</summary>
     public string? Subtitle { get; init; }
-    
-    /// <summary>Показывать логотип?</summary>
+
+    /// <summary>Whether to show the logo.</summary>
     public bool ShowLogo { get; init; } = true;
-    
-    /// <summary>Переменные для отображения в заголовке</summary>
+
+    /// <summary>Variables displayed in the header.</summary>
     public List<ReportVariable> Variables { get; init; } = new();
-    
-    /// <summary>Показывать дату генерации?</summary>
+
+    /// <summary>Whether to show the generation date.</summary>
     public bool ShowGeneratedDate { get; init; } = true;
-    
-    /// <summary>Формат даты</summary>
+
+    /// <summary>Date format string.</summary>
     public string DateFormat { get; init; } = "yyyy-MM-dd HH:mm:ss";
 }
