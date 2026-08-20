@@ -5,48 +5,49 @@ using FirebirdTraceAnalyzer.Enums;
 namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
-/// Настройки SSH подключения
+/// SSH connection settings.
 /// </summary>
 public sealed record SshConnectionSettings
 {
-    /// <summary>Адрес сервера (IP или hostname)</summary>
+    /// <summary>Server address (IP or hostname).</summary>
     public string Hostname { get; init; } = string.Empty;
-    
-    /// <summary>SSH порт (по умолчанию 22)</summary>
+
+    /// <summary>SSH port (defaults to 22).</summary>
     public int Port { get; init; } = 22;
-    
-    /// <summary>Имя пользователя</summary>
+
+    /// <summary>User name.</summary>
     public string Username { get; init; } = string.Empty;
-    
-    /// <summary>Метод аутентификации</summary>
+
+    /// <summary>Authentication method.</summary>
     public AuthenticationMethod AuthMethod { get; init; } = AuthenticationMethod.Password;
-    
-    /// <summary>Пароль (только для AuthMethod.Password). Секрет: никогда не сериализуется в профили.</summary>
+
+    /// <summary>Password (only for AuthMethod.Password). Secret: never serialized into profiles.</summary>
     [JsonIgnore]
     public string? Password { get; init; }
 
-    /// <summary>Путь к приватному ключу (только для AuthMethod.PrivateKey)</summary>
+    /// <summary>Path to the private key (only for AuthMethod.PrivateKey).</summary>
     public string? PrivateKeyPath { get; init; }
 
-    /// <summary>Парольная фраза для ключа (опционально). Секрет: никогда не сериализуется в профили.</summary>
+    /// <summary>Passphrase for the key (optional). Secret: never serialized into profiles.</summary>
     [JsonIgnore]
     public string? KeyPassphrase { get; init; }
-    
-    /// <summary>Удалённая директория с трассировочными файлами</summary>
+
+    /// <summary>Remote directory containing the trace files.</summary>
     public string RemoteDirectory { get; init; } = "/var/log/firebird";
-    
-    /// <summary>Удалять файлы на сервере после обработки</summary>
+
+    /// <summary>Whether to delete files on the server after processing.</summary>
     public bool DeleteAfterProcessingFromServer { get; init; }
-    
-    /// <summary>Удалять файлы на локальной машине после обработки</summary>
+
+    /// <summary>Whether to delete files on the local machine after processing.</summary>
     public bool DeleteAfterProcessingOnLocaleMachine { get; init; }
-    
-    /// <summary>Таймаут подключения (секунды)</summary>
+
+    /// <summary>Connection timeout in seconds.</summary>
     public int ConnectionTimeout { get; init; } = 30;
 
     /// <summary>
-    /// Печать record без секретов: авто-ToString() у record выводит ВСЕ свойства, поэтому пароль и
-    /// парольная фраза утекли бы в логи при интерполяции/логировании записи. Маскируем их.
+    /// Prints the record without secrets: a record's auto-generated ToString() would emit ALL
+    /// properties, so the password and passphrase would leak into logs when the record is interpolated
+    /// or logged. This masks them.
     /// </summary>
     private bool PrintMembers(StringBuilder builder)
     {
@@ -64,7 +65,9 @@ public sealed record SshConnectionSettings
         return true;
     }
 
-    /// <summary>Валидация настроек</summary>
+    /// <summary>Validates the settings.</summary>
+    /// <param name="errorMessage">The first validation error, or <c>null</c> when the settings are valid.</param>
+    /// <returns><c>true</c> when the settings are valid; otherwise <c>false</c>.</returns>
     public bool IsValid(out string? errorMessage)
     {
         if (string.IsNullOrWhiteSpace(Hostname))
