@@ -1,22 +1,23 @@
 ﻿namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
-/// Профиль подключения для сохранения настроек
+/// A saved SSH connection profile.
 /// </summary>
 public sealed record SshConnectionProfile
 {
-    /// <summary>Имя профиля</summary>
+    /// <summary>Display name of the profile.</summary>
     public string Name { get; init; } = string.Empty;
-    
-    /// <summary>Настройки подключения (без пароля)</summary>
+
+    /// <summary>Connection settings (without the password).</summary>
     public SshConnectionSettings Settings { get; init; } = new();
-    
-    /// <summary>Дата создания профиля</summary>
+
+    /// <summary>When the profile was created.</summary>
     public DateTime CreatedAt { get; init; } = DateTime.Now;
-    
-    /// <summary>Последнее использование</summary>
+
+    /// <summary>When the profile was last used, if ever.</summary>
     public DateTime? LastUsedAt { get; set; }
 
-    /// <summary>Создаёт копию профиля с обновлённой датой использования</summary>
+    /// <summary>Returns a copy of the profile with its last-used timestamp set to now.</summary>
+    /// <returns>A copy with an updated <see cref="LastUsedAt"/>.</returns>
     public SshConnectionProfile WithLastUsed() => this with { LastUsedAt = DateTime.Now };
 }
