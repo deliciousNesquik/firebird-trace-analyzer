@@ -1,20 +1,38 @@
 namespace FirebirdTraceAnalyzer.Interfaces.Reports;
 
-/// <summary>Метаданные одного файла отчёта в истории.</summary>
+/// <summary>
+/// Represents a report file entry in the report history.
+/// </summary>
+/// <param name="FileName">The name of the report file.</param>
+/// <param name="FilePath">The path to the report file.</param>
+/// <param name="FileSize">The size of the report file.</param>
+/// <param name="CreatedAt">The date and time when the report file was created.</param>
+/// <param name="Format">The format of the report file.</param>
 public sealed record ReportFileEntry(string FileName, string FilePath, long FileSize, DateTime CreatedAt, string Format);
 
 /// <summary>
-/// Доступ к истории сгенерированных отчётов на диске. Инкапсулирует файловый ввод-вывод, чтобы
-/// ViewModel не работала с File/Directory напрямую (SoC/тестируемость).
+/// Interface for managing the storage of report history files.
+/// Implementations of this interface are responsible
+/// for providing access to the directory where report history files are stored,
+/// listing the available report files, and deleting specific report files from the history.
 /// </summary>
 public interface IReportHistoryStore
 {
-    /// <summary>Каталог истории отчётов (создаётся при отсутствии).</summary>
+    /// <summary>
+    /// Returns the directory where the report history is stored. The directory is created if it does not exist.
+    /// </summary>
+    /// <returns>Path to the report history directory.</returns>
     string ResolveDirectory();
 
-    /// <summary>Список файлов отчётов (pdf/docx/xlsx/csv), новые сверху.</summary>
+    /// <summary>
+    /// Returns a list of report files in the history directory, sorted by creation date (newest first).
+    /// </summary>
+    /// <returns>A list of report file entries.</returns>
     IReadOnlyList<ReportFileEntry> List();
 
-    /// <summary>Удаляет файл отчёта.</summary>
+    /// <summary>
+    /// Deletes a report file from the history directory.
+    /// </summary>
+    /// <param name="filePath">The path to the report file to delete.</param>
     void Delete(string filePath);
 }
