@@ -4,43 +4,60 @@ using FirebirdTraceParser.Models.Events;
 namespace FirebirdTraceAnalyzer.Interfaces;
 
 /// <summary>
-/// Координатор хранилища событий: инкапсулирует режим хранения (Off/Session/Accumulate), доступ к
-/// диспетчеру (единое SQLite-соединение, FIFO-очередь), фоновую запись/чтение и обслуживание.
-/// Выносит эту ответственность из MainWindowViewModel; применение прочитанных событий к UI-коллекциям
-/// остаётся у вызывающего (тонкая оркестрация).
+/// Coordinator interface for managing the event store, which handles the persistence and retrieval
+/// of events associated with trace files.
 /// </summary>
 public interface IEventStoreCoordinator
 {
-    /// <summary>Хранилище активно (режим не Off и диспетчер доступен). В режиме Off БД не создаётся.</summary>
+    /// <summary>
+    /// Returns true if the event store is enabled (Session or Accumulate mode). In Off mode, it returns false.
+    /// </summary>
     bool IsEnabled { get; }
 
-    /// <summary>Есть ли файл с таким хэшем в хранилище (через очередь диспетчера). При сбое — false.</summary>
-    Task<bool> ContainsAsync(string fileHash);
-
     /// <summary>
-    /// Ставит запись событий файла в фоновую очередь и сразу возвращается (диск не на критическом пути).
-    /// Работает по снимку списка — исключает гонку с очисткой рабочего набора на UI-потоке.
+    /// Returns true if the event store contains events for the specified file hash. In Off mode, it returns false.
     /// </summary>
+    /// <param name="fileHash">The hash of the file to check.</param>
+    /// <returns>True if the event store contains events for the specified file hash; otherwise, false.</returns>
+    Task<bool> ContainsAsync(string fileHash);
+    
+    /// <summary>
+    /// Queues the file event record for background processing and returns immediately (the disk is not on the critical path).
+    /// It operates on a snapshot of the list, eliminating race conditions associated with clearing the working set on the UI thread.
+    /// </summary>
+    /// <param name="file">The file info model.</param>
+    /// <param name="events">The list of events to persist.</param>
     void Persist(TraceFileInfoModel file, IReadOnlyList<EventBase> events);
-
-    /// <summary>Читает события файла из хранилища (порядок = порядок записи). Пустой список, если хранилище выключено.</summary>
+    
+    /// <summary>
+    /// Reads the events for the specified file hash from the event store. If the file hash is not found, it returns an empty list.
+    /// </summary>
+    /// <param name="fileHash">The hash of the file for which to read events.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The list of events for the specified file hash; otherwise, an empty list.</returns>
     Task<IReadOnlyList<EventBase>> ReadFileAsync(string fileHash, CancellationToken cancellationToken = default);
-
-    /// <summary>Манифест файлов в хранилище (для восстановления сессии). Пустой список при сбое/выключенном хранилище.</summary>
+    
+    /// <summary>
+    /// Manifest of files in the storage (for session recovery). Empty list in case of failure or if the storage is disabled.
+    /// </summary>
+    /// <returns>The list of files in the storage; otherwise, an empty list.</returns>
     Task<IReadOnlyList<TraceFileInfoModel>> ListFilesAsync();
 
     /// <summary>
-    /// Режим Session — «зеркало сессии»: удаляет файлы из хранилища при их закрытии/удалении. В
-    /// Accumulate — no-op. Ставит удаление в ту же FIFO-очередь и помечает отложенное обслуживание.
+    /// The Session mode acts as a "session mirror": it removes files from storage when they are closed or deleted.
+    /// In Accumulate mode, it is a no-op; it places the deletion task into the same FIFO queue and flags the item
+    /// for deferred processing.
     /// </summary>
+    /// <param name="fileHashes">The hashes of the files to remove.</param>
     void RemoveIfSession(IReadOnlyCollection<string> fileHashes);
 
-    /// <summary>Режим Session: полностью очищает хранилище (закрытие всех файлов = пустая сессия).</summary>
+    /// <summary>Session mode: completely clears the storage (closing all files = empty session).</summary>
     void ClearIfSession();
-
+    
     /// <summary>
-    /// Отложенное обслуживание на старте: если помечено, фоново выполняет чистку осиротевших словарей
-    /// + VACUUM и снимает флаг. Не блокирует.
+    /// Performs maintenance tasks on the event store, such as removing old files or optimizing the database.
+    /// In Accumulate mode, it is a no-op; it places the maintenance task into the same FIFO queue and flags it for deferred processing.
     /// </summary>
+    /// <returns>Result of the maintenance operation.</returns>
     Task RunPendingMaintenanceAsync();
 }
