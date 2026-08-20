@@ -2,7 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         xmlns:events="using:FirebirdTraceAnalyzer.Controls.EventCards"
-        xmlns:models="clr-namespace:FirebirdTraceParser.Models.ValueObjects;assembly=FirebirdTraceParser">
+        xmlns:models="clr-namespace:FirebirdTraceParser.Models.ValueObjects;assembly=FirebirdTraceParser"
+        xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls">
 
     <Design.PreviewWith>
 
@@ -140,17 +141,12 @@
                                                   StringFormat='{}Error at: {0}'}"
                                            TextWrapping="Wrap"/>
 
-                                <Button x:Name="PART_CopyErrorButton"
-                                        Grid.Column="1"
-                                        Background="Transparent"
-                                        Width="24"
-                                        Height="24"
-                                        Padding="0">
-
-                                    <Svg Path="{DynamicResource CopyIcon}"
-                                         Css="{DynamicResource ThemeIconFill}" />
-
-                                </Button>
+                                <controls:CopyButton Grid.Column="1" Classes="parameters" 
+                                                     VerticalAlignment="Top"
+                                                     Height="30" Width="30"
+                                                     Text="{Binding Component,
+                                                        RelativeSource={RelativeSource TemplatedParent},
+                                                        StringFormat='{}Error at: {0}'}" />
 
                             </Grid>
 
