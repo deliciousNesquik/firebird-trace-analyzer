@@ -383,7 +383,7 @@
                                 Command="{Binding OpenRulesFolderCommand}">
 
                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                <Svg Width="20" Height="20" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                 <TextBlock Text="{loc:Tr Settings.OpenFolder}" />
                             </StackPanel>
 
