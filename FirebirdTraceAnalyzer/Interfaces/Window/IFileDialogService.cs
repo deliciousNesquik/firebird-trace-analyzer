@@ -2,41 +2,40 @@
 
 namespace FirebirdTraceAnalyzer.Interfaces.Window;
 
+/// <summary>
+/// Interface for a service that provides file dialog operations, such as picking files and revealing files in the file manager.
+/// </summary>
 public interface IFileDialogService
 {
     /// <summary>
-    /// Открывает диалог выбора файлов и возвращает список выбранных файлов.
-    /// Если пользователь отменяет выбор, возвращается пустой список.
+    /// Show a file picker dialog to select one or more trace files.
     /// </summary>
-    /// <returns>IStorageFile - список выбранных файлов</returns>
+    /// <returns>The list of selected trace files otherwise empty list. <see cref="IStorageFile"/></returns>
     Task<IReadOnlyList<IStorageFile>> PickTraceFilesAsync();
 
     /// <summary>
-    /// Открывает расположение указанного файла в проводнике операционной системы 
-    /// и фокусирует/выделяет данный файл (если поддерживается ОС).
+    /// Show a file in file manager (Explorer on Windows, Finder on macOS, etc.).
     /// </summary>
-    /// <param name="filePath">Абсолютный путь к целевому файлу на диске.</param>
-    /// <returns>
-    /// Возвращает <c>true</c>, если системный процесс открытия запущен успешно; 
-    /// в противном случае — <c>false</c>.
-    /// </returns>
+    /// <param name="filePath">Absolute path to the file to reveal.</param>
+    /// <returns>True if the file was successfully revealed, false otherwise.</returns>
     Task<bool> RevealInFileManagerAsync(string filePath);
 
     /// <summary>
-    /// Диалог сохранения JSON-файла (для экспорта шаблона отчёта).
-    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// Show a file picker dialog to select a JSON file to save.
     /// </summary>
+    /// <param name="suggestedName">The suggested name for the JSON file.</param>
+    /// <returns>The absolute path to the selected JSON file, or null if canceled.</returns>
     Task<string?> PickJsonToSaveAsync(string suggestedName);
 
     /// <summary>
-    /// Диалог выбора JSON-файла для открытия (для импорта шаблона отчёта).
-    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// Show a file picker dialog to select a JSON file to open.
     /// </summary>
+    /// <returns>The absolute path to the selected JSON file, or null if canceled.</returns>
     Task<string?> PickJsonToOpenAsync();
 
     /// <summary>
-    /// Диалог выбора пакета плагина для установки: одиночная DLL или ZIP-архив.
-    /// Возвращает локальный путь выбранного файла или <c>null</c>, если отменено.
+    /// Show a file picker dialog to select a plugin package to install: a single DLL or a ZIP archive.
     /// </summary>
+    /// <returns>The absolute path to the plugin package, or null if canceled.</returns>
     Task<string?> PickPluginPackageAsync();
 }
