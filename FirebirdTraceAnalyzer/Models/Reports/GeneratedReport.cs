@@ -3,25 +3,37 @@
 namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Результат генерации отчёта
+/// Represents a generated report with its associated metadata, template, format, file path, and size.
 /// </summary>
 public sealed class GeneratedReport
 {
-    /// <summary>Использованный шаблон</summary>
+    /// <summary>
+    /// Used template for report generation
+    /// </summary>
     public required ReportTemplate Template { get; init; }
     
-    /// <summary>Метаданные отчёта</summary>
+    /// <summary>
+    /// Metadata of the generated report
+    /// </summary>
     public required ReportMetadata Metadata { get; init; }
     
-    /// <summary>Формат экспорта</summary>
+    /// <summary>
+    /// Format of the generated report
+    /// </summary>
     public required ReportFormat Format { get; init; }
     
-    /// <summary>Путь к сгенерированному файлу</summary>
+    /// <summary>
+    /// Path to the generated report file
+    /// </summary>
     public required string FilePath { get; init; }
     
-    /// <summary>Размер файла в байтах</summary>
+    /// <summary>
+    /// Size of the generated report file in bytes
+    /// </summary>
     public long FileSize { get; init; }
     
-    /// <summary>Дата генерации</summary>
+    /// <summary>
+    /// Date and time when the report was generated
+    /// </summary>
     public DateTime GeneratedAt { get; init; } = DateTime.Now;
 }
