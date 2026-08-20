@@ -3,28 +3,28 @@
 namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Метаданные для генерации отчёта (runtime данные)
+/// Runtime metadata used to generate a report.
 /// </summary>
 public sealed class ReportMetadata
 {
-    /// <summary>События для отчёта</summary>
+    /// <summary>Events included in the report.</summary>
     public required IReadOnlyList<EventBase> Events { get; init; }
-    
-    /// <summary>Информация о файлах</summary>
+
+    /// <summary>Information about the source files.</summary>
     public required IReadOnlyList<TraceFileInfoModel> Files { get; init; }
-    
-    /// <summary>Всего событий (до фильтрации)</summary>
+
+    /// <summary>Total number of events before filtering.</summary>
     public required long TotalEventsCount { get; init; }
-    
-    /// <summary>Активные фильтры (текстовое описание)</summary>
+
+    /// <summary>Active filters as a textual description.</summary>
     public string? ActiveFilters { get; init; }
-    
-    /// <summary>Активная сортировка (текстовое описание)</summary>
+
+    /// <summary>Active sort as a textual description.</summary>
     public string? ActiveSort { get; init; }
-    
-    /// <summary>Дата генерации отчёта</summary>
+
+    /// <summary>When the report was generated.</summary>
     public DateTime GeneratedAt { get; init; } = DateTime.Now;
-    
-    /// <summary>Версия приложения</summary>
+
+    /// <summary>Application version.</summary>
     public string ApplicationVersion { get; init; } = "1.0.0";
 }
