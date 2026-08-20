@@ -48,6 +48,7 @@ public sealed class Localizer : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Generation)));
     }
 
+    //TODO: вынести конвертер в отдельный файл в директорию Converters
     /// <summary>Игнорирует значение-триггер, переводит ключ из ConverterParameter.</summary>
     private sealed class TrValueConverter : IValueConverter
     {
