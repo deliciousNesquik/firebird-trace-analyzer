@@ -1,132 +1,156 @@
-﻿namespace FirebirdTraceAnalyzer.Models;
+namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
-/// Режим оформления приложения.
+/// Application appearance mode.
 /// </summary>
 public enum AppTheme
 {
-    /// <summary>Следовать системным настройкам (light/dark).</summary>
+    /// <summary>Follow the system setting (light/dark).</summary>
     Auto,
 
-    /// <summary>Всегда светлая тема.</summary>
+    /// <summary>Always use the light theme.</summary>
     Light,
 
-    /// <summary>Всегда тёмная тема.</summary>
+    /// <summary>Always use the dark theme.</summary>
     Dark,
-    
-    /// <summary>Всегда контрастная тема.</summary>
+
+    /// <summary>Always use the high-contrast theme.</summary>
     Contrast
 }
 
 /// <summary>
-/// Режим хранения распарсенных событий на диске.
+/// Mode for persisting parsed events on disk.
 /// </summary>
 public enum StorageMode
 {
-    /// <summary>Не сохранять события на диск.</summary>
+    /// <summary>Do not persist events to disk.</summary>
     Off,
 
-    /// <summary>Сессионный: каждый новый парсинг очищает хранилище и пишет туда файлы текущей сессии
-    /// (аварийное восстановление после закрытия/зависания).</summary>
+    /// <summary>Session mode: each new parse clears the store and writes the current session's files
+    /// (crash recovery after a close/hang).</summary>
     Session,
 
-    /// <summary>Накопительный: каждый парсинг дополняет хранилище (долгий архив).</summary>
+    /// <summary>Accumulate mode: each parse appends to the store (long-lived archive).</summary>
     Accumulate
 }
 
 /// <summary>
-/// Основные настройки приложения
+/// Core application settings.
 /// </summary>
 public class AppSettings
 {
+    /// <summary>Whether classic (non-regex) search is used.</summary>
     public bool IsClassicSearch { get; set; }
 
-    /// <summary>Режим оформления: Auto (по системе) / Light / Dark.</summary>
+    /// <summary>Appearance mode: Auto (follow system) / Light / Dark.</summary>
     public AppTheme Theme { get; set; } = AppTheme.Auto;
 
     /// <summary>
-    /// Код языка интерфейса (например, "en", "ru"). Строкой, а не enum: добавление языка = новый
-    /// файл переводов Assets/i18n/{code}.json + строка в манифесте, без изменений кода.
+    /// UI language code (e.g. "en", "ru"). A string rather than an enum: adding a language means a new
+    /// translation file Assets/i18n/{code}.json plus a manifest entry, with no code changes.
     /// </summary>
     public string Language { get; set; } = "en";
 
     /// <summary>
-    /// Папка, в которую сохраняются скачанные с сервера файлы (когда удаление после обработки
-    /// выключено). Пусто — используется папка по умолчанию (%AppData%/FirebirdTraceAnalyzer/RemoteDownloads).
+    /// Folder where files downloaded from the server are saved (when delete-after-processing is off).
+    /// Empty means the default folder (%AppData%/FirebirdTraceAnalyzer/RemoteDownloads).
     /// </summary>
     public string RemoteDownloadPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Папка, в которую сохраняются сгенерированные отчёты. Пусто — папка по умолчанию
+    /// Folder where generated reports are saved. Empty means the default folder
     /// (%AppData%/FirebirdTraceAnalyzer/Reports/History).
     /// </summary>
     public string ReportsPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Путь к файлу лога приложения. Пусто — путь по умолчанию (рядом с приложением, logs/application.log).
+    /// Path to the application log file. Empty means the default path (next to the app, logs/application.log).
     /// </summary>
     public string AppLogPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Путь к файлу лога парсера. Пусто — путь по умолчанию (logs/parser.log).
+    /// Path to the parser log file. Empty means the default path (logs/parser.log).
     /// </summary>
     public string ParserLogPath { get; set; } = string.Empty;
 
-    /// <summary>Режим дискового хранилища событий. По умолчанию — сессионный (аварийное восстановление).</summary>
+    /// <summary>Disk storage mode for events. Defaults to session mode (crash recovery).</summary>
     public StorageMode StorageMode { get; set; } = StorageMode.Session;
 
     /// <summary>
-    /// Папка файла хранилища событий (events.db). Пусто — папка по умолчанию
+    /// Folder of the event store file (events.db). Empty means the default folder
     /// (%AppData%/FirebirdTraceAnalyzer/EventStore).
     /// </summary>
     public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Режим разработчика: открывает доступ к диагностическим инструментам (напр. «Статистика парсера»).
-    /// По умолчанию выключен — обычным пользователям эти пункты не показываются.
+    /// Developer mode: unlocks diagnostic tools (e.g. "Parser statistics"). Off by default — these
+    /// items are hidden from ordinary users.
     /// </summary>
     public bool DeveloperMode { get; set; }
 
     /// <summary>
-    /// Отложенное обслуживание хранилища: выставляется при частичном удалении файлов, чтобы на
-    /// следующем запуске фоново выполнить чистку сирот + VACUUM (не делаем VACUUM на каждое удаление).
+    /// Deferred store maintenance: set after a partial file deletion so the next launch runs orphan
+    /// cleanup + VACUUM in the background (we do not VACUUM on every deletion).
     /// </summary>
     public bool StorageMaintenancePending { get; set; }
 }
 
 /// <summary>
-/// Геометрия главного окна (последние размеры/позиция). Сохраняется при закрытии окна.
-/// Поля nullable: null — значение ещё не сохранялось, используются размеры из XAML.
+/// Main-window geometry (last size/position). Saved when the window closes.
+/// Fields are nullable: null means the value has not been saved yet and the XAML sizes are used.
 /// </summary>
 public sealed class WindowSettings
 {
+    /// <summary>Last window width, or null when never saved.</summary>
     public double? Width { get; set; }
+
+    /// <summary>Last window height, or null when never saved.</summary>
     public double? Height { get; set; }
+
+    /// <summary>Last window X position, or null when never saved.</summary>
     public int? X { get; set; }
+
+    /// <summary>Last window Y position, or null when never saved.</summary>
     public int? Y { get; set; }
+
+    /// <summary>Whether the window was maximized.</summary>
     public bool Maximized { get; set; }
 }
 
 /// <summary>
-/// Настройки видимости секций UI
+/// Visibility settings for the UI sections.
 /// </summary>
 public class UiSectionSettings
 {
+    /// <summary>Whether the Files section is visible.</summary>
     public bool Files { get; set; }
+
+    /// <summary>Whether the Search section is visible.</summary>
     public bool Search { get; set; }
+
+    /// <summary>Whether the Events section is visible.</summary>
     public bool Events { get; set; }
+
+    /// <summary>Whether the Statistics section is visible.</summary>
     public bool Statistics { get; set; }
+
+    /// <summary>Whether the Logs section is visible.</summary>
     public bool Logs { get; set; }
 }
 
 /// <summary>
-/// Корневая модель пользовательских настроек, которая сохраняется на диск
-/// (в %AppData%/FirebirdTraceAnalyzer/settings.json). Значения по умолчанию берутся из
-/// поставляемого с приложением appsettings.json, а изменения пользователя пишутся в этот файл.
+/// Root model of user settings persisted to disk
+/// (in %AppData%/FirebirdTraceAnalyzer/settings.json). Defaults come from the appsettings.json shipped
+/// with the application, and user changes are written to this file.
 /// </summary>
 public sealed class UserSettings
 {
+    /// <summary>Application-level settings.</summary>
     public AppSettings App { get; set; } = new();
+
+    /// <summary>UI section visibility settings.</summary>
     public UiSectionSettings Ui { get; set; } = new();
+
+    /// <summary>Main-window geometry settings.</summary>
     public WindowSettings Window { get; set; } = new();
 }
