@@ -3,22 +3,22 @@
 namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Секция отчёта
+/// A report section.
 /// </summary>
 public sealed class ReportSection
 {
-    /// <summary>Название секции</summary>
+    /// <summary>The section title.</summary>
     public string Title { get; init; } = string.Empty;
-    
-    /// <summary>Описание секции</summary>
+
+    /// <summary>The section description.</summary>
     public string? Description { get; init; }
-    
-    /// <summary>Тип содержимого</summary>
+
+    /// <summary>The kind of content the section holds.</summary>
     public SectionContentType ContentType { get; init; }
-    
-    /// <summary>Показывать заголовок?</summary>
+
+    /// <summary>Whether to render the section title.</summary>
     public bool ShowTitle { get; init; } = true;
-    
-    /// <summary>Порядок секции</summary>
+
+    /// <summary>The section's ordering position.</summary>
     public int Order { get; init; }
 }
