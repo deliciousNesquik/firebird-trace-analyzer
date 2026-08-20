@@ -13,10 +13,10 @@ public sealed class SearchService : ISearchService
 
     public IEnumerable<EventBase> Search(
         IEnumerable<EventBase> events,
-        string searchText,
+        string searchQuery,
         SearchType mode)
     {
-        if (string.IsNullOrWhiteSpace(searchText))
+        if (string.IsNullOrWhiteSpace(searchQuery))
         {
             Logger.Debug("The search query is empty, returning all events");
             return events;
@@ -26,15 +26,15 @@ public sealed class SearchService : ISearchService
 
         var results = mode switch
         {
-            SearchType.Classic => SearchClassic(events, searchText),
-            SearchType.Regex => SearchRegex(events, searchText),
+            SearchType.Classic => SearchClassic(events, searchQuery),
+            SearchType.Regex => SearchRegex(events, searchQuery),
             _ => events
         };
 
         var resultList = results.ToList();
 
         Logger.Info("Search '{Query}' ({Mode}) finish at {Elapsed} ms, find: {Count}",
-            searchText, mode, sw.ElapsedMilliseconds, resultList.Count);
+            searchQuery, mode, sw.ElapsedMilliseconds, resultList.Count);
 
         return resultList;
     }
