@@ -4,34 +4,60 @@ using Renci.SshNet;
 namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
 /// <summary>
-/// Сервис для управления SSH подключениями
+/// Defines an interface for managing SSH connections and performing remote file operations.
 /// </summary>
 public interface ISshConnectionService : IDisposable
 {
-    /// <summary>Активно ли соединение</summary>
+    /// <summary>
+    /// Returns true if the SSH connection is currently established; otherwise, false.
+    /// </summary>
     bool IsConnected { get; }
     
-    /// <summary>Текущие настройки подключения</summary>
+    /// <summary>
+    /// Returns the current SSH connection settings if connected; otherwise, null.
+    /// </summary>
     SshConnectionSettings? CurrentSettings { get; }
     
-    /// <summary>Подключиться к серверу</summary>
+    /// <summary>
+    /// Connect to the SSH server using the provided settings.
+    /// </summary>
+    /// <param name="settings">The SSH connection settings.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task ConnectAsync(SshConnectionSettings settings, CancellationToken cancellationToken = default);
     
-    /// <summary>Отключиться от сервера</summary>
+    /// <summary>
+    /// Disconnect from the SSH server.
+    /// </summary>
     void Disconnect();
     
-    /// <summary>Проверить существование файла</summary>
+    /// <summary>
+    /// Check if a file exists on the remote server.
+    /// </summary>
+    /// <param name="remotePath">The path to the file.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation, returning true if the file exists; otherwise, false.</returns>
     Task<bool> FileExistsAsync(string remotePath, CancellationToken cancellationToken = default);
     
-    /// <summary>Проверить существование директории</summary>
+    /// <summary>
+    /// Check if a directory exists on the remote server.
+    /// </summary>
+    /// <param name="remotePath">The path to the directory.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation, returning true if the directory exists; otherwise, false.</returns>
     Task<bool> DirectoryExistsAsync(string remotePath, CancellationToken cancellationToken = default);
     
-    /// <summary>Проверить права на чтение</summary>
+    /// <summary>
+    /// Check if a file can be read from the remote server.
+    /// </summary>
+    /// <param name="remotePath">The path to the file.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation, returning true if the file can be read; otherwise, false.</returns>
     Task<bool> CanReadAsync(string remotePath, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Активный SFTP-клиент (или <c>null</c>, если не подключены). Через абстракцию — чтобы
-    /// зависимые сервисы (RemoteFileService) не кастовали к конкретному классу и были тестируемы.
+    /// Get the SFTP client for the current SSH connection.
     /// </summary>
+    /// <returns>The SFTP client, or <c>null</c> if not connected.</returns>
     ISftpClient? GetSftpClient();
 }
