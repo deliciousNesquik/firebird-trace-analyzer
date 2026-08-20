@@ -1,24 +1,36 @@
 namespace FirebirdTraceAnalyzer.Localization;
 
 /// <summary>
-/// Сервис локализации интерфейса. Хранит текущий язык и словари переводов, отдаёт строки по ключам
-/// (с фолбэком на английский), умеет переключать язык в рантайме. Зеркало по духу для
-/// <c>IThemeService</c>: применяется на старте и живёт синглтоном.
+/// Represents a service for managing localization and translations in the application.
 /// </summary>
 public interface ILocalizationService
 {
-    /// <summary>Доступные языки (из манифеста Assets/i18n/languages.json).</summary>
+    /// <summary>
+    /// Available languages. The first one is the default language (English).
+    /// </summary>
+    /// <remarks>See files in the i18n directory.</remarks>
     IReadOnlyList<LanguageOption> AvailableLanguages { get; }
 
-    /// <summary>Код текущего языка (например, "en", "ru").</summary>
+    /// <summary>
+    /// Current language code (e.g. "en", "ru"). The default is "en".
+    /// </summary>
     string CurrentLanguage { get; }
 
-    /// <summary>Срабатывает после смены языка — источник для живого обновления UI.</summary>
+    /// <summary>
+    /// Occurs after the language is changed — source for live UI updates.
+    /// </summary>
     event EventHandler? LanguageChanged;
 
-    /// <summary>Переключает язык (грузит словарь, ставит культуру, поднимает событие).</summary>
+    /// <summary>
+    /// Switches the language (loads the dictionary, sets the culture, raises the event).
+    /// </summary>
+    /// <param name="code">The language code to switch to.</param>
     void SetLanguage(string code);
 
-    /// <summary>Перевод по ключу. Фолбэк: текущий язык → английский → сам ключ.</summary>
+    /// <summary>
+    /// Translates a key into the current language. Falls back to the default language, then to the key itself.
+    /// </summary>
+    /// <param name="key">The translation key.</param>
+    /// <returns>The translated string.</returns>
     string Tr(string key);
 }
