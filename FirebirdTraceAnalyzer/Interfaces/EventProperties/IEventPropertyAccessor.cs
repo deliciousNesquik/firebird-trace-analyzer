@@ -7,11 +7,22 @@ public interface IEventPropertyAccessor
 {
     /// <summary>
     /// Returns the value of the property specified by the <paramref name="propertyPath"/> from the <paramref name="target"/> object.
+    /// For a collection path (one containing the <c>"[]"</c> marker) this returns the first element value, or <c>null</c> when empty.
     /// </summary>
     /// <param name="target">The object from which to retrieve the property value.</param>
     /// <param name="propertyPath">The path to the property.</param>
     /// <returns>The value of the property, or <c>null</c> if the property is not found.</returns>
     object? GetValue(object target, string propertyPath);
+
+    /// <summary>
+    /// Returns every value the <paramref name="propertyPath"/> resolves to on the <paramref name="target"/> object.
+    /// A scalar path yields at most one value; a collection path (one containing the <c>"[]"</c> marker,
+    /// e.g. <c>"Errors[].ErrorCode"</c>) yields one value per matching element. <c>null</c> values are skipped.
+    /// </summary>
+    /// <param name="target">The object from which to retrieve the property values.</param>
+    /// <param name="propertyPath">The path to the property, optionally carrying <c>"[]"</c> collection markers.</param>
+    /// <returns>The resolved values; empty when nothing matches.</returns>
+    IEnumerable<object?> GetValues(object target, string propertyPath);
 
     /// <summary>
     /// Compares two values for sorting purposes. Returns a negative number if <paramref name="valueA"/> is less than <paramref name="valueB"/>,

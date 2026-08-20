@@ -15,6 +15,5 @@ public sealed class ErrorEvent : EventBase
     public required string Component { get; init; }
     
     /// <summary>Цепочка ошибок (может быть несколько строк "код: сообщение")</summary>
-    [FilterableField("Codes", Category = "Error", FilterType = FilterType.StringMultiSelect)]
     public required IReadOnlyList<ErrorLines> Errors { get; init; }
 }

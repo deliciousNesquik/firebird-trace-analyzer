@@ -32,6 +32,11 @@ public partial class App : Application
         // Применяем пользовательские пути логов (если заданы) — File-таргеты подхватят на следующей записи
         LogConfiguration.Apply(settings.App.AppLogPath, settings.App.ParserLogPath);
 
+        // Однократная диагностика: предупредить в лог, если [FilterableField]/[SortableField] повешены
+        // туда, куда обнаружение полей не доходит (напр. на элементы коллекций) — иначе они молча не работают.
+        try { Services.GetRequiredService<IFieldDiscoveryService>().ValidateAnnotations(); }
+        catch (Exception ex) { NLog.LogManager.GetCurrentClassLogger().Warn(ex, "Annotation validation failed"); }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Получаем MainWindowViewModel из DI

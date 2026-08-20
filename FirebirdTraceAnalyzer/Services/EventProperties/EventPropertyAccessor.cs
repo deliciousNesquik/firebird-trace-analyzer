@@ -41,11 +41,65 @@ public sealed class EventPropertyAccessor : IEventPropertyAccessor
         if (string.IsNullOrWhiteSpace(propertyPath))
             return null;
 
+        // Путь коллекции ("Errors[].ErrorCode") не компилируется в один геттер — резолвим по элементам
+        // и отдаём первое значение (сортировка/проекция деградируют мягко, без исключений).
+        if (propertyPath.Contains("[]", StringComparison.Ordinal))
+            return GetValues(target, propertyPath).FirstOrDefault();
+
         var getter = _getterCache.GetOrAdd(
             (target.GetType(), propertyPath),
             static key => CreateGetter(key.Type, key.Path));
 
         return getter?.Invoke(target);
+    }
+
+    public IEnumerable<object?> GetValues(object target, string propertyPath)
+    {
+        if (string.IsNullOrWhiteSpace(propertyPath))
+            return Array.Empty<object?>();
+
+        if (!propertyPath.Contains("[]", StringComparison.Ordinal))
+        {
+            var value = GetValue(target, propertyPath);
+            return value is null ? Array.Empty<object?>() : new[] { value };
+        }
+
+        // Разворачиваем путь пошагово: сегмент с "[]" размножает текущий набор объектов на элементы
+        // коллекции, обычный сегмент — навигация по свойству. На выходе — значения листа по всем ветвям.
+        IEnumerable<object> current = new[] { target };
+        foreach (var raw in propertyPath.Split('.'))
+        {
+            var isCollection = raw.EndsWith("[]", StringComparison.Ordinal);
+            var name = isCollection ? raw[..^2] : raw;
+            var next = new List<object>();
+
+            foreach (var obj in current)
+            {
+                // GetValue по одному сегменту переиспользует скомпилированный кэш геттеров.
+                var value = GetValue(obj, name);
+                if (value is null)
+                    continue;
+
+                if (isCollection)
+                {
+                    if (value is System.Collections.IEnumerable items and not string)
+                        foreach (var item in items)
+                            if (item != null)
+                                next.Add(item);
+                }
+                else
+                {
+                    next.Add(value);
+                }
+            }
+
+            if (next.Count == 0)
+                return Array.Empty<object?>();
+
+            current = next;
+        }
+
+        return current;
     }
 
     public int Compare(object? valueA, object? valueB)
@@ -196,7 +250,16 @@ public sealed class EventPropertyAccessor : IEventPropertyAccessor
             paths.Add(path);
 
             if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
+            {
                 ScanType(prop.PropertyType, path, paths, depth + 1);
+                continue;
+            }
+
+            // Коллекция parser-моделей → разворачиваем элемент с маркером "[]" ("Errors[].ErrorCode"),
+            // чтобы такие пути попали в KnownPropertyPaths и корректно резолвились filter-id ↔ path.
+            var elementType = TypeScanHelper.GetParserModelCollectionElementType(prop.PropertyType);
+            if (elementType != null)
+                ScanType(elementType, $"{path}[]", paths, depth + 1);
         }
     }
 

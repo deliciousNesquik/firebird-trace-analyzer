@@ -157,6 +157,106 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
         Logger.Info("Field discovery cache cleared");
     }
 
+    /// <inheritdoc />
+    public IReadOnlyList<AnnotationValidationIssue> ValidateAnnotations()
+    {
+        var issues = new List<AnnotationValidationIssue>();
+        var reported = new HashSet<string>(StringComparer.Ordinal);
+
+        var eventTypes = typeof(EventBase).Assembly.GetTypes()
+            .Where(t => typeof(EventBase).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false })
+            .OrderBy(t => t.FullName, StringComparer.Ordinal);
+
+        foreach (var eventType in eventTypes)
+        {
+            // Пути, которые обнаружение реально произвело для этого типа (включая коллекции с "[]").
+            // Аннотация считается недостижимой, только если её путь сюда НЕ попал — напр. глубже
+            // MaxScanDepth. Коллекции parser-моделей теперь разворачиваются, поэтому их поля здесь есть.
+            var discovered = new HashSet<string>(
+                GetFieldsForType(eventType).Select(f => f.PropertyPath), StringComparer.Ordinal);
+            ScanForUnreachableAnnotations(eventType, string.Empty, discovered, new HashSet<Type>(), issues, reported);
+        }
+
+        foreach (var i in issues)
+            Logger.Warn(
+                "Filter/sort annotations on '{Element}' are IGNORED (fields: {Fields}) — reached only through " +
+                "collection '{Owner}.{Prop}', and the discovery does not reach them (e.g. nested beyond the scan " +
+                "depth). Move the attribute closer to the event root, or extend the scan.",
+                i.ElementType.Name, string.Join(", ", i.IgnoredFields), i.OwnerType.Name, i.CollectionProperty);
+
+        Logger.Info("Annotation validation finished: {Count} unreachable annotation site(s)", issues.Count);
+        return issues;
+    }
+
+    /// <summary>
+    /// Walks an event type's property graph the same way <see cref="ScanProperties"/> does (descending
+    /// into single nested parser models and parser-model collections) and reports annotated fields that
+    /// the discovery did not actually surface.
+    /// </summary>
+    /// <remarks>
+    /// A collection-element annotation is only flagged when its dotted path (carrying the <c>"[]"</c>
+    /// marker) is absent from <paramref name="discovered"/> — e.g. nested beyond the scan depth. Each
+    /// such site is recorded as an <see cref="AnnotationValidationIssue"/>.
+    /// </remarks>
+    /// <param name="type">The type whose properties are inspected.</param>
+    /// <param name="prefix">Dotted path prefix accumulated from parent properties (empty at the root).</param>
+    /// <param name="discovered">The property paths the discovery produced for the current event type.</param>
+    /// <param name="visited">Types already visited on this walk; guards against reference cycles.</param>
+    /// <param name="issues">Accumulates the discovered issues.</param>
+    /// <param name="reported">De-duplicates issues by "owner type + property name".</param>
+    private static void ScanForUnreachableAnnotations(
+        Type type, string prefix, HashSet<string> discovered,
+        HashSet<Type> visited, List<AnnotationValidationIssue> issues, HashSet<string> reported)
+    {
+        if (!visited.Add(type))
+            return;
+
+        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var path = string.IsNullOrEmpty(prefix) ? prop.Name : $"{prefix}.{prop.Name}";
+
+            var elementType = TypeScanHelper.GetParserModelCollectionElementType(prop.PropertyType);
+            if (elementType != null)
+            {
+                var annotated = new List<string>();
+                CollectAnnotatedFields(elementType, $"{path}[]", new HashSet<Type>(), annotated);
+                var unreachable = annotated.Where(p => !discovered.Contains(p)).ToList();
+                if (unreachable.Count > 0 && reported.Add($"{type.FullName}.{prop.Name}"))
+                    issues.Add(new AnnotationValidationIssue(type, prop.Name, elementType, unreachable));
+                continue;
+            }
+
+            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
+                ScanForUnreachableAnnotations(prop.PropertyType, path, discovered, visited, issues, reported);
+        }
+    }
+
+    /// <summary>
+    /// Collects the dotted paths of every property carrying [SortableField]/[FilterableField] on
+    /// <paramref name="type"/> and its single nested parser models.
+    /// </summary>
+    /// <param name="type">The type to scan.</param>
+    /// <param name="prefix">Dotted path prefix accumulated from parent properties (empty at the root).</param>
+    /// <param name="visited">Types already visited on this walk; guards against reference cycles.</param>
+    /// <param name="annotated">Accumulates the dotted paths of annotated properties.</param>
+    private static void CollectAnnotatedFields(Type type, string prefix, HashSet<Type> visited, List<string> annotated)
+    {
+        if (!visited.Add(type))
+            return;
+
+        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var path = string.IsNullOrEmpty(prefix) ? prop.Name : $"{prefix}.{prop.Name}";
+
+            if (prop.GetCustomAttribute<SortableFieldAttribute>() != null ||
+                prop.GetCustomAttribute<FilterableFieldAttribute>() != null)
+                annotated.Add(path);
+
+            if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType))
+                CollectAnnotatedFields(prop.PropertyType, path, visited, annotated);
+        }
+    }
+
     private void ScanProperties(Type type, string pathPrefix, List<DiscoveredField> results, int depth)
     {
         if (depth > MaxScanDepth)
@@ -172,11 +272,22 @@ public sealed class FieldDiscoveryService : IFieldDiscoveryService
 
             // Контейнерный тип (модель парсера, напр. AttachmentInfo) сам по себе не поле: как колонка
             // он отобразился бы через ToString() ("...AttachmentInfo"). Разворачиваем его в под-поля и
-            // НЕ добавляем сам контейнер. Листья — примитивы, строки, enum и generic-коллекции с
-            // осмысленным ToString (напр. Errors/"Codes") — добавляем как обычно.
+            // НЕ добавляем сам контейнер. Листья — примитивы, строки, enum и generic-коллекции скаляров
+            // с осмысленным ToString (напр. "Codes") — добавляем как обычно.
             if (TypeScanHelper.ShouldScanNestedType(prop.PropertyType) && depth < MaxScanDepth)
             {
                 ScanProperties(prop.PropertyType, path, results, depth + 1);
+                continue;
+            }
+
+            // Коллекция parser-моделей (напр. IReadOnlyList<ErrorLines>) — не лист: разворачиваем её
+            // элемент в под-поля с маркером "[]" в пути ("Errors[].ErrorCode"), сам контейнер полем не
+            // делаем. Резолвинг значения для такого пути — по каждому элементу (см. GetValues), а фильтр
+            // работает по семантике «совпал любой элемент».
+            var elementType = TypeScanHelper.GetParserModelCollectionElementType(prop.PropertyType);
+            if (elementType != null && depth < MaxScanDepth)
+            {
+                ScanProperties(elementType, $"{path}[]", results, depth + 1);
                 continue;
             }
 

@@ -115,14 +115,12 @@ public sealed class FilteringService : IFilteringService
                     // Для строк считаем OrdinalIgnoreCase — как CreateStringFilter и предикат, иначе
                     // 'isql' и 'ISQL' расходятся: счётчик занижается и появляется строка-дубль.
                     var valueCounts = new Dictionary<object, int>(MultiSelectComparer(filter.FilterType));
+                    var isCollection = IsCollectionPath(filter.PropertyPath);
                     foreach (var evt in events)
+                    foreach (var value in EnumerateValues(evt, filter.PropertyPath, isCollection))
                     {
-                        var value = _propertyAccessor.GetValue(evt, filter.PropertyPath);
-                        if (value != null)
-                        {
-                            valueCounts.TryGetValue(value, out var count);
-                            valueCounts[value] = count + 1;
-                        }
+                        valueCounts.TryGetValue(value!, out var count);
+                        valueCounts[value!] = count + 1;
                     }
                     scan.MultiSelectCounts[filter.Id] = valueCounts;
                     break;
@@ -130,13 +128,13 @@ public sealed class FilteringService : IFilteringService
                 case FilterType.NumericRange or FilterType.DateTimeRange:
                 {
                     IComparable? min = null, max = null;
+                    var isCollection = IsCollectionPath(filter.PropertyPath);
                     foreach (var evt in events)
+                    foreach (var raw in EnumerateValues(evt, filter.PropertyPath, isCollection))
                     {
-                        if (_propertyAccessor.GetValue(evt, filter.PropertyPath) is IComparable value)
-                        {
-                            if (min == null || value.CompareTo(min) < 0) min = value;
-                            if (max == null || value.CompareTo(max) > 0) max = value;
-                        }
+                        if (raw is not IComparable value) continue;
+                        if (min == null || value.CompareTo(min) < 0) min = value;
+                        if (max == null || value.CompareTo(max) > 0) max = value;
                     }
                     if (min != null && max != null)
                         scan.Ranges[filter.Id] = (min, max);
@@ -234,12 +232,25 @@ public sealed class FilteringService : IFilteringService
                 var excluded = filter.AvailableValues.Where(v => v.IsExcluded).Select(v => v.Value).ToHashSet();
                 if (included.Count == 0 && excluded.Count == 0)
                     return static _ => true;
+                if (!IsCollectionPath(path))
+                    return evt =>
+                    {
+                        var value = _propertyAccessor.GetValue(evt, path);
+                        if (included.Count > 0 && (value == null || !included.Contains(value)))
+                            return false;
+                        return value == null || !excluded.Contains(value);
+                    };
+                // Путь коллекции: «совпал любой элемент» для included, «есть исключённый элемент» → скрыть.
                 return evt =>
                 {
-                    var value = _propertyAccessor.GetValue(evt, path);
-                    if (included.Count > 0 && (value == null || !included.Contains(value)))
-                        return false;
-                    return value == null || !excluded.Contains(value);
+                    var matchedIncluded = false;
+                    foreach (var value in _propertyAccessor.GetValues(evt, path))
+                    {
+                        if (value == null) continue;
+                        if (excluded.Contains(value)) return false;
+                        if (included.Count > 0 && included.Contains(value)) matchedIncluded = true;
+                    }
+                    return included.Count == 0 || matchedIncluded;
                 };
             }
             case FilterType.StringMultiSelect:
@@ -248,12 +259,25 @@ public sealed class FilteringService : IFilteringService
                 var excluded = filter.AvailableValues.Where(v => v.IsExcluded).Select(v => v.Value.ToString()!).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 if (included.Count == 0 && excluded.Count == 0)
                     return static _ => true;
+                if (!IsCollectionPath(path))
+                    return evt =>
+                    {
+                        var value = _propertyAccessor.GetValue(evt, path)?.ToString();
+                        if (included.Count > 0 && (value == null || !included.Contains(value)))
+                            return false;
+                        return value == null || !excluded.Contains(value);
+                    };
                 return evt =>
                 {
-                    var value = _propertyAccessor.GetValue(evt, path)?.ToString();
-                    if (included.Count > 0 && (value == null || !included.Contains(value)))
-                        return false;
-                    return value == null || !excluded.Contains(value);
+                    var matchedIncluded = false;
+                    foreach (var raw in _propertyAccessor.GetValues(evt, path))
+                    {
+                        var value = raw?.ToString();
+                        if (value == null) continue;
+                        if (excluded.Contains(value)) return false;
+                        if (included.Count > 0 && included.Contains(value)) matchedIncluded = true;
+                    }
+                    return included.Count == 0 || matchedIncluded;
                 };
             }
             case FilterType.DateTimeRange:
@@ -292,11 +316,14 @@ public sealed class FilteringService : IFilteringService
                 var query = filter.SearchText;
                 if (string.IsNullOrWhiteSpace(query))
                     return static _ => true;
-                return evt =>
-                {
-                    var value = _propertyAccessor.GetValue(evt, path)?.ToString();
-                    return value != null && value.Contains(query, StringComparison.OrdinalIgnoreCase);
-                };
+                if (!IsCollectionPath(path))
+                    return evt =>
+                    {
+                        var value = _propertyAccessor.GetValue(evt, path)?.ToString();
+                        return value != null && value.Contains(query, StringComparison.OrdinalIgnoreCase);
+                    };
+                return evt => _propertyAccessor.GetValues(evt, path)
+                    .Any(v => v?.ToString()?.Contains(query, StringComparison.OrdinalIgnoreCase) == true);
             }
             default:
                 return filter.FilterPredicate;
@@ -498,15 +525,13 @@ public sealed class FilteringService : IFilteringService
     private FilterDescriptor CreateEnumFilter(string id, DiscoveredField field, List<EventBase> events)
     {
         var valueCounts = new Dictionary<object, int>();
+        var isCollection = IsCollectionPath(field.PropertyPath);
 
         foreach (var evt in events)
+        foreach (var value in EnumerateValues(evt, field.PropertyPath, isCollection))
         {
-            var value = _propertyAccessor.GetValue(evt, field.PropertyPath);
-            if (value != null)
-            {
-                valueCounts.TryGetValue(value, out var count);
-                valueCounts[value] = count + 1;
-            }
+            valueCounts.TryGetValue(value!, out var count);
+            valueCounts[value!] = count + 1;
         }
 
         var availableValues = new ObservableCollection<FilterValueItem>();
@@ -536,10 +561,12 @@ public sealed class FilteringService : IFilteringService
     private FilterDescriptor CreateStringFilter(string id, DiscoveredField field, List<EventBase> events)
     {
         var valueCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var isCollection = IsCollectionPath(field.PropertyPath);
 
         foreach (var evt in events)
+        foreach (var raw in EnumerateValues(evt, field.PropertyPath, isCollection))
         {
-            var value = _propertyAccessor.GetValue(evt, field.PropertyPath)?.ToString();
+            var value = raw?.ToString();
             if (!string.IsNullOrWhiteSpace(value))
             {
                 valueCounts.TryGetValue(value, out var count);
@@ -698,8 +725,9 @@ public sealed class FilteringService : IFilteringService
         if (string.IsNullOrWhiteSpace(query))
             return true; // пустой запрос ничего не отсекает
 
-        var value = _propertyAccessor.GetValue(evt, descriptor.PropertyPath)?.ToString();
-        return value != null && value.Contains(query, StringComparison.OrdinalIgnoreCase);
+        // GetValues покрывает и скаляр (0/1 значение), и путь коллекции ("совпал любой элемент").
+        return _propertyAccessor.GetValues(evt, descriptor.PropertyPath)
+            .Any(v => v?.ToString()?.Contains(query, StringComparison.OrdinalIgnoreCase) == true);
     }
 
     private bool CheckEnumFilter(EventBase evt, string propertyPath, ObservableCollection<FilterValueItem> availableValues)
@@ -710,14 +738,15 @@ public sealed class FilteringService : IFilteringService
         if (included.Count == 0 && excluded.Count == 0)
             return true;
 
-        var value = _propertyAccessor.GetValue(evt, propertyPath);
+        var matchedIncluded = false;
+        foreach (var value in _propertyAccessor.GetValues(evt, propertyPath))
+        {
+            if (value == null) continue;
+            if (excluded.Contains(value)) return false;        // исключённое значение → скрыть
+            if (included.Count > 0 && included.Contains(value)) matchedIncluded = true;
+        }
 
-        // Включённые заданы — значение должно быть среди них.
-        if (included.Count > 0 && (value == null || !included.Contains(value)))
-            return false;
-
-        // Исключённые — значение не должно быть среди них.
-        return value == null || !excluded.Contains(value);
+        return included.Count == 0 || matchedIncluded;          // included задан → нужно совпадение
     }
 
     private bool CheckStringFilter(EventBase evt, string propertyPath, ObservableCollection<FilterValueItem> availableValues)
@@ -728,12 +757,33 @@ public sealed class FilteringService : IFilteringService
         if (included.Count == 0 && excluded.Count == 0)
             return true;
 
-        var value = _propertyAccessor.GetValue(evt, propertyPath)?.ToString();
+        var matchedIncluded = false;
+        foreach (var raw in _propertyAccessor.GetValues(evt, propertyPath))
+        {
+            var value = raw?.ToString();
+            if (value == null) continue;
+            if (excluded.Contains(value)) return false;
+            if (included.Count > 0 && included.Contains(value)) matchedIncluded = true;
+        }
 
-        if (included.Count > 0 && (value == null || !included.Contains(value)))
-            return false;
+        return included.Count == 0 || matchedIncluded;
+    }
 
-        return value == null || !excluded.Contains(value);
+    /// <summary>Путь коллекции — тот, что содержит маркер элемента "[]" (напр. "Errors[].ErrorCode").</summary>
+    private static bool IsCollectionPath(string propertyPath) =>
+        propertyPath.Contains("[]", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Значения поля для события: скалярный путь даёт 0/1 значение, путь коллекции — по значению на
+    /// каждый элемент. Флаг <paramref name="isCollection"/> вычисляется один раз снаружи горячего цикла.
+    /// </summary>
+    private IEnumerable<object?> EnumerateValues(EventBase evt, string propertyPath, bool isCollection)
+    {
+        if (isCollection)
+            return _propertyAccessor.GetValues(evt, propertyPath);
+
+        var value = _propertyAccessor.GetValue(evt, propertyPath);
+        return value is null ? Array.Empty<object?>() : new[] { value };
     }
 
     #endregion

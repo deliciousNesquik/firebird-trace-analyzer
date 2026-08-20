@@ -47,4 +47,25 @@ public interface IFieldDiscoveryService
     /// Clears the cached field discovery results.
     /// </summary>
     void ClearCache();
+
+    /// <summary>
+    /// Reports [SortableField]/[FilterableField] annotations the discovery does not surface — after
+    /// collection-element expansion, this means annotations nested beyond the scan depth. Logs a
+    /// warning per site and returns the issues found. Run once at startup.
+    /// </summary>
+    IReadOnlyList<AnnotationValidationIssue> ValidateAnnotations();
 }
+
+/// <summary>
+/// An annotated collection-element field the discovery did not surface — its dotted path (carrying the
+/// <c>"[]"</c> marker) was absent from the discovered set, e.g. nested beyond the scan depth.
+/// </summary>
+/// <param name="OwnerType">The event (or nested model) type that declares the collection property.</param>
+/// <param name="CollectionProperty">The name of the collection property on <paramref name="OwnerType"/>.</param>
+/// <param name="ElementType">The collection's element type that carries the unreachable annotations.</param>
+/// <param name="IgnoredFields">Full dotted paths (with the <c>"[]"</c> marker) of the unreachable annotated fields.</param>
+public sealed record AnnotationValidationIssue(
+    Type OwnerType,
+    string CollectionProperty,
+    Type ElementType,
+    IReadOnlyList<string> IgnoredFields);
