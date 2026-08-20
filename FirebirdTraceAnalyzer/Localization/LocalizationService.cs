@@ -6,9 +6,10 @@ using NLog;
 namespace FirebirdTraceAnalyzer.Localization;
 
 /// <summary>
-/// Реализация локализации на JSON-словарях из ресурсов приложения
-/// (<c>avares://FirebirdTraceAnalyzer/Assets/i18n/{code}.json</c>). Английский всегда загружен как
-/// фолбэк. Добавление нового языка = новый JSON-файл + строка в манифесте, без изменений кода.
+/// JSON-dictionary implementation of <see cref="ILocalizationService"/> that loads translations from
+/// application resources (<c>avares://FirebirdTraceAnalyzer/Assets/i18n/{code}.json</c>). English is
+/// always loaded as the fallback. Adding a new language means a new JSON file plus a manifest entry,
+/// with no code changes.
 /// </summary>
 public sealed class LocalizationService : ILocalizationService
 {
@@ -27,10 +28,19 @@ public sealed class LocalizationService : ILocalizationService
     private readonly Dictionary<string, string> _fallback;
     private Dictionary<string, string> _current;
 
+    /// <inheritdoc />
     public IReadOnlyList<LanguageOption> AvailableLanguages { get; }
+
+    /// <inheritdoc />
     public string CurrentLanguage { get; private set; } = DefaultCode;
+
+    /// <inheritdoc />
     public event EventHandler? LanguageChanged;
 
+    /// <summary>
+    /// Loads the language manifest and the English fallback dictionary, then attaches the shared
+    /// <see cref="Localizer"/> so that <c>{loc:Tr}</c> bindings resolve against this service.
+    /// </summary>
     public LocalizationService()
     {
         AvailableLanguages = LoadManifest();
@@ -41,6 +51,7 @@ public sealed class LocalizationService : ILocalizationService
         Localizer.Instance.Attach(this);
     }
 
+    /// <inheritdoc />
     public void SetLanguage(string code)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -67,6 +78,7 @@ public sealed class LocalizationService : ILocalizationService
         LanguageChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <inheritdoc />
     public string Tr(string key)
     {
         if (string.IsNullOrEmpty(key))
@@ -84,6 +96,11 @@ public sealed class LocalizationService : ILocalizationService
         return key;
     }
 
+    /// <summary>
+    /// Reads the <c>languages.json</c> manifest listing the available languages. Falls back to a
+    /// single English entry when the manifest is missing, empty, or fails to parse.
+    /// </summary>
+    /// <returns>The available languages, English first.</returns>
     private IReadOnlyList<LanguageOption> LoadManifest()
     {
         try
@@ -105,6 +122,12 @@ public sealed class LocalizationService : ILocalizationService
         return new[] { new LanguageOption(DefaultCode, "English") };
     }
 
+    /// <summary>
+    /// Loads and caches the translation dictionary for the given language code from resources. Returns
+    /// an empty dictionary when the file is missing or fails to parse (callers fall back to English).
+    /// </summary>
+    /// <param name="code">The language code whose dictionary to load (e.g. "en", "ru").</param>
+    /// <returns>The key/value translation dictionary for the language.</returns>
     private Dictionary<string, string> LoadDictionary(string code)
     {
         if (_dicts.TryGetValue(code, out var cached))
