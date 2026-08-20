@@ -1,34 +1,34 @@
 ﻿namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Конфигурация фильтра для отчёта
+/// Filter configuration for a report.
 /// </summary>
 public sealed class ReportFilterConfig
 {
-    /// <summary>ID фильтра (например, "filter_eventtype")</summary>
+    /// <summary>Filter ID (e.g. "filter_eventtype").</summary>
     public required string FilterId { get; init; }
 
     /// <summary>
-    /// Путь к свойству события (например, <c>EventType</c>, <c>Attachment.User</c>).
-    /// Имеет приоритет над <see cref="FilterId"/> при применении фильтра в отчёте.
+    /// Path to the event property (e.g. <c>EventType</c>, <c>Attachment.User</c>).
+    /// Takes precedence over <see cref="FilterId"/> when the filter is applied in the report.
     /// </summary>
     public string? PropertyPath { get; init; }
-    
-    /// <summary>Название фильтра (для отображения)</summary>
+
+    /// <summary>Display name of the filter.</summary>
     public required string DisplayName { get; init; }
-    
-    /// <summary>Активен ли фильтр</summary>
+
+    /// <summary>Whether the filter is active.</summary>
     public bool IsActive { get; init; }
-    
-    /// <summary>Выбранные значения — событие должно совпадать с одним из них (Enum/String фильтры)</summary>
+
+    /// <summary>Selected values — an event must match one of them (Enum/String filters).</summary>
     public List<object>? SelectedValues { get; init; }
 
-    /// <summary>Исключённые значения — события с такими значениями отбрасываются (Enum/String фильтры)</summary>
+    /// <summary>Excluded values — events with these values are discarded (Enum/String filters).</summary>
     public List<object>? ExcludedValues { get; init; }
 
-    /// <summary>Минимальное значение (для Range фильтров)</summary>
+    /// <summary>Minimum value (for Range filters).</summary>
     public object? MinValue { get; init; }
-    
-    /// <summary>Максимальное значение (для Range фильтров)</summary>
+
+    /// <summary>Maximum value (for Range filters).</summary>
     public object? MaxValue { get; init; }
 }
