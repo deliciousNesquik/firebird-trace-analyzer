@@ -2,21 +2,33 @@ using FirebirdTraceParser.Models.Events;
 
 namespace FirebirdTraceAnalyzer.Interfaces;
 
-/// <summary>Результат разбора одного файла: события и границы диапазона времени + время разбора (мс).</summary>
+/// <summary>
+/// Result of parsing a trace file: list of events, start/end timestamps, and parsing duration in milliseconds.
+/// </summary>
+/// <param name="Events">The list of parsed events.</param>
+/// <param name="StartTrace">The start timestamp of the trace.</param>
+/// <param name="EndTrace">The end timestamp of the trace.</param>
+/// <param name="ParseMs">The parsing duration in milliseconds.</param>
 public sealed record ParsedFile(IReadOnlyList<EventBase> Events, DateTime StartTrace, DateTime EndTrace, long ParseMs);
 
 /// <summary>
-/// Приём трейс-файлов: вычисление хэша и потоковый разбор. Выносит эту логику из MainWindowViewModel;
-/// применение результата к UI-коллекциям/статистике/хранилищу остаётся у вызывающего.
+/// Defines methods for file ingestion services, including computing file hashes and parsing trace files asynchronously.
 /// </summary>
 public interface IFileIngestionService
 {
-    /// <summary>SHA-256 файла (для дедупа/кэша переоткрытия), потоково, не загружая файл в память.</summary>
+    /// <summary>
+    /// Computes the hash of a file asynchronously. This operation is CPU-bound and will be offloaded from the calling thread.
+    /// </summary>
+    /// <param name="filePath">The path to the file for which to compute the hash.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The hash of the file.</returns>
     Task<string> ComputeHashAsync(string filePath, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Потоковый разбор файла в список событий (CPU-работа уводится с вызывающего потока). Возвращает
-    /// события в порядке разбора и границы времени (первое/последнее событие).
+    /// Parses a trace file asynchronously. This operation is CPU-bound and will be offloaded from the calling thread.
     /// </summary>
+    /// <param name="filePath">The path to the trace file to parse.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The result of the parsing operation.</returns>
     Task<ParsedFile> ParseAsync(string filePath, CancellationToken cancellationToken = default);
 }
