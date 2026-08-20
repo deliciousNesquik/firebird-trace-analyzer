@@ -19,7 +19,6 @@ using FirebirdTraceAnalyzer.Interfaces.Searching;
 using FirebirdTraceAnalyzer.Interfaces.Sorting;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
-using FirebirdTraceAnalyzer.Mocks;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Diagnostics;
@@ -180,8 +179,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         // Mock-данные для дизайнера
         _settingsService = null!;
-        _appSettings = new AppSettingsMock();
-        _uiSettings = new UiSectionSettingsMock();
+        _appSettings = new AppSettings();
+        _uiSettings = new UiSectionSettings();
         _pluginManager = null!;
         _fileDialogService = null!;
         _sortingService = null!;
