@@ -11,10 +11,8 @@
     <!-- Секция отображения событий трассировки. Карточки событий рендерятся через
          неявные DataTemplate из App.axaml (по типу события). DataContext наследуется
          от хост-окна (MainWindowViewModel). -->
-    <Grid>
-        <ScrollViewer Background="{DynamicResource SurfaceElevatedBrush}"
-                      IsVisible="{Binding IsEventsSectionVisible}">
-
+    <Grid IsVisible="{Binding IsEventsSectionVisible}">
+        <ScrollViewer Background="{DynamicResource SurfaceElevatedBrush}">
             <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
                            Margin="10">
                 <ItemsRepeater.ItemTemplate>
