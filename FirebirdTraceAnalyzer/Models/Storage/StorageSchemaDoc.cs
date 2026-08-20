@@ -1,9 +1,9 @@
 namespace FirebirdTraceAnalyzer.Models.Storage;
 
 /// <summary>
-/// Человекочитаемые описания таблиц и колонок хранилища событий — для подсказок автодополнения
-/// в окне «Анализ хранилища». Колонки ключуются по имени (без таблицы): в схеме имена почти
-/// уникальны, а совпадающие (id/sha/ord/event_seq) описаны обобщённо.
+/// Human-readable descriptions of the event store's tables and columns — used for autocomplete hints
+/// in the "Storage analysis" window. Columns are keyed by name (without the table): schema names are
+/// almost unique, and the overlapping ones (id/sha/ord/event_seq) are described generically.
 /// </summary>
 public static class StorageSchemaDoc
 {
@@ -105,9 +105,13 @@ public static class StorageSchemaDoc
             ["expunge_count"] = "Expunge count",
         };
 
-    /// <summary>Описание таблицы по имени или null.</summary>
+    /// <summary>Returns the description of a table by name, or null when unknown.</summary>
+    /// <param name="name">The table name.</param>
+    /// <returns>The table description, or null.</returns>
     public static string? Table(string name) => TableDocs.GetValueOrDefault(name);
 
-    /// <summary>Описание колонки по имени (без таблицы) или null.</summary>
+    /// <summary>Returns the description of a column by name (without the table), or null when unknown.</summary>
+    /// <param name="name">The column name.</param>
+    /// <returns>The column description, or null.</returns>
     public static string? Column(string name) => ColumnDocs.GetValueOrDefault(name);
 }
