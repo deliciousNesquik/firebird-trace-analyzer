@@ -3,25 +3,25 @@
 namespace FirebirdTraceAnalyzer.Models.Reports;
 
 /// <summary>
-/// Переменная для использования в отчёте
+/// A variable available for use in a report.
 /// </summary>
 public sealed class ReportVariable
 {
-    /// <summary>Тип переменной</summary>
+    /// <summary>The variable type.</summary>
     public ReportVariableType Type { get; init; }
-    
-    /// <summary>Название переменной (отображаемое)</summary>
+
+    /// <summary>The variable's display name.</summary>
     public string DisplayName { get; init; } = string.Empty;
-    
-    /// <summary>Ключ для шаблонизации (например, {FILE_NAMES})</summary>
+
+    /// <summary>Templating key (e.g. {FILE_NAMES}).</summary>
     public string TemplateKey { get; init; } = string.Empty;
-    
-    /// <summary>Форматирование значения</summary>
+
+    /// <summary>Value format string.</summary>
     public string? Format { get; init; }
-    
-    /// <summary>Показывать в отчёте?</summary>
+
+    /// <summary>Whether the variable is shown in the report.</summary>
     public bool IsVisible { get; init; } = true;
-    
-    /// <summary>Порядок отображения</summary>
+
+    /// <summary>Display ordering position.</summary>
     public int DisplayOrder { get; init; }
 }
