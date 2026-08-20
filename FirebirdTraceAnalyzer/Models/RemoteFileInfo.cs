@@ -5,41 +5,41 @@ using FirebirdTraceAnalyzer.ViewModels;
 namespace FirebirdTraceAnalyzer.Models;
 
 /// <summary>
-/// Информация об удалённом файле
+/// Information about a remote file.
 /// </summary>
 public partial class RemoteFileInfo: ViewModelBase
 {
-    /// <summary>Имя файла</summary>
+    /// <summary>File name.</summary>
     [ObservableProperty]
     public partial string FileName { get; set; } = string.Empty;
 
-    /// <summary>Полный путь на удалённом сервере</summary>
+    /// <summary>Full path on the remote server.</summary>
     [ObservableProperty]
     public partial string FullPath { get; set; } = string.Empty;
-    
-    /// <summary>Размер файла в байтах</summary>
+
+    /// <summary>File size in bytes.</summary>
     [ObservableProperty]
     public partial long Size { get; set; }
-    
-    /// <summary>Дата последней модификации</summary>
+
+    /// <summary>Last modification date.</summary>
     [ObservableProperty]
     public partial DateTime LastModified { get; set; }
-    
-    /// <summary>Права доступа</summary>
+
+    /// <summary>Access permissions.</summary>
     [ObservableProperty]
     public partial Permissions Permissions { get; set; } = new(false, false, false, false, false, false, false, false, false);
-    
-    /// <summary>Владелец файла</summary>
+
+    /// <summary>File owner.</summary>
     [ObservableProperty]
     public partial string Owner { get; set; } = string.Empty;
-    
-    /// <summary>Выбран ли файл для загрузки</summary>
+
+    /// <summary>Whether the file is selected for download.</summary>
     [ObservableProperty]
     public partial bool IsSelected { get; set; }
 
-    /// <summary>Размер в читаемом формате</summary>
+    /// <summary>Size in a human-readable format.</summary>
     public string FormattedSize => ByteSizeFormatter.FormatBytes(Size);
 
-    /// <summary>Дата в читаемом формате</summary>
+    /// <summary>Date in a human-readable format.</summary>
     public string FormattedDate => LastModified.ToString("yyyy-MM-dd HH:mm:ss");
 }
