@@ -1,22 +1,23 @@
 namespace FirebirdTraceAnalyzer.Interfaces.Remote;
 
 /// <summary>
-/// Хранилище доверенных ключей SSH-хостов (аналог <c>known_hosts</c>).
-/// Реализует TOFU (trust on first use): первый увиденный ключ хоста запоминается,
-/// при последующем несовпадении отпечатка соединение должно быть отклонено (защита от MITM).
+/// Represents a store for SSH host keys (analogue <c>known_hosts</c>),
+/// allowing verification of host keys against stored fingerprints.
+/// Implements <c>TOFU</c> (trust on first use): the first host key encountered is stored,
+/// and the connection must be rejected if the fingerprint subsequently mismatches (protection against <b>MITM</b>).
 /// </summary>
 public interface IHostKeyStore
 {
     /// <summary>
-    /// Проверяет отпечаток ключа хоста.
+    /// Verifies the host key against the stored fingerprint.
     /// </summary>
-    /// <param name="host">Имя/адрес хоста.</param>
-    /// <param name="port">Порт.</param>
-    /// <param name="keyName">Тип ключа (например, <c>ssh-ed25519</c>).</param>
-    /// <param name="fingerprintSha256">SHA-256 отпечаток ключа (base64).</param>
+    /// <param name="host">The host for which to verify the key.</param>
+    /// <param name="port">The port for which to verify the key.</param>
+    /// <param name="keyName">The name of the key type (e.g., <c>ssh-ed25519</c>).</param>
+    /// <param name="fingerprintSha256">The SHA-256 fingerprint of the key (base64).</param>
     /// <returns>
-    /// <c>true</c>, если ключ ранее не встречался (запоминается) либо совпал с сохранённым;
-    /// <c>false</c>, если для этого хоста уже сохранён ДРУГОЙ отпечаток (возможная подмена сервера).
+    /// <c>true</c> if the key is trusted (either new or matches stored);
+    /// <c>false</c> if the key is not trusted (different from stored).
     /// </returns>
     bool Verify(string host, int port, string keyName, string fingerprintSha256);
 }
