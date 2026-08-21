@@ -1,0 +1,51 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:FirebirdTraceAnalyzer.Controls.Common">
+    <Design.PreviewWith>
+        <controls:ButtonWithNumericBadge ButtonWidth="40" ButtonHeight="40"
+                                         BadgeWidth="18" BadgeHeight="18"
+                                         BadgeVisibility="True" BadgeColor="CadetBlue"
+                                         BadgeOutline="DarkCyan" BadgeOutlineThickness="0.5"
+                                         BadgeNumber="12" BadgeForeground="White" BadgeFontSize="10"
+                                         BadgeHorizontalAlignment="Right" BadgeVerticalAlignment="Top">
+            <Svg Width="24" Path="{DynamicResource SearchIcon}"
+                 Css="{DynamicResource ThemeIconFill}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"/>
+        </controls:ButtonWithNumericBadge>
+    </Design.PreviewWith>
+
+    <Style Selector="controls|ButtonWithNumericBadge">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid RowDefinitions="*" ColumnDefinitions="*"
+                      Width="{TemplateBinding TotalWidth}" Height="{TemplateBinding TotalHeight}">
+                    <Button Width="{TemplateBinding ButtonWidth}"
+                            Height="{TemplateBinding ButtonHeight}"
+                            Classes="normal" Padding="10"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Flyout="{TemplateBinding Flyout}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                    
+                    <Panel Width="{TemplateBinding BadgeWidth}"
+                           Height="{TemplateBinding BadgeHeight}"
+                           IsVisible="{TemplateBinding BadgeVisibility}"
+                           HorizontalAlignment="{TemplateBinding BadgeHorizontalAlignment}"
+                           VerticalAlignment="{TemplateBinding BadgeVerticalAlignment}">
+                        <Ellipse Fill="{TemplateBinding BadgeColor}"
+                                 Stroke="{TemplateBinding BadgeOutline}"
+                                 StrokeThickness="{TemplateBinding BadgeOutlineThickness}"/>
+                        <TextBlock Text="{TemplateBinding BadgeNumber}"
+                                   Foreground="{TemplateBinding BadgeForeground}"
+                                   FontSize="{TemplateBinding BadgeFontSize}"
+                                   FontWeight="SemiBold"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Panel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>
