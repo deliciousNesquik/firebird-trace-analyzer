@@ -1,0 +1,42 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:FirebirdTraceAnalyzer.Controls.Common">
+    <Design.PreviewWith>
+        <controls:ButtonWithBadge ButtonWidth="40" ButtonHeight="40"
+                                  BadgeWidth="10" BadgeHeight="10"
+                                  BadgeVisibility="True" BadgeColor="CadetBlue"
+                                  BadgeOutline="DarkCyan" BadgeOutlineThickness="0.5"
+                                  BadgeHorizontalAlignment="Right" BadgeVerticalAlignment="Top">
+            
+            <Svg Width="40" Path="{DynamicResource SearchIcon}"
+                 Css="{DynamicResource ThemeIconFill}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"/>
+        </controls:ButtonWithBadge>
+    </Design.PreviewWith>
+
+    <Style Selector="controls|ButtonWithBadge">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid RowDefinitions="*" ColumnDefinitions="*" 
+                      Width="{TemplateBinding TotalWidth}" Height="{TemplateBinding TotalHeight}">
+                    <Button Width="{TemplateBinding ButtonWidth}"
+                            Height="{TemplateBinding ButtonHeight}"
+                            Classes="normal" Padding="10"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                    <Ellipse Fill="{TemplateBinding BadgeColor}"
+                             Stroke="{TemplateBinding BadgeOutline}"
+                             StrokeThickness="{TemplateBinding BadgeOutlineThickness}"
+                             Width="{TemplateBinding BadgeWidth}" 
+                             Height="{TemplateBinding BadgeHeight}" 
+                             IsVisible="{TemplateBinding BadgeVisibility}"
+                             HorizontalAlignment="{TemplateBinding BadgeHorizontalAlignment}" 
+                             VerticalAlignment="{TemplateBinding BadgeVerticalAlignment}"/>
+                    
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>
