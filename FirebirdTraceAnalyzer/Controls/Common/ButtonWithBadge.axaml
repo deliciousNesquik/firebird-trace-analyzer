@@ -18,8 +18,9 @@
     <Style Selector="controls|ButtonWithBadge">
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid RowDefinitions="*" ColumnDefinitions="*" 
-                      Width="{TemplateBinding TotalWidth}" Height="{TemplateBinding TotalHeight}">
+                <Grid RowDefinitions="*" ColumnDefinitions="*"
+                      Width="{TemplateBinding ButtonWidth}" Height="{TemplateBinding ButtonHeight}"
+                      ClipToBounds="False">
                     <Button Width="{TemplateBinding ButtonWidth}"
                             Height="{TemplateBinding ButtonHeight}"
                             Classes="normal" Padding="10"
@@ -32,8 +33,9 @@
                     <Ellipse Fill="{TemplateBinding BadgeColor}"
                              Stroke="{TemplateBinding BadgeOutline}"
                              StrokeThickness="{TemplateBinding BadgeOutlineThickness}"
-                             Width="{TemplateBinding BadgeWidth}" 
-                             Height="{TemplateBinding BadgeHeight}" 
+                             Width="{TemplateBinding BadgeWidth}"
+                             Height="{TemplateBinding BadgeHeight}"
+                             Margin="{TemplateBinding BadgeMargin}"
                              IsVisible="{TemplateBinding BadgeVisibility}"
                              HorizontalAlignment="{TemplateBinding BadgeHorizontalAlignment}" 
                              VerticalAlignment="{TemplateBinding BadgeVerticalAlignment}"/>

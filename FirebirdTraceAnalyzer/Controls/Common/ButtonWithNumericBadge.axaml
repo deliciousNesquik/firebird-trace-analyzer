@@ -19,7 +19,8 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid RowDefinitions="*" ColumnDefinitions="*"
-                      Width="{TemplateBinding TotalWidth}" Height="{TemplateBinding TotalHeight}">
+                      Width="{TemplateBinding ButtonWidth}" Height="{TemplateBinding ButtonHeight}"
+                      ClipToBounds="False">
                     <Button Width="{TemplateBinding ButtonWidth}"
                             Height="{TemplateBinding ButtonHeight}"
                             Classes="normal" Padding="10"
@@ -32,6 +33,7 @@
                     
                     <Panel Width="{TemplateBinding BadgeWidth}"
                            Height="{TemplateBinding BadgeHeight}"
+                           Margin="{TemplateBinding BadgeMargin}"
                            IsVisible="{TemplateBinding BadgeVisibility}"
                            HorizontalAlignment="{TemplateBinding BadgeHorizontalAlignment}"
                            VerticalAlignment="{TemplateBinding BadgeVerticalAlignment}">

@@ -55,6 +55,9 @@ public class ButtonWithBadge : ContentControl
     public static readonly StyledProperty<object?> CommandParameterProperty =
         AvaloniaProperty.Register<ButtonWithBadge, object?>(nameof(CommandParameter));
 
+    public static readonly StyledProperty<Thickness> BadgeMarginProperty =
+        AvaloniaProperty.Register<ButtonWithBadge, Thickness>(nameof(BadgeMargin));
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -62,22 +65,34 @@ public class ButtonWithBadge : ContentControl
         if (change.Property == ButtonWidthProperty ||
             change.Property == ButtonHeightProperty ||
             change.Property == BadgeHeightProperty ||
-            change.Property == BadgeWidthProperty)
+            change.Property == BadgeWidthProperty ||
+            change.Property == BadgeHorizontalAlignmentProperty ||
+            change.Property == BadgeVerticalAlignmentProperty)
         {
             UpdateGridSize();
         }
     }
-    
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
         UpdateGridSize();
     }
-    
+
     private void UpdateGridSize()
     {
         TotalWidth = ButtonWidth + BadgeWidth;
         TotalHeight = ButtonHeight + BadgeHeight;
+
+        // Бейдж вылезает за угол кнопки, не влияя на layout: сдвигаем его отрицательным margin'ом на
+        // половину своего размера наружу к выбранному углу. Footprint контрола = размер кнопки, поэтому
+        // в ряду кнопки остаются на равном расстоянии; поверх соседа бейдж выводится через ZIndex у места
+        // использования.
+        var left = BadgeHorizontalAlignment == HorizontalAlignment.Left ? -BadgeWidth / 2 : 0;
+        var right = BadgeHorizontalAlignment == HorizontalAlignment.Right ? -BadgeWidth / 2 : 0;
+        var top = BadgeVerticalAlignment == VerticalAlignment.Top ? -BadgeHeight / 2 : 0;
+        var bottom = BadgeVerticalAlignment == VerticalAlignment.Bottom ? -BadgeHeight / 2 : 0;
+        BadgeMargin = new Thickness(left, top, right, bottom);
     }
     
     /// <summary>
@@ -168,6 +183,16 @@ public class ButtonWithBadge : ContentControl
     {
         get => GetValue(TotalHeightProperty);
         set => SetValue(TotalHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the negative margin that makes the badge overhang the button corner without affecting layout.
+    /// Computed from the badge size and alignment; not intended to be set directly.
+    /// </summary>
+    public Thickness BadgeMargin
+    {
+        get => GetValue(BadgeMarginProperty);
+        private set => SetValue(BadgeMarginProperty, value);
     }
 
     /// <summary>
