@@ -6,6 +6,7 @@
         xmlns:usercontrols="clr-namespace:FirebirdTraceAnalyzer.UserControls"
         xmlns:views="clr-namespace:FirebirdTraceAnalyzer.Views"
         xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+        xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls.Common"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
         x:Class="FirebirdTraceAnalyzer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -144,6 +145,7 @@
 
             <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
+                         Height="40"
                          Background="{DynamicResource SurfaceBrush}"
                          PlaceholderText="{loc:Tr Main.SearchPlaceholder}"
                          VerticalContentAlignment="Center"
@@ -154,27 +156,16 @@
                     </TextBox.KeyBindings>
                 </TextBox>
 
-                <Button Grid.Row="0" Grid.Column="1"
-                        Classes="normal"
-                        Height="40" Width="40"
-                        Command="{Binding ExecuteSearchCommand}"
-                        ToolTip.Tip="{loc:Tr Main.ExecuteSearch}">
-
-                    <Button.Content>
-                        <Grid>
-                            <Svg Width="40" Path="{DynamicResource SearchIcon}"
-                                 Css="{DynamicResource ThemeIconFill}" />
-
-                            <Border Background="{DynamicResource AccentBrush}"
-                                    CornerRadius="8"
-                                    Padding="4,2"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top"
-                                    Margin="0,-6,-6,0"
-                                    IsVisible="{Binding IsSearchActive}" />
-                        </Grid>
-                    </Button.Content>
-                </Button>
+                <controls:ButtonWithBadge Grid.Row="0" Grid.Column="1"
+                                          BadgeVisibility="{Binding IsSearchActive}"
+                                          BadgeColor="{DynamicResource AccentBrush}"
+                                          BadgeWidth="10" BadgeHeight="10"
+                                          ButtonHeight="40" ButtonWidth="40"
+                                          Command="{Binding ExecuteSearchCommand}"
+                                          BadgeHorizontalAlignment="Right" BadgeVerticalAlignment="Top">
+                    <Svg Width="40" Path="{DynamicResource SearchIcon}"
+                         Css="{DynamicResource ThemeIconFill}" />
+                </controls:ButtonWithBadge>
 
                 <Button Grid.Row="0" Grid.Column="2"
                         Height="40" Width="40"
@@ -225,43 +216,27 @@
                     </Button.Content>
                 </Button>
 
-                <Button Grid.Row="0" 
-                        Grid.Column="4"
-                        Classes="normal"
-                        Height="40" 
-                        Width="40"
-                        ToolTip.Tip="{loc:Tr Main.FilterEvents}">
-
-                    <Button.Flyout>
+                <controls:ButtonWithNumericBadge Grid.Row="0"
+                                                 Grid.Column="4"
+                                                 ButtonWidth="40" ButtonHeight="40"
+                                                 BadgeWidth="18" BadgeHeight="18"
+                                                 BadgeColor="{DynamicResource AccentBrush}"
+                                                 BadgeForeground="{DynamicResource TextOnAccentBrush}"
+                                                 BadgeFontSize="9"
+                                                 BadgeNumber="{Binding FiltersPanelViewModel.ActiveFiltersCount}"
+                                                 BadgeVisibility="{Binding FiltersPanelViewModel.ActiveFiltersCount, Converter={StaticResource CountToVisibilityConverter}}"
+                                                 BadgeHorizontalAlignment="Right" BadgeVerticalAlignment="Top"
+                                                 ToolTip.Tip="{loc:Tr Main.FilterEvents}">
+                    <controls:ButtonWithNumericBadge.Flyout>
                         <Flyout FlyoutPresenterClasses="NoPadding"
                                 Placement="BottomEdgeAlignedRight"
                                 ShowMode="Standard">
-
                             <usercontrols:FilterFlyout />
                         </Flyout>
-                    </Button.Flyout>
+                    </controls:ButtonWithNumericBadge.Flyout>
 
-                    <Button.Content>
-                        <Grid>
-                            <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
-
-                            <Border Background="{DynamicResource AccentBrush}"
-                                    CornerRadius="8"
-                                    Padding="4,2"
-                                    Width="15" Height="15"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Margin="0,-30,-30,0"
-                                    IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                <TextBlock
-                                    Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).FiltersPanelViewModel.ActiveFiltersCount}"
-                                    Foreground="{DynamicResource TextOnAccentBrush}"
-                                    FontSize="9"
-                                    FontWeight="Bold" />
-                            </Border>
-                        </Grid>
-                    </Button.Content>
-                </Button>
+                    <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                </controls:ButtonWithNumericBadge>
             </Grid>
         </Border>
 
