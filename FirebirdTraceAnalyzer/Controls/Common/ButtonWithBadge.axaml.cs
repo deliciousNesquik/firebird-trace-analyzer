@@ -45,6 +45,9 @@ public class ButtonWithBadge : ContentControl
     public static readonly StyledProperty<VerticalAlignment> BadgeVerticalAlignmentProperty =
         AvaloniaProperty.Register<ButtonWithBadge, VerticalAlignment>(nameof(BadgeVerticalAlignment));
 
+    public static readonly StyledProperty<FlyoutBase?> FlyoutProperty =
+        AvaloniaProperty.Register<ButtonWithBadge, FlyoutBase?>(nameof(Flyout));
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -176,5 +179,14 @@ public class ButtonWithBadge : ContentControl
     {
         get => GetValue(BadgeVerticalAlignmentProperty);
         set => SetValue(BadgeVerticalAlignmentProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the flyout shown when the inner button is clicked (e.g. a filter or sort panel).
+    /// </summary>
+    public FlyoutBase? Flyout
+    {
+        get => GetValue(FlyoutProperty);
+        set => SetValue(FlyoutProperty, value);
     }
 }

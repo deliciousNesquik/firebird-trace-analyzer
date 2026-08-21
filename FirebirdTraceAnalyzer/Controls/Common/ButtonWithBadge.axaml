@@ -24,6 +24,7 @@
                             Height="{TemplateBinding ButtonHeight}"
                             Classes="normal" Padding="10"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Flyout="{TemplateBinding Flyout}"
                             Content="{TemplateBinding Content}"
                             ContentTemplate="{TemplateBinding ContentTemplate}"/>
                     <Ellipse Fill="{TemplateBinding BadgeColor}"
