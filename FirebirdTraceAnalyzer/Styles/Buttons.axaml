@@ -4,19 +4,19 @@
         <Border Padding="50" Background="{DynamicResource AppBackgroundBrush}">
             <StackPanel Spacing="20" Orientation="Horizontal">
                 <!-- Пример: Обычная кнопка -->
-                <Button Classes="normal" Content="Обычная" />
+                <Button Classes="normal" Content="Common" />
                 
                 <!-- Пример: Фокусная (Акцентная) кнопка -->
-                <Button Classes="focused" Content="Фокусная" />
+                <Button Classes="focused" Content="Focusing" />
                 
                 <!-- Пример: Красная-опасная кнопка -->
-                <Button Classes="danger" Content="Опасная" />
+                <Button Classes="danger" Content="Danger" />
                 
                 <!-- Пример: Кнопка со сложным содержимым (Иконка + Текст) -->
                 <Button Classes="normal">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Width="14" Height="14"/>
-                        <TextBlock Text="Добавить" VerticalAlignment="Center"/>
+                        <TextBlock Text="Add" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -28,7 +28,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Padding" Value="16,10" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="2" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="BorderThickness" Value="1" />
