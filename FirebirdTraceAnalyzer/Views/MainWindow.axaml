@@ -157,6 +157,8 @@
                 </TextBox>
 
                 <controls:ButtonWithBadge Grid.Row="0" Grid.Column="1"
+                                          ZIndex="1"
+                                          ClipToBounds="False"
                                           BadgeVisibility="{Binding IsSearchActive}"
                                           BadgeColor="{DynamicResource AccentBrush}"
                                           BadgeWidth="10" BadgeHeight="10"
@@ -218,6 +220,8 @@
 
                 <controls:ButtonWithNumericBadge Grid.Row="0"
                                                  Grid.Column="4"
+                                                 ZIndex="1"
+                                                 ClipToBounds="False"
                                                  ButtonWidth="40" ButtonHeight="40"
                                                  BadgeWidth="18" BadgeHeight="18"
                                                  BadgeColor="{DynamicResource AccentBrush}"
