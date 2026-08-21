@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -47,6 +48,12 @@ public class ButtonWithBadge : ContentControl
 
     public static readonly StyledProperty<FlyoutBase?> FlyoutProperty =
         AvaloniaProperty.Register<ButtonWithBadge, FlyoutBase?>(nameof(Flyout));
+
+    public static readonly StyledProperty<ICommand?> CommandProperty =
+        AvaloniaProperty.Register<ButtonWithBadge, ICommand?>(nameof(Command));
+
+    public static readonly StyledProperty<object?> CommandParameterProperty =
+        AvaloniaProperty.Register<ButtonWithBadge, object?>(nameof(CommandParameter));
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -188,5 +195,23 @@ public class ButtonWithBadge : ContentControl
     {
         get => GetValue(FlyoutProperty);
         set => SetValue(FlyoutProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command invoked when the inner button is clicked.
+    /// </summary>
+    public ICommand? Command
+    {
+        get => GetValue(CommandProperty);
+        set => SetValue(CommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter passed to <see cref="Command"/> when it is invoked.
+    /// </summary>
+    public object? CommandParameter
+    {
+        get => GetValue(CommandParameterProperty);
+        set => SetValue(CommandParameterProperty, value);
     }
 }

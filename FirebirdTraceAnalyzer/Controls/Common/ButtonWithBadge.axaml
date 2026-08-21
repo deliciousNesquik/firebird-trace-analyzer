@@ -25,6 +25,8 @@
                             Classes="normal" Padding="10"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             Flyout="{TemplateBinding Flyout}"
+                            Command="{TemplateBinding Command}"
+                            CommandParameter="{TemplateBinding CommandParameter}"
                             Content="{TemplateBinding Content}"
                             ContentTemplate="{TemplateBinding ContentTemplate}"/>
                     <Ellipse Fill="{TemplateBinding BadgeColor}"
