@@ -140,7 +140,6 @@
   "Plugins.ProblemPlug": "Problem plug (Collision)",
   "Plugins.CollisionTooltip": "Show plugins that share the same Id, grouped in pairs, so you can pick which one to keep",
   "Plugins.CollisionHint": "Pick which plugin to keep for each Id, or leave as-is. Click the button again to show all plugins.",
-  "Plugins.NoCollisions": "No Id collisions detected.",
   "Plugins.EnableTooltip": "Enable / disable this plugin (applies after restart)",
   "Plugins.LabelAuthor": "AUTHOR:",
   "Plugins.LabelVersion": "VERSION:",

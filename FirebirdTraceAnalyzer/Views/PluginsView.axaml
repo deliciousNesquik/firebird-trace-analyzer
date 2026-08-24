@@ -69,7 +69,8 @@
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,10">
+                Padding="16,10"
+                IsVisible="{Binding HasCollisions}">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <Button Classes="danger" Height="34" Padding="12,0"
                         Content="{loc:Tr Plugins.ProblemPlug}"
@@ -80,10 +81,6 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            IsVisible="{Binding ShowCollisions}"
                            Text="{loc:Tr Plugins.CollisionHint}" />
-                <TextBlock VerticalAlignment="Center" FontSize="11"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           IsVisible="{Binding !HasCollisions}"
-                           Text="{loc:Tr Plugins.NoCollisions}" />
             </StackPanel>
         </Border>
 
