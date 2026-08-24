@@ -150,4 +150,9 @@
         <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
+    
+    <Style Selector="Button.open-inspector">
+        <Setter Property="IsVisible"
+                Value="{ReflectionBinding $parent[Window].DataContext.IsInspectorMode, FallbackValue=False}" />
+    </Style>
 </Styles>

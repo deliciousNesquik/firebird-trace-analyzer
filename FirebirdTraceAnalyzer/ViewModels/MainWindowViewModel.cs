@@ -121,8 +121,11 @@ public partial class MainWindowViewModel : ViewModelBase
     
     [ObservableProperty] private bool _isClassicSearch;
 
-    /// <summary>Режим разработчика включён — показывать диагностические пункты меню («Статистика парсера»).</summary>
-    [ObservableProperty] private bool _isDeveloperMode;
+    /// <summary>Показывать диагностический пункт меню («Статистика парсера»).</summary>
+    [ObservableProperty] private bool _isStatisticsMode;
+    
+    /// <summary>Показывать диагностический пункт меню («Инспектор событий»).</summary>
+    [ObservableProperty] private bool _isInspectorMode;
 
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isFileLoading;
@@ -322,7 +325,8 @@ public partial class MainWindowViewModel : ViewModelBase
         // Search Type
         IsClassicSearch = _appSettings.IsClassicSearch;
 
-        IsDeveloperMode = _appSettings.DeveloperMode;
+        IsStatisticsMode = _appSettings.StatisticsMode;
+        IsInspectorMode = _appSettings.InspectorMode;
 
         Logger.Info("Application settings loaded.");
         StatusMessage = Loc.Tr("Status.Main.SettingsLoaded");
@@ -2395,7 +2399,8 @@ public partial class MainWindowViewModel : ViewModelBase
             // те же экземпляры, что и в SettingsService, поэтому уже содержат новые значения.
             ApplyUiSectionVisibilityFromSettings();
             IsClassicSearch = _appSettings.IsClassicSearch;
-            IsDeveloperMode = _appSettings.DeveloperMode;
+            IsStatisticsMode = _appSettings.StatisticsMode;
+            IsInspectorMode = _appSettings.InspectorMode;
 
             StatusMessage = Loc.Tr("Status.Main.SettingsUpdated");
             Logger.Info("Settings updated from settings window");

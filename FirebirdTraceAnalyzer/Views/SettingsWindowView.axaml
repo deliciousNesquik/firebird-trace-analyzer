@@ -163,22 +163,9 @@
 
                 <Grid Classes="settingRow" ColumnDefinitions="*,280">
                     <StackPanel Grid.Column="0" Classes="label">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Classes="title" Text="{loc:Tr Settings.DeveloperMode}" />
-                            <Border Background="{DynamicResource WarningSurfaceBrush}"
-                                    BorderBrush="{DynamicResource WarningBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="3"
-                                    Padding="6,1"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="{loc:Tr Settings.Badge.Advanced}"
-                                           FontSize="9"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource WarningTextBrush}" />
-                            </Border>
-                        </StackPanel>
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.StatisticsMode}" />
                         <TextBlock Classes="desc"
-                                   Text="{loc:Tr Settings.DeveloperMode.Desc}" />
+                                   Text="{loc:Tr Settings.StatisticsMode.Desc}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
@@ -188,12 +175,35 @@
                                       MinWidth="84"
                                       CornerRadius="4,0,0,4"
                                       HorizontalContentAlignment="Center"
-                                      IsChecked="{Binding DeveloperMode}"/>
+                                      IsChecked="{Binding StatisticsMode}"/>
                         <ToggleButton Content="{loc:Tr Common.Disabled}"
                                       MinWidth="84"
                                       CornerRadius="0,4,4,0"
                                       HorizontalContentAlignment="Center"
-                                      IsChecked="{Binding !DeveloperMode}"/>
+                                      IsChecked="{Binding !StatisticsMode}"/>
+                    </StackPanel>
+                </Grid>
+                
+                <Grid Classes="settingRow" ColumnDefinitions="*,280">
+                    <StackPanel Grid.Column="0" Classes="label">
+                        <TextBlock Classes="title" Text="{loc:Tr Settings.InspectorMode}" />
+                        <TextBlock Classes="desc"
+                                   Text="{loc:Tr Settings.InspectorMode.Desc}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <ToggleButton Content="{loc:Tr Common.Enabled}"
+                                      MinWidth="84"
+                                      CornerRadius="4,0,0,4"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding InspectorMode}"/>
+                        <ToggleButton Content="{loc:Tr Common.Disabled}"
+                                      MinWidth="84"
+                                      CornerRadius="0,4,4,0"
+                                      HorizontalContentAlignment="Center"
+                                      IsChecked="{Binding !InspectorMode}"/>
                     </StackPanel>
                 </Grid>
 

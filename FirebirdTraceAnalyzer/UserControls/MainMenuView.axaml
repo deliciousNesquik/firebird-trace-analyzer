@@ -176,7 +176,7 @@
 
         <MenuItem Header="{loc:Tr Menu.ParserStats}"
                   Command="{Binding OpenParserStatisticsCommand}"
-                  IsVisible="{Binding IsDeveloperMode}" />
+                  IsVisible="{Binding IsStatisticsMode}" />
 
         <MenuItem Header="{loc:Tr Menu.Plugins}" Command="{Binding OpenPluginsCommand}" />
 

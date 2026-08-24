@@ -83,10 +83,16 @@ public class AppSettings
     public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Developer mode: unlocks diagnostic tools (e.g. "Parser statistics"). Off by default — these
+    /// Unlocks diagnostic tool statistics parser. Off by default — these
     /// items are hidden from ordinary users.
     /// </summary>
-    public bool DeveloperMode { get; set; }
+    public bool StatisticsMode { get; set; }
+    
+    /// <summary>
+    /// Unlocks diagnostic tool inspector window. Off by default — these
+    /// items are hidden from ordinary users.
+    /// </summary>
+    public bool InspectorMode { get; set; }
 
     /// <summary>
     /// Deferred store maintenance: set after a partial file deletion so the next launch runs orphan

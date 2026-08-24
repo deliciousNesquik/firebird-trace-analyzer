@@ -49,8 +49,11 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
     #region Advanced
 
-    /// <summary>(Advanced) Режим разработчика: показывает диагностические инструменты (статистика парсера).</summary>
-    [ObservableProperty] private bool _developerMode;
+    /// <summary>(Advanced) Режим статистики парсера: показывает диагностический инструмент.</summary>
+    [ObservableProperty] private bool _statisticsMode;
+    
+    /// <summary>(Advanced) Режим инспектора событий: показывает диагностический инструмент.</summary>
+    [ObservableProperty] private bool _inspectorMode;
 
     #endregion
 
@@ -144,7 +147,8 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     {
         var app = _settingsService.App;
         app.IsClassicSearch = IsClassicSearch;
-        app.DeveloperMode = DeveloperMode;
+        app.StatisticsMode = StatisticsMode;
+        app.InspectorMode = InspectorMode;
         app.Theme = Theme;
         app.Language = SelectedLanguage?.Code ?? "en";
         app.RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty;
@@ -377,7 +381,8 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private void LoadFrom(AppSettings app, UiSectionSettings ui)
     {
         IsClassicSearch = app.IsClassicSearch;
-        DeveloperMode = app.DeveloperMode;
+        StatisticsMode = app.StatisticsMode;
+        InspectorMode = app.InspectorMode;
         Theme = app.Theme;
         var code = string.IsNullOrWhiteSpace(app.Language) ? "en" : app.Language;
         SelectedLanguage = AvailableLanguages.FirstOrDefault(l => string.Equals(l.Code, code, StringComparison.OrdinalIgnoreCase))
@@ -402,7 +407,8 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         App = new AppSettings
         {
             IsClassicSearch = IsClassicSearch,
-            DeveloperMode = DeveloperMode,
+            StatisticsMode = StatisticsMode,
+            InspectorMode = InspectorMode,
             Theme = Theme,
             Language = SelectedLanguage?.Code ?? "en",
             RemoteDownloadPath = RemoteDownloadPath?.Trim() ?? string.Empty,
