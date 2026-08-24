@@ -33,13 +33,6 @@ public partial class EventsSection : UserControl
         }
     }
 
-    /// <summary>Пункт контекстного меню «Open event inspector» (правый клик по карточке).</summary>
-    private void OnOpenInspectorClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { DataContext: EventBase evt })
-            OpenInspectorFor(evt);
-    }
-
     private void OpenInspectorFor(EventBase evt)
     {
         if (DataContext is not MainWindowViewModel vm)

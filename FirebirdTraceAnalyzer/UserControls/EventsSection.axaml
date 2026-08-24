@@ -17,14 +17,7 @@
                            Margin="10">
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                        <ContentControl Content="{Binding}">
-                            <ContentControl.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="{loc:Tr Events.OpenInspector}"
-                                              Click="OnOpenInspectorClick" />
-                                </ContextMenu>
-                            </ContentControl.ContextMenu>
-                        </ContentControl>
+                        <ContentControl Content="{Binding}" />
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
