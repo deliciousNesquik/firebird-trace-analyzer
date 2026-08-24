@@ -147,7 +147,7 @@
                                             ToolTip.Tip="{loc:Tr Plugins.RevealTooltip}"
                                             Command="{Binding $parent[UserControl].((vm:PluginsViewModel)DataContext).RevealCommand}"
                                             CommandParameter="{Binding}">
-                                        <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconFill}" />
+                                        <Svg Width="18" Height="18" Path="{DynamicResource FileSearchIcon}" Css="{DynamicResource ThemeIconStroke}" />
                                     </Button>
                                     <Button Classes="danger" Height="36" Width="36" Padding="0"
                                             ToolTip.Tip="{loc:Tr Plugins.DeleteTooltip}"
