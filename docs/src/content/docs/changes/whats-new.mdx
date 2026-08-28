@@ -6,6 +6,23 @@ description: Release notes for Firebird Trace Analyzer — every version, newest
 Release notes, newest first. Versions follow the project's git tags; minor releases are described in
 detail, patch releases summarized.
 
+## 1.15.0 — August 28, 2026
+
+Error-chain filtering, a split of developer mode, redesigned toolbar buttons, and a new app icon.
+
+- **Filtering:** filter events by fields inside the error chain — **Error Code** and **Error Message**.
+  They live inside a collection on error events and were previously unreachable; an event now matches
+  when any line in its error chain matches. They appear once the view is narrowed to error events.
+- **Diagnostic tools:** the single *Developer mode* is now two independent switches — **Parser
+  Statistics** and **Event Inspector**. The per-event inspector button shows only when *Event
+  Inspector* is enabled; its unreliable right-click menu entry was removed.
+- **Toolbar:** redesigned search / sort / filter buttons — the filter button carries a badge with the
+  number of active filters, the search button an activity badge; unified button styling.
+- **App icon:** a new application icon.
+- **Fixes:** the error-card copy button, the settings-window icon color, the plugins view (icon color;
+  the collisions section is hidden when empty), the events empty-state visibility, and more accurate
+  human-readable byte sizes.
+
 ## 1.14.0 — August 13, 2026
 
 Drag-and-drop file loading.
