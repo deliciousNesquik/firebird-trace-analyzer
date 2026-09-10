@@ -787,6 +787,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsReportGenerating = true;
+            using var bg = _backgroundTasks?.Begin("report", Loc.Tr("Background.GeneratingReport"));
             StatusMessage = Loc.Tr("Status.Main.GeneratingReport");
             Logger.Info("Quick report requested: {TemplateId}", templateId);
 
@@ -1161,7 +1162,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            await ProcessSelectedFilesAsync(files, cts.Token);
+            // Фоновое уведомление (мини-панель внизу справа) на всё время обработки/разбора,
+            // независимо от видимости секции Logs.
+            using (_backgroundTasks?.Begin("local-load", Loc.Tr("Background.Loading")))
+                await ProcessSelectedFilesAsync(files, cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -1923,6 +1927,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             _isBatchUpdate = true;
+            using var bg = _backgroundTasks?.Begin("reparse", Loc.Tr("Background.Reparsing"));
 
             var allCards = FileCards.ToList();
             StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingAllStart"), allCards.Count);
@@ -1976,6 +1981,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             _isBatchUpdate = true;
+            using var bg = _backgroundTasks?.Begin("reparse", Loc.Tr("Background.Reparsing"));
 
             var selectedCards = SelectedFileCards.ToList();
             StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingSelectedStart"), selectedCards.Count);
