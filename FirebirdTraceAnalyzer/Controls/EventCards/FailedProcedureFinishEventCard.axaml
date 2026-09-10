@@ -77,7 +77,6 @@
                                     </StackPanel>
                                     <TextBlock Text="{TemplateBinding TraceId}"
                                                FontWeight="Bold"
-                                               Cursor="Hand"
                                                FontFamily="Consolas" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1"
@@ -92,7 +91,6 @@
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding HexTraceId}"
-                                               Cursor="Hand"
                                                FontFamily="Consolas" />
                                 </StackPanel>
                                 
@@ -108,7 +106,6 @@
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding TransactionId}"
-                                               Cursor="Hand"
                                                FontFamily="Consolas" />
                                 </StackPanel>
                                 
@@ -124,7 +121,6 @@
                                     </StackPanel>
                                     
                                     <TextBlock Text="{TemplateBinding AttachmentId}"
-                                               Cursor="Hand"
                                                FontFamily="Consolas" />
                                 </StackPanel>
                             </Grid>
@@ -134,22 +130,18 @@
                                    ItemSpacing="25" Margin="0 15 0 0">
 
                             <TextBlock Text="{TemplateBinding IsolationLevel}"
-                                       Cursor="Hand"
                                        FontWeight="Bold"
                                        FontFamily="Consolas" />
 
                             <TextBlock Text="{TemplateBinding ConsistencyMode}"
-                                       Cursor="Hand"
                                        FontWeight="Bold"
                                        FontFamily="Consolas" />
 
                             <TextBlock Text="{TemplateBinding LockMode}"
-                                       Cursor="Hand"
                                        FontWeight="Bold"
                                        FontFamily="Consolas" />
 
                             <TextBlock Text="{TemplateBinding AccessMode}"
-                                       Cursor="Hand"
                                        FontWeight="Bold"
                                        FontFamily="Consolas" />
                         </WrapPanel>
@@ -157,7 +149,7 @@
                         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10">
                             <Grid RowDefinitions="Auto" ColumnDefinitions="*,Auto">
                                 <TextBlock Grid.Column="0" Grid.ColumnSpan="2"
-                                           Cursor="Hand" FontWeight="Bold"
+                                           FontWeight="Bold"
                                            FontFamily="Consolas"
                                            VerticalAlignment="Center"
                                            Text="{Binding ProcedureName, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}Procedure {0}:'}"

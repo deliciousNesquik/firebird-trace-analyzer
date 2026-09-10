@@ -65,7 +65,6 @@
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding TraceId}"
                                            FontWeight="Bold"
-                                           Cursor="Hand"
                                            FontFamily="Consolas" />
                             </StackPanel>
                             <StackPanel Grid.Column="1"
@@ -74,7 +73,6 @@
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding HexTraceId}"
-                                           Cursor="Hand"
                                            FontFamily="Consolas" />
                             </StackPanel>
                             <StackPanel Grid.Column="2"
@@ -83,7 +81,6 @@
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{TemplateBinding AttachmentId}"
-                                           Cursor="Hand"
                                            FontFamily="Consolas" />
                             </StackPanel>
                         </Grid>
