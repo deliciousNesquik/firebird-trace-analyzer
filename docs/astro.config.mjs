@@ -52,6 +52,7 @@ export default defineConfig({
             { label: 'Local event store', translations: { ru: 'Локальное хранилище событий' }, slug: 'guides/event-store' },
             { label: 'Reports', translations: { ru: 'Отчёты' }, slug: 'guides/reports' },
             { label: 'Plugins', translations: { ru: 'Плагины' }, slug: 'guides/plugins' },
+            { label: 'Keyboard shortcuts', translations: { ru: 'Горячие клавиши' }, slug: 'guides/keyboard-shortcuts' },
           ],
         },
         {
