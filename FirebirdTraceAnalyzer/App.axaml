@@ -5,13 +5,18 @@
              xmlns:core="clr-namespace:FirebirdTraceParser.Models.Events;assembly=FirebirdTraceParser"
              xmlns:converters="clr-namespace:FirebirdTraceAnalyzer.Converters"
              xmlns:services="clr-namespace:FirebirdTraceAnalyzer.Services"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              x:Class="FirebirdTraceAnalyzer.App"
              Name="Firebird Trace Analyzer"
              RequestedThemeVariant="Default">
   
+    <!-- Меню приложения macOS: пункт Settings/Preferences сливается с системным About/Quit.
+         Задаётся здесь (на Application) на этапе загрузки — правильный тайминг для app-menu. -->
     <NativeMenu.Menu>
         <NativeMenu>
-            <!--Текущий вариант позволяет сделать список меню пустым--> 
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Settings}"
+                            Gesture="Cmd+OemComma"
+                            Click="OnPreferencesClick" />
         </NativeMenu>
     </NativeMenu.Menu>
     

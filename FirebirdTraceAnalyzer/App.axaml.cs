@@ -54,6 +54,14 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
+    // Пункт «Settings» из меню приложения macOS (NativeMenu на Application, см. App.axaml).
+    // DataContext у Application нет, поэтому команду берём из MainWindowViewModel через DI.
+    private void OnPreferencesClick(object? sender, EventArgs e)
+    {
+        if (Services?.GetService<MainWindowViewModel>() is { } vm && vm.OpenSettingsCommand.CanExecute(null))
+            vm.OpenSettingsCommand.Execute(null);
+    }
+
     private void OnApplicationExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
     {
         // Освобождаем ресурсы DI контейнера

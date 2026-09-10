@@ -14,6 +14,7 @@ namespace FirebirdTraceAnalyzer.Views;
 public partial class MainWindow : Window
 {
     private readonly ISettingsService? _settingsService;
+    private bool _nativeMenuAttached;
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -39,6 +40,19 @@ public partial class MainWindow : Window
         // После показа окна — однократные стартовые подсказки: восстановление прошлой сессии из
         // хранилища (режим Session), затем выбор при неразрешённых коллизиях плагинов.
         Opened += OnOpenedStartupPrompts;
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        // Нативное меню macOS строится из кода как полное зеркало главного меню (MainMenuView),
+        // включая динамические списки отчётов. На Windows/Linux SetMenu — no-op.
+        if (!_nativeMenuAttached && DataContext is MainWindowViewModel vm)
+        {
+            _nativeMenuAttached = true;
+            NativeMainMenu.Attach(this, vm);
+        }
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
