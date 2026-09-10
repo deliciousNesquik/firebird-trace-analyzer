@@ -917,6 +917,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenManageTemplatesAsync()
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала (напр. из нативного меню macOS)
         if (_navigation is null)
         {
             StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
@@ -990,6 +991,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenRecentReportsAsync(CancellationToken cancellationToken)
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         try
         {
             if (_navigation is null)
@@ -1507,6 +1509,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanOpenFile))]
     private async Task OpenRemoteFileAsync(CancellationToken cancellationToken)
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         IsFileLoading = true;
         OpenRemoteFileCommand.NotifyCanExecuteChanged();
         OpenLocalFileCommand.NotifyCanExecuteChanged();
@@ -2193,12 +2196,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Открывает встроенное окно управления плагинами.</summary>
     [RelayCommand]
-    private async Task OpenPluginsAsync() => await ShowPluginsDialogAsync(showCollisions: false);
+    private async Task OpenPluginsAsync()
+    {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
+        await ShowPluginsDialogAsync(showCollisions: false);
+    }
 
     /// <summary>Открывает окно управления хранилищем событий (статистика + удаление/очистка).</summary>
     [RelayCommand]
     private async Task OpenStoreManagementAsync()
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         try
         {
             var dispatcher = _storeDispatcher?.Value;
@@ -2232,6 +2240,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenStorageAnalysisAsync()
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         try
         {
             var dispatcher = _storeDispatcher?.Value;
@@ -2258,6 +2267,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenParserStatisticsAsync()
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         try
         {
             var telemetry = _telemetry;
@@ -2388,6 +2398,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenSettingsAsync()
     {
+        if (Dialogs.CurrentDialog != null) return; // не открывать поверх уже открытого модала
         try
         {
             if (_navigation is null)
