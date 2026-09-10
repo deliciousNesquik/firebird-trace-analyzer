@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.ViewModels;
@@ -38,6 +39,29 @@ public partial class MainWindow : Window
         // После показа окна — однократные стартовые подсказки: восстановление прошлой сессии из
         // хранилища (режим Session), затем выбор при неразрешённых коллизиях плагинов.
         Opened += OnOpenedStartupPrompts;
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        // Ctrl+F / Cmd+F — фокус в поле поиска (при необходимости раскрываем секцию Search).
+        // Не пункт меню, поэтому обрабатываем здесь; фокус — через Dispatcher, чтобы поле успело
+        // появиться в дереве, если секция была скрыта.
+        if (e.Key == Key.F && e.KeyModifiers is KeyModifiers.Control or KeyModifiers.Meta)
+        {
+            if (DataContext is MainWindowViewModel { IsSearchSectionVisible: false } vm)
+                vm.IsSearchSectionVisible = true;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+            });
+
+            e.Handled = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
     }
 
     private async void OnOpenedStartupPrompts(object? sender, EventArgs e)

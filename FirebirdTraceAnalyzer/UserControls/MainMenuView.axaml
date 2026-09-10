@@ -22,14 +22,14 @@
 
             <MenuItem
                 Header="{loc:Tr Menu.Open.Remote}"
-                InputGesture="Ctrl+Alt+O"
-                HotKey="Ctrl+Alt+O"
+                InputGesture="Ctrl+Shift+O"
+                HotKey="Ctrl+Shift+O"
                 Command="{Binding OpenRemoteFileCommand}" />
 
             <MenuItem
                 Header="{loc:Tr Menu.Open.Cancel}"
-                InputGesture="Ctrl+C"
-                HotKey="Ctrl+C"
+                InputGesture="Ctrl+Escape"
+                HotKey="Ctrl+Escape"
                 Command="{Binding CancelLoadingCommand}" />
 
         </MenuItem>
@@ -45,22 +45,22 @@
 
                 <MenuItem
                     Header="{loc:Tr Menu.Common.SelectedFiles}"
-                    InputGesture="Ctrl+Alt+R"
-                    HotKey="Ctrl+Alt+R"
+                    InputGesture="Ctrl+Shift+R"
+                    HotKey="Ctrl+Shift+R"
                     Command="{Binding ReparseSelectedFilesCommand}" />
             </MenuItem>
 
             <MenuItem Header="{loc:Tr Menu.Edit.Close}">
                 <MenuItem
                     Header="{loc:Tr Menu.Common.AllFiles}"
-                    InputGesture="Ctrl+W"
-                    HotKey="Ctrl+W"
+                    InputGesture="Ctrl+Shift+W"
+                    HotKey="Ctrl+Shift+W"
                     Command="{Binding CloseAllFilesCommand}" />
 
                 <MenuItem
                     Header="{loc:Tr Menu.Common.SelectedFiles}"
-                    InputGesture="Ctrl+Alt+W"
-                    HotKey="Ctrl+Alt+W"
+                    InputGesture="Ctrl+W"
+                    HotKey="Ctrl+W"
                     Command="{Binding CloseSelectedFilesCommand}" />
             </MenuItem>
 
@@ -117,8 +117,8 @@
         <MenuItem Header="{loc:Tr Menu.Window}">
             <MenuItem
                 Header="{loc:Tr Menu.Window.Files}"
-                InputGesture="Ctrl+Shift+F1"
-                HotKey="Ctrl+Shift+F1"
+                InputGesture="Ctrl+D1"
+                HotKey="Ctrl+D1"
                 Command="{Binding SwitchVisibleTraceFilesSectionCommand}"
                 ToggleType="CheckBox"
                 IsChecked="{Binding IsTraceFilesSectionVisible}"
@@ -126,8 +126,8 @@
 
             <MenuItem
                 Header="{loc:Tr Menu.Window.Search}"
-                InputGesture="Ctrl+Shift+F2"
-                HotKey="Ctrl+Shift+F2"
+                InputGesture="Ctrl+D2"
+                HotKey="Ctrl+D2"
                 Command="{Binding SwitchVisibleSearchSectionCommand}"
                 ToggleType="CheckBox"
                 IsChecked="{Binding IsSearchSectionVisible}"
@@ -135,8 +135,8 @@
 
             <MenuItem
                 Header="{loc:Tr Menu.Window.Events}"
-                InputGesture="Ctrl+Shift+F3"
-                HotKey="Ctrl+Shift+F3"
+                InputGesture="Ctrl+D3"
+                HotKey="Ctrl+D3"
                 IsChecked="{Binding IsEventsSectionVisible}"
                 Command="{Binding SwitchEventsSectionVisibleCommand}"
                 ToggleType="CheckBox"
@@ -144,8 +144,8 @@
 
             <MenuItem
                 Header="{loc:Tr Menu.Window.Statistics}"
-                InputGesture="Ctrl+Shift+F4"
-                HotKey="Ctrl+Shift+F4"
+                InputGesture="Ctrl+D4"
+                HotKey="Ctrl+D4"
                 IsChecked="{Binding IsStatisticsSectionVisible}"
                 Command="{Binding SwitchStatisticsSectionVisibleCommand}"
                 ToggleType="CheckBox"
@@ -153,8 +153,8 @@
 
             <MenuItem
                 Header="{loc:Tr Menu.Window.Logs}"
-                InputGesture="Ctrl+Shift+F5"
-                HotKey="Ctrl+Shift+F5"
+                InputGesture="Ctrl+D5"
+                HotKey="Ctrl+D5"
                 IsChecked="{Binding IsLogsSectionVisible}"
                 Command="{Binding SwitchLogsSectionVisibleCommand}"
                 ToggleType="CheckBox"
@@ -163,8 +163,8 @@
             <Separator />
             <MenuItem
                 Header="{loc:Tr Menu.Window.Reset}"
-                InputGesture="Ctrl+Shift+F12"
-                HotKey="Ctrl+Shift+F12"
+                InputGesture="Ctrl+D0"
+                HotKey="Ctrl+D0"
                 Command="{Binding GoToFactorySettingsSectionCommand}" />
 
         </MenuItem>
@@ -180,6 +180,9 @@
 
         <MenuItem Header="{loc:Tr Menu.Plugins}" Command="{Binding OpenPluginsCommand}" />
 
-        <MenuItem Header="{loc:Tr Menu.Settings}" Command="{Binding OpenSettingsCommand}" />
+        <MenuItem Header="{loc:Tr Menu.Settings}"
+                  InputGesture="Ctrl+OemComma"
+                  HotKey="Ctrl+OemComma"
+                  Command="{Binding OpenSettingsCommand}" />
     </Menu>
 </UserControl>

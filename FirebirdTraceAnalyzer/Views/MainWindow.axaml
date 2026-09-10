@@ -30,9 +30,10 @@
                                         Gesture="Cmd+O"
                                         Command="{Binding OpenLocalFileCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Open.Remote}"
-                                        Gesture="Cmd+Alt+O"
+                                        Gesture="Cmd+Shift+O"
                                         Command="{Binding OpenRemoteFileCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Open.Cancel}"
+                                        Gesture="Cmd+Escape"
                                         Command="{Binding CancelLoadingCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
@@ -48,7 +49,7 @@
                                                     Gesture="Cmd+R"
                                                     Command="{Binding ReparseAllFilesCommand}" />
                                     <NativeMenuItem Header="{loc:Tr NativeMenu.Common.SelectedFiles}"
-                                                    Gesture="Cmd+Alt+R"
+                                                    Gesture="Cmd+Shift+R"
                                                     Command="{Binding ReparseSelectedFilesCommand}" />
                                 </NativeMenu>
                             </NativeMenuItem.Menu>
@@ -57,10 +58,10 @@
                             <NativeMenuItem.Menu>
                                 <NativeMenu>
                                     <NativeMenuItem Header="{loc:Tr NativeMenu.Common.AllFiles}"
-                                                    Gesture="Cmd+W"
+                                                    Gesture="Cmd+Shift+W"
                                                     Command="{Binding CloseAllFilesCommand}" />
                                     <NativeMenuItem Header="{loc:Tr NativeMenu.Common.SelectedFiles}"
-                                                    Gesture="Cmd+Alt+W"
+                                                    Gesture="Cmd+W"
                                                     Command="{Binding CloseSelectedFilesCommand}" />
                                 </NativeMenu>
                             </NativeMenuItem.Menu>
@@ -90,31 +91,31 @@
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Files}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsTraceFilesSectionVisible}"
-                                        Gesture="Cmd+Shift+F1"
+                                        Gesture="Cmd+D1"
                                         Command="{Binding SwitchVisibleTraceFilesSectionCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Search}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsSearchSectionVisible}"
-                                        Gesture="Cmd+Shift+F2"
+                                        Gesture="Cmd+D2"
                                         Command="{Binding SwitchVisibleSearchSectionCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Events}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsEventsSectionVisible}"
-                                        Gesture="Cmd+Shift+F3"
+                                        Gesture="Cmd+D3"
                                         Command="{Binding SwitchEventsSectionVisibleCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Statistics}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsStatisticsSectionVisible}"
-                                        Gesture="Cmd+Shift+F4"
+                                        Gesture="Cmd+D4"
                                         Command="{Binding SwitchStatisticsSectionVisibleCommand}" />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Logs}"
                                         ToggleType="CheckBox"
                                         IsChecked="{Binding IsLogsSectionVisible}"
-                                        Gesture="Cmd+Shift+F5"
+                                        Gesture="Cmd+D5"
                                         Command="{Binding SwitchLogsSectionVisibleCommand}" />
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="{loc:Tr NativeMenu.Window.Reset}"
-                                        Gesture="Cmd+Shift+F12"
+                                        Gesture="Cmd+D0"
                                         Command="{Binding GoToFactorySettingsSectionCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
@@ -124,7 +125,7 @@
             <NativeMenuItem Header="{loc:Tr NativeMenu.ParserStats}" Command="{Binding OpenParserStatisticsCommand}"
                             IsVisible="{Binding IsStatisticsMode}"/>
             <NativeMenuItem Header="{loc:Tr NativeMenu.Plugins}" Command="{Binding OpenPluginsCommand}"/>
-            <NativeMenuItem Header="{loc:Tr NativeMenu.Settings}" Command="{Binding OpenSettingsCommand}"/>
+            <NativeMenuItem Header="{loc:Tr NativeMenu.Settings}" Gesture="Cmd+OemComma" Command="{Binding OpenSettingsCommand}"/>
 
         </NativeMenu>
     </NativeMenu.Menu>
@@ -145,6 +146,7 @@
 
             <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
+                         x:Name="SearchBox"
                          Height="40"
                          Background="{DynamicResource SurfaceBrush}"
                          PlaceholderText="{loc:Tr Main.SearchPlaceholder}"
