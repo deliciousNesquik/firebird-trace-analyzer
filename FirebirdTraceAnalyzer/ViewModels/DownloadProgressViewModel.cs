@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using NLog;
@@ -85,9 +86,10 @@ public partial class DownloadProgressViewModel : ViewModelBase
     public event EventHandler? CancelRequested;
     public event EventHandler? Completed;
 
-    public DownloadProgressViewModel()
-    {
-    }
+    private readonly IToastService? _toasts;
+
+    /// <summary>Окно прогресса создаётся вручную владельцем; тост-сервис необязателен (для дизайнера — null).</summary>
+    public DownloadProgressViewModel(IToastService? toasts = null) => _toasts = toasts;
 
     public void Initialize(IReadOnlyList<RemoteFileInfo> filesToDownload)
     {
@@ -190,7 +192,9 @@ public partial class DownloadProgressViewModel : ViewModelBase
         if (item is not null)
             item.Status = DownloadItemStatus.Failed;
 
-        StatusMessage = string.Format(Loc.Tr("Status.Download.Failed"), errorMessage);
+        var msg = string.Format(Loc.Tr("Status.Download.Failed"), errorMessage);
+        StatusMessage = msg;
+        _toasts?.Error(msg);
 
         Logger.Error("Download failed: {Error}", errorMessage);
     }

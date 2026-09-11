@@ -25,6 +25,7 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;
     private readonly IFileDialogService? _fileDialogService;
+    private readonly IToastService? _toasts;
 
     #region General
 
@@ -121,13 +122,15 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         IWindowProvider windowProvider,
         IThemeService themeService,
         ILocalizationService localizationService,
-        IFileDialogService fileDialogService)
+        IFileDialogService fileDialogService,
+        IToastService? toasts = null)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+        _toasts = toasts;
 
         AvailableLanguages = _localizationService.AvailableLanguages;
 
@@ -213,12 +216,16 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             await _settingsService.ExportAsync(file.Path.LocalPath, BuildWorkingSettings());
-            StatusMessage = string.Format(Loc.Tr("Status.Settings.ExportedTo"), file.Name);
+            var msg = string.Format(Loc.Tr("Status.Settings.ExportedTo"), file.Name);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error exporting settings");
-            StatusMessage = string.Format(Loc.Tr("Status.Settings.ExportFailed"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Settings.ExportFailed"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 
@@ -246,12 +253,16 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
             var imported = await _settingsService.ReadFromFileAsync(files[0].Path.LocalPath);
             LoadFrom(imported.App, imported.Ui);
-            StatusMessage = Loc.Tr("Status.Settings.SettingsImported");
+            var msg = Loc.Tr("Status.Settings.SettingsImported");
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error importing settings");
-            StatusMessage = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 
@@ -318,12 +329,16 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
                 return;
 
             RulesConfiguration.ImportRules(files[0].Path.LocalPath);
-            StatusMessage = Loc.Tr("Status.Settings.RulesImported");
+            var msg = Loc.Tr("Status.Settings.RulesImported");
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error importing rules");
-            StatusMessage = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Settings.ImportFailed"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 
@@ -334,15 +349,27 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
 
         var revealed = await _fileDialogService.RevealInFileManagerAsync(filePath);
         if (!revealed)
-            StatusMessage = Loc.Tr("Status.Settings.FileNotExistYet");
+        {
+            var msg = Loc.Tr("Status.Settings.FileNotExistYet");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
+        }
     }
 
     private void ClearLogs(string logFile, string kind)
     {
         var deleted = LogConfiguration.ClearLogs(logFile);
-        StatusMessage = deleted > 0
-            ? string.Format(Loc.Tr("Status.Settings.ClearedLogs"), deleted, kind)
-            : string.Format(Loc.Tr("Status.Settings.NoLogsToClear"), kind);
+        if (deleted > 0)
+        {
+            StatusMessage = string.Format(Loc.Tr("Status.Settings.ClearedLogs"), deleted, kind);
+        }
+        else
+        {
+            // «Нечего чистить» — предупреждение (нет файла логов или он пуст).
+            var msg = string.Format(Loc.Tr("Status.Settings.NoLogsToClear"), kind);
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
+        }
         Logger.Info("Cleared {Count} {Kind} log file(s)", deleted, kind);
     }
 

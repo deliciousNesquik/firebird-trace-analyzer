@@ -3,6 +3,7 @@ using System.Text;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
@@ -30,6 +31,7 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
 
     private readonly EventStoreDispatcher _dispatcher;
     private readonly IWindowProvider _windowProvider;
+    private readonly IToastService? _toasts;
 
     public event EventHandler<object?>? CloseRequested;
 
@@ -81,10 +83,12 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         _windowProvider = null!;
     }
 
-    public StorageAnalyticsViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider)
+    public StorageAnalyticsViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider,
+        IToastService? toasts = null)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
+        _toasts = toasts;
 
         // Стартовый запрос — активность пользователей.
         SqlText = Prebuilt[0].Sql;
@@ -144,7 +148,9 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Storage analytics: query failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Analyze.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Analyze.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -157,7 +163,9 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
     {
         if (!HasResult)
         {
-            StatusMessage = Loc.Tr("Store.Analyze.NothingToExport");
+            var msg = Loc.Tr("Store.Analyze.NothingToExport");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -182,12 +190,16 @@ public partial class StorageAnalyticsViewModel : ViewModelBase, IDialogViewModel
             await using var writer = new StreamWriter(stream, new UTF8Encoding(true)); // BOM — для Excel
             await writer.WriteAsync(csv);
 
-            StatusMessage = string.Format(Loc.Tr("Store.Analyze.Exported"), ResultRows.Count);
+            var msg = string.Format(Loc.Tr("Store.Analyze.Exported"), ResultRows.Count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Storage analytics: Csv export failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Analyze.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Analyze.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 

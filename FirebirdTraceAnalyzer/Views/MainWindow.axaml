@@ -208,5 +208,13 @@
 
         <!-- Оверлей модальных диалогов внутри окна -->
         <usercontrols:DialogHost DataContext="{Binding Dialogs}" />
+
+        <!-- Тост-уведомления снизу-справа. Верхний слой — видны даже поверх модального окна.
+             Размер по контенту (выравнивание Right/Bottom), поэтому пустая панель не перехватывает ввод. -->
+        <views:ToastHost DataContext="{Binding Toasts}"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Bottom"
+                         Margin="0,0,16,16"
+                         IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Toasts.HasAny, FallbackValue=False}" />
     </Panel>
 </Window>

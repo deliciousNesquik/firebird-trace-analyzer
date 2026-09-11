@@ -406,6 +406,7 @@
             <x:String x:Key="ClearIcon">avares://FirebirdTraceAnalyzer/Assets/clear.svg</x:String>
             <x:String x:Key="ReloadIcon">avares://FirebirdTraceAnalyzer/Assets/reload.svg</x:String>
             <x:String x:Key="WarningIcon">avares://FirebirdTraceAnalyzer/Assets/warning.svg</x:String>
+            <x:String x:Key="SuccessIcon">avares://FirebirdTraceAnalyzer/Assets/success.svg</x:String>
             <x:String x:Key="FileSearchIcon">avares://FirebirdTraceAnalyzer/Assets/file-search.svg</x:String>
             <x:String x:Key="FolderIcon">avares://FirebirdTraceAnalyzer/Assets/folder.svg</x:String>
             <x:String x:Key="TrashIcon">avares://FirebirdTraceAnalyzer/Assets/trash.svg</x:String>
@@ -420,6 +421,11 @@
             <x:String x:Key="EditIcon">avares://FirebirdTraceAnalyzer/Assets/edit.svg</x:String>
             <x:String x:Key="HistoryIcon">avares://FirebirdTraceAnalyzer/Assets/history.svg</x:String>
             <x:String x:Key="MaintenanceIcon">avares://FirebirdTraceAnalyzer/Assets/maintenance.svg</x:String>
+
+            <!-- Css-перекраска иконок тостов под цвет типа (fill и stroke — чтобы работало для любых svg). -->
+            <x:String x:Key="ToastSuccessIconCss">.ThemeIconFill { fill:#47B881; } .ThemeIconStroke { stroke:#47B881; }</x:String>
+            <x:String x:Key="ToastWarningIconCss">.ThemeIconFill { fill:#E0C06A; } .ThemeIconStroke { stroke:#E0C06A; }</x:String>
+            <x:String x:Key="ToastErrorIconCss">.ThemeIconFill { fill:#FF6B6B; } .ThemeIconStroke { stroke:#FF6B6B; }</x:String>
 
             <!-- Подключение всех конвертеров -->
             <converters:BoolToPasswordCharConverter x:Key="BoolToPasswordCharConverter" />

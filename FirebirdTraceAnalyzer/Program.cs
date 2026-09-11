@@ -121,6 +121,9 @@ internal sealed class Program
         // Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»).
         services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
 
+        // Тост-уведомления снизу-справа (успех / предупреждение / ошибка).
+        services.AddSingleton<IToastService, ToastService>();
+
         // Сбор таймингов конвейера (скачивание/парсинг/запись/UI) за сессию — для окна «Статистика парсера».
         services.AddSingleton<IParseTelemetry, ParseTelemetryService>();
 

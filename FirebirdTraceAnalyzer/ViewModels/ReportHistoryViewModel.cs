@@ -21,6 +21,8 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
 
     private readonly IReportHistoryStore? _store;
 
+    private readonly IToastService? _toasts;
+
     #region Observable Properties
 
     [ObservableProperty]
@@ -37,10 +39,12 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
     public ObservableCollection<ReportHistoryItem> AllReports { get; } = new();
     public ObservableCollection<ReportHistoryItem> FilteredReports { get; } = new();
 
-    public ReportHistoryViewModel(IFileDialogService fileDialogService, IReportHistoryStore store)
+    public ReportHistoryViewModel(IFileDialogService fileDialogService, IReportHistoryStore store,
+        IToastService? toasts = null)
     {
         _fileDialogService = fileDialogService;
         _store = store;
+        _toasts = toasts;
     }
 
     public ReportHistoryViewModel()
@@ -91,7 +95,9 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading reports");
-            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.ReportHistory.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -146,7 +152,9 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening report: {Path}", report.FilePath);
-            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.OpenError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.ReportHistory.OpenError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 
@@ -167,7 +175,9 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error opening folder");
-            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.OpenFolderError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.ReportHistory.OpenFolderError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         
         return false;
@@ -189,7 +199,9 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
             AllReports.Remove(report);
             FilteredReports.Remove(report);
 
-            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.Deleted"), report.FileName);
+            var msg = string.Format(Loc.Tr("Status.ReportHistory.Deleted"), report.FileName);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Deleted report: {Path}", report.FilePath);
 
             await Task.CompletedTask;
@@ -197,7 +209,9 @@ public partial class ReportHistoryViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Error deleting report: {Path}", report.FilePath);
-            StatusMessage = string.Format(Loc.Tr("Status.ReportHistory.DeleteError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.ReportHistory.DeleteError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 

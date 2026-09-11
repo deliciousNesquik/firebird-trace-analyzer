@@ -31,6 +31,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     // Внедряются через конструктор (а не резолвятся из App.Services) — сервис-локатор убран.
     private readonly ISettingsService? _settings;
     private readonly IBackgroundTaskService? _backgroundTasks;
+    private readonly IToastService? _toasts;
     private ISettingsService? Settings => _settings;
     private IBackgroundTaskService? BackgroundTasks => _backgroundTasks;
 
@@ -75,13 +76,15 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     }
 
     public StoreManagementViewModel(EventStoreDispatcher dispatcher, IWindowProvider windowProvider,
-        IDialogService dialogService, ISettingsService? settings, IBackgroundTaskService? backgroundTasks)
+        IDialogService dialogService, ISettingsService? settings, IBackgroundTaskService? backgroundTasks,
+        IToastService? toasts = null)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         _settings = settings;
         _backgroundTasks = backgroundTasks;
+        _toasts = toasts;
     }
 
     /// <summary>Первичная загрузка статистики и списка файлов (вызывать до показа диалога).</summary>
@@ -156,11 +159,14 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
             });
 
             Logger.Info("Store management: deleted {Count} file(s)", hashes.Count);
+            _toasts?.Success(Loc.Tr("Store.Manage.Deleted"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Store management: delete failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -199,6 +205,7 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
             await _dispatcher.RunAsync(store => store.Clear());
 
             Logger.Info("Store management: cleared all");
+            _toasts?.Success(Loc.Tr("Store.Manage.Cleared"));
 
             // Полная очистка уже выполнила VACUUM — отложенное обслуживание больше не нужно.
             if (Settings is not null)
@@ -210,7 +217,9 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         catch (Exception ex)
         {
             Logger.Error(ex, "Store management: clear failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -262,7 +271,9 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
     {
         if (Files.Count == 0)
         {
-            StatusMessage = Loc.Tr("Store.Manage.NothingToExport");
+            var msg = Loc.Tr("Store.Manage.NothingToExport");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -290,12 +301,16 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         {
             await _dispatcher.RunAsync(store => store.ExportTo(path, toExport));
 
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Exported"), toExport.Count);
+            var msg = string.Format(Loc.Tr("Store.Manage.Exported"), toExport.Count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Store management: export failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -329,12 +344,16 @@ public partial class StoreManagementViewModel : ViewModelBase, IDialogViewModel
         {
             imported = await _dispatcher.RunAsync(store => store.ImportFrom(path));
 
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Imported"), imported);
+            var msg = string.Format(Loc.Tr("Store.Manage.Imported"), imported);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Store management: import failed");
-            StatusMessage = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            var msg = string.Format(Loc.Tr("Store.Manage.Error"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {

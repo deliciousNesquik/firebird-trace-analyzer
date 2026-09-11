@@ -3,6 +3,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Core;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Interfaces.Dialogs;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
@@ -17,6 +18,11 @@ namespace FirebirdTraceAnalyzer.ViewModels;
 public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewModel
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    private readonly IToastService? _toasts;
+
+    /// <summary>Диалог создаётся вручную владельцем; тост-сервис необязателен (для дизайнера — null).</summary>
+    public RemoteFileSelectionViewModel(IToastService? toasts = null) => _toasts = toasts;
 
     #region Observable Properties
 
@@ -219,7 +225,9 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
         catch (Exception ex)
         {
             Logger.Error(ex, "Error refreshing file list");
-            StatusMessage = string.Format(Loc.Tr("Status.RemoteFiles.RefreshFailed"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.RemoteFiles.RefreshFailed"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -238,10 +246,12 @@ public partial class RemoteFileSelectionViewModel : ViewModelBase, IDialogViewMo
 
         if (freeBytes >= 0 && freeBytes < requiredBytes + FreeSpaceMarginBytes)
         {
-            StatusMessage = string.Format(
+            var msg = string.Format(
                 Loc.Tr("Status.RemoteFiles.NotEnoughSpace"),
                 ByteSizeFormatter.FormatBytes(requiredBytes),
                 ByteSizeFormatter.FormatBytes(freeBytes));
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
 
             Logger.Warn("Not enough disk space in {Dir}: need {Need} bytes, free {Free} bytes",
                 TargetDownloadDirectory, requiredBytes, freeBytes);

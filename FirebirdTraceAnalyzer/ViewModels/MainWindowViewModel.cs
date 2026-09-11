@@ -235,7 +235,8 @@ public partial class MainWindowViewModel : ViewModelBase
         INavigationService navigation,
         IReportTemplateService reportTemplateService,
         IReportGenerationService reportGenerationService,
-        IFileIngestionService ingestion)
+        IFileIngestionService ingestion,
+        IToastService toasts)
     {
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
@@ -269,6 +270,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _reportTemplateService = reportTemplateService ?? throw new ArgumentNullException(nameof(reportTemplateService));
         _reportGenerationService = reportGenerationService ?? throw new ArgumentNullException(nameof(reportGenerationService));
         _ingestion = ingestion ?? throw new ArgumentNullException(nameof(ingestion));
+        _toasts = toasts ?? throw new ArgumentNullException(nameof(toasts));
 
 
         // Инициализация ViewModels
@@ -674,7 +676,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error applying filters");
-            StatusMessage = string.Format(Loc.Tr("Status.Main.FilteringError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.FilteringError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -799,6 +803,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 StatusMessage = Loc.Tr("Status.Main.ReportServicesNotAvailable");
                 Logger.Error("Report services not registered in DI");
+                _toasts?.Error(Loc.Tr("Toast.Report.Failed"), Loc.Tr("Status.Main.ReportServicesNotAvailable"));
                 return;
             }
 
@@ -808,6 +813,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 StatusMessage = string.Format(Loc.Tr("Status.Main.TemplateNotFound"), templateId);
                 Logger.Warn("Template not found: {TemplateId}", templateId);
+                _toasts?.Warning(Loc.Tr("Toast.Report.Failed"), string.Format(Loc.Tr("Status.Main.TemplateNotFound"), templateId));
                 return;
             }
 
@@ -820,6 +826,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 StatusMessage = Loc.Tr("Status.Main.NoEventsForReport");
                 Logger.Warn("No events match report criteria");
+                _toasts?.Warning(Loc.Tr("Toast.Report.NoEvents"), Loc.Tr("Toast.Report.NoEvents.Hint"));
                 return;
             }
 
@@ -849,6 +856,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             StatusMessage = string.Format(Loc.Tr("Status.Main.ReportGenerationError"), ex.Message);
             Logger.Error(ex, "Error generating report");
+            _toasts?.Error(Loc.Tr("Toast.Report.Failed"), ex.Message);
         }
         finally
         {
@@ -872,7 +880,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // сортировки, к которым привязывается загружаемый шаблон (иначе маппинг ничего не найдёт).
         if (editTemplateId != null && VisibleEvents.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.LoadTraceBeforeEdit");
+            var msg = Loc.Tr("Status.Main.LoadTraceBeforeEdit");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return null;
         }
 
@@ -1023,6 +1033,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // Пока просто логируем
         Logger.Info("Report ready: {Path} ({Size} bytes)", report.FilePath, report.FileSize);
 
+        // Тост об успехе (авто-скрытие). Показываем имя файла — путь целиком есть в статус-строке/логе.
+        _toasts?.Success(Loc.Tr("Toast.Report.Generated"), System.IO.Path.GetFileName(report.FilePath));
+
         // Можно автоматически открыть файл
         try
         {
@@ -1103,7 +1116,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (!CanOpenFile())
         {
-            StatusMessage = Loc.Tr("Status.Main.BusyLoading");
+            var msg = Loc.Tr("Status.Main.BusyLoading");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -1117,7 +1132,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (accepted.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.NoTraceFilesDropped");
+            var msg = Loc.Tr("Status.Main.NoTraceFilesDropped");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -1177,7 +1194,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading files");
-            StatusMessage = string.Format(Loc.Tr("Status.Main.LoadingError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.LoadingError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -1278,7 +1297,10 @@ public partial class MainWindowViewModel : ViewModelBase
             Telemetry?.AddFinalize(finalizeSw.ElapsedMilliseconds);
         }
 
-        StatusMessage = BuildFileAddingStatusMessage(addedCount, duplicateCount);
+        var addStatus = BuildFileAddingStatusMessage(addedCount, duplicateCount);
+        StatusMessage = addStatus;
+        if (addedCount > 0)
+            _toasts?.Success(addStatus); // тост только когда реально что-то загрузили
     }
 
     /// <summary>Парсит один файл</summary>
@@ -1334,6 +1356,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»). Биндится панелью.</summary>
     public IBackgroundTaskService? BackgroundTasks => _backgroundTasks;
+
+    private readonly IToastService? _toasts;
+
+    /// <summary>Тост-уведомления снизу-справа (успех/предупреждение/ошибка). Биндится панелью ToastHost.</summary>
+    public IToastService? Toasts => _toasts;
 
     /// <summary>
     /// Читает события файла из хранилища и заполняет рабочий набор — зеркально <see cref="ParseFileAsync"/>,
@@ -1538,7 +1565,9 @@ public partial class MainWindowViewModel : ViewModelBase
             var settings = _sshConnectionService.CurrentSettings;
             if (settings == null)
             {
-                StatusMessage = Loc.Tr("Status.Main.NoConnectionSettings");
+                var noSettingsMsg = Loc.Tr("Status.Main.NoConnectionSettings");
+                StatusMessage = noSettingsMsg;
+                _toasts?.Warning(noSettingsMsg);
                 return;
             }
 
@@ -1552,7 +1581,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (remoteFiles.Count == 0)
             {
-                StatusMessage = Loc.Tr("Status.Main.NoTraceFilesOnServer");
+                var noFilesMsg = Loc.Tr("Status.Main.NoTraceFilesOnServer");
+                StatusMessage = noFilesMsg;
+                _toasts?.Warning(noFilesMsg);
                 Logger.Warn("No files found in {Directory}", settings.RemoteDirectory);
                 return;
             }
@@ -1597,7 +1628,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 deleteLocalFilesAfterProcessing,
                 cts.Token);
 
-            StatusMessage = string.Format(Loc.Tr("Status.Main.SuccessfullyProcessedRemote"), processedCount);
+            var msg = string.Format(Loc.Tr("Status.Main.SuccessfullyProcessedRemote"), processedCount);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Remote files processed: {Count}", processedCount);
         }
         catch (OperationCanceledException)
@@ -1608,7 +1641,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error loading remote files");
-            StatusMessage = string.Format(Loc.Tr("Status.Main.RemoteLoadingError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.RemoteLoadingError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -1647,7 +1682,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IReadOnlyList<RemoteFileInfo> files,
         string downloadDirectory)
     {
-        var viewModel = new RemoteFileSelectionViewModel();
+        var viewModel = new RemoteFileSelectionViewModel(_toasts);
         viewModel.Initialize(
             settings.Hostname,
             settings.Port,
@@ -1700,7 +1735,7 @@ public partial class MainWindowViewModel : ViewModelBase
         bool deleteAfterDownload,
         CancellationToken cancellationToken)
     {
-        var progressViewModel = new DownloadProgressViewModel();
+        var progressViewModel = new DownloadProgressViewModel(_toasts);
         progressViewModel.Initialize(files);
 
         var downloadedPaths = new List<string>();
@@ -1920,7 +1955,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (FileCards.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.NoFilesToReprocess");
+            var msg = Loc.Tr("Status.Main.NoFilesToReprocess");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -1945,7 +1982,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 await ReparseTraceFileAsync(card, cancellationToken);
             }
 
-            StatusMessage = string.Format(Loc.Tr("Status.Main.AllFilesReprocessed"), allCards.Count);
+            var msg = string.Format(Loc.Tr("Status.Main.AllFilesReprocessed"), allCards.Count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Reprocessing completed: {Count} files", allCards.Count);
         }
         catch (OperationCanceledException)
@@ -1956,7 +1995,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error during reprocessing");
-            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -1974,7 +2015,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedFileCards.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.NoFilesSelectedForReprocessing");
+            var msg = Loc.Tr("Status.Main.NoFilesSelectedForReprocessing");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -1999,7 +2042,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 await ReparseTraceFileAsync(card, cancellationToken);
             }
 
-            StatusMessage = string.Format(Loc.Tr("Status.Main.SelectedFilesReprocessed"), selectedCards.Count);
+            var msg = string.Format(Loc.Tr("Status.Main.SelectedFilesReprocessed"), selectedCards.Count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Selected files reprocessed: {Count}", selectedCards.Count);
         }
         catch (OperationCanceledException)
@@ -2010,7 +2055,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error reprocessing selected files");
-            StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.ReprocessingError"), ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
         finally
         {
@@ -2032,7 +2079,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (!fileInfo.Exists)
             {
-                StatusMessage = string.Format(Loc.Tr("Status.Main.FileNotFound"), card.FileInfo.FileName);
+                var msg = string.Format(Loc.Tr("Status.Main.FileNotFound"), card.FileInfo.FileName);
+                StatusMessage = msg;
+                _toasts?.Warning(msg);
                 Logger.Warn("File not found for reparse: {Path}", card.FileInfo.FilePath);
                 return;
             }
@@ -2053,7 +2102,9 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Logger.Error(ex, "Error reparsing file: {FileName}", card.FileInfo.FileName);
-            StatusMessage = string.Format(Loc.Tr("Status.Main.ReparseError"), card.FileInfo.FileName, ex.Message);
+            var msg = string.Format(Loc.Tr("Status.Main.ReparseError"), card.FileInfo.FileName, ex.Message);
+            StatusMessage = msg;
+            _toasts?.Error(msg);
         }
     }
 
@@ -2077,7 +2128,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (FileCards.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.NoFilesToClose");
+            var msg = Loc.Tr("Status.Main.NoFilesToClose");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -2099,7 +2152,9 @@ public partial class MainWindowViewModel : ViewModelBase
             // Зеркало сессии: пустая сессия → пустое хранилище.
             _storeCoordinator?.ClearIfSession();
 
-            StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
+            var msg = string.Format(Loc.Tr("Status.Main.ClosedAllFiles"), count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("All files closed: {Count}", count);
             // Ручной блокирующий GC.Collect убран: он давал заметный фриз UI при закрытии файлов
             // без реальной пользы — рантайм соберёт память сам.
@@ -2121,7 +2176,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedFileCards.Count == 0)
         {
-            StatusMessage = Loc.Tr("Status.Main.NoFilesSelectedToClose");
+            var msg = Loc.Tr("Status.Main.NoFilesSelectedToClose");
+            StatusMessage = msg;
+            _toasts?.Warning(msg);
             return;
         }
 
@@ -2138,7 +2195,9 @@ public partial class MainWindowViewModel : ViewModelBase
             // Удаляем карточки
             foreach (var card in selectedCards) FileCards.Remove(card);
 
-            StatusMessage = string.Format(Loc.Tr("Status.Main.ClosedSelectedFiles"), selectedCards.Count);
+            var msg = string.Format(Loc.Tr("Status.Main.ClosedSelectedFiles"), selectedCards.Count);
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Selected files closed: {Count}", selectedCards.Count);
         }
         finally
@@ -2213,11 +2272,13 @@ public partial class MainWindowViewModel : ViewModelBase
             var windowProvider = _windowProvider;
             if (dispatcher is null || windowProvider is null)
             {
-                StatusMessage = Loc.Tr("Store.Manage.Unavailable");
+                var msg = Loc.Tr("Store.Manage.Unavailable");
+                StatusMessage = msg;
+                _toasts?.Warning(msg);
                 return;
             }
 
-            var vm = new StoreManagementViewModel(dispatcher, windowProvider, Dialogs, _settingsService, BackgroundTasks);
+            var vm = new StoreManagementViewModel(dispatcher, windowProvider, Dialogs, _settingsService, BackgroundTasks, _toasts);
 
             // Грузим статистику/список в фоне: окно открывается сразу (с индикатором занятости),
             // а не ждёт, пока чтение проберётся сквозь очередь фоновых записей в стор.
@@ -2247,11 +2308,13 @@ public partial class MainWindowViewModel : ViewModelBase
             var windowProvider = _windowProvider;
             if (dispatcher is null || windowProvider is null)
             {
-                StatusMessage = Loc.Tr("Store.Manage.Unavailable");
+                var msg = Loc.Tr("Store.Manage.Unavailable");
+                StatusMessage = msg;
+                _toasts?.Warning(msg);
                 return;
             }
 
-            var vm = new StorageAnalyticsViewModel(dispatcher, windowProvider);
+            var vm = new StorageAnalyticsViewModel(dispatcher, windowProvider, _toasts);
             _ = vm.LoadAsync();
 
             await Dialogs.ShowDialogAsync<object>(vm);
@@ -2379,7 +2442,10 @@ public partial class MainWindowViewModel : ViewModelBase
         if (restored > 0)
             ApplyAllFilters();
 
-        StatusMessage = string.Format(Loc.Tr("Status.Main.SessionRestored"), restored);
+        var msg = string.Format(Loc.Tr("Status.Main.SessionRestored"), restored);
+        StatusMessage = msg;
+        if (restored > 0)
+            _toasts?.Success(msg); // не показываем тост «восстановлено 0» при старте
         Logger.Info("Session recovery: restored {Count} file(s) from store", restored);
     }
 
@@ -2419,7 +2485,9 @@ public partial class MainWindowViewModel : ViewModelBase
             IsStatisticsMode = _appSettings.StatisticsMode;
             IsInspectorMode = _appSettings.InspectorMode;
 
-            StatusMessage = Loc.Tr("Status.Main.SettingsUpdated");
+            var msg = Loc.Tr("Status.Main.SettingsUpdated");
+            StatusMessage = msg;
+            _toasts?.Success(msg);
             Logger.Info("Settings updated from settings window");
         }
         catch (Exception ex)
@@ -2446,7 +2514,9 @@ public partial class MainWindowViewModel : ViewModelBase
         PersistUiSettings();
 
         Logger.Info("Factory settings restored.");
-        StatusMessage = Loc.Tr("Status.Main.FactorySettingsRestored");
+        var msg = Loc.Tr("Status.Main.FactorySettingsRestored");
+        StatusMessage = msg;
+        _toasts?.Success(msg);
     }
 
     #endregion

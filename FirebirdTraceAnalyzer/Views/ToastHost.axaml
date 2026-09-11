@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ifc="using:FirebirdTraceAnalyzer.Interfaces"
+             xmlns:models="using:FirebirdTraceAnalyzer.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="260"
+             x:Class="FirebirdTraceAnalyzer.Views.ToastHost"
+             x:DataType="ifc:IToastService">
+
+    <!-- Тост-уведомления снизу-справа. Стиль намеренно выдержан в тон мини-панели фоновых задач:
+         тот же surface/рамка/тень/радиус, нейтральный текст. Цвет типа — только в маленькой иконке.
+         Каждый тост въезжает справа и выезжает обратно (анимация в стилях, флаг IsShown из ToastService).
+         Успех авто-скрывается; ошибка/предупреждение — крестиком. -->
+    <UserControl.Styles>
+        <!-- Базовое (скрытое) состояние + переходы въезда/выезда. -->
+        <Style Selector="Border.toast">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="translateX(28px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="CubicEaseOut" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Показанное состояние. -->
+        <Style Selector="Border.toast.shown">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransform" Value="translateX(0px)" />
+        </Style>
+
+        <!-- Кнопка-крестик: без фона, лёгкая подсветка на ховере. -->
+        <Style Selector="Button.close">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.close:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ButtonNormalHoverBackgroundBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Spacing="10" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:ToastItem">
+                <Border Classes="toast"
+                        Classes.shown="{Binding IsShown}"
+                        Width="360"
+                        CornerRadius="8"
+                        Padding="14"
+                        Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        BoxShadow="0 6 20 0 #40000000">
+
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <!-- Иконка типа: показывается ровно одна. Единственный цветовой сигнал. -->
+                        <Panel Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top">
+                            <Svg Width="18" Height="18"
+                                 Path="{DynamicResource SuccessIcon}"
+                                 Css="{DynamicResource ToastSuccessIconCss}"
+                                 IsVisible="{Binding IsSuccess}" />
+                            <Svg Width="18" Height="18"
+                                 Path="{DynamicResource WarningIcon}"
+                                 Css="{DynamicResource ToastWarningIconCss}"
+                                 IsVisible="{Binding IsWarning}" />
+                            <Svg Width="18" Height="18"
+                                 Path="{DynamicResource WarningIcon}"
+                                 Css="{DynamicResource ToastErrorIconCss}"
+                                 IsVisible="{Binding IsError}" />
+                        </Panel>
+
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Message}"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <!-- Крестик закрытия (для всех типов; успех закроется и сам). -->
+                        <Button Grid.Column="2"
+                                Classes="close"
+                                Click="OnCloseClick">
+                            <Svg Width="12" Height="12"
+                                 Path="{DynamicResource ClearIcon}"
+                                 Css="{DynamicResource ThemeIconFill}" />
+                        </Button>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>
