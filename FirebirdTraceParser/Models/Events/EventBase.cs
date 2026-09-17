@@ -26,4 +26,14 @@ public class EventBase
     [SortableField("Type", Category = "General")]
     [FilterableField("Type", Category = "General", FilterType =  FilterType.EnumMultiSelect)]
     public required EventType EventType { get; init; }
+
+    /// <summary>
+    /// Длительность жизненного цикла: для <see cref="Events.TraceFinishEvent"/> — время trace‑сессии,
+    /// для <see cref="Events.DetachDatabaseEvent"/> — время жизни подключения; для остальных событий null.
+    /// Производное поле — считается пост-проходом (см. DurationPostProcessor) и не персистится.
+    /// Объявлено на <see cref="EventBase"/> намеренно: сортировки берутся из ПЕРЕСЕЧЕНИЯ полей всех
+    /// типов набора, поэтому общее поле доступно для сортировки и в смешанном логе.
+    /// </summary>
+    [SortableField("Session / Connection Duration", Category = "General")]
+    public TimeSpan? Duration { get; set; }
 }
