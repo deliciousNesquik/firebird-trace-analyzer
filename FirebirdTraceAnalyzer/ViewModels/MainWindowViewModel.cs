@@ -30,6 +30,7 @@ using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
 using FirebirdTraceParser.Models.Events;
 using FirebirdTraceParser.Parsing.Engine;
+using FirebirdTraceParser.Parsing.PostProcessing;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -1337,6 +1338,9 @@ public partial class MainWindowViewModel : ViewModelBase
         var parsed = await _ingestion!.ParseAsync(fileInfo.FullName, cancellationToken);
         var events = parsed.Events as List<EventBase> ?? parsed.Events.ToList();
 
+        // Производные длительности (сессия/подключение) считаются на полном списке событий файла.
+        DurationPostProcessor.Apply(events);
+
         _eventsByFileHash[fileHash] = events;
 
         var ingestSw = Stopwatch.StartNew();
@@ -1398,6 +1402,9 @@ public partial class MainWindowViewModel : ViewModelBase
         readSw.Stop();
 
         var events = restored as List<EventBase> ?? restored.ToList();
+
+        // Длительность — производное поле, не персистится: пересчитываем после чтения из хранилища.
+        DurationPostProcessor.Apply(events);
 
         _eventsByFileHash[fileHash] = events;
 
@@ -2445,6 +2452,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
 
                 var list = events as List<EventBase> ?? events.ToList();
+                DurationPostProcessor.Apply(list);
                 _eventsByFileHash[model.FileHash] = list;
                 AllEvents.AddRange(list);
 
