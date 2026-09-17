@@ -35,7 +35,7 @@
         <Border Grid.Row="2" Padding="10" Background="{DynamicResource SurfaceBrush}"
                 IsVisible="{Binding IsSearchSectionVisible}">
 
-            <Grid ColumnDefinitions="* Auto Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
+            <Grid ColumnDefinitions="* Auto Auto Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
                          x:Name="SearchBox"
                          Height="40"
@@ -135,8 +135,14 @@
                     <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
                 </controls:ButtonWithNumericBadge>
 
-                <!-- Переключатель режима списка событий: Компакт | Полный -->
+                <!-- Тонкий вертикальный разделитель перед переключателем режима -->
                 <Border Grid.Row="0" Grid.Column="5"
+                        Width="1" Height="26"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource BorderBrush}" />
+
+                <!-- Переключатель режима списка событий: Компакт | Полный -->
+                <Border Grid.Row="0" Grid.Column="6"
                         Height="40"
                         Background="{DynamicResource ButtonNormalBackgroundBrush}"
                         BorderBrush="{DynamicResource ButtonNormalBorderBrush}"
