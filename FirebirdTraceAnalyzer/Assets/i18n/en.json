@@ -358,6 +358,8 @@
   "Main.ChangeSearchMode": "Change search mode. States: [Classic/Regex]",
   "Main.SortEvents": "Sort events",
   "Main.FilterEvents": "Filter events",
+  "Main.ViewCompact": "Compact view",
+  "Main.ViewFull": "Full view",
   "Filter.Title": "Filter by",
   "Filter.SearchPlaceholder": "Type to find filter...",
   "Filter.TextSearchPlaceholder": "Contains text…",

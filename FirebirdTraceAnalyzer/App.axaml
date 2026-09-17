@@ -415,6 +415,8 @@
             <x:String x:Key="SaveIcon">avares://FirebirdTraceAnalyzer/Assets/save.svg</x:String>
             <x:String x:Key="ClassicSearchIcon">avares://FirebirdTraceAnalyzer/Assets/text-search.svg</x:String>
             <x:String x:Key="RegexSearchIcon">avares://FirebirdTraceAnalyzer/Assets/regex-search.svg</x:String>
+            <x:String x:Key="ViewCompactIcon">avares://FirebirdTraceAnalyzer/Assets/view-rows.svg</x:String>
+            <x:String x:Key="ViewFullIcon">avares://FirebirdTraceAnalyzer/Assets/view-cards.svg</x:String>
             <x:String x:Key="ImportIcon">avares://FirebirdTraceAnalyzer/Assets/import.svg</x:String>
             <x:String x:Key="ResetIcon">avares://FirebirdTraceAnalyzer/Assets/reset.svg</x:String>
             <x:String x:Key="AddIcon">avares://FirebirdTraceAnalyzer/Assets/add.svg</x:String>

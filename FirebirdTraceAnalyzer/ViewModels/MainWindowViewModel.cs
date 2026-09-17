@@ -121,6 +121,18 @@ public partial class MainWindowViewModel : ViewModelBase
     
     [ObservableProperty] private bool _isClassicSearch;
 
+    /// <summary>Режим отображения списка событий: детальные карточки (Full) или плотный список (Compact).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFullCardMode))]
+    [NotifyPropertyChangedFor(nameof(IsCompactCardMode))]
+    private EventCardViewMode _eventCardViewMode = EventCardViewMode.Full;
+
+    /// <summary>true, когда активен детальный режим карточек.</summary>
+    public bool IsFullCardMode => EventCardViewMode == EventCardViewMode.Full;
+
+    /// <summary>true, когда активен плотный (компактный) режим карточек.</summary>
+    public bool IsCompactCardMode => EventCardViewMode == EventCardViewMode.Compact;
+
     /// <summary>Показывать диагностический пункт меню («Статистика парсера»).</summary>
     [ObservableProperty] private bool _isStatisticsMode;
     
@@ -1077,6 +1089,13 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ChangeSearchType()
     {
         IsClassicSearch = !IsClassicSearch;
+    }
+
+    /// <summary>Устанавливает режим отображения списка событий (Компакт/Полный).</summary>
+    [RelayCommand]
+    private void SetEventCardViewMode(EventCardViewMode mode)
+    {
+        EventCardViewMode = mode;
     }
 
     /// <summary>

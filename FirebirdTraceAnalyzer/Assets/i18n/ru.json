@@ -358,6 +358,8 @@
   "Main.ChangeSearchMode": "Сменить режим поиска. Состояния: [Обычный/Regex]",
   "Main.SortEvents": "Сортировка событий",
   "Main.FilterEvents": "Фильтрация событий",
+  "Main.ViewCompact": "Компактный вид",
+  "Main.ViewFull": "Полный вид",
   "Filter.Title": "Фильтровать по",
   "Filter.SearchPlaceholder": "Введите для поиска...",
   "Filter.TextSearchPlaceholder": "Содержит текст…",

@@ -7,6 +7,7 @@
         xmlns:views="clr-namespace:FirebirdTraceAnalyzer.Views"
         xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
         xmlns:controls="clr-namespace:FirebirdTraceAnalyzer.Controls.Common"
+        xmlns:enums="clr-namespace:FirebirdTraceAnalyzer.Enums"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
         x:Class="FirebirdTraceAnalyzer.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -34,7 +35,7 @@
         <Border Grid.Row="2" Padding="10" Background="{DynamicResource SurfaceBrush}"
                 IsVisible="{Binding IsSearchSectionVisible}">
 
-            <Grid ColumnDefinitions="* Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
+            <Grid ColumnDefinitions="* Auto Auto Auto Auto Auto" RowDefinitions="Auto Auto" ColumnSpacing="5">
                 <TextBox Grid.Row="0" Grid.Column="0"
                          x:Name="SearchBox"
                          Height="40"
@@ -133,6 +134,48 @@
 
                     <Svg Width="40" Path="{DynamicResource FilterIcon}" Css="{DynamicResource ThemeIconStroke}" />
                 </controls:ButtonWithNumericBadge>
+
+                <!-- Переключатель режима списка событий: Компакт | Полный -->
+                <Border Grid.Row="0" Grid.Column="5"
+                        Height="40"
+                        Background="{DynamicResource ButtonNormalBackgroundBrush}"
+                        BorderBrush="{DynamicResource ButtonNormalBorderBrush}"
+                        BorderThickness="1" CornerRadius="2" ClipToBounds="True">
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="segbtn"
+                                Classes.on="{Binding IsCompactCardMode}"
+                                Command="{Binding SetEventCardViewModeCommand}"
+                                CommandParameter="{x:Static enums:EventCardViewMode.Compact}"
+                                ToolTip.Tip="{loc:Tr Main.ViewCompact}">
+                            <Panel>
+                                <Svg Width="40" Path="{DynamicResource ViewCompactIcon}"
+                                     Css="{DynamicResource ThemeIconStroke}"
+                                     IsVisible="{Binding IsCompactCardMode, Converter={x:Static BoolConverters.Not}}" />
+                                <Svg Width="40" Path="{DynamicResource ViewCompactIcon}"
+                                     Css="{DynamicResource ThemeIconStrokeOnlyWhite}"
+                                     IsVisible="{Binding IsCompactCardMode}" />
+                            </Panel>
+                        </Button>
+
+                        <Border Width="1" Background="{DynamicResource ButtonNormalBorderBrush}" />
+
+                        <Button Classes="segbtn"
+                                Classes.on="{Binding IsFullCardMode}"
+                                Command="{Binding SetEventCardViewModeCommand}"
+                                CommandParameter="{x:Static enums:EventCardViewMode.Full}"
+                                ToolTip.Tip="{loc:Tr Main.ViewFull}">
+                            <Panel>
+                                <Svg Width="40" Path="{DynamicResource ViewFullIcon}"
+                                     Css="{DynamicResource ThemeIconStroke}"
+                                     IsVisible="{Binding IsFullCardMode, Converter={x:Static BoolConverters.Not}}" />
+                                <Svg Width="40" Path="{DynamicResource ViewFullIcon}"
+                                     Css="{DynamicResource ThemeIconStrokeOnlyWhite}"
+                                     IsVisible="{Binding IsFullCardMode}" />
+                            </Panel>
+                        </Button>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
