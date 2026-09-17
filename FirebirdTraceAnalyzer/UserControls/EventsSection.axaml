@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:FirebirdTraceAnalyzer.ViewModels"
-             xmlns:core="using:FirebirdTraceParser.Models.Events"
+             xmlns:local="using:FirebirdTraceAnalyzer.UserControls"
              xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="450"
              x:Class="FirebirdTraceAnalyzer.UserControls.EventsSection"
@@ -26,26 +26,14 @@
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
 
-                <!-- Плотный режим (v0-заглушка: одна строка на событие; финальные компактные карточки — следующим шагом) -->
+                <!-- Плотный режим: компакт-карточки по типу события. Регистрация «тип → компакт-карточка»
+                     вынесена в CompactEventItem (сами карточки — Controls/EventCards/Compact/*). -->
                 <ItemsRepeater ItemsSource="{Binding VisibleEvents}"
                                Margin="10"
                                IsVisible="{Binding IsCompactCardMode}">
                     <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="core:EventBase">
-                            <Border Padding="10,6"
-                                    BorderBrush="{DynamicResource BorderSubtleBrush}"
-                                    BorderThickness="0,0,0,1">
-                                <StackPanel Orientation="Horizontal" Spacing="14">
-                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss.fff}'}"
-                                               FontFamily="Consolas, monospace"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                                    <TextBlock Text="{Binding EventType}"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                </StackPanel>
-                            </Border>
+                        <DataTemplate>
+                            <local:CompactEventItem />
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>

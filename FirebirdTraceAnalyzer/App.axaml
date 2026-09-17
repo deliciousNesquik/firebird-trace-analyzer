@@ -465,6 +465,23 @@
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/TriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/FailedTriggerFinishEventCard.axaml"/>
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/ErrorEventCard.axaml"/>
+
+        <!-- Компактные (однострочные) карточки для плотного режима списка -->
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/AttachDatabaseCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/DetachDatabaseCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/TraceInitCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/TraceFiniCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/StatementStartCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/StatementFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/StatementRestartCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/FailedStatementFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/ProcedureStartCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/ProcedureFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/FailedProcedureFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/TriggerStartCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/TriggerFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/FailedTriggerFinishCompactCard.axaml"/>
+        <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/EventCards/Compact/ErrorCompactCard.axaml"/>
         
         <StyleInclude Source="avares://FirebirdTraceAnalyzer/Controls/Base/FileCard.axaml" />
         

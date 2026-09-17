@@ -9,7 +9,10 @@ namespace FirebirdTraceAnalyzer.Converters;
 /// <remarks>The condition is met if the actual value is strictly greater than the threshold set by the user.</remarks>
 public class CountToVisibilityConverter : IValueConverter
 {
-    
+    /// <summary>Готовый экземпляр для использования из ControlTemplate через x:Static.</summary>
+    public static readonly CountToVisibilityConverter Instance = new();
+
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not int count) return false;

@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+             xmlns:core="using:FirebirdTraceParser.Models.Events"
+             xmlns:compact="using:FirebirdTraceAnalyzer.Controls.EventCards.Compact"
+             mc:Ignorable="d"
+             x:DataType="core:EventBase"
+             x:Class="FirebirdTraceAnalyzer.UserControls.CompactEventItem">
+
+    <!-- Регистрация «тип события → компакт-карточка». Не мигрированные семейства
+         попадают в общий однострочный fallback (core:EventBase). -->
+    <ContentControl Content="{Binding}">
+        <ContentControl.DataTemplates>
+
+            <DataTemplate DataType="core:AttachDatabaseEvent">
+                <compact:AttachDatabaseCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    User="{Binding Attachment.User}"
+                    DatabasePath="{Binding Attachment.DatabasePath}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:DetachDatabaseEvent">
+                <compact:DetachDatabaseCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    User="{Binding Attachment.User}"
+                    DatabasePath="{Binding Attachment.DatabasePath}"
+                    Duration="{Binding Duration}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:TraceInitEvent">
+                <compact:TraceInitCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    SessionId="{Binding Session.SessionId}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:TraceFinishEvent">
+                <compact:TraceFiniCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    SessionId="{Binding Session.SessionId}"
+                    Duration="{Binding Duration}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:StatementStartEvent">
+                <compact:StatementStartCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    Sql="{Binding Sql}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:StatementFinishEvent">
+                <compact:StatementFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    Sql="{Binding Sql}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:StatementRestartEvent">
+                <compact:StatementRestartCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    Sql="{Binding Sql}"
+                    RestartCount="{Binding RestartCount}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:FailedStatementFinishEvent">
+                <compact:FailedStatementFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    Sql="{Binding Sql}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:ProcedureStartEvent">
+                <compact:ProcedureStartCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    ProcedureName="{Binding ProcedureName}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:ProcedureFinishEvent">
+                <compact:ProcedureFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    ProcedureName="{Binding ProcedureName}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:FailedProcedureFinishEvent">
+                <compact:FailedProcedureFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    ProcedureName="{Binding ProcedureName}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:TriggerStartEvent">
+                <compact:TriggerStartCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    TriggerName="{Binding TriggerName}"
+                    Table="{Binding Table}"
+                    Timing="{Binding Timing}"
+                    Event="{Binding Event}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:TriggerFinishEvent">
+                <compact:TriggerFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    TriggerName="{Binding TriggerName}"
+                    Table="{Binding Table}"
+                    Timing="{Binding Timing}"
+                    Event="{Binding Event}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:FailedTriggerFinishEvent">
+                <compact:FailedTriggerFinishCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    TriggerName="{Binding TriggerName}"
+                    Table="{Binding Table}"
+                    Timing="{Binding Timing}"
+                    Event="{Binding Event}"
+                    ExecuteMs="{Binding Performance.ExecuteMs}" />
+            </DataTemplate>
+
+            <DataTemplate DataType="core:ErrorEvent">
+                <compact:ErrorCompactCard
+                    Timestamp="{Binding Timestamp}"
+                    AttachmentId="{Binding Attachment.AttachmentId}"
+                    Errors="{Binding Errors}" />
+            </DataTemplate>
+
+            <!-- Fallback: ещё не мигрированные семейства (одна строка: время + тип) -->
+            <DataTemplate DataType="core:EventBase">
+                <Border Padding="15,7" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <TextBlock VerticalAlignment="Center"
+                                   Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss.fff}'}"
+                                   FontFamily="Consolas" FontSize="11"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Text="{Binding EventType}"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+        </ContentControl.DataTemplates>
+    </ContentControl>
+</UserControl>

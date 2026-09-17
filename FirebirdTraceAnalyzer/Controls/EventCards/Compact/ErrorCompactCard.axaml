@@ -1,0 +1,48 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FirebirdTraceAnalyzer.Localization"
+        xmlns:converters="using:FirebirdTraceAnalyzer.Converters"
+        xmlns:events="using:FirebirdTraceAnalyzer.Controls.EventCards.Compact">
+
+    <Style Selector="events|ErrorCompactCard">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <Border BorderBrush="{DynamicResource ErrorEventBrush}" BorderThickness="3,0,0,0" Padding="12,7">
+                        <Grid ColumnDefinitions="112,88,*,Auto,Auto" ColumnSpacing="14">
+                            <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                                       Text="{loc:Tr EventCard.Compact.Error}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                       Text="{Binding AttachmentId, RelativeSource={RelativeSource TemplatedParent}, StringFormat='#{0}'}"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       FontFamily="Consolas" FontSize="12">
+                                <Run Text="{Binding Errors[0].ErrorCode, RelativeSource={RelativeSource TemplatedParent}}"
+                                     FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <Run Text=" " />
+                                <Run Text="{Binding Errors[0].Message, RelativeSource={RelativeSource TemplatedParent}}"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Run Text="{Binding Errors, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static converters:ErrorExtraCountConverter.Instance}}"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                            </TextBlock>
+                            <TextBlock Grid.Column="3" VerticalAlignment="Center"
+                                       Text="{Binding Timestamp, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:HH:mm:ss.fff}'}"
+                                       FontFamily="Consolas" FontSize="11"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <Button Grid.Column="4" VerticalAlignment="Center"
+                                    Classes="open-inspector"
+                                    Background="Transparent" BorderThickness="0" Padding="4,0"
+                                    ToolTip.Tip="{loc:Tr EventCard.OpenInspectorTooltip}">
+                                <Svg Width="15" Height="15" Path="{DynamicResource HistoryIcon}"
+                                     Css="{DynamicResource ThemeIconFillAndStroke}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>
