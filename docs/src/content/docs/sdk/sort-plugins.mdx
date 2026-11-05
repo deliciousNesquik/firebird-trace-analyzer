@@ -89,6 +89,8 @@ comparisons. In that mode:
 
 - the app compares keys with its own value comparer and applies the `descending` flag and tie
   stability **for you** — your `comparer` is **not** invoked;
+- events whose key is `null` take no part in the ordering: they always go last, in their original
+  order, whichever the direction — return `null` for events your sort does not apply to;
 - `comparer` is still a **required** constructor argument, so pass one anyway (it simply is not
   called while a key selector is present).
 
