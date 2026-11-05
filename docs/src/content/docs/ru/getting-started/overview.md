@@ -16,7 +16,7 @@ description: Что такое Firebird Trace Analyzer, для кого он и 
 
 <figure class="fta-figure">
   <img src="/firebird-trace-analyzer/shared/raw-trace-log.png" alt="Сырой текст трейс-лога Firebird" />
-  <figcaption>Сырой текст трейс-лога — технически полный, но читать его прямо из файла изнурительно.</figcaption>
+  <figcaption>Сырой текст трейс-лога — формально в нём всё есть, но читать его прямо из файла тяжело.</figcaption>
 </figure>
 
 ## Что умеет
