@@ -1,0 +1,53 @@
+name: Tests
+
+# Юнит-тесты решения на каждый push в master и на PR в master.
+# Отдельный от Release (тот собирает только по тегам) и Docs (тот следит за docs/):
+# здесь — единственное место, где тесты гоняются автоматически.
+#
+# Изменения только в документации/маркдаунах тесты не затрагивают — пропускаем,
+# чтобы не гонять пустые прогоны.
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+permissions:
+  contents: read   # токен нужен только на checkout; публикаций из этого воркфлоу нет
+
+concurrency:
+  # Новый пуш/коммит в ту же ветку отменяет ещё не завершённый прогон — минуты не горят впустую.
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: dotnet test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Restore
+        run: dotnet restore FirebirdTrace.sln
+
+      - name: Build
+        run: dotnet build FirebirdTrace.sln --no-restore
+
+      - name: Test
+        run: dotnet test FirebirdTrace.sln --no-build --nologo
