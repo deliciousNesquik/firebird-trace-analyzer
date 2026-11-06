@@ -5,6 +5,9 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Reports;
+using FirebirdTraceParser.Models.Enums;
+using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Models.ValueObjects;
 
 namespace FirebirdTraceAnalyzer.Tests;
 
@@ -75,6 +78,33 @@ public sealed class ReportGenerationServiceTests : IDisposable
         // Конструктор не должен падать при дубле формата (второй игнорируется с предупреждением).
         var ex = Record.Exception(() => NewService(first, second));
         Assert.Null(ex);
+    }
+
+    [Fact]
+    public void PrepareEvents_SortByField_EventsWithoutValue_GoLast_InBothDirections()
+    {
+        // Сортировка отчёта — по тем же правилам, что и главная форма: без значения — всегда в конце,
+        // в исходном порядке.
+        static EventBase WithDuration(int traceId, int? seconds) => new TraceInitEvent
+        {
+            Timestamp = new DateTime(2026, 7, 21, 10, 0, 0), TraceId = traceId, HexTraceId = "0x01",
+            EventType = EventType.TraceInit, Session = new TraceSessionInfo { SessionId = 1 },
+            Duration = seconds is null ? null : TimeSpan.FromSeconds(seconds.Value)
+        };
+
+        var events = new[]
+        {
+            WithDuration(1, null), WithDuration(2, 5), WithDuration(3, null), WithDuration(4, 60), WithDuration(5, 20)
+        };
+
+        foreach (var descending in new[] { false, true })
+        {
+            var template = new ReportTemplate { Name = "T", SortByField = "Duration", SortDescending = descending };
+            var ids = NewService().PrepareEventsForReport(events, template).Select(e => e.TraceId).ToArray();
+
+            int[] expected = descending ? [4, 5, 2, 1, 3] : [2, 5, 4, 1, 3];
+            Assert.Equal(expected, ids);
+        }
     }
 
     // Настройки не используются, когда outputPath задан явно — стаб только чтобы удовлетворить ctor.

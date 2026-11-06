@@ -34,6 +34,17 @@ public interface IEventPropertyAccessor
     int Compare(object? valueA, object? valueB);
 
     /// <summary>
+    /// Compares two values for a sort in the given direction. Non-null values are ordered by <see cref="Compare"/>,
+    /// reversed when <paramref name="descending"/> is set; <c>null</c> values take no part in the ordering and always
+    /// go last, whatever the direction.
+    /// </summary>
+    /// <param name="valueA">The first value to compare.</param>
+    /// <param name="valueB">The second value to compare.</param>
+    /// <param name="descending">Whether the sort is descending.</param>
+    /// <returns>A negative number if <paramref name="valueA"/> goes first, zero if equal, a positive number if it goes last.</returns>
+    int CompareForSort(object? valueA, object? valueB, bool descending);
+
+    /// <summary>
     /// Attempts to resolve a filter ID into a property path.
     /// </summary>
     /// <param name="filterId">The filter ID to resolve.</param>

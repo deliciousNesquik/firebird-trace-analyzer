@@ -178,9 +178,12 @@ public sealed class ReportProjectionService : IReportProjectionService
         if (index < 0)
             return rows;
 
+        // Пустая ячейка в сортировке не участвует: такие строки всегда в конце, в исходном порядке
+        // (OrderBy стабилен) — при любом направлении, как у сортировки событий.
+        var nonEmptyFirst = rows.OrderBy(r => r[index] is null);
         var sorted = sortDescending
-            ? rows.OrderByDescending(r => r[index], CellComparer.Instance)
-            : rows.OrderBy(r => r[index], CellComparer.Instance);
+            ? nonEmptyFirst.ThenByDescending(r => r[index], CellComparer.Instance)
+            : nonEmptyFirst.ThenBy(r => r[index], CellComparer.Instance);
 
         return sorted.ToList();
     }

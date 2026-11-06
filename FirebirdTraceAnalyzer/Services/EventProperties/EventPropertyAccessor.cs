@@ -122,6 +122,17 @@ public sealed class EventPropertyAccessor : IEventPropertyAccessor
             StringComparison.Ordinal);
     }
 
+    public int CompareForSort(object? valueA, object? valueB, bool descending)
+    {
+        // Пустые значения в порядке не участвуют: Compare ставит null после значения, и направление
+        // это НЕ переворачивает — события без значения всегда в конце.
+        if (valueA == null || valueB == null)
+            return Compare(valueA, valueB);
+
+        var result = Compare(valueA, valueB);
+        return descending ? -result : result;
+    }
+
     public bool TryResolveFilterId(string filterId, out string propertyPath)
     {
         if (_filterIdToPath.TryGetValue(filterId, out propertyPath!))

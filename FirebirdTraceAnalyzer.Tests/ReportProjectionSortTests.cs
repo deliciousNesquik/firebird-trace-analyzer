@@ -85,6 +85,45 @@ public sealed class ReportProjectionSortTests
     }
 
     [Fact]
+    public void EmptyCells_GoLast_InBothDirections()
+    {
+        // Группа без значения (null) в сортировке не участвует: всегда в конце, при любом направлении.
+        static EventBase WithDuration(int traceId, int? seconds)
+        {
+            var evt = Stmt(traceId, 10);
+            evt.Duration = seconds is null ? null : TimeSpan.FromSeconds(seconds.Value);
+            return evt;
+        }
+
+        var events = new[] { WithDuration(1, 5), WithDuration(2, null), WithDuration(3, 60), WithDuration(4, 20) };
+
+        foreach (var descending in new[] { false, true })
+        {
+            var template = new ReportTemplate
+            {
+                Name = "T",
+                SortDescending = descending,
+                Body = new ReportBody
+                {
+                    GroupByFields = { "Duration" },
+                    SortByColumn = "0",
+                    VisibleFields =
+                    {
+                        new EventField { DisplayName = "Duration", PropertyPath = "Duration", Kind = ColumnKind.GroupKey, Order = 0 }
+                    }
+                }
+            };
+
+            var keys = NewService().BuildTable(template, events).Rows.Select(r => r[0]).ToList();
+
+            object?[] expected = descending
+                ? [TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(5), null]
+                : [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(60), null];
+            Assert.Equal(expected, keys);
+        }
+    }
+
+    [Fact]
     public void LegacyDisplayNameSort_StillFallsBackToFirstMatch()
     {
         // Старый шаблон: SortByColumn = DisplayName "Exec" → откат на первую колонку с этим именем (Sum).

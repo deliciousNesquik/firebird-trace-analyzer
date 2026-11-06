@@ -120,9 +120,8 @@ public sealed class SortingService : ISortingService
         {
             var valueA = _propertyAccessor.GetValue(a, propertyPath);
             var valueB = _propertyAccessor.GetValue(b, propertyPath);
-            var result = _propertyAccessor.Compare(valueA, valueB);
 
-            return descending ? -result : result;
+            return _propertyAccessor.CompareForSort(valueA, valueB, descending);
         };
     }
 
@@ -151,9 +150,10 @@ public sealed class SortingService : ISortingService
 
             Array.Sort(keyed, (a, b) =>
             {
-                var result = _propertyAccessor.Compare(a.Key, b.Key);
+                // Событие без значения (null) в сортировке не участвует: всегда в конце, в исходном порядке.
+                var result = _propertyAccessor.CompareForSort(a.Key, b.Key, descending);
                 if (result != 0)
-                    return descending ? -result : result;
+                    return result;
                 // Ключи равны — сохраняем исходный порядок (не зависит от направления сортировки).
                 return a.Index.CompareTo(b.Index);
             });

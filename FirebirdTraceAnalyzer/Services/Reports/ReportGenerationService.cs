@@ -141,22 +141,22 @@ public class ReportGenerationService : IReportGenerationService
 
     /// <summary>
     ///     Сортировка отчёта преобразованием Шварца: ключ сортировки извлекается один раз на
-    ///     событие, далее сортируем по готовым ключам. Использует тот же <see cref="IEventPropertyAccessor.Compare"/>
-    ///     и тот же нестабильный <see cref="List{T}.Sort"/>, что и поле-сортировка в SortingService,
-    ///     поэтому итоговый порядок (включая равные элементы) идентичен, но обращений к свойству
-    ///     на порядок меньше.
+    ///     событие, далее сортируем по готовым ключам. Правила те же, что у поля-сортировки в
+    ///     SortingService: <see cref="IEventPropertyAccessor.CompareForSort"/> (события без значения
+    ///     всегда в конце) и индекс как tiebreaker (<see cref="List{T}.Sort"/> нестабилен), поэтому
+    ///     порядок совпадает с главной формой, а обращений к свойству на порядок меньше.
     /// </summary>
     private List<EventBase> SortBySchwartzian(List<EventBase> events, string propertyPath, bool descending)
     {
-        var keyed = new List<(EventBase Event, object? Key)>(events.Count);
+        var keyed = new List<(EventBase Event, object? Key, int Index)>(events.Count);
 
-        foreach (var evt in events)
-            keyed.Add((evt, _propertyAccessor.GetValue(evt, propertyPath)));
+        for (var i = 0; i < events.Count; i++)
+            keyed.Add((events[i], _propertyAccessor.GetValue(events[i], propertyPath), i));
 
         keyed.Sort((x, y) =>
         {
-            var result = _propertyAccessor.Compare(x.Key, y.Key);
-            return descending ? -result : result;
+            var result = _propertyAccessor.CompareForSort(x.Key, y.Key, descending);
+            return result != 0 ? result : x.Index.CompareTo(y.Index);
         });
 
         var sorted = new List<EventBase>(keyed.Count);

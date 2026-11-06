@@ -149,6 +149,63 @@ public sealed class SortingServiceTests
         Assert.Equal(expected, desc.Select(e => e.TraceId).ToArray());
     }
 
+    private static EventBase WithDuration(int traceId, int? seconds)
+    {
+        var evt = AtId(T1, traceId);
+        evt.Duration = seconds is null ? null : TimeSpan.FromSeconds(seconds.Value);
+        return evt;
+    }
+
+    [Fact]
+    public void DurationSort_EventsWithoutDuration_GoLast_InBothDirections()
+    {
+        // Сгенерированная сортировка «Session / Connection Duration»: у большинства событий длительности
+        // нет — при сортировке по убыванию они не должны всплывать наверх.
+        var events = new[]
+        {
+            WithDuration(1, null), WithDuration(2, 5), WithDuration(3, null), WithDuration(4, 60), WithDuration(5, 20)
+        };
+        var svc = NewService();
+        svc.GetAvailableSorts(events);
+        var sortId = new EventPropertyAccessor().ToSortId(nameof(EventBase.Duration));
+
+        var desc = svc.ApplySort(events, sortId, descending: true).Select(e => e.TraceId).ToArray();
+        Assert.Equal([4, 5, 2, 1, 3], desc);
+
+        var asc = svc.ApplySort(events, sortId).Select(e => e.TraceId).ToArray();
+        Assert.Equal([2, 5, 4, 1, 3], asc);
+    }
+
+    [Fact]
+    public void KeySelectorNull_TakesNoPartInOrder_AndKeepsInputOrder()
+    {
+        // Как в примере SDK: KeySelector возвращает null для событий, к которым сортировка не относится.
+        // Событий больше 16, чтобы Array.Sort пошёл нестабильным introsort и работал именно индекс-tiebreaker.
+        var input = Enumerable.Range(0, 40).Select(i => AtId(T1.AddMinutes(i % 7), i)).ToArray();
+        static bool HasKey(EventBase e) => e.TraceId % 3 == 0;
+
+        var svc = NewService();
+        svc.RegisterCustomSort(new SortDescriptor("k", "Key", Comparer, isDefault: false)
+        {
+            KeySelector = e => HasKey(e) ? e.Timestamp : (object?)null
+        });
+
+        var expectedTail = input.Where(e => !HasKey(e)).Select(e => e.TraceId).ToArray();
+
+        foreach (var descending in new[] { false, true })
+        {
+            var sorted = svc.ApplySort(input, "k", descending).ToList();
+            var head = sorted.TakeWhile(HasKey).ToList();
+
+            Assert.Equal(input.Count(HasKey), head.Count); // все со значением — впереди
+            Assert.Equal(expectedTail, sorted.Skip(head.Count).Select(e => e.TraceId).ToArray()); // пустые — в конце, как на входе
+
+            var times = head.Select(e => e.Timestamp).ToList();
+            var ordered = descending ? times.OrderByDescending(t => t).ToList() : times.OrderBy(t => t).ToList();
+            Assert.Equal(ordered, times);
+        }
+    }
+
     private static int Comparer(EventBase a, EventBase b, bool descending)
     {
         var r = a.Timestamp.CompareTo(b.Timestamp);
