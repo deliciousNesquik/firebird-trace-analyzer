@@ -1,4 +1,5 @@
 using FirebirdTraceAnalyzer.Core;
+using System.Globalization;
 
 namespace FirebirdTraceParser.Tests;
 
@@ -8,14 +9,16 @@ public sealed class ByteSizeFormatterTests
     public void FormatBytes_WhenCalled_ReturnsCorrectString()
     {
         var result = ByteSizeFormatter.FormatBytes(1536);
-        Assert.Equal("1,5 KB", result);
+        // Форматтер выводит в текущей культуре: проверяем единицы и точность,
+        // а не десятичный разделитель конкретной локали.
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, "{0:0.##} KB", 1.5), result);
     }
     
     [Fact]
     public void FormatSpeed_WhenCalled_ReturnsCorrectString()
     {
         var result = ByteSizeFormatter.FormatSpeed(1536);
-        Assert.Equal("1,5 KB/s", result);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, "{0:0.##} KB/s", 1.5), result);
     }
     
     [Fact]
@@ -73,13 +76,13 @@ public sealed class ByteSizeFormatterTests
     public void FormatBytes_WhenCalledWithNegativeValue_ReturnsCorrectString()
     {
         var result = ByteSizeFormatter.FormatBytes(-1536);
-        Assert.Equal("-1,5 KB", result);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, "-{0:0.##} KB", 1.5), result);
     }
 
     [Fact]
     public void FormatSpeed_WhenCalledWithNegativeValue_ReturnsCorrectString()
     {
         var result = ByteSizeFormatter.FormatSpeed(-1536);
-        Assert.Equal("-1,5 KB/s", result);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, "-{0:0.##} KB/s", 1.5), result);
     }
 }
