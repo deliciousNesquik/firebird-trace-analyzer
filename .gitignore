@@ -13,3 +13,6 @@ build/icon.icns
 .DS_Store
 # Локальная (не версионируемая) копия руководства
 CLAUDE.md.local
+
+# Локальный knowledge-граф graphify (см. https://github.com/Graphify-Labs/graphify)
+graphify-out/
