@@ -106,6 +106,10 @@ public partial class MainWindowViewModel : ViewModelBase
     // ✅ Флаг пакетного обновления (для предотвращения множественных пересчётов)
     private bool _isBatchUpdate;
 
+    // Набор событий изменился (загрузка/закрытие файлов): длительности сессий/подключений нужно
+    // пересчитать по общему списку всех файлов. Пересчитывает конвейер фильтров, куда сходятся эти пути.
+    private bool _durationsDirty;
+
     // Флаг завершения первичной загрузки настроек: пока false, изменения видимости секций и
     // режима поиска не сохраняются (иначе LoadSettings перезаписывал бы файл при инициализации).
     private bool _settingsLoaded;
@@ -635,6 +639,17 @@ public partial class MainWindowViewModel : ViewModelBase
             // AllEvents (загрузка/закрытие файлов) → иначе гонка «коллекция изменена во время
             // перечисления» (ср. PersistToStore, где для той же цели берётся снимок).
             var allEvents = AllEvents.ToList();
+
+            // Длительности сессий/подключений — по ОБЩЕМУ списку всех загруженных файлов: пара attach/detach
+            // может лежать в разных файлах. Считаем в фоне на снимке, не трогая события (их читает UI), а
+            // записываем здесь, на UI-потоке, ДО сортировки — сортировка по длительности видит новые значения.
+            if (_durationsDirty)
+            {
+                _durationsDirty = false;
+                var durations = await Task.Run(() => DurationPostProcessor.Compute(allEvents));
+                DurationPostProcessor.Assign(durations);
+            }
+
             var searchActive = IsSearchActive && !string.IsNullOrWhiteSpace(SearchText);
             var searchText = SearchText;
             var searchMode = IsClassicSearch ? SearchType.Classic : SearchType.Regex;
@@ -1338,14 +1353,12 @@ public partial class MainWindowViewModel : ViewModelBase
         var parsed = await _ingestion!.ParseAsync(fileInfo.FullName, cancellationToken);
         var events = parsed.Events as List<EventBase> ?? parsed.Events.ToList();
 
-        // Производные длительности (сессия/подключение) считаются на полном списке событий файла.
-        DurationPostProcessor.Apply(events);
-
         _eventsByFileHash[fileHash] = events;
 
         var ingestSw = Stopwatch.StartNew();
         AllEvents.AddRange(events);
         ingestSw.Stop();
+        _durationsDirty = true;
 
         Telemetry?.RecordProduce(fileInfo.Name, parsed.ParseMs, events.Count, fileInfo.Length, source, fromCache: false);
         Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
@@ -1403,14 +1416,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var events = restored as List<EventBase> ?? restored.ToList();
 
-        // Длительность — производное поле, не персистится: пересчитываем после чтения из хранилища.
-        DurationPostProcessor.Apply(events);
-
         _eventsByFileHash[fileHash] = events;
 
         var ingestSw = Stopwatch.StartNew();
         AllEvents.AddRange(events);
         ingestSw.Stop();
+        _durationsDirty = true;
 
         Telemetry?.RecordProduce(fileInfo.Name, readSw.ElapsedMilliseconds, events.Count, fileInfo.Length, ParseSource.StoreCache, fromCache: true);
         Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
@@ -1485,6 +1496,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // ✅ ИСПРАВЛЕНИЕ УТЕЧКИ: Используем RemoveAll вместо создания нового списка
         // RemoveAll модифицирует существующий список, не создавая копию
         var removedCount = AllEvents.RemoveAll(e => eventsSet.Contains(e));
+        _durationsDirty = true;
 
         Logger.Info(
             "Removed {Count} events from AllEvents in {Elapsed}ms (optimized, no memory leak)",
@@ -1532,6 +1544,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // ✅ ИСПРАВЛЕНИЕ УТЕЧКИ: Используем RemoveAll
         var removedCount = AllEvents.RemoveAll(e => allEventsToRemove.Contains(e));
+        _durationsDirty = true;
 
         Logger.Info(
             "Removed {Count} events from {FileCount} files in {Elapsed}ms (batch optimized, no leak)",
@@ -2172,6 +2185,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // Очищаем все коллекции
             FileCards.Clear();
             AllEvents.Clear();
+            _durationsDirty = true;
             VisibleEvents.Clear();
             _eventsByFileHash.Clear();
 
@@ -2452,9 +2466,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
 
                 var list = events as List<EventBase> ?? events.ToList();
-                DurationPostProcessor.Apply(list);
                 _eventsByFileHash[model.FileHash] = list;
                 AllEvents.AddRange(list);
+                _durationsDirty = true;
 
                 var card = model;
                 await Dispatcher.UIThread.InvokeAsync(() => FileCards.Add(CreateFileCardViewModel(card)));
