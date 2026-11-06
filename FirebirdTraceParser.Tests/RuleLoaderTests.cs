@@ -164,9 +164,12 @@ public sealed class RuleLoaderTests
     [Fact]
     public void RegexTimeout_TakenFromParseOptions()
     {
+        // 500 мс ≠ дефолт (1 c), поэтому равенство доказывает pass-through из ParseOptions.
+        // Значение не должно быть слишком маленьким: loader на компиляции прогоняет каждый
+        // regex по sample-строке, и на медленном CI-раннере 37 мс иногда не хватало.
         var loader = new JsonRuleLoader(new MemoryCache(new MemoryCacheOptions()), TestSupport.Logger,
-            new FirebirdTraceParser.Parsing.Engine.ParseOptions { RegexTimeout = TimeSpan.FromMilliseconds(37) });
+            new FirebirdTraceParser.Parsing.Engine.ParseOptions { RegexTimeout = TimeSpan.FromMilliseconds(500) });
         var rules = loader.LoadRules(TestSupport.RulesPath);
-        Assert.All(rules.Values, rx => Assert.Equal(TimeSpan.FromMilliseconds(37), rx.MatchTimeout));
+        Assert.All(rules.Values, rx => Assert.Equal(TimeSpan.FromMilliseconds(500), rx.MatchTimeout));
     }
 }
