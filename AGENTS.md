@@ -25,12 +25,15 @@ dotnet run --project FirebirdTraceAnalyzer      # launch the desktop app
 Local `build.sh` runs without a `[version]` arg fall back to **1.0.0** (the script reads
 `<Version>` from the csproj, which is deliberately unset; `MAC_RID` env picks the osx RID).
 
-Docs site (Astro + Starlight, Node ≥ 22), run from `docs/`: `npm run dev` / `npm run build`.
+Docs site (Astro 7 + Starlight, Node ≥ 22.12), run from `docs/`: `npm run dev` / `npm run build`.
 
 ## CI & releases
 
-Default branch is `master`. Two workflows in `.github/workflows/`:
+Default branch is `master`. Three workflows in `.github/workflows/`:
 
+- **Tests** — on every push to `master` and PR into it (skipped for docs-only/`**.md`-only
+  changes): `dotnet build` + `dotnet test FirebirdTrace.sln`. The only CI place tests run — run
+  them locally before pushing non-docs changes.
 - **Release** — on pushing a `v*` tag. Runs the same `build/build.sh` on a matrix (macos-14 builds
   both osx RIDs, ubuntu cross-builds win/linux) and uploads archives to a GitHub Release; tags with
   `-alpha`/`-beta` become pre-releases.
@@ -59,10 +62,11 @@ Regex-rule-driven, block-based pipeline:
    groups, validated against `rules.schema.json` by `JsonRuleLoader`). To support a new log line
    shape, edit rules.json — don't hardcode regexes in C#.
    **Gotcha**: at startup `RulesConfiguration.EnsureRulesFile()` seeds
-   `%AppData%/FirebirdTraceAnalyzer/rules.json` from the bundled copy **only if missing**, and the
-   app parses *that* user copy. Editing the repo's rules.json does nothing for an already-seeded
-   local install — delete the AppData copy to re-seed. Parser **tests**, however, link the repo
-   file, so tests and a locally-run app can see different rules.
+   `%AppData%/FirebirdTraceAnalyzer/rules.json` from the bundled copy **only if missing** (falling
+   back to the bundled copy if seeding fails), and the app parses *that* user copy. Editing the
+   repo's rules.json does nothing for an already-seeded local install — delete the AppData copy to
+   re-seed. Parser **tests**, however, link the repo file, so tests and a locally-run app can see
+   different rules.
 2. `TraceLogParser` reads line by line, detects event boundaries via `block_header`, buffers lines
    between headers. Sync/async/streaming entry points (`ParseFile`, `ParseFileAsync`,
    `ParseStreamAsync`).
@@ -127,15 +131,20 @@ collide. New plugins mirror `TemplatePlugin/`.
 - **SVG icon theming**: icon SVG paths must carry `class="ThemeIconStroke"` / `"ThemeIconFill"` to
   recolor with the theme; icons are `x:String` resource keys in `App.axaml` used via
   `Svg Path="{DynamicResource …}"`.
-- **EventCards** (`Controls/EventCards`) are ~15 independent `TemplatedControl`s with heavy
-  duplication and no shared base — match the existing pattern; copy buttons read from the event
-  DataContext, not the styled properties.
+- **EventCards** (`Controls/EventCards`) are `TemplatedControl`s sharing a base hierarchy:
+  `EventCardBase` (timestamp/trace-id props) → `ConnectedEventCardBase` (connection props) →
+  `TransactionalEventCardBase`; cards without a DB connection (TraceInit/TraceFini, Error) inherit
+  `EventCardBase` directly. Compact variants live in `Compact/` with their own per-family bases.
+  Extend the right base instead of re-registering styled properties. `CopyButton` copies its `Text`
+  styled property — cards feed it via `TemplateBinding`.
 - **No IL trimming** — reflection (field discovery) would break. Releases are
   self-contained single-file for win-x64 / osx-x64 / osx-arm64 / linux-x64; the macOS `.app` bundle
   is only produced when building on macOS (`build/build.sh`).
-- **NLog**: log file paths are injected from C# (`LogConfiguration` sets GDC items; default
-  `%AppData%/FirebirdTraceAnalyzer/logs`) — editing `fileName` in `Configuration/nlog.config` alone
-  won't relocate logs, and parser logs are routed to a separate file by exact-logger-name rules.
+- **NLog**: log paths are injected from C# before the first write — `LogConfiguration.ApplyFromSettingsFile()`
+  reads them from `settings.json` into the NLog GDC (default `%AppData%/FirebirdTraceAnalyzer/logs`,
+  on macOS `~/Library/Application Support/FirebirdTraceAnalyzer/logs`). Editing `fileName` in
+  `Configuration/nlog.config` alone won't relocate logs; parser logs go to a separate file by
+  exact-logger-name rules.
 
 ## Read before touching sensitive areas
 
