@@ -19,19 +19,19 @@ SRC="${1:-}"
 OUT="${2:-$ROOT/build/icon.icns}"
 
 if [[ "$(uname)" != "Darwin" ]]; then
-    echo "ERROR: make-icns.sh нужно запускать на macOS (используются sips/iconutil)." >&2
+    echo "ERROR: make-icns.sh must be run on macOS (uses sips/iconutil)." >&2
     exit 1
 fi
-command -v sips     >/dev/null || { echo "ERROR: не найден sips." >&2; exit 1; }
-command -v iconutil >/dev/null || { echo "ERROR: не найден iconutil." >&2; exit 1; }
+command -v sips     >/dev/null || { echo "ERROR: sips not found." >&2; exit 1; }
+command -v iconutil >/dev/null || { echo "ERROR: iconutil not found." >&2; exit 1; }
 
 if [[ -z "$SRC" ]]; then
     if [[ -f "$DEFAULT_SVG" ]]; then SRC="$DEFAULT_SVG"
     elif [[ -f "$DEFAULT_ICO" ]]; then SRC="$DEFAULT_ICO"
-    else echo "ERROR: не найден ни $DEFAULT_SVG, ни $DEFAULT_ICO." >&2; exit 1
+    else echo "ERROR: neither $DEFAULT_SVG nor $DEFAULT_ICO found." >&2; exit 1
     fi
 fi
-[[ -f "$SRC" ]] || { echo "ERROR: источник иконки не найден: $SRC" >&2; exit 1; }
+[[ -f "$SRC" ]] || { echo "ERROR: icon source not found: $SRC" >&2; exit 1; }
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -39,10 +39,10 @@ MASTER="$WORK/master.png"
 ICONSET="$WORK/icon.iconset"
 mkdir -p "$ICONSET"
 
-echo "Источник: $SRC"
+echo "Source: $SRC"
 
 if ! sips -s format png -z 1024 1024 "$SRC" --out "$MASTER" >/dev/null 2>&1; then
-    echo "ERROR: не удалось растеризовать $SRC через sips." >&2
+    echo "ERROR: failed to rasterize $SRC with sips." >&2
     exit 1
 fi
 
@@ -61,4 +61,4 @@ gen 1024 icon_512x512@2x.png
 
 mkdir -p "$(dirname "$OUT")"
 iconutil -c icns "$ICONSET" -o "$OUT"
-echo "[OK] icon.icns создан: $OUT"
+echo "[OK] icon.icns created: $OUT"

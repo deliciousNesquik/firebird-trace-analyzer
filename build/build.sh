@@ -27,7 +27,7 @@ BUNDLE_ID="com.deliciousnesquik.firebirdtraceanalyzer"
 
 TARGET="${1:-all}"
 
-command -v dotnet >/dev/null || { echo "ERROR: не найден dotnet в PATH." >&2; exit 1; }
+command -v dotnet >/dev/null || { echo "ERROR: dotnet not found in PATH." >&2; exit 1; }
 
 VERSION="${2:-}"
 if [[ -z "$VERSION" ]]; then
@@ -35,7 +35,7 @@ if [[ -z "$VERSION" ]]; then
     VERSION="${VERSION:-1.0.0}"
 fi
 
-echo "=== FirebirdTraceAnalyzer build - версия $VERSION, цель '$TARGET' ==="
+echo "=== FirebirdTraceAnalyzer build - version $VERSION, target '$TARGET' ==="
 
 publish() {
     local rid="$1" outdir="$2"
@@ -87,11 +87,11 @@ build_mac() {
     if [[ "$(uname)" == "Darwin" ]]; then
         "$ROOT/build/make-icns.sh" "" "$icns"
     else
-        echo "[WARN] Сборка не на macOS, пропускаю icon.icns (.app будет без иконки)."
+        echo "[WARN] Not running on macOS, skipping icon.icns (.app will have no icon)."
     fi
 
     local app="$OUT/${APP_NAME}.app"
-    echo "-> Сборка бандла $app"
+    echo "-> Building bundle $app"
     rm -rf "$app"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
@@ -126,9 +126,9 @@ PLIST
     # Это НЕ нотаризация: для других машин нужны Developer ID и notarytool.
     if [[ "$(uname)" == "Darwin" ]] && command -v codesign >/dev/null; then
         if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
-            echo "[OK] ад-хок codesign"
+            echo "[OK] ad-hoc codesign"
         else
-            echo "[WARN] codesign не удался (не критично для локального запуска)."
+            echo "[WARN] codesign failed (not critical for local runs)."
         fi
     fi
 
@@ -147,7 +147,7 @@ case "$TARGET" in
     win)   build_win ;;
     linux) build_linux ;;
     all)   build_mac; build_win; build_linux ;;
-    *) echo "ERROR: неизвестная цель '$TARGET' (ожидалось all|mac|win|linux)." >&2; exit 1 ;;
+    *) echo "ERROR: unknown target '$TARGET' (expected all|mac|win|linux)." >&2; exit 1 ;;
 esac
 
-echo "=== Готово. Артефакты: $OUT ==="
+echo "=== Done. Artifacts: $OUT ==="
