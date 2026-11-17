@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 #
-# Сборка self-contained релизов FirebirdTraceAnalyzer для macOS / Windows / Linux.
+# Build self-contained FirebirdTraceAnalyzer releases for macOS / Windows / Linux.
 #
-# Использование:
-#   build/build.sh [target] [version]
-#     target  — all (по умолчанию) | mac | win | linux
-#     version — переопределить версию (по умолчанию берётся <Version> из csproj)
+# Usage: build/build.sh [target] [version]
+#   target  - all (default) | mac | win | linux
+#   version - override version (default: <Version> from the csproj; the tag is
+#             intentionally unset there, so local builds fall back to 1.0.0)
 #
-# Переменные окружения:
-#   MAC_RID — osx-arm64 | osx-x64 (по умолчанию = архитектура хоста)
+# Environment:
+#   MAC_RID - osx-arm64 | osx-x64 (default: host architecture)
 #
-# Требуется .NET 10 SDK. Кросс-публикация работает с любого хоста,
-# но .app-бандл и icon.icns полноценно собираются только на macOS.
+# Notes:
+#   - Requires the .NET 10 SDK.
+#   - CI (.github/workflows/release.yml) runs the same script: do not change
+#     flags, paths, or artifact names without checking it.
+#   - Cross-publishing works from any host; a full .app (icon, signature)
+#     only builds on macOS.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,19 +29,17 @@ TARGET="${1:-all}"
 
 command -v dotnet >/dev/null || { echo "ERROR: не найден dotnet в PATH." >&2; exit 1; }
 
-# Версия: аргумент → <Version> из csproj → 1.0.0
 VERSION="${2:-}"
 if [[ -z "$VERSION" ]]; then
     VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$PROJECT" | head -1)"
     VERSION="${VERSION:-1.0.0}"
 fi
 
-echo "=== FirebirdTraceAnalyzer build — версия $VERSION, цель '$TARGET' ==="
+echo "=== FirebirdTraceAnalyzer build - версия $VERSION, цель '$TARGET' ==="
 
-# ── Публикация одного RID в каталог ───────────────────────────────────────────
 publish() {
     local rid="$1" outdir="$2"
-    echo "→ dotnet publish ($rid)…"
+    echo "-> dotnet publish ($rid)..."
     rm -rf "$outdir"
     dotnet publish "$PROJECT" \
         -c Release \
@@ -47,29 +49,28 @@ publish() {
         -p:Version="$VERSION" \
         -p:InformationalVersion="$VERSION" \
         -o "$outdir"
-    rm -f "$outdir"/*.pdb 2>/dev/null || true   # символы в релиз не кладём
+
+    # pdb в релиз не идут; 2>/dev/null || true - glob может не совпасть.
+    rm -f "$outdir"/*.pdb 2>/dev/null || true
 }
 
-# ── Linux ─────────────────────────────────────────────────────────────────────
 build_linux() {
     local rid="linux-x64"
     local stage="$OUT/$rid"
     publish "$rid" "$stage"
     chmod +x "$stage/$APP_NAME" 2>/dev/null || true
     ( cd "$stage" && tar -czf "$OUT/${APP_NAME}-${VERSION}-linux-x64.tar.gz" . )
-    echo "✓ Linux: $OUT/${APP_NAME}-${VERSION}-linux-x64.tar.gz"
+    echo "[OK] Linux: $OUT/${APP_NAME}-${VERSION}-linux-x64.tar.gz"
 }
 
-# ── Windows ───────────────────────────────────────────────────────────────────
 build_win() {
     local rid="win-x64"
     local stage="$OUT/$rid"
     publish "$rid" "$stage"
     ( cd "$stage" && zip -q -r "$OUT/${APP_NAME}-${VERSION}-win-x64.zip" . )
-    echo "✓ Windows: $OUT/${APP_NAME}-${VERSION}-win-x64.zip"
+    echo "[OK] Windows: $OUT/${APP_NAME}-${VERSION}-win-x64.zip"
 }
 
-# ── macOS (.app-бандл по канонам Apple) ───────────────────────────────────────
 build_mac() {
     local rid="${MAC_RID:-}"
     if [[ -z "$rid" ]]; then
@@ -82,25 +83,22 @@ build_mac() {
     local stage="$OUT/$rid"
     publish "$rid" "$stage"
 
-    # icon.icns (только на macOS)
     local icns="$ROOT/build/icon.icns"
     if [[ "$(uname)" == "Darwin" ]]; then
         "$ROOT/build/make-icns.sh" "" "$icns"
     else
-        echo "⚠ Сборка не на macOS — пропускаю icon.icns (.app будет без иконки)."
+        echo "[WARN] Сборка не на macOS, пропускаю icon.icns (.app будет без иконки)."
     fi
 
-    # Структура бандла:
-    #   FirebirdTraceAnalyzer.app/
-    #     Contents/Info.plist
-    #     Contents/MacOS/<всё из publish, включая исполняемый файл и нативные либы>
-    #     Contents/Resources/icon.icns
     local app="$OUT/${APP_NAME}.app"
-    echo "→ Сборка бандла $app"
+    echo "-> Сборка бандла $app"
     rm -rf "$app"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
     cp -R "$stage"/. "$app/Contents/MacOS/"
+
+    # Guard обязателен: иконки может не быть (сборка не на macOS).
+    # "[[ ]] && cmd" безопасен под set -e, лишь бы не последняя строка функции.
     [[ -f "$icns" ]] && cp "$icns" "$app/Contents/Resources/icon.icns"
     chmod +x "$app/Contents/MacOS/$APP_NAME"
 
@@ -125,21 +123,22 @@ build_mac() {
 PLIST
 
     # Ад-хок подпись: иначе Gatekeeper на Apple Silicon убивает неподписанный бандл.
-    # Это НЕ нотаризация — для распространения вне своей машины нужна Developer ID + notarytool.
+    # Это НЕ нотаризация: для других машин нужны Developer ID и notarytool.
     if [[ "$(uname)" == "Darwin" ]] && command -v codesign >/dev/null; then
         if codesign --force --deep --sign - "$app" >/dev/null 2>&1; then
-            echo "✓ ад-хок codesign"
+            echo "[OK] ад-хок codesign"
         else
-            echo "⚠ codesign не удался (не критично для локального запуска)."
+            echo "[WARN] codesign не удался (не критично для локального запуска)."
         fi
     fi
 
-    # Архив для распространения: ditto сохраняет права/симлинки/ресурс-форки.
+    # ditto сохраняет права/симлинки/ресурс-форки; ${rid#osx-} даёт суффикс
+    # -macos-<arch>.zip - формат имени закреплён в build/README.md и в Release, не менять.
     if [[ "$(uname)" == "Darwin" ]] && command -v ditto >/dev/null; then
         ditto -c -k --keepParent "$app" "$OUT/${APP_NAME}-${VERSION}-macos-${rid#osx-}.zip"
-        echo "✓ macOS zip: $OUT/${APP_NAME}-${VERSION}-macos-${rid#osx-}.zip"
+        echo "[OK] macOS zip: $OUT/${APP_NAME}-${VERSION}-macos-${rid#osx-}.zip"
     fi
-    echo "✓ macOS .app: $app"
+    echo "[OK] macOS .app: $app"
 }
 
 mkdir -p "$OUT"
