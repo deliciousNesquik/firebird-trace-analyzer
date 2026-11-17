@@ -19,7 +19,7 @@ PROJECT="$ROOT/FirebirdTraceAnalyzer/FirebirdTraceAnalyzer.csproj"
 OUT="$ROOT/build/artifacts"
 APP_NAME="FirebirdTraceAnalyzer"
 DISPLAY_NAME="Firebird Trace Analyzer"
-BUNDLE_ID="com.reid.firebirdtraceanalyzer"
+BUNDLE_ID="com.deliciousnesquik.firebirdtraceanalyzer"
 
 TARGET="${1:-all}"
 
