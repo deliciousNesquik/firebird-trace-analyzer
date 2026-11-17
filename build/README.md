@@ -1,60 +1,74 @@
-# Сборка релизов
+# Release builds
 
-Скрипты собирают self-contained релизы (рантайм .NET внутри, отдельная установка не нужна) для macOS, Windows и Linux.
+The scripts produce **self-contained** releases (the .NET runtime is bundled, no separate
+installation needed) for macOS, Windows and Linux.
 
-## Требования
+## Requirements
 
-- .NET 10 SDK (`dotnet --version` ≥ 10). Проект таргетит `net10.0`.
-- macOS-бандл и `icon.icns` полноценны только при сборке на macOS: нужны системные `sips`, `iconutil`, `codesign`, `ditto`.
-- `zip` — для Windows-архива. В macOS и на обычных Linux он есть; на минимальных образах может отсутствовать, и тогда сборка win упадёт на шаге упаковки.
+- .NET 10 SDK (`dotnet --version` ≥ 10). The project targets `net10.0`.
+- The macOS bundle and `icon.icns` are only fully built on macOS: the system tools `sips`,
+  `iconutil`, `codesign` and `ditto` are required.
+- `zip` — for the Windows archive. It ships with macOS and most Linux systems; on minimal
+  images it may be missing, in which case the win build fails at the packaging step.
 
-Кросс-публикация работает с любого хоста: с macOS собираются и win, и linux. Полноценный `.app` с иконкой и подписью получается только на macOS.
+Cross-publishing works from any host: both win and linux can be built from macOS. A complete
+`.app` with icon and signature only comes out of a macOS host.
 
-## Использование
+## Usage
 
 ```bash
-# всё сразу (mac под текущую архитектуру + win-x64 + linux-x64)
+# everything at once (mac for the current architecture + win-x64 + linux-x64)
 ./build/build.sh
 
-# по отдельности
+# one platform at a time
 ./build/build.sh mac
 ./build/build.sh win
 ./build/build.sh linux
 
-# конкретная версия и/или архитектура mac
+# a specific version and/or mac architecture
 ./build/build.sh mac 1.2.0
-MAC_RID=osx-x64 ./build/build.sh mac      # Intel-сборка на Apple Silicon
+MAC_RID=osx-x64 ./build/build.sh mac      # Intel build on Apple Silicon
 
-# только пересобрать иконку
+# rebuild the icon only
 ./build/make-icns.sh
 ```
 
-Артефакты складываются в `build/artifacts/`:
+Artifacts land in `build/artifacts/`:
 
-| Платформа | Результат |
-|-----------|-----------|
+| Platform | Result |
+|----------|--------|
 | macOS | `FirebirdTraceAnalyzer.app` + `FirebirdTraceAnalyzer-<ver>-macos-<arch>.zip` |
 | Windows | `FirebirdTraceAnalyzer-<ver>-win-x64.zip` |
 | Linux | `FirebirdTraceAnalyzer-<ver>-linux-x64.tar.gz` |
 
-## Структура macOS .app
+## macOS .app structure
 
 ```
 FirebirdTraceAnalyzer.app/
 └── Contents/
-    ├── Info.plist                 # метаданные бандла (версия, иконка, bundle id)
+    ├── Info.plist                 # bundle metadata (version, icon, bundle id)
     ├── MacOS/
-    │   ├── FirebirdTraceAnalyzer  # исполняемый файл (CFBundleExecutable)
-    │   └── …                      # нативные библиотеки из publish (Skia и т.п.)
+    │   ├── FirebirdTraceAnalyzer  # executable (CFBundleExecutable)
+    │   └── …                      # native libraries from publish (Skia etc.)
     └── Resources/
-        └── icon.icns              # иконка (CFBundleIconFile = icon)
+        └── icon.icns              # icon (CFBundleIconFile = icon)
 ```
 
-`icon.icns` генерируется из `FirebirdTraceAnalyzer/Assets/app-logo.svg` (растеризация через `sips`, fallback — `app-logo.ico`).
+`icon.icns` is generated from `FirebirdTraceAnalyzer/Assets/app-logo.svg` (rasterized via
+`sips`, fallback: `app-logo.ico`).
 
-## Нюансы сборки
+## Build caveats
 
-- Подпись — ад-хок `codesign`. Этого достаточно для запуска на машине сборки: неподписанный бандл на Apple Silicon убивает Gatekeeper. Для распространения другим пользователям нужны Developer ID и нотаризация (`xcrun notarytool`), это уже за рамками скрипта.
-- Под linux рантайм встроен, но Avalonia требует системные библиотеки: `libicu`, `fontconfig`, `libfreetype`, шрифты, X11/Wayland. На «голом» сервере без GUI приложение не стартует.
-- Trimming не включён намеренно. Приложение использует рефлексию: `FieldDiscoveryService` сканирует свойства моделей событий на `[SortableField]`/`[FilterableField]`, плагины загружаются через `PluginLoadContext`. Обрезка сломала бы рантайм.
-- Каталог `Configuration/` копируется в output целиком (так настроен csproj): приложению нужны `rules.json`, `rules.schema.json` и `nlog.config` рядом с исполняемым файлом. Всё, что окажется в исходном каталоге, уедет в релиз, поэтому лишних файлов там быть не должно.
+- The signature is ad-hoc `codesign`. That is enough to run on the build machine: without a
+  signature, Gatekeeper kills the bundle on Apple Silicon. Distributing to other users requires
+  a Developer ID signature and notarization (`xcrun notarytool`) — beyond the script's scope.
+- On Linux the runtime is embedded, but Avalonia needs system libraries: `libicu`,
+  `fontconfig`, `libfreetype`, fonts, X11/Wayland. The app won't start on a bare headless
+  server.
+- Trimming is off on purpose. The app relies on reflection: `FieldDiscoveryService` scans event
+  model properties for `[SortableField]`/`[FilterableField]`, and plugins are loaded through
+  `PluginLoadContext`. Trimming would break the runtime.
+- The `Configuration/` directory is copied to the output as a whole (that's how the csproj is
+  set up): the app needs `rules.json`, `rules.schema.json` and `nlog.config` next to the
+  executable. Anything that ends up in the source directory ships with the release, so it
+  should contain no stray files.
