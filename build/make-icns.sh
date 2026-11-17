@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# Генерирует macOS icon.icns из векторного логотипа приложения.
+# Generate the macOS icon.icns from the app logo.
 #
-# Использование:
-#   build/make-icns.sh [SOURCE] [OUTPUT.icns]
-#     SOURCE      — путь к иконке-источнику (по умолчанию Assets/app-logo.svg,
-#                   запасной вариант — app-logo.ico). sips растеризует и svg, и ico.
-#     OUTPUT.icns — куда положить результат (по умолчанию build/icon.icns)
+# Usage: build/make-icns.sh [SOURCE] [OUTPUT.icns]
+#   SOURCE      - icon source (default: Assets/app-logo.svg, fallback: app-logo.ico)
+#   OUTPUT.icns - result path (default: build/icon.icns)
 #
-# Требуется macOS: используются системные утилиты sips и iconutil.
+# Notes:
+#   - macOS only: uses the system sips and iconutil.
+#   - sips rasterizes both .svg and .ico via ImageIO.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,7 +25,6 @@ fi
 command -v sips     >/dev/null || { echo "ERROR: не найден sips." >&2; exit 1; }
 command -v iconutil >/dev/null || { echo "ERROR: не найден iconutil." >&2; exit 1; }
 
-# Источник: аргумент → svg → ico
 if [[ -z "$SRC" ]]; then
     if [[ -f "$DEFAULT_SVG" ]]; then SRC="$DEFAULT_SVG"
     elif [[ -f "$DEFAULT_ICO" ]]; then SRC="$DEFAULT_ICO"
@@ -40,15 +39,14 @@ MASTER="$WORK/master.png"
 ICONSET="$WORK/icon.iconset"
 mkdir -p "$ICONSET"
 
-echo "→ Источник: $SRC"
+echo "Источник: $SRC"
 
-# Мастер 1024×1024. sips умеет растеризовать .svg/.ico через ImageIO.
 if ! sips -s format png -z 1024 1024 "$SRC" --out "$MASTER" >/dev/null 2>&1; then
     echo "ERROR: не удалось растеризовать $SRC через sips." >&2
     exit 1
 fi
 
-# Канонический набор размеров для .icns
+# Канонический набор размеров/имён для .iconset (требование iconutil).
 gen() { sips -z "$1" "$1" "$MASTER" --out "$ICONSET/$2" >/dev/null; }
 gen 16   icon_16x16.png
 gen 32   icon_16x16@2x.png
@@ -63,4 +61,4 @@ gen 1024 icon_512x512@2x.png
 
 mkdir -p "$(dirname "$OUT")"
 iconutil -c icns "$ICONSET" -o "$OUT"
-echo "✓ icon.icns создан: $OUT"
+echo "[OK] icon.icns создан: $OUT"
