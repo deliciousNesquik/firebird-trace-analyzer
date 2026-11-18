@@ -58,7 +58,7 @@ export default defineConfig({
           label: 'SDK',
           translations: { ru: 'SDK' },
           items: [
-            { label: 'Overview', translations: { ru: 'Обзор' }, slug: 'sdk/overview' },
+            { label: 'SDK overview', translations: { ru: 'Обзор SDK' }, slug: 'sdk/overview' },
             { label: 'Sort plugins', translations: { ru: 'Плагины сортировки' }, slug: 'sdk/sort-plugins' },
             { label: 'Filter plugins', translations: { ru: 'Плагины фильтрации' }, slug: 'sdk/filter-plugins' },
             { label: 'Event model', translations: { ru: 'Модель событий' }, slug: 'sdk/event-model' },

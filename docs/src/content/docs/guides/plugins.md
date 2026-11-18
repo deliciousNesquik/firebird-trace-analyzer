@@ -27,3 +27,5 @@ is no sandbox. Installing a plugin is equivalent to running any other program on
 Use the plugins screen to see everything that was discovered — with its name, author, version and
 status (Active / Disabled / Shadowed / Load error) — and to enable or disable each one. Changes
 take effect on the next launch.
+
+To build your own plugin, start with the [SDK overview](../sdk/overview.mdx).
