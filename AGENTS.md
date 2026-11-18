@@ -118,6 +118,9 @@ collide. New plugins mirror `TemplatePlugin/`.
 
 ## Conventions & gotchas
 
+- **Issues**: fix commits on `master` must use the closing keyword (`Closes #NN` / `Fixes #NN`),
+  so GitHub auto-closes the issue on push; plain `Refs #NN` leaves it open. Close fixed issues
+  manually (comment with the fix sha + `state=completed`) only when the keyword was omitted.
 - **Language**: code comments and git commit messages are in **Russian**; write conversation/docs in
   English unless asked otherwise. Commits use conventional prefixes — `feat(parser):`,
   `feat(ui):`, `style(ui):` … — with a Russian summary.
