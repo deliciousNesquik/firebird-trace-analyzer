@@ -50,6 +50,28 @@ public sealed class TraceLogParserTests
         Assert.NotNull(f.Performance);   // сами тайминги при этом парсятся
     }
 
+    // ------------------------------------------------- stream ownership (issue #36)
+
+    [Fact]
+    public async Task ParseStreamAsync_leaves_caller_stream_open_after_completion()
+    {
+        // Контракт владения (issue #36): поток принадлежит вызывающему - парсер его не закрывает.
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(CleanTrace()));
+        await foreach (var _ in NewParser().ParseStreamAsync(stream)) { }
+        Assert.True(stream.CanRead); // RED: сегодня StreamReader закрывает чужой поток
+    }
+
+    [Fact]
+    public async Task ParseStreamAsync_leaves_caller_stream_open_on_early_break()
+    {
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(CleanTrace()));
+        await foreach (var _ in NewParser().ParseStreamAsync(stream))
+        {
+            break; // ранний выход из await foreach - самое частое использование стриминга
+        }
+        Assert.True(stream.CanRead);
+    }
+
     [Fact]
     public void ParseFile_CleanTrace_ThreeEventsNoErrors()
     {

@@ -130,7 +130,10 @@ public sealed class TraceLogParser(
     {
         options ??= ParseOptions.Default;
 
-        using var reader = new StreamReader(stream, options.Encoding);
+        // Контракт владения (issue #36): поток принадлежит вызывающему - парсер не закрывает его
+        // (leaveOpen), в том числе при раннем выходе из await foreach.
+        using var reader = new StreamReader(stream, options.Encoding,
+            detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
 
         var buffer = new List<EventBase>(options.BatchSize);
         var currentBlock = new BlockBuffer();
