@@ -121,6 +121,10 @@ collide. New plugins mirror `TemplatePlugin/`.
 - **Issues**: fix commits on `master` must use the closing keyword (`Closes #NN` / `Fixes #NN`),
   so GitHub auto-closes the issue on push; plain `Refs #NN` leaves it open. Close fixed issues
   manually (comment with the fix sha + `state=completed`) only when the keyword was omitted.
+- **Docs content links**: internal links inside `docs/src/content/docs/**` pages must be
+  base-absolute (`/firebird-trace-analyzer/section/page/`) — Starlight here does not rewrite
+  relative `.md`/`.mdx` links, and they 404 on the live site. Grep inventories that drive fix lists
+  must not be truncated by `head` — a truncated list silently skips files.
 - **Language**: code comments and git commit messages are in **Russian**; write conversation/docs in
   English unless asked otherwise. Commits use conventional prefixes — `feat(parser):`,
   `feat(ui):`, `style(ui):` … — with a Russian summary.
