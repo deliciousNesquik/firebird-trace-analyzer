@@ -103,6 +103,7 @@ await foreach (var evt in parser.ParseStreamAsync(stream, progress, ct))
 | `Parsing/Rules` | Загрузка/валидация/компиляция regex-правил из `rules.json` | [README](Parsing/Rules/README.md) |
 | `Parsing/Handlers` | Превращение блока в конкретное типизированное событие | [README](Parsing/Handlers/README.md) |
 | `Parsing/Utils` | Разбор таблицы статистики доступа + span-хелперы чтения regex-групп | [README](Parsing/Utils/README.md) |
+| `Parsing/PostProcessing` | Пост-проход по общему списку событий: производные длительности пар | [README](Parsing/PostProcessing/README.md) |
 
 ### Доменная модель (`Models`) — [обзор](Models/README.md)
 
@@ -156,5 +157,5 @@ await foreach (var evt in parser.ParseStreamAsync(stream, progress, ct))
 
 ```bash
 dotnet build FirebirdTrace.sln      # 0 ошибок (TreatWarningsAsErrors)
-dotnet test                          # юнит-тесты (FirebirdTraceAnalyzer.Tests)
+dotnet test FirebirdTrace.sln       # юнит-тесты (FirebirdTraceParser.Tests + FirebirdTraceAnalyzer.Tests)
 ```
