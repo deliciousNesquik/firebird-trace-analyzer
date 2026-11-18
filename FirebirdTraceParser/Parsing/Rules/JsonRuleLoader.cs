@@ -79,7 +79,9 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
             if (!hasSchemaVersion)
                 throw new RuleValidationException("Rules config: missing or invalid 'schemaVersion'");
 
-            config = JsonSerializer.Deserialize<RuleConfiguration>(json, new JsonSerializerOptions
+            // Один парс вместо двух: и проверка версии, и десериализация из того же документа
+            // (issue #46). Раньше строка парсилась JsonDocument.Parse + JsonSerializer.Deserialize.
+            config = root.Deserialize<RuleConfiguration>(new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
