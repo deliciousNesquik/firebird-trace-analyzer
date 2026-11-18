@@ -72,6 +72,26 @@ public sealed class TraceLogParserTests
         Assert.True(stream.CanRead);
     }
 
+    // ------------------------------------------------- progress (issue #35)
+
+    private sealed class SyncProgress(Action<double> action) : IProgress<double>
+    {
+        public void Report(double value) => action(value);
+    }
+
+    [Fact]
+    public async Task ParseStreamAsync_reports_progress_ending_at_one()
+    {
+        var reports = new List<double>();
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(CleanTrace()));
+        await foreach (var _ in NewParser().ParseStreamAsync(stream, new SyncProgress(reports.Add))) { }
+
+        // RED (issue #35): параметр progress сегодня игнорируется - ни одного отчёта.
+        Assert.NotEmpty(reports);
+        Assert.Equal(1.0, reports[^1]);
+        Assert.Equal(reports, reports.OrderBy(v => v).ToList()); // монотонно неубывающая
+    }
+
     [Fact]
     public void ParseFile_CleanTrace_ThreeEventsNoErrors()
     {

@@ -139,8 +139,12 @@ public sealed class TraceLogParser(
         var currentBlock = new BlockBuffer();
         var warnings = new List<ParsingWarning>();
         var context = new ParsingContext();
-        
+
         var lineNumber = 0;
+        // Прогресс по позиции потока (issue #35): доступен только для seekable-потоков;
+        // для non-seekable остаётся финальный отчёт 1.0.
+        var canReportPosition = progress != null && stream.CanSeek;
+        var totalBytes = canReportPosition ? stream.Length : 0;
 
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
@@ -149,12 +153,15 @@ public sealed class TraceLogParser(
 
             ProcessLine(line, lineNumber, currentBlock, buffer, warnings, options, context);
 
+            if (canReportPosition && lineNumber % 1000 == 0)
+                progress!.Report(Math.Min(1.0, (double)stream.Position / totalBytes));
+
             // Yield батчами
             if (buffer.Count < options.BatchSize) continue;
-            
+
             foreach (var evt in buffer)
                 yield return evt;
-            
+
             buffer.Clear();
         }
 
@@ -168,6 +175,8 @@ public sealed class TraceLogParser(
         // Остаток батча
         foreach (var evt in buffer)
             yield return evt;
+
+        progress?.Report(1.0);
     }
 
     // Единое логирование предупреждений для всех трёх API — иначе файловые пути «слепы» по логам.
