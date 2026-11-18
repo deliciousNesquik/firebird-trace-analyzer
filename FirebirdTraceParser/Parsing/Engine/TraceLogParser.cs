@@ -331,9 +331,10 @@ public sealed class TraceLogParser(
                 });
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
             // Строгий режим трактует сбой разбора как ошибку (HasErrors), мягкий — как предупреждение.
+            // Фатальные исключения (OOM и т.п.) не глотаются - фильтр пропускает их наверх (issue #44).
             var severity = options.ValidationMode == ValidationMode.Strict
                 ? WarningSeverity.Error
                 : WarningSeverity.Warning;
