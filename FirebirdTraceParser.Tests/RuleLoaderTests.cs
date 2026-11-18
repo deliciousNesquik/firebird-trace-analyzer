@@ -121,6 +121,15 @@ public sealed class RuleLoaderTests
     }
 
     [Fact]
+    public void CompileFromJson_ErrorMessages_AreEnglishOnly()
+    {
+        // issue #48: сообщения валидации правил - публичная поверхность библиотеки,
+        // язык единый (английский). Кириллица в сообщении = RED.
+        var ex = Assert.Throws<RuleValidationException>(() => NewLoader().CompileFromJson("[]"));
+        Assert.DoesNotMatch(@"[\u0400-\u04FF]", ex.Message);
+    }
+
+    [Fact]
     public void CompileFromJson_MissingSchemaVersion_ThrowsRuleValidation()
     {
         Assert.Throws<RuleValidationException>(() =>

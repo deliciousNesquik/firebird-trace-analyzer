@@ -61,12 +61,12 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
             var root = document.RootElement;
 
             if (root.ValueKind != JsonValueKind.Object)
-                throw new RuleValidationException("Конфиг правил: корень JSON должен быть объектом");
+                throw new RuleValidationException("Rules config: the JSON root must be an object");
 
             if (!root.TryGetProperty("schemaVersion", out var svEl)
                 || svEl.ValueKind != JsonValueKind.Number
                 || !svEl.TryGetInt32(out schemaVersion))
-                throw new RuleValidationException("Конфиг правил: отсутствует или некорректный 'schemaVersion'");
+                throw new RuleValidationException("Rules config: missing or invalid 'schemaVersion'");
 
             config = JsonSerializer.Deserialize<RuleConfiguration>(json, new JsonSerializerOptions
             {
@@ -76,14 +76,14 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
         catch (JsonException ex)
         {
             _logger.Fatal(ex, "Invalid rules JSON");
-            throw new RuleValidationException($"Некорректный JSON правил: {ex.Message}", ex);
+            throw new RuleValidationException($"Invalid rules JSON: {ex.Message}", ex);
         }
 
         if (schemaVersion != SupportedSchemaVersion)
             throw new SchemaVersionException(SupportedSchemaVersion, schemaVersion);
 
         if (config?.Rules is null || config.Rules.Count == 0)
-            throw new RuleValidationException("Конфиг правил не содержит ни одного правила");
+            throw new RuleValidationException("Rules config contains no rules");
 
         // Ключи, обязательные для движка (RuleKeys.All): отсутствие любого - ошибка конфигурации
         // на старте, а не KeyNotFoundException на каждом блоке при разборе, замаскированная
@@ -162,7 +162,7 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
         foreach (var flag in flags)
         {
             if (!FlagMap.TryGetValue(flag, out var option))
-                throw new RuleValidationException($"Неизвестный флаг regex: {flag}");
+                throw new RuleValidationException($"Unknown regex flag: {flag}");
 
             result |= option;
         }
