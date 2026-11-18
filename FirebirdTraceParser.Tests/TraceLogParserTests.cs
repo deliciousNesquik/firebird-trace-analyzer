@@ -1,5 +1,6 @@
 using System.Text;
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Models.Results;
 using FirebirdTraceParser.Parsing.Engine;
 using static FirebirdTraceParser.Tests.TestSupport;
 
@@ -90,6 +91,41 @@ public sealed class TraceLogParserTests
         Assert.NotEmpty(reports);
         Assert.Equal(1.0, reports[^1]);
         Assert.Equal(reports, reports.OrderBy(v => v).ToList()); // монотонно неубывающая
+    }
+
+    // ------------------------------------------------- warnings observer (issue #34)
+
+    private sealed class TestObserver : IObserver<ParsingWarning>
+    {
+        public List<ParsingWarning> Warnings { get; } = new();
+        public bool Completed { get; private set; }
+        public void OnNext(ParsingWarning value) => Warnings.Add(value);
+        public void OnError(Exception error) => throw new InvalidOperationException(
+            "OnError не ожидается: ошибки данных деградируют в ParsingWarning");
+        public void OnCompleted() => Completed = true;
+    }
+
+    [Fact]
+    public async Task ParseStreamAsync_notifies_observer_with_same_warnings_as_file_parse()
+    {
+        // Два блока без события (RESTART без обработчика; statement без аттача) -> два skipped-warning.
+        var trace = string.Join("\n",
+            HeaderLine("TRACE_INIT"), SessionLine,
+            HeaderLine("EXECUTE_PROCEDURE_RESTART"), AttachmentLine, ProcessLine,
+            HeaderLine("EXECUTE_STATEMENT_START"), "Statement body line");
+
+        var observer = new TestObserver();
+        var options = new ParseOptions { WarningObserver = observer };
+        await foreach (var _ in NewParser().ParseStreamAsync(
+            new MemoryStream(Encoding.UTF8.GetBytes(trace)), null, default, options)) { }
+
+        // RED (issue #34): стриминговый потребитель не получает диагностику.
+        var fileResult = NewParser().Parse(new StringReader(trace));
+        Assert.NotEmpty(fileResult.Warnings);
+        Assert.Equal(fileResult.Warnings.Count, observer.Warnings.Count);
+        Assert.All(observer.Warnings, w =>
+            Assert.Contains(fileResult.Warnings, fw => fw.LineNumber == w.LineNumber && fw.Message == w.Message));
+        Assert.True(observer.Completed);
     }
 
     [Fact]

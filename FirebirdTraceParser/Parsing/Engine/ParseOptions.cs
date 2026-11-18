@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using FirebirdTraceParser.Models.Results;
 
 namespace FirebirdTraceParser.Parsing.Engine;
 
@@ -29,6 +30,14 @@ public sealed record ParseOptions
     /// (большой SQL, широкая perf-таблица) его не достигают.
     /// </summary>
     public int MaxBlockLines { get; init; } = 200_000;
+
+    /// <summary>
+    /// Наблюдатель предупреждений разбора (issue #34): OnNext на каждое <see cref="ParsingWarning"/>
+    /// в порядке возникновения, OnCompleted после завершения разбора. Даёт стриминговому потребителю
+    /// диагностику, которую IAsyncEnumerable не везёт. OnNext - синхронно на потоке разбора;
+    /// исключения наблюдателя не глотаются (это баг наблюдателя, а не данных).
+    /// </summary>
+    public IObserver<ParsingWarning>? WarningObserver { get; init; }
 
     public static ParseOptions Default => new();
 }

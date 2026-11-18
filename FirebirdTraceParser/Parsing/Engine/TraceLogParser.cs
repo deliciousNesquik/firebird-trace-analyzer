@@ -63,6 +63,7 @@ public sealed class TraceLogParser(
             FlushBlock(currentBlock, events, warnings, options, context);
 
         LogWarnings(warnings);
+        options.WarningObserver?.OnCompleted();
         _logger.Info("Parsing completed: {EventCount} events, {WarningCount} warnings",
             events.Count, warnings.Count);
 
@@ -113,6 +114,7 @@ public sealed class TraceLogParser(
             FlushBlock(currentBlock, events, warnings, options, context);
 
         LogWarnings(warnings);
+        options.WarningObserver?.OnCompleted();
         progress?.Report(1.0);
 
         return new ParsingResult<EventBase>
@@ -171,6 +173,7 @@ public sealed class TraceLogParser(
 
         // Логируем накопленные предупреждения через ILogger (это библиотека — Console здесь недопустим)
         LogWarnings(warnings);
+        options.WarningObserver?.OnCompleted();
 
         // Остаток батча
         foreach (var evt in buffer)
@@ -199,6 +202,13 @@ public sealed class TraceLogParser(
         }
     }
 
+    // Единая точка эмиссии warning'ов (issue #34): список результата + OnNext наблюдателю.
+    private static void AddWarning(List<ParsingWarning> warnings, ParseOptions options, ParsingWarning warning)
+    {
+        warnings.Add(warning);
+        options.WarningObserver?.OnNext(warning);
+    }
+
     private void ProcessLine(
         string line,
         int lineNumber,
@@ -218,7 +228,7 @@ public sealed class TraceLogParser(
         }
         catch (RegexMatchTimeoutException ex)
         {
-            warnings.Add(new ParsingWarning
+            AddWarning(warnings, options, new ParsingWarning
             {
                 Severity = options.ValidationMode == ValidationMode.Strict
                     ? WarningSeverity.Error
@@ -245,7 +255,7 @@ public sealed class TraceLogParser(
             {
                 // Тело блока превысило лимит — защита от OOM на файле без границ блоков.
                 // Усекаем: сбрасываем то, что накопили, и игнорируем хвост до следующего заголовка.
-                warnings.Add(new ParsingWarning
+                AddWarning(warnings, options, new ParsingWarning
                 {
                     Severity = WarningSeverity.Warning,
                     Message = $"Block body exceeded MaxBlockLines ({options.MaxBlockLines}); block truncated",
@@ -280,7 +290,7 @@ public sealed class TraceLogParser(
             {
                 // Блок не дал события (неизвестный тип или не хватило обязательных данных) — он
                 // пропущен. Фиксируем как Warning, чтобы это попало в SkippedBlocks и не терялось тихо.
-                warnings.Add(new ParsingWarning
+                AddWarning(warnings, options, new ParsingWarning
                 {
                     Severity = WarningSeverity.Warning,
                     Message = "Block skipped: no event produced (unknown type or missing data)",
@@ -296,7 +306,7 @@ public sealed class TraceLogParser(
                 ? WarningSeverity.Error
                 : WarningSeverity.Warning;
 
-            warnings.Add(new ParsingWarning
+            AddWarning(warnings, options, new ParsingWarning
             {
                 Severity = severity,
                 Message = $"Failed to parse block: {ex.Message}",
