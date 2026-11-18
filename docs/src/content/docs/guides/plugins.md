@@ -28,4 +28,4 @@ Use the plugins screen to see everything that was discovered — with its name, 
 status (Active / Disabled / Shadowed / Load error) — and to enable or disable each one. Changes
 take effect on the next launch.
 
-To build your own plugin, start with the [SDK overview](../sdk/overview.mdx).
+To build your own plugin, start with the [SDK overview](/firebird-trace-analyzer/sdk/overview/).
