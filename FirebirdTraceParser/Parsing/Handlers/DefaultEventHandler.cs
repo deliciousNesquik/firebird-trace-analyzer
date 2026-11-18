@@ -77,11 +77,9 @@ public sealed class DefaultEventHandler(
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
             return HandleError(blockHeader, bodyLines, rules, context, opts);
 
+        // "Блок пропущен" логируется парсером (FlushBlock) - дублировать сюда не нужно (issue #42).
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
-        {
-            _logger.Warn("Unknown event type for parser: '{EventType}'", eventTypeStr);
             return null;
-        }
 
         _dispatch ??= BuildDispatch();
         var result = _dispatch.TryGetValue(eventType, out var factory)
