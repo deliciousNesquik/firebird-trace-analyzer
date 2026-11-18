@@ -98,13 +98,6 @@
       "description": "Заголовок таблицы статистики",
       "requiredGroups": [],
       "sample": "Table                              Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge"
-    },
-    "performance_table_row": {
-      "pattern": "^(?<table_name>\\S+)\\s+(?<natural>\\d*)\\s+(?<index>\\d*)\\s+(?<update>\\d*)\\s+(?<insert>\\d*)\\s+(?<delete>\\d*)\\s+(?<backout>\\d*)\\s+(?<purge>\\d*)\\s+(?<expunge>\\d*)\\s*$",
-      "flags": [],
-      "description": "Строка таблицы статистики производительности",
-      "requiredGroups": ["table_name"],
-      "sample": "RDB$DATABASE                             1"
     }
   }
 }
