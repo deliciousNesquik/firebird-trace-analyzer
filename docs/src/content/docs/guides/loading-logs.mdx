@@ -7,14 +7,13 @@ import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
-All loading is driven from the top menu **Open** (`Open [O]` — the letters in brackets are
-keyboard access keys):
+All loading is driven from the top menu **Open**:
 
-| Menu item | Key | Action |
+| Menu item | Shortcut | Action |
 | --- | --- | --- |
-| **Open → Local File** | `L` | Pick trace files from disk |
-| **Open → Remote File** | `R` | Download trace files from a server over SSH |
-| **Open → Cancel Loading** | `C` | Cancel the load that's currently running |
+| **Open → Local File** | `Ctrl/Cmd+O` | Pick trace files from disk |
+| **Open → Remote File** | `Ctrl/Cmd+Shift+O` | Download trace files from a server over SSH |
+| **Open → Cancel Loading** | `Ctrl+Esc` | Cancel the load that's currently running |
 
 <Aside type="tip">
 You can also **drag trace files from your file manager and drop them onto the window** — they load
