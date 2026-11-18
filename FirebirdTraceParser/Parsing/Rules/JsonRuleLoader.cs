@@ -132,16 +132,18 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
                 
                 if (missingGroups.Any())
                 {
-                    _logger.Fatal($"Rule {name} does not contain group(s): '{string.Join(", ", missingGroups)}'");
+                    _logger.Fatal("Rule {RuleName} does not contain group(s): '{MissingGroups}'",
+                        name, string.Join(", ", missingGroups));
                     throw new RuleValidationException(
                         $"Rule '{name}' does not contain group(s): {string.Join(", ", missingGroups)}",
                         name);
                 }
-                
+
                 // валидация sample примера, в случае не совпадения падает с исключением!
                 if (!string.IsNullOrEmpty(rule.Sample) && !regex.IsMatch(rule.Sample))
                 {
-                    _logger.Fatal($"Rule '{name}' does not match sample data: '{rule.Sample}'");
+                    _logger.Fatal("Rule '{RuleName}' does not match sample data: '{SampleData}'",
+                        name, rule.Sample);
                     throw new RuleValidationException(
                         $"Rule '{name}' does not match sample data",
                         name) 
@@ -155,7 +157,7 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
             }
             catch (Exception ex) when (ex is not RuleValidationException)
             {
-                _logger.Fatal(ex, $"Rule '{name}' failed compilation");
+                _logger.Fatal(ex, "Rule '{RuleName}' failed compilation", name);
                 throw new RuleValidationException($"Rule failed compilation '{name}': {ex.Message}", ex, name);
             }
         }
