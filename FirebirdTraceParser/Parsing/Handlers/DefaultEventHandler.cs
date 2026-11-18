@@ -12,15 +12,24 @@ using NLog;
 namespace FirebirdTraceParser.Parsing.Handlers;
 
 /// <summary> Обработчик событий по умолчанию. </summary>
-public sealed class DefaultEventHandler(
-    ILogger logger,
-    IPerformanceTableParser performanceTableParser,
-    ParseOptions? options = null) : IEventHandler
+public sealed class DefaultEventHandler : IEventHandler
 {
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    private readonly IPerformanceTableParser _performanceTableParser =
-        performanceTableParser ?? throw new ArgumentNullException(nameof(performanceTableParser));
-    private readonly ParseOptions _options = options ?? ParseOptions.Default;
+    private readonly ILogger _logger;
+    private readonly IPerformanceTableParser _performanceTableParser;
+    private readonly ParseOptions _options;
+    private readonly Dictionary<EventType, EventFactory> _dispatch;
+
+    public DefaultEventHandler(ILogger logger, IPerformanceTableParser performanceTableParser,
+        ParseOptions? options = null)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _performanceTableParser =
+            performanceTableParser ?? throw new ArgumentNullException(nameof(performanceTableParser));
+        _options = options ?? ParseOptions.Default;
+        // Таблица строится один раз в конструкторе (issue #52): единственное мутабельное
+        // поле исчезло, вопрос о гонке ленивой инициализации при параллельных парсах закрыт.
+        _dispatch = BuildDispatch();
+    }
 
     private static readonly Dictionary<string, EventType> EventTypeMapping = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -46,9 +55,6 @@ public sealed class DefaultEventHandler(
         IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options);
 
     // Диспетчеризация таблицей вместо switch: новый тип = одна запись, ветвление кода не трогаем.
-    // Ленивая инициализация (ссылки на методы экземпляра нельзя в инициализаторе поля); идемпотентна.
-    private Dictionary<EventType, EventFactory>? _dispatch;
-
     private Dictionary<EventType, EventFactory> BuildDispatch() => new()
     {
         [EventType.TraceInit] = HandleTraceInit,
@@ -81,7 +87,6 @@ public sealed class DefaultEventHandler(
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
             return null;
 
-        _dispatch ??= BuildDispatch();
         var result = _dispatch.TryGetValue(eventType, out var factory)
             ? factory(blockHeader, bodyLines, rules, context, opts)
             : null;
