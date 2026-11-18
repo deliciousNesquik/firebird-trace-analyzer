@@ -20,4 +20,14 @@ internal static class RuleKeys
     public const string Procedure = "procedure";
     public const string Trigger = "trigger";
     public const string PerformanceTableHeader = "performance_table_header";
+
+    /// <summary>
+    /// Все ключи, обязательные для загрузки. Проверяется загрузчиком (issue #33):
+    /// отсутствие любого из них - ошибка конфигурации на старте, а не data-warning при разборе.
+    /// </summary>
+    internal static readonly string[] All =
+    [
+        BlockHeader, Session, Attachment, Process, Statement, Transaction, Restarted,
+        Parameters, ErrorLine, Performance, Fetched, Procedure, Trigger, PerformanceTableHeader
+    ];
 }

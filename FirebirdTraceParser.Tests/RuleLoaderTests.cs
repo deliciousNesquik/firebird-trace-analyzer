@@ -45,10 +45,9 @@ public sealed class RuleLoaderTests
     [Fact]
     public void MissingRequiredGroup_Throws()
     {
-        var path = WriteTemp("""
-        { "schemaVersion": 1, "rules": {
-            "r": { "pattern": "^(?<a>\\d+)$", "flags": [], "requiredGroups": ["b"], "sample": "123" } } }
-        """);
+        var path = WriteTemp(FullRulesJson(extraRule: """
+        "r": { "pattern": "^(?<a>\\d+)$", "flags": [], "requiredGroups": ["b"], "sample": "123" }
+        """));
         try
         {
             var ex = Assert.Throws<RuleValidationException>(() => NewLoader().LoadRules(path));
@@ -60,10 +59,9 @@ public sealed class RuleLoaderTests
     [Fact]
     public void SampleMismatch_Throws()
     {
-        var path = WriteTemp("""
-        { "schemaVersion": 1, "rules": {
-            "r": { "pattern": "^\\d+$", "flags": [], "requiredGroups": [], "sample": "not-a-number" } } }
-        """);
+        var path = WriteTemp(FullRulesJson(extraRule: """
+        "r": { "pattern": "^\\d+$", "flags": [], "requiredGroups": [], "sample": "not-a-number" }
+        """));
         try
         {
             var ex = Assert.Throws<RuleValidationException>(() => NewLoader().LoadRules(path));
@@ -75,10 +73,9 @@ public sealed class RuleLoaderTests
     [Fact]
     public void UnknownFlag_Throws()
     {
-        var path = WriteTemp("""
-        { "schemaVersion": 1, "rules": {
-            "r": { "pattern": "^\\d+$", "flags": ["Bogus"], "requiredGroups": [], "sample": "1" } } }
-        """);
+        var path = WriteTemp(FullRulesJson(extraRule: """
+        "r": { "pattern": "^\\d+$", "flags": ["Bogus"], "requiredGroups": [], "sample": "1" }
+        """));
         try { Assert.Throws<RuleValidationException>(() => NewLoader().LoadRules(path)); }
         finally { File.Delete(path); }
     }
@@ -86,10 +83,9 @@ public sealed class RuleLoaderTests
     [Fact]
     public void InvalidRegexPattern_PreservesInnerException()
     {
-        var path = WriteTemp("""
-        { "schemaVersion": 1, "rules": {
-            "r": { "pattern": "(unbalanced", "flags": [], "requiredGroups": [], "sample": "x" } } }
-        """);
+        var path = WriteTemp(FullRulesJson(extraRule: """
+        "r": { "pattern": "(unbalanced", "flags": [], "requiredGroups": [], "sample": "x" }
+        """));
         try
         {
             var ex = Assert.Throws<RuleValidationException>(() => NewLoader().LoadRules(path));
@@ -103,10 +99,9 @@ public sealed class RuleLoaderTests
     {
         // sample "abc" совпадает с "^ABC$" только при IgnoreCase → флаг применён;
         // при этом IgnorePatternWhitespace остаётся базовым (не заменён).
-        var path = WriteTemp("""
-        { "schemaVersion": 1, "rules": {
-            "r": { "pattern": "^ABC$", "flags": ["IgnoreCase"], "requiredGroups": [], "sample": "abc" } } }
-        """);
+        var path = WriteTemp(FullRulesJson(extraRule: """
+        "r": { "pattern": "^ABC$", "flags": ["IgnoreCase"], "requiredGroups": [], "sample": "abc" }
+        """));
         try
         {
             var rx = NewLoader().LoadRules(path)["r"];
@@ -171,5 +166,35 @@ public sealed class RuleLoaderTests
             new FirebirdTraceParser.Parsing.Engine.ParseOptions { RegexTimeout = TimeSpan.FromMilliseconds(500) });
         var rules = loader.LoadRules(TestSupport.RulesPath);
         Assert.All(rules.Values, rx => Assert.Equal(TimeSpan.FromMilliseconds(500), rx.MatchTimeout));
+    }
+
+    // ------------------------------------------------- required keys (issue #33)
+
+    /// <summary>Полный валидный конфиг из всех ключей RuleKeys (тривиальные паттерны),
+    /// с опциями: исключить один ключ (issue #33) и/или добавить кастомное правило.</summary>
+    private static string FullRulesJson(string? minusKey = null, string? extraRule = null)
+    {
+        var entries = RuleKeys.All
+            .Where(k => k != minusKey)
+            .Select(k => $"\"{k}\": {{ \"pattern\": \"x\", \"flags\": [], \"requiredGroups\": [], \"sample\": \"x\" }}")
+            .ToList();
+        if (extraRule != null) entries.Add(extraRule);
+        return "{ \"schemaVersion\": 1, \"rules\": { " + string.Join(", ", entries) + " } }";
+    }
+
+    [Fact]
+    public void MissingRequiredRuleKey_FailsAtLoad()
+    {
+        // Правила валидны, но ключ "fetched" отсутствует: сегодня это грузится, а потом
+        // роняет каждый finish-блок KeyNotFoundException'ом, замаскированным под data-warning (issue #33).
+        var ex = Assert.Throws<RuleValidationException>(() => NewLoader().CompileFromJson(FullRulesJson("fetched")));
+        Assert.Contains("fetched", ex.Message);
+    }
+
+    [Fact]
+    public void FullRulesJson_Helper_IsValid()
+    {
+        // Санити-проверка хелпера: полный конфиг грузится без исключений.
+        NewLoader().CompileFromJson(FullRulesJson());
     }
 }

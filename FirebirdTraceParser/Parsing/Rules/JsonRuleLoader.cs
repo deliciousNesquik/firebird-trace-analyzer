@@ -85,6 +85,14 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
         if (config?.Rules is null || config.Rules.Count == 0)
             throw new RuleValidationException("Конфиг правил не содержит ни одного правила");
 
+        // Ключи, обязательные для движка (RuleKeys.All): отсутствие любого - ошибка конфигурации
+        // на старте, а не KeyNotFoundException на каждом блоке при разборе, замаскированная
+        // под data-warning (issue #33, принцип "fail-fast на конфигурации").
+        var missingKeys = RuleKeys.All.Where(k => !config.Rules.ContainsKey(k)).ToList();
+        if (missingKeys.Count > 0)
+            throw new RuleValidationException(
+                $"Rules config is missing required key(s): {string.Join(", ", missingKeys)}");
+
         var compiled = CompileAndValidate(config.Rules);
         _logger.Info("Loaded {RuleCount} rules successfully", compiled.Count);
         return compiled;
