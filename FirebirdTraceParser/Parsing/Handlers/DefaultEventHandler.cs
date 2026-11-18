@@ -40,9 +40,10 @@ public sealed class DefaultEventHandler(
         ["FAILED EXECUTE_TRIGGER_FINISH"] = EventType.FailedExecuteTriggerFinish
     };
 
-    /// <summary>Обработчик тела блока конкретного типа события.</summary>
+    /// <summary>Обработчик тела блока конкретного типа события. options добавляется последним
+    /// (может быть null - тогда берутся конструкторные).</summary>
     private delegate EventBase? EventFactory(Match header, IReadOnlyList<string> body,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context);
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options);
 
     // Диспетчеризация таблицей вместо switch: новый тип = одна запись, ветвление кода не трогаем.
     // Ленивая инициализация (ссылки на методы экземпляра нельзя в инициализаторе поля); идемпотентна.
@@ -67,12 +68,14 @@ public sealed class DefaultEventHandler(
     };
 
     public EventBase? Handle(Match blockHeader, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions? options = null)
     {
+        // Per-call опции приоритетнее конструкторных (DI-маршрут передаёт null - issue #32).
+        var opts = options ?? _options;
         var eventTypeStr = blockHeader.GetGroupValue("event_type");
 
         if (eventTypeStr.StartsWith("ERROR AT ", StringComparison.OrdinalIgnoreCase))
-            return HandleError(blockHeader, bodyLines, rules, context);
+            return HandleError(blockHeader, bodyLines, rules, context, opts);
 
         if (!EventTypeMapping.TryGetValue(eventTypeStr, out var eventType))
         {
@@ -82,7 +85,7 @@ public sealed class DefaultEventHandler(
 
         _dispatch ??= BuildDispatch();
         var result = _dispatch.TryGetValue(eventType, out var factory)
-            ? factory(blockHeader, bodyLines, rules, context)
+            ? factory(blockHeader, bodyLines, rules, context, opts)
             : null;
 
         if (result == null)
@@ -184,7 +187,7 @@ public sealed class DefaultEventHandler(
     // ==================== Handlers ====================
 
     private TraceInitEvent? HandleTraceInit(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var session = ParseSessionInfo(bodyLines, rules, context);
         if (session is null) return null;
@@ -202,7 +205,7 @@ public sealed class DefaultEventHandler(
     }
 
     private TraceFinishEvent? HandleTraceFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var session = ParseSessionInfo(bodyLines, rules, context);
         if (session is null) return null;
@@ -220,7 +223,7 @@ public sealed class DefaultEventHandler(
     }
 
     private AttachDatabaseEvent? HandleAttach(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var attachment = ParseAttachmentInfo(bodyLines, rules, context);
         if (attachment is null) return null;
@@ -238,7 +241,7 @@ public sealed class DefaultEventHandler(
     }
 
     private DetachDatabaseEvent? HandleDetach(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var attachment = ParseAttachmentInfo(bodyLines, rules, context);
         if (attachment is null) return null;
@@ -256,7 +259,7 @@ public sealed class DefaultEventHandler(
     }
 
     private StatementStartEvent? HandleStatementStart(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var data = ParseStatementData(bodyLines, rules, false, false, context);
         if (data.Attachment is null)
@@ -279,7 +282,7 @@ public sealed class DefaultEventHandler(
     }
 
     private StatementRestartEvent? HandleStatementRestart(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var data = ParseStatementData(bodyLines, rules, false, true, context);
         if (data.Attachment is null)
@@ -303,7 +306,7 @@ public sealed class DefaultEventHandler(
     }
 
     private StatementFinishEvent? HandleStatementFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareStatementFinish(header, bodyLines, rules, context, requireTransaction: false, out var p))
             return null;
@@ -320,12 +323,12 @@ public sealed class DefaultEventHandler(
             Sql = p.Data.Sql ?? string.Empty,
             Parameters = p.Data.Params,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedStatementFinishEvent? HandleFailedStatementFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareStatementFinish(header, bodyLines, rules, context, requireTransaction: true, out var p))
             return null;
@@ -342,12 +345,12 @@ public sealed class DefaultEventHandler(
             Sql = p.Data.Sql ?? string.Empty,
             Parameters = p.Data.Params,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private ProcedureStartEvent? HandleProcedureStart(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var data = ParseProcedureData(bodyLines, rules, false, context);
         if (data.Attachment is null || data.Transaction is null || data.ProcedureName is null)
@@ -369,7 +372,7 @@ public sealed class DefaultEventHandler(
     }
 
     private ProcedureFinishEvent? HandleProcedureFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareProcedureFinish(header, bodyLines, rules, context, out var p))
             return null;
@@ -385,12 +388,12 @@ public sealed class DefaultEventHandler(
             ProcedureName = p.ProcedureName,
             Parameters = p.Data.Params,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedProcedureFinishEvent? HandleFailedProcedureFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareProcedureFinish(header, bodyLines, rules, context, out var p))
             return null;
@@ -406,12 +409,12 @@ public sealed class DefaultEventHandler(
             ProcedureName = p.ProcedureName,
             Parameters = p.Data.Params,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private TriggerStartEvent? HandleTriggerStart(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var data = ParseTriggerData(bodyLines, rules, false, context);
 
@@ -436,7 +439,7 @@ public sealed class DefaultEventHandler(
     }
 
     private TriggerFinishEvent? HandleTriggerFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareTriggerFinish(header, bodyLines, rules, context, out var p))
             return null;
@@ -454,12 +457,12 @@ public sealed class DefaultEventHandler(
             Timing = p.Data.Timing,
             Event = p.Event,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private FailedTriggerFinishEvent? HandleFailedTriggerFinish(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         if (!TryPrepareTriggerFinish(header, bodyLines, rules, context, out var p))
             return null;
@@ -477,12 +480,12 @@ public sealed class DefaultEventHandler(
             Timing = p.Data.Timing,
             Event = p.Event,
             Performance = p.Data.Performance ?? CreateDefaultPerformance(),
-            PerformanceTable = _options.ParsePerformanceTables ? p.Data.PerformanceTable : null
+            PerformanceTable = options.ParsePerformanceTables ? p.Data.PerformanceTable : null
         };
     }
 
     private ErrorEvent? HandleError(Match header, IReadOnlyList<string> bodyLines,
-        IReadOnlyDictionary<string, Regex> rules, ParsingContext context)
+        IReadOnlyDictionary<string, Regex> rules, ParsingContext context, ParseOptions options)
     {
         var attachment = ParseAttachmentInfo(bodyLines, rules, context);
         if (attachment is null) return null;

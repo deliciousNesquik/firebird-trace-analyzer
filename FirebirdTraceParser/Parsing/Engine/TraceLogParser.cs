@@ -258,7 +258,7 @@ public sealed class TraceLogParser(
     {
         try
         {
-            var evt = _handler.Handle(block.Header!, block.BodyLines, _rules, context);
+            var evt = _handler.Handle(block.Header!, block.BodyLines, _rules, context, options);
 
             if (evt != null)
             {

@@ -167,7 +167,6 @@ public sealed class RuleLoaderTests
         var rules = loader.LoadRules(TestSupport.RulesPath);
         Assert.All(rules.Values, rx => Assert.Equal(TimeSpan.FromMilliseconds(500), rx.MatchTimeout));
     }
-
     // ------------------------------------------------- required keys (issue #33)
 
     /// <summary>Полный валидный конфиг из всех ключей RuleKeys (тривиальные паттерны),

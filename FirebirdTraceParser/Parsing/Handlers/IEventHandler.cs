@@ -3,6 +3,7 @@
 using System.Text.RegularExpressions;
 using FirebirdTraceParser.Infrastructure.Caching;
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Parsing.Engine;
 
 /// <summary>
 /// Обработчик блока события.
@@ -13,5 +14,6 @@ public interface IEventHandler
         Match blockHeader,
         IReadOnlyList<string> bodyLines,
         IReadOnlyDictionary<string, Regex> rules,
-        ParsingContext context);
+        ParsingContext context,
+        ParseOptions? options = null);
 }

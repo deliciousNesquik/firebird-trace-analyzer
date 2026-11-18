@@ -89,4 +89,15 @@ internal static class TestSupport
 
     public static List<string> AttachBody() => [AttachmentLine, ProcessLine];
     public static List<string> TraceInitBody() => [SessionLine];
+
+    /// <summary>Тело statement finish с таблицей производительности в хвосте.</summary>
+    public static List<string> StatementFinishBodyWithPerfTable() =>
+    [
+        AttachmentLine, ProcessLine, TransactionLine,
+        "Statement 1:", SqlDashes, "SELECT 1",
+        "1 records fetched", PerformanceLine,
+        "Table                              Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge",
+        "RDB$INDICES                                       25",
+        ""
+    ];
 }

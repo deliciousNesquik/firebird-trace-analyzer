@@ -13,16 +13,6 @@ namespace FirebirdTraceParser.Tests;
 /// </summary>
 public sealed class DiIntegrationTests
 {
-    private static List<string> StatementFinishBodyWithPerfTable() =>
-    [
-        AttachmentLine, ProcessLine, TransactionLine,
-        "Statement 1:", SqlDashes, "SELECT 1",
-        "1 records fetched", PerformanceLine,
-        "Table                              Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge",
-        "RDB$INDICES                                       25",
-        ""
-    ];
-
     [Fact]
     public void Di_ResolvesFullGraph()
     {

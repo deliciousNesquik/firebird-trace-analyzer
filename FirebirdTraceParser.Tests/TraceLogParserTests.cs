@@ -28,6 +28,28 @@ public sealed class TraceLogParserTests
         return path;
     }
 
+    // ------------------------------------------------- per-call options (issue #32)
+
+    private static string StatementFinishTraceWithPerfTable()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(HeaderLine("EXECUTE_STATEMENT_FINISH"));
+        foreach (var l in StatementFinishBodyWithPerfTable()) sb.AppendLine(l);
+        return sb.ToString();
+    }
+
+    [Fact]
+    public void Per_call_option_disables_performance_table_parsing()
+    {
+        // Per-call ParseOptions должен доходить до обработчика так же, как DI-опции (issue #32).
+        var parser = new TraceLogParser(Rules, NewHandler(), Logger);
+        var result = parser.Parse(new StringReader(StatementFinishTraceWithPerfTable()),
+            new ParseOptions { ParsePerformanceTables = false });
+        var f = Assert.IsType<StatementFinishEvent>(Assert.Single(result.Events));
+        Assert.Null(f.PerformanceTable); // RED: опция до хендлера не доходит, таблица парсится
+        Assert.NotNull(f.Performance);   // сами тайминги при этом парсятся
+    }
+
     [Fact]
     public void ParseFile_CleanTrace_ThreeEventsNoErrors()
     {
