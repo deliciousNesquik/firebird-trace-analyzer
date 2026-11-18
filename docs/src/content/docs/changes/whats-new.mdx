@@ -6,6 +6,32 @@ description: Release notes for Firebird Trace Analyzer — every version, newest
 Release notes, newest first. Versions follow the project's git tags; minor releases are described in
 detail, patch releases summarized.
 
+## 1.16.0 — November 18, 2026
+
+A parser quality campaign based on a full code review — data-correctness fixes, new streaming
+diagnostics, and a large test-suite expansion.
+
+- **Data correctness:** the attachment cache is keyed by (database, attachment id) instead of the
+  bare id. With Firebird Classic the attachment id counters are per-process, and events from a
+  second database could silently receive the first database's user/role/charset info.
+- **Streaming diagnostics:** `ParseStreamAsync` exposes warnings through an
+  `IObserver<ParsingWarning>` channel — skipped blocks and errors are now visible to streaming
+  consumers (in strict mode they were previously undetectable).
+- **Parser API:** `Parse` accepts a `CancellationToken`; `ParseStreamAsync` reports progress and no
+  longer closes the caller's stream; per-call `ParseOptions` are honored by the event handler.
+- **Configuration:** missing required rule keys and invalid options fail fast at load with clear
+  messages; `schemaVersion` is matched case-insensitively; validation messages are consistently in
+  English.
+- **Performance tables:** tolerant to partial column headers (missing columns count as 0 instead of
+  losing the whole row), and trailing junk after a table no longer produces phantom rows.
+- **Robustness:** a warning is emitted for unparseable event timestamps; regex-timeout handling
+  covers both header matches; fatal exceptions are no longer swallowed by the per-block handler.
+- **Under the hood:** fewer hot-path allocations, structural logging, single-pass JSON parsing, and
+  the dispatch table built at construction. The test suite grew from 98 to 240 (118 parser + 122
+  app), all green.
+- **Build:** the macOS bundle id is `com.deliciousnesquik.firebirdtraceanalyzer`; release builds run
+  on the macOS 15 runner image.
+
 ## 1.15.0 — August 28, 2026
 
 Error-chain filtering, a split of developer mode, redesigned toolbar buttons, and a new app icon.
