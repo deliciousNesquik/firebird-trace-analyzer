@@ -1,0 +1,72 @@
+---
+title: Parser statistics
+description: Per-file pipeline timings for the current session — download, parse, store write, UI ingest and finalize, in one diagnostic dialog.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Parser statistics is a diagnostic dialog that shows how long each trace file took to process,
+phase by phase, for the current session. It is a developer tool and is disabled by default.
+
+## Enabling
+
+<Steps>
+
+1. Open **Settings** (`Ctrl/Cmd+,`).
+2. Switch on **Parser Statistics** — "Opens the parser diagnostic tool. Disabled by default."
+3. A new top-level menu item, **Parser statistics**, appears.
+
+</Steps>
+
+## Summary
+
+The top block aggregates the whole session. Row one:
+
+| Card | Meaning |
+| --- | --- |
+| Files | Number of processed files |
+| Events | Total events across all files |
+| Total size | Combined size of the source files |
+| Per event | Average produce time per event, in microseconds |
+| Throughput | Events per second (produce phase) |
+
+Row two totals the pipeline phases in milliseconds:
+
+| Phase | What it covers |
+| --- | --- |
+| Download | Downloading the file from a remote server (`0` for local files) |
+| Parse / read | Producing events: parsing, or reading back from the local store |
+| Store write | Writing events to the local store (`0` when the store is off or the file came from cache) |
+| UI ingest | Adding events to the working set and rendering cards |
+| Finalize (filters/stats) | Session-wide recompute of filters, sorts and statistics |
+
+## Per-file table
+
+One row per file, sorted by total time, longest first.
+
+| Column | Meaning |
+| --- | --- |
+| File | File name |
+| Src | How the events arrived: `local` (parsed from disk), `remote` (parsed after download), `cache` (read back from the store) |
+| Events | Event count for the file |
+| Size | Source file size |
+| Down, ms | Download time |
+| Parse, ms | Produce time |
+| Write, ms | Store write time |
+| UI, ms | UI ingest time |
+| Events/s | Produce throughput for the file |
+
+## Refresh and Clear
+
+**Refresh** re-reads the in-memory snapshot and rebuilds the table. **Clear** resets all session
+metrics. Metrics live in memory only — they reset when the app restarts.
+
+## Interpreting the numbers
+
+- A large **Download** share points at network speed or file size, not at the app.
+- A large **Parse / read** share grows with complex rules and SQL parameter volume — compare
+  files of similar size to spot outliers.
+- **Write, ms** matters only when the local store is enabled; with the store off it stays `0`.
+- **UI, ms** spikes mean many events were added to the working set at once.
+- **Finalize** is charged once per batch, not per file — it appears in the totals but not in the
+  per-file rows.

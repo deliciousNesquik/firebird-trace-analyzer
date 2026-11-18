@@ -52,6 +52,7 @@ export default defineConfig({
             { label: 'Reports', translations: { ru: 'Отчёты' }, slug: 'guides/reports' },
             { label: 'Plugins', translations: { ru: 'Плагины' }, slug: 'guides/plugins' },
             { label: 'Keyboard shortcuts', translations: { ru: 'Горячие клавиши' }, slug: 'guides/keyboard-shortcuts' },
+            { label: 'Parser statistics', translations: { ru: 'Статистика парсера' }, slug: 'guides/parser-statistics' },
           ],
         },
         {
