@@ -151,6 +151,63 @@ public sealed class TraceLogParserTests
             NewParser().Parse(new StringReader(CleanTrace()), null, cts.Token));
     }
 
+    // ------------------------------------------------- ParseFileAsync coverage (issue #53)
+
+    [Fact]
+    public async Task ParseFileAsync_parses_and_reports_progress_ending_at_one()
+    {
+        var path = TempFile(CleanTrace());
+        try
+        {
+            var reports = new List<double>();
+            var result = await NewParser().ParseFileAsync(path, new SyncProgress(reports.Add));
+            Assert.Equal(3, result.Events.Count);
+            Assert.False(result.HasErrors);
+            Assert.NotEmpty(reports);
+            Assert.Equal(1.0, reports[^1]);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ParseFileAsync_cancelled_throws_OperationCanceledException()
+    {
+        var path = TempFile(CleanTrace());
+        try
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            // Async-путь бросает TaskCanceledException (наследник OCE) - принимаем базовый тип.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => NewParser().ParseFileAsync(path, null, cts.Token));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ParseFileAsync_degenerate_options_throw_at_entry()
+    {
+        var path = TempFile(CleanTrace());
+        try
+        {
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+                NewParser().ParseFileAsync(path, null, default, new ParseOptions { MaxBlockLines = -1 }));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void Parse_unknown_block_warning_carries_line_number()
+    {
+        // Поля ParsingWarning (LineNumber/BlockContent) почти не ассертировались (issue #53).
+        var trace = HeaderLine("TRACE_INIT") + "\n" + SessionLine + "\n"
+            + HeaderLine("EXECUTE_PROCEDURE_RESTART") + "\n" + AttachmentLine;
+        var result = NewParser().Parse(new StringReader(trace));
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal(3, warning.LineNumber); // заголовок блока без события на строке 3
+        Assert.NotNull(warning.BlockContent);
+    }
+
     // ------------------------------------------------- warnings observer (issue #34)
 
     private sealed class TestObserver : IObserver<ParsingWarning>
