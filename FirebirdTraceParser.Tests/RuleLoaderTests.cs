@@ -130,6 +130,16 @@ public sealed class RuleLoaderTests
     }
 
     [Fact]
+    public void CompileFromJson_SchemaVersionCaseInsensitive_Loads()
+    {
+        // issue #50: десериализатор правил case-insensitive, а ручная проверка версии была
+        // case-sensitive - "SchemaVersion" падал с загадочной ошибкой. Теперь совпадает.
+        var json = FullRulesJson().Replace("\"schemaVersion\"", "\"SchemaVersion\"");
+        var rules = NewLoader().CompileFromJson(json);
+        Assert.Contains("block_header", rules.Keys);
+    }
+
+    [Fact]
     public void CompileFromJson_MissingSchemaVersion_ThrowsRuleValidation()
     {
         Assert.Throws<RuleValidationException>(() =>

@@ -54,7 +54,7 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
     internal IReadOnlyDictionary<string, Regex> CompileFromJson(string json)
     {
         RuleConfiguration? config;
-        int schemaVersion;
+        var schemaVersion = 0;
         try
         {
             using var document = JsonDocument.Parse(json);
@@ -63,9 +63,20 @@ public sealed class JsonRuleLoader(IMemoryCache cache, ILogger logger, ParseOpti
             if (root.ValueKind != JsonValueKind.Object)
                 throw new RuleValidationException("Rules config: the JSON root must be an object");
 
-            if (!root.TryGetProperty("schemaVersion", out var svEl)
-                || svEl.ValueKind != JsonValueKind.Number
-                || !svEl.TryGetInt32(out schemaVersion))
+            // Case-insensitive: десериализатор правил регистр не различает - и проверка
+            // версии должна вести себя так же (issue #50).
+            var hasSchemaVersion = false;
+            foreach (var prop in root.EnumerateObject())
+            {
+                if (prop.Name.Equals("schemaVersion", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasSchemaVersion = prop.Value.ValueKind == JsonValueKind.Number
+                        && prop.Value.TryGetInt32(out schemaVersion);
+                    break;
+                }
+            }
+
+            if (!hasSchemaVersion)
                 throw new RuleValidationException("Rules config: missing or invalid 'schemaVersion'");
 
             config = JsonSerializer.Deserialize<RuleConfiguration>(json, new JsonSerializerOptions
