@@ -40,7 +40,10 @@ public sealed class TraceLogParser(
     /// Не зависит от файловой системы, возвращает полный <see cref="ParsingResult{T}"/> с Warnings,
     /// поэтому поведение SkippedBlocks/Strict проверяется тестами через <c>new StringReader(trace)</c>.
     /// </summary>
-    public ParsingResult<EventBase> Parse(TextReader reader, ParseOptions? options = null)
+    public ParsingResult<EventBase> Parse(
+        TextReader reader,
+        ParseOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(reader);
         options ??= ParseOptions.Default;
@@ -57,6 +60,7 @@ public sealed class TraceLogParser(
         while ((line = reader.ReadLine()) != null)
         {
             lineNumber++;
+            cancellationToken.ThrowIfCancellationRequested();
             ProcessLine(line, lineNumber, currentBlock, events, warnings, options, context);
         }
 

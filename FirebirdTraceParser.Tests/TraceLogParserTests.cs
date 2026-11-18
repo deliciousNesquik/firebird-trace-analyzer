@@ -138,6 +138,19 @@ public sealed class TraceLogParserTests
         Assert.Equal(reports, reports.OrderBy(v => v).ToList()); // монотонно неубывающая
     }
 
+    // ------------------------------------------------- sync cancellation (issue #51)
+
+    [Fact]
+    public void Parse_cancelled_token_throws_promptly()
+    {
+        // issue #51: у синхронного Parse не было CancellationToken - асинхронные API умели,
+        // синхронный нет. Pre-cancelled токен бросает немедленно, до первой строки.
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        Assert.Throws<OperationCanceledException>(() =>
+            NewParser().Parse(new StringReader(CleanTrace()), null, cts.Token));
+    }
+
     // ------------------------------------------------- warnings observer (issue #34)
 
     private sealed class TestObserver : IObserver<ParsingWarning>
