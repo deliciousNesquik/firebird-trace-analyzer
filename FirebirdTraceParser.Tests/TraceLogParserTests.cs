@@ -65,6 +65,22 @@ public sealed class TraceLogParserTests
         Assert.Contains(result.Warnings, w => w.Message.Contains("timestamp", StringComparison.OrdinalIgnoreCase));
     }
 
+    // ------------------------------------------------- options validation (issue #40)
+
+    [Fact]
+    public void Degenerate_options_throw_at_entry_not_mid_parse()
+    {
+        // fail-fast на конфигурации (issue #40): мусорные опции ловятся на входе,
+        // а не превращаются в ноль событий со спамом предупреждений.
+        var parser = NewParser();
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            parser.Parse(new StringReader(CleanTrace()), new ParseOptions { MaxBlockLines = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            parser.Parse(new StringReader(CleanTrace()), new ParseOptions { BatchSize = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            parser.Parse(new StringReader(CleanTrace()), new ParseOptions { RegexTimeout = TimeSpan.Zero }));
+    }
+
     // ------------------------------------------------- stream ownership (issue #36)
 
     [Fact]

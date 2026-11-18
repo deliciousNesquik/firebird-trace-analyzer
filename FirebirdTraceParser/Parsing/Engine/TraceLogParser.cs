@@ -28,6 +28,7 @@ public sealed class TraceLogParser(
     public ParsingResult<EventBase> ParseFile(string filePath, ParseOptions? options = null)
     {
         options ??= ParseOptions.Default;
+        ValidateOptions(options);
         _logger.Info("Starting parsing file: {FilePath}", filePath);
 
         using var reader = new StreamReader(filePath, options.Encoding);
@@ -43,6 +44,7 @@ public sealed class TraceLogParser(
     {
         ArgumentNullException.ThrowIfNull(reader);
         options ??= ParseOptions.Default;
+        ValidateOptions(options);
 
         var events = new List<EventBase>();
         var warnings = new List<ParsingWarning>();
@@ -81,6 +83,7 @@ public sealed class TraceLogParser(
         ParseOptions? options = null)
     {
         options ??= ParseOptions.Default;
+        ValidateOptions(options);
 
         var fileInfo = new FileInfo(filePath);
         var fileSize = fileInfo.Length;
@@ -133,6 +136,8 @@ public sealed class TraceLogParser(
         options ??= ParseOptions.Default;
 
         // Контракт владения (issue #36): поток принадлежит вызывающему - парсер не закрывает его
+        ValidateOptions(options);
+
         // (leaveOpen), в том числе при раннем выходе из await foreach.
         using var reader = new StreamReader(stream, options.Encoding,
             detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
@@ -207,6 +212,21 @@ public sealed class TraceLogParser(
     {
         warnings.Add(warning);
         options.WarningObserver?.OnNext(warning);
+    }
+
+    // Fail-fast на конфигурации (issue #40): мусорные опции ловятся на входе, а не дают
+    // ноль событий со спамом предупреждений посреди разбора.
+    private static void ValidateOptions(ParseOptions options)
+    {
+        if (options.BatchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.BatchSize,
+                "BatchSize must be positive.");
+        if (options.MaxBlockLines <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.MaxBlockLines,
+                "MaxBlockLines must be positive.");
+        if (options.RegexTimeout <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(options), options.RegexTimeout,
+                "RegexTimeout must be positive.");
     }
 
     private void ProcessLine(
