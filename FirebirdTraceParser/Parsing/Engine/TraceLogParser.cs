@@ -241,10 +241,40 @@ public sealed class TraceLogParser(
         // IsMatch не аллоцирует объект Match — а строк тела блока на порядки больше заголовков.
         // Матч выполняется на недоверенной строке, поэтому таймаут ReDoS не должен ронять весь
         // разбор: ловим RegexMatchTimeoutException, фиксируем предупреждение и пропускаем строку.
-        bool isHeader;
+        // Guard охватывает и IsMatch на каждой строке, и второй Match на строке-заголовке
+        // (issue #45): таймаут на любом из матчей деградирует в предупреждение, а не роняет
+        // весь разбор. IsMatch оставлен быстрым путём для строк тел (Match аллоцирует объект).
         try
         {
-            isHeader = _blockHeaderRx.IsMatch(line);
+            if (_blockHeaderRx.IsMatch(line))
+            {
+                // Новый блок - обработать предыдущий
+                if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options, context);
+
+                currentBlock.Reset();
+                currentBlock.Header = _blockHeaderRx.Match(line); // Match только на редких строках-заголовках
+                currentBlock.StartLine = lineNumber;
+            }
+            else if (currentBlock.HasData && !string.IsNullOrWhiteSpace(line))
+            {
+                if (currentBlock.BodyLines.Count >= options.MaxBlockLines)
+                {
+                    // Тело блока превысило лимит — защита от OOM на файле без границ блоков.
+                    // Усекаем: сбрасываем то, что накопили, и игнорируем хвост до следующего заголовка.
+                    AddWarning(warnings, options, new ParsingWarning
+                    {
+                        Severity = WarningSeverity.Warning,
+                        Message = $"Block body exceeded MaxBlockLines ({options.MaxBlockLines}); block truncated",
+                        LineNumber = currentBlock.StartLine,
+                        BlockContent = string.Join("\n", currentBlock.BodyLines.Take(3))
+                    });
+                    FlushBlock(currentBlock, events, warnings, options, context);
+                    currentBlock.Reset();
+                    return;
+                }
+
+                currentBlock.BodyLines.Add(line);
+            }
         }
         catch (RegexMatchTimeoutException ex)
         {
@@ -257,37 +287,6 @@ public sealed class TraceLogParser(
                 LineNumber = lineNumber
             });
             _logger.Warn(ex, "Regex timeout matching block_header at line {LineNumber}", lineNumber);
-            return;
-        }
-
-        if (isHeader)
-        {
-            // Новый блок - обработать предыдущий
-            if (currentBlock.HasData) FlushBlock(currentBlock, events, warnings, options, context);
-
-            currentBlock.Reset();
-            currentBlock.Header = _blockHeaderRx.Match(line); // Match только на редких строках-заголовках
-            currentBlock.StartLine = lineNumber;
-        }
-        else if (currentBlock.HasData && !string.IsNullOrWhiteSpace(line))
-        {
-            if (currentBlock.BodyLines.Count >= options.MaxBlockLines)
-            {
-                // Тело блока превысило лимит — защита от OOM на файле без границ блоков.
-                // Усекаем: сбрасываем то, что накопили, и игнорируем хвост до следующего заголовка.
-                AddWarning(warnings, options, new ParsingWarning
-                {
-                    Severity = WarningSeverity.Warning,
-                    Message = $"Block body exceeded MaxBlockLines ({options.MaxBlockLines}); block truncated",
-                    LineNumber = currentBlock.StartLine,
-                    BlockContent = string.Join("\n", currentBlock.BodyLines.Take(3))
-                });
-                FlushBlock(currentBlock, events, warnings, options, context);
-                currentBlock.Reset();
-                return;
-            }
-
-            currentBlock.BodyLines.Add(line);
         }
     }
 
