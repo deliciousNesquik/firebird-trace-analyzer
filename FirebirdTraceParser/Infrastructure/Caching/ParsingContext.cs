@@ -18,7 +18,10 @@ public sealed class ParsingContext
     private const int MaxInternLength = 128;
 
     private readonly Dictionary<string, string> _strings = new();
-    private readonly Dictionary<long, AttachmentInfo> _attachments = new();
+    // Ключ (база, id), а не голый id: у Classic счётчики ATT per-process, и один номер
+    // встречается у разных баз в одном разборе (issue #31). Контракт совпадает с
+    // DurationPostProcessor, который ключует свою карту так же.
+    private readonly Dictionary<(string DatabasePath, long AttachmentId), AttachmentInfo> _attachments = new();
     private readonly Dictionary<int, TraceSessionInfo> _sessions = new();
 
     /// <summary>Дедуплицирует строку в пределах текущего разбора.</summary>
@@ -37,14 +40,14 @@ public sealed class ParsingContext
         return value;
     }
 
-    /// <summary>Возвращает ранее созданный AttachmentInfo по id (в пределах разбора).</summary>
-    public bool TryGetAttachment(long attachmentId, out AttachmentInfo? info)
-        => _attachments.TryGetValue(attachmentId, out info);
+    /// <summary>Возвращает ранее созданный AttachmentInfo по (база, id) в пределах разбора.</summary>
+    public bool TryGetAttachment(string databasePath, long attachmentId, out AttachmentInfo? info)
+        => _attachments.TryGetValue((databasePath, attachmentId), out info);
 
     /// <summary>Добавляет AttachmentInfo в пул и возвращает его.</summary>
     public AttachmentInfo AddAttachment(AttachmentInfo info)
     {
-        _attachments[info.AttachmentId] = info;
+        _attachments[(info.DatabasePath, info.AttachmentId)] = info;
         return info;
     }
 

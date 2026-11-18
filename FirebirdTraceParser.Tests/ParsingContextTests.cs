@@ -45,7 +45,7 @@ public sealed class ParsingContextTests
     public void Attachment_CacheRoundTrips()
     {
         var ctx = new ParsingContext();
-        Assert.False(ctx.TryGetAttachment(1, out _));
+        Assert.False(ctx.TryGetAttachment("db", 1, out _));
 
         var info = new AttachmentInfo
         {
@@ -53,7 +53,10 @@ public sealed class ParsingContextTests
             Charset = "c", Protocol = "p", Address = "a", Port = 1
         };
         Assert.Same(info, ctx.AddAttachment(info));
-        Assert.True(ctx.TryGetAttachment(1, out var got));
+        Assert.True(ctx.TryGetAttachment("db", 1, out var got));
         Assert.Same(info, got);
+
+        // Тот же id на другой базе - другой ключ (issue #31): попадания в кэш нет.
+        Assert.False(ctx.TryGetAttachment("other", 1, out _));
     }
 }

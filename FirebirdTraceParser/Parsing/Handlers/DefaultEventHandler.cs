@@ -557,7 +557,7 @@ public sealed class DefaultEventHandler(
 
         var attachmentId = am.GetGroupLong("attachment_id");
 
-        if (context.TryGetAttachment(attachmentId, out var cachedInfo))
+        if (context.TryGetAttachment(am.GetGroupValue("database_path"), attachmentId, out var cachedInfo))
             return cachedInfo;
 
         var newInfo = new AttachmentInfo

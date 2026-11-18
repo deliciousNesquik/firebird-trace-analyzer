@@ -203,4 +203,28 @@ public sealed class EventHandlerTests
         var s = Assert.IsType<StatementStartEvent>(evt);
         Assert.Equal("Ünïcödé — Ⅷ 中文 �", s.Parameters[0].Value);
     }
+
+    // ---------------------------------------------------------- attachment cache (issue #31)
+
+    [Fact]
+    public void SameAttachmentIdDifferentDatabases_CacheReturnsCorrectAttachment()
+    {
+        // Один номер ATT, две базы (Classic: счётчики per-process) - кэш не должен
+        // подставлять данные db1 в события db2 (issue #31, severity: critical).
+        const string attachDb1 = "\t/interbas/db1.fdb (ATT_11335646, REPL:NONE, WIN1251, TCPv4:192.168.3.218/52931)";
+        const string attachDb2 = "\t/interbas/db2.fdb (ATT_11335646, REPL:NONE, UTF8, TCPv4:10.0.0.5/5000)";
+        var handler = NewHandler();
+        var context = NewContext();
+
+        handler.Handle(Header(HeaderLine("ATTACH_DATABASE")), [attachDb1, ProcessLine], Rules, context);
+        var attach2 = handler.Handle(Header(HeaderLine("ATTACH_DATABASE")), [attachDb2, ProcessLine], Rules, context);
+        var stmt = handler.Handle(Header(HeaderLine("EXECUTE_STATEMENT_START")),
+            [attachDb2, ProcessLine, TransactionLine, "Statement 1:", SqlDashes, "SELECT 1"], Rules, context);
+
+        var a2 = Assert.IsType<AttachDatabaseEvent>(attach2);
+        Assert.Equal("/interbas/db2.fdb", a2.Attachment.DatabasePath); // RED: кэш вернёт db1
+        Assert.Equal("UTF8", a2.Attachment.Charset);
+        var s = Assert.IsType<StatementStartEvent>(stmt);
+        Assert.Equal("/interbas/db2.fdb", s.Attachment.DatabasePath);
+    }
 }
