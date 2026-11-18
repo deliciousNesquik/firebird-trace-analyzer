@@ -1,6 +1,6 @@
 ---
 title: Loading logs
-description: Open Firebird trace files from disk or download them over SSH — every button and field explained.
+description: Open Firebird trace files from disk or download them over SSH — local loading, server profiles (UI and profiles file), credentials and host keys.
 ---
 
 import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -50,9 +50,10 @@ Fields marked `*` are required. The form is grouped into cards.
 
 <img src={`${base}/media/load-ssh.gif`} alt="Downloading trace logs over SSH" />
 
-### Profiles
+### Server profiles
 
-Reusable connections, saved to a local profiles file.
+Reusable connections, saved to a local profiles file (see
+[The profiles file](#the-profiles-file) below).
 
 - **Load a saved profile** — the dropdown lists your profiles (name + hostname). Selecting one
   fills in *every* field below: hostname, port, username, authentication method, key path,
@@ -64,11 +65,90 @@ Reusable connections, saved to a local profiles file.
 - **Save current settings as** — type a name and press **Save** to store the current form as a
   profile. Saving under an existing name overwrites it.
 
+### The profiles file
+
+Profiles live in one JSON file:
+
+| OS | Path |
+| --- | --- |
+| Windows | `%APPDATA%\FirebirdTraceAnalyzer\ssh_profiles.json` |
+| macOS / Linux | `~/.config/FirebirdTraceAnalyzer/ssh_profiles.json` |
+
+The **Open profiles file** button opens this file in your file manager. The file is an array of
+profiles; one profile looks like this:
+
+```json
+[
+  {
+    "Name": "prod",
+    "Settings": {
+      "Hostname": "192.168.1.100",
+      "Port": 22,
+      "Username": "root",
+      "AuthMethod": 0,
+      "PrivateKeyPath": null,
+      "RemoteDirectory": "/var/log/firebird/trace",
+      "DeleteAfterProcessingFromServer": false,
+      "DeleteAfterProcessingOnLocaleMachine": false,
+      "ConnectionTimeout": 30
+    },
+    "CreatedAt": "2026-11-18T12:00:00",
+    "LastUsedAt": "2026-11-18T12:30:00"
+  }
+]
+```
+
+Top-level fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `Name` | string | Profile display name, as shown in the dropdown |
+| `Settings` | object | Connection settings, table below |
+| `CreatedAt` / `LastUsedAt` | date-time | When the profile was created / last used |
+
+`Settings` fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `Hostname` | string | Server address |
+| `Port` | number | `1–65535` (SSH default `22`) |
+| `Username` | string | SSH account |
+| `AuthMethod` | number | `0` = password, `1` = private key |
+| `PrivateKeyPath` | string \| null | Path to the private key (key auth only) |
+| `RemoteDirectory` | string | Folder with the trace files |
+| `DeleteAfterProcessingFromServer` | bool | Delete files from the server after processing |
+| `DeleteAfterProcessingOnLocaleMachine` | bool | Delete downloaded copies from this computer |
+| `ConnectionTimeout` | number | Seconds (default `30`) |
+
 <Aside type="caution" title="Secrets are never written to the profile file">
-- The **key passphrase** is not persisted — you re-enter it each session.
-- The **password** is only restored if you previously ticked *Remember password*, in which case
-  it's read back from the operating-system credential store — never from the profile file.
+The `Password` and `KeyPassphrase` properties are excluded from serialization: remembered
+passwords live in the OS credential store (see below), the key passphrase is re-entered each
+session.
 </Aside>
+
+Editing by hand is safe while you follow three rules: keep the JSON valid, keep `AuthMethod`
+numeric (`0` / `1`), and expect the app to re-read the file the next time the remote dialog
+opens.
+
+### Credentials and host keys
+
+- **Remembered passwords** are stored in the OS credential store:
+
+  | OS | Backend |
+  | --- | --- |
+  | Windows | DPAPI + a file in the `Credentials` folder |
+  | macOS | Keychain (service `FirebirdTraceAnalyzer`) |
+  | Linux | Secret Service (`secret-tool`; gnome-keyring / KWallet) |
+
+  Without a running keyring on Linux the app falls back to a `0600`-permission file in the
+  `Credentials` folder and logs a warning — install `libsecret` and a keyring daemon for proper
+  storage.
+
+- **Host keys** are trusted on first use and stored in `known_hosts` in the same folder, one line
+  per host, tab-separated: `host`, `port`, `keyName`, `SHA-256 fingerprint`. The first
+  connection remembers the key; any other fingerprint or key type afterwards is refused, and the
+  log records a possible man-in-the-middle. If the server's key legitimately changed (reinstall,
+  new host key), delete that host's line from the file and reconnect.
 
 ### Server
 
@@ -141,3 +221,8 @@ After a successful connect, the app lists the trace files in the remote director
    “after processing” choices, and disconnects.
 
 </Steps>
+
+Downloaded copies land in `%APPDATA%\FirebirdTraceAnalyzer\RemoteDownloads`
+(`~/.config/FirebirdTraceAnalyzer/RemoteDownloads` on macOS / Linux) unless you override the
+downloads folder in Settings. With **Delete downloaded copies from this computer** on, that
+folder is wiped after processing.
