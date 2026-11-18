@@ -58,8 +58,9 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
                     break;
 
                 var item = ParseRow(line, positions, context);
-                if (item is not null)
-                    items.Add(item);
+                if (item is null)
+                    break; // первая строка, не являющаяся строкой таблицы, заканчивает её (issue #39)
+                items.Add(item);
             }
         }
         
@@ -100,17 +101,32 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
             var tableName = Slice(span, 0, pos.TableNameEnd).Trim();
             if (tableName.IsEmpty) return null;
 
+            var natural = Slice(span, pos.NaturalStart, pos.NaturalEnd);
+            var index = Slice(span, pos.IndexStart, pos.IndexEnd);
+            var update = Slice(span, pos.UpdateStart, pos.UpdateEnd);
+            var insert = Slice(span, pos.InsertStart, pos.InsertEnd);
+            var delete = Slice(span, pos.DeleteStart, pos.DeleteEnd);
+            var backout = Slice(span, pos.BackoutStart, pos.BackoutEnd);
+            var purge = Slice(span, pos.PurgeStart, pos.PurgeEnd);
+            var expunge = Slice(span, pos.ExpungeStart, pos.ExpungeEnd);
+
+            // Ни одной цифровой колонки - это не строка таблицы (мусор после неё, issue #39):
+            // сигнал "таблица кончилась".
+            if (natural.IsEmpty && index.IsEmpty && update.IsEmpty && insert.IsEmpty
+                && delete.IsEmpty && backout.IsEmpty && purge.IsEmpty && expunge.IsEmpty)
+                return null;
+
             return new PerformanceTableItem
             {
                 TableName = context.Intern(tableName.ToString()),
-                NaturalCount = ParseIntSafe(Slice(span, pos.NaturalStart, pos.NaturalEnd)),
-                IndexCount = ParseIntSafe(Slice(span, pos.IndexStart, pos.IndexEnd)),
-                UpdateCount = ParseIntSafe(Slice(span, pos.UpdateStart, pos.UpdateEnd)),
-                InsertCount = ParseIntSafe(Slice(span, pos.InsertStart, pos.InsertEnd)),
-                DeleteCount = ParseIntSafe(Slice(span, pos.DeleteStart, pos.DeleteEnd)),
-                BackoutCount = ParseIntSafe(Slice(span, pos.BackoutStart, pos.BackoutEnd)),
-                PurgeCount = ParseIntSafe(Slice(span, pos.PurgeStart, pos.PurgeEnd)),
-                ExpungeCount = ParseIntSafe(Slice(span, pos.ExpungeStart, pos.ExpungeEnd))
+                NaturalCount = ParseIntSafe(natural),
+                IndexCount = ParseIntSafe(index),
+                UpdateCount = ParseIntSafe(update),
+                InsertCount = ParseIntSafe(insert),
+                DeleteCount = ParseIntSafe(delete),
+                BackoutCount = ParseIntSafe(backout),
+                PurgeCount = ParseIntSafe(purge),
+                ExpungeCount = ParseIntSafe(expunge)
             };
         }
         catch (Exception ex)

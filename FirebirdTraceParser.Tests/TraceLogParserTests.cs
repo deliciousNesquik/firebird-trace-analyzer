@@ -40,6 +40,21 @@ public sealed class TraceLogParserTests
     }
 
     [Fact]
+    public void Trailing_junk_after_perf_table_does_not_create_phantom_rows()
+    {
+        // Парсер фильтрует пустые строки до хендлера, поэтому терминатор таблицы "пустая
+        // строка" не срабатывает - и мусор после таблицы попадал в неё фантомной записью
+        // с нулевыми счётчиками (issue #39). Таблица обязана заканчиваться на первой
+        // строке, не являющейся строкой таблицы.
+        var trace = StatementFinishTraceWithPerfTable() + "some trailing text line\n";
+        var result = NewParser().Parse(new StringReader(trace));
+        var f = Assert.IsType<StatementFinishEvent>(Assert.Single(result.Events));
+        Assert.NotNull(f.PerformanceTable);
+        Assert.Single(f.PerformanceTable!.Items); // только RDB$INDICES
+        Assert.DoesNotContain(f.PerformanceTable.Items, i => i.TableName.Contains("trailing"));
+    }
+
+    [Fact]
     public void Per_call_option_disables_performance_table_parsing()
     {
         // Per-call ParseOptions должен доходить до обработчика так же, как DI-опции (issue #32).
