@@ -661,7 +661,7 @@ public sealed class DefaultEventHandler(
 
         foreach (var line in lines)
         {
-            var match = errorLineRx.Match(line.Trim());
+            var match = errorLineRx.Match(line.Trim()); // error-строки редки: Trim-аллокация допустима
             if (!match.Success) continue;
 
             // Именованные группы (актуальный rules.json) с откатом на позиционные 1/2 —
@@ -785,8 +785,8 @@ public sealed class DefaultEventHandler(
                 }
             }
 
-            // SQL block start
-            if (line.Trim().StartsWith("-----"))
+            // SQL block start (span-проверка без Trim-аллокации на каждой строке тела, issue #41)
+            if (line.AsSpan().TrimStart().StartsWith("-----"))
             {
                 var sqlLines = new List<string>();
                 i++;
@@ -813,7 +813,9 @@ public sealed class DefaultEventHandler(
                     i++;
                 }
 
-                sql = context.Intern(string.Join("\n", sqlLines).Trim());
+                // SQL длиннее MaxInternLength почти всегда - Intern тут no-op и лишь вводит в
+                // заблуждение; основная аллокация это сам Join (issue #41).
+                sql = string.Join("\n", sqlLines).Trim();
                 continue;
             }
 
