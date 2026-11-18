@@ -285,6 +285,18 @@ public sealed class TraceLogParser(
             if (evt != null)
             {
                 events.Add(evt);
+
+                // MinValue сюда попадает только из ParseEventMetadata: битый ts деградировал
+                // до дефолта - терять этот факт молча нельзя (issue #37).
+                if (evt.Timestamp == default)
+                {
+                    AddWarning(warnings, options, new ParsingWarning
+                    {
+                        Severity = WarningSeverity.Warning,
+                        Message = "Event has unparseable timestamp; defaulted to DateTime.MinValue",
+                        LineNumber = block.StartLine
+                    });
+                }
             }
             else
             {

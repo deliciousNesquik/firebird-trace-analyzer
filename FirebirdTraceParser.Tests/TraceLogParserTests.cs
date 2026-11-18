@@ -51,6 +51,20 @@ public sealed class TraceLogParserTests
         Assert.NotNull(f.Performance);   // сами тайминги при этом парсятся
     }
 
+    // ------------------------------------------------- timestamp warning (issue #37)
+
+    [Fact]
+    public void Malformed_timestamp_emits_warning_but_event_still_returned()
+    {
+        // Битый ts: событие возвращается с MinValue (закреплено MalformedTimestamp_FallsBackToDefault),
+        // но потеря метки времени обязана быть видна как ParsingWarning (issue #37).
+        var trace = "2026-13-45T99:99:99.9999 (607408:0x7f2cbe321dc0) EXECUTE_STATEMENT_START\n"
+                    + string.Join("\n", StatementBody(false));
+        var result = NewParser().Parse(new StringReader(trace));
+        Assert.False(result.HasErrors); // деградация данных, не ошибка разбора
+        Assert.Contains(result.Warnings, w => w.Message.Contains("timestamp", StringComparison.OrdinalIgnoreCase));
+    }
+
     // ------------------------------------------------- stream ownership (issue #36)
 
     [Fact]
