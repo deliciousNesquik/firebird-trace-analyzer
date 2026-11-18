@@ -75,20 +75,29 @@ unified hotkey scheme. The test suite grew from 98 to 240 (118 parser + 122 app)
 
 ## 1.15.0 — August 28, 2026
 
-Error-chain filtering, a split of developer mode, redesigned toolbar buttons, and a new app icon.
+Error-chain filtering, a developer-mode split, redesigned toolbar buttons, and a new app icon.
 
-- **Filtering:** filter events by fields inside the error chain — **Error Code** and **Error Message**.
-  They live inside a collection on error events and were previously unreachable; an event now matches
-  when any line in its error chain matches. They appear once the view is narrowed to error events.
-- **Diagnostic tools:** the single *Developer mode* is now two independent switches — **Parser
-  Statistics** and **Event Inspector**. The per-event inspector button shows only when *Event
-  Inspector* is enabled; its unreliable right-click menu entry was removed.
-- **Toolbar:** redesigned search / sort / filter buttons — the filter button carries a badge with the
-  number of active filters, the search button an activity badge; unified button styling.
-- **App icon:** a new application icon.
-- **Fixes:** the error-card copy button, the settings-window icon color, the plugins view (icon color;
-  the collisions section is hidden when empty), the events empty-state visibility, and more accurate
-  human-readable byte sizes.
+### New features
+
+- Added error-chain filtering: events can be filtered by **Error Code** and **Error Message** from
+  the error-chain collection, which was previously unreachable. The filters appear when the view is
+  narrowed to error events, and an event matches when any line in its chain matches.
+- Split the single *Developer mode* into two independent switches: **Parser Statistics** and
+  **Event Inspector**. The per-event inspector button now shows only when Event Inspector is
+  enabled; the unreliable right-click menu entry was removed.
+
+### Improvements
+
+- Redesigned the search / sort / filter toolbar buttons: the filter button carries a badge with the
+  active filter count, the search button an activity badge; unified button styling and a reduced
+  corner radius.
+- New application icon.
+
+### Bug fixes
+
+- Fixed the error-card copy button and the settings-window icon color.
+- Fixed the plugins view: icon color, and the collisions section is hidden when empty.
+- Fixed the events empty-state visibility and more accurate human-readable byte sizes.
 
 ## 1.14.0 — August 13, 2026
 
@@ -102,74 +111,114 @@ Drag-and-drop file loading.
 
 Localization fixes, a Window → Reset fix, and an SDK and documentation update.
 
-- **Localization:** the filter three-state checkbox tooltip and the download-window title are now
-  localized (they were previously hardcoded).
-- **Window → Reset** restores the default layout again — every panel except *Logs* (it previously
-  had no effect).
-- **SDK:** a shorter `FilterDescriptor` constructor for predicate-only filters (no `propertyPath`),
-  and documented runtime-tunable plugin filters.
-- **Documentation:** a full documentation site (English + Russian) covering the app and the plugin SDK.
+### New features
+
+- Added a shorter `FilterDescriptor` constructor for predicate-only (boolean) filters, without
+  `propertyPath`, and documented runtime-tunable plugin filters.
+
+### Documentation
+
+- Launched the full documentation site (English + Russian) covering the app and the plugin SDK.
+
+### Bug fixes
+
+- Localized the three-state filter checkbox tooltip and the download-window title (previously
+  hardcoded).
+- Window → Reset restores the default layout again — every panel except Logs (it previously had no
+  effect).
 
 ## 1.12.0 — July 23, 2026
 
-A broad core-and-app review focused on security, performance and reliability, plus a large internal
+A broad security, performance and reliability pass over the core and the app, plus a large internal
 architecture cleanup.
 
-- **Security:** SSH host-key verification (trust-on-first-use via `known_hosts`) against
-  man-in-the-middle; passwords and key passphrases are never written to SSH profiles; the fallback
-  credential store is encrypted with AES-256-GCM; path-traversal protection for downloaded filenames
-  and report-template ids; the macOS keychain password is passed via stdin rather than the command line.
-- **Performance:** trace parsing runs off the UI thread; filter predicates are compiled once per pass
-  and sort keys extracted once per event; faster PDF and XLSX export; parser hot-path optimizations
-  (regex caching, fewer allocations); removed an N+1 in the event store.
-- **Reliability:** global crash handlers route background failures to the log instead of failing
-  silently; the filter pipeline runs on a snapshot (fixes a race when loading or closing files);
-  OOM protection on malformed logs via a block-size cap.
-- **Under the hood:** the main view-model was split into focused, dependency-injected services,
-  `IEventStore` was split by role, event cards share common base classes, and a new parser test suite
-  was added.
+### Security
+
+- SSH host-key verification (trust-on-first-use via `known_hosts`) against man-in-the-middle.
+- Passwords and key passphrases are no longer written to SSH profiles.
+- The fallback credential store is encrypted with AES-256-GCM.
+- Path-traversal protection for downloaded filenames and report-template ids.
+- The macOS keychain password is passed via stdin rather than the command line.
+
+### Performance
+
+- Trace parsing runs off the UI thread; filter predicates are compiled once per pass and sort keys
+  are extracted once per event.
+- Faster PDF and XLSX export; parser hot-path optimizations (regex caching, fewer allocations).
+- Removed an N+1 query in the event store.
+
+### Reliability
+
+- Global crash handlers route background failures to the log instead of failing silently.
+- The filter pipeline runs on a snapshot, fixing a race when loading or closing files.
+- OOM protection on malformed logs via a block-size cap.
+
+### Architecture
+
+- The main view-model was split into focused, dependency-injected services; `IEventStore` was split
+  by role; event cards share common base classes; a new parser test suite was added.
 
 ## 1.11.0 — July 17, 2026
 
 Event-store analytics and maintenance: a read-only SQL console and disk-space compaction.
 
-- **Storage analysis:** a read-only SQL console over the event store — SQL syntax highlighting,
-  autocomplete (keywords, schema, table/alias columns, table list after `FROM`/`JOIN`), a searchable
-  schema-cards view, and editor font zoom (`Ctrl`+wheel, `Ctrl` +/-/0).
-- **Storage maintenance:** **Compact** reclaims disk space (`VACUUM` + orphan cleanup) and also runs
-  automatically in the background on the next launch after deletions; confirmation prompts before
-  deleting selected files or clearing the whole store.
-- **Filtering:** filters and sorts are computed in the background with a loading indicator.
-- **Parser:** performance tables are parsed correctly, including for procedures and triggers.
-- **UI:** modernized storage window; fixed the event-card grid.
+### New features
+
+- Added a read-only SQL console over the event store: SQL syntax highlighting, autocomplete
+  (keywords, schema, table/alias columns, table list after `FROM`/`JOIN`), a searchable schema-cards
+  view, and editor font zoom (`Ctrl`+wheel, `Ctrl` +/-/0).
+- Added storage maintenance: **Compact** reclaims disk space (`VACUUM` + orphan cleanup) and also
+  runs automatically in the background on the next launch after deletions; confirmation prompts
+  before deleting selected files or clearing the whole store.
+
+### Improvements
+
+- Filters and sorts are computed in the background with a loading indicator.
+- A modernized storage window; fixed the event-card grid.
+
+### Bug fixes
+
+- Fixed performance-table parsing, including for procedures and triggers.
 
 ## 1.10.1 — July 13, 2026
 
 A security and remote-connection patch.
 
-- **Security:** the password is kept in the OS credential store (Secret Service / `secret-tool` on
-  Linux) and is no longer retained in memory after connecting; updated SQLitePCLRaw to 3.0.3
-  (fixes GHSA-2m69-gcr7-jv3q).
-- **Remote:** faster SFTP downloads (256 KB buffer, throttled progress) and cleaner resource release
-  on disconnect.
+### Security
+
+- The password is kept in the OS credential store (Secret Service / `secret-tool` on Linux) and is
+  no longer retained in memory after connecting.
+- Updated SQLitePCLRaw to 3.0.3 (fixes GHSA-2m69-gcr7-jv3q).
+
+### Performance
+
+- Faster SFTP downloads (256 KB buffer, throttled progress reports) and cleaner resource release on
+  disconnect.
 
 ## 1.10.0 — July 13, 2026
 
 The optional local event store, new filter types, and a substantial speed-up.
 
-- **Local event store (SQLite/WAL):** persist parsed sessions and re-open them instantly instead of
-  re-parsing; a storage-mode setting; a session-recovery dialog on startup.
-- **Storage management:** statistics, a database size breakdown, export/import between machines, and
-  "load to session" from the store.
-- **Filters:** a "contains" text filter (`TextSearch`) in the panel and the report designer;
-  boolean-field filters; SQL treated as a text filter.
-- **Performance:** an integer `file_id` instead of a file hash plus index cleanup (large
-  database-size reduction), a background write queue (disk off the parse critical path), and
-  SQL-text memoization (removed an N+1).
-- **Diagnostics:** parser statistics by phase, with a developer mode.
-- **UI:** a reusable background-task indicator with store-write status; select remote files by
+### New features
+
+- Added an optional local event store (SQLite/WAL): persist parsed sessions and re-open them
+  instantly instead of re-parsing; a storage-mode setting; a session-recovery dialog on startup.
+- Added storage management: statistics, a database-size breakdown, export/import between machines,
+  and "load to session" from the store.
+- Added a "contains" text filter (`TextSearch`) in the panel and the report designer; boolean-field
+  filters; SQL is treated as a text filter.
+- Added parser statistics by phase, with a developer mode.
+- Added a reusable background-task indicator with store-write status; remote files are selected by
   clicking the card.
-- **Fixes:** filenames removed from the PDF title; corrected built-in report column widths; fixed the
+
+### Performance
+
+- An integer `file_id` replaces the file hash plus index cleanup (large database-size reduction); a
+  background write queue keeps disk off the parse critical path; SQL-text memoization removes an N+1.
+
+### Bug fixes
+
+- Removed filenames from the PDF title; corrected built-in report column widths; fixed the
   default-sort flag.
 
 ## 1.9.2 — July 7, 2026
@@ -190,9 +239,15 @@ Report designer cleanup.
 
 Plugin collision handling.
 
-- A collision window resolves plugins that share an id — keep one instance by disabling the others;
-  shown automatically on startup when needed.
-- A plugin that throws in `GetSorts()`/`GetFilters()` no longer breaks startup — it is skipped and logged.
+### New features
+
+- Added a collision window for plugins sharing an id: keep one instance by disabling the others.
+  It is shown automatically on startup when needed.
+
+### Bug fixes
+
+- A plugin that throws in `GetSorts()`/`GetFilters()` no longer breaks startup — it is skipped and
+  logged.
 
 ## 1.8.9 — July 5, 2026
 
