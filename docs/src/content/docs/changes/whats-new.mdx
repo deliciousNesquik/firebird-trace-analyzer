@@ -8,42 +8,70 @@ detail, patch releases summarized.
 
 ## 1.16.0 — November 18, 2026
 
-New event-list layouts, derived durations, a native macOS menu, toasts, and a parser quality
-campaign from a full code review. The test suite grew from 98 to 240 (118 parser + 122 app), all
-green.
+This release combines parser correctness fixes from a full code review with interface
+improvements: new event-list layouts, derived durations, a native macOS menu, toasts, and a
+unified hotkey scheme. The test suite grew from 98 to 240 (118 parser + 122 app), all green.
 
-- **Compact card mode:** a Compact/Full toggle in the toolbar switches the event list between full
-  cards and a single-line compact view, for every event family. Compact rows align columns and show
-  the event duration.
-- **Durations:** session and connection lifetimes are computed automatically on load (parse, store
-  read, session recovery) into a sortable `Duration` field — trace process lifetime (finish − init
-  of the same process, when its attach was seen) and connection lifetime (detach − attach, even
-  when the pair spans different files).
-- **Native macOS menu:** the menu bar mirrors the full main menu, including dynamic report items;
-  the `[N]` keyboard hints were removed from item names.
-- **Toasts and background notifications:** app actions report success/warning/error through toasts
-  in the bottom-right corner; loads, re-parses and report generation surface in the background
-  mini-panel.
-- **Dialogs:** modals animate on show and close, and a new dialog never opens on top of an already
-  open one (including from the native menu).
-- **Hotkeys:** one scheme — `Ctrl/Cmd+1..5` switch sections, `Esc` cancels, `,` opens settings,
-  `Ctrl+F` focuses search, `Ctrl+W`/`Shift+W` close tabs; documented on the new "Keyboard shortcuts"
-  page.
-- **Sorting:** events without a value for the sort field always sort last.
-- **Parser fixes** (from a full code review): the attachment cache is keyed by (database,
-  attachment id), so events from a second database no longer inherit the first database's
-  user/role/charset when Firebird Classic reuses ATT numbers; missing required rule keys and
-  invalid options fail fast at load; performance tables tolerate partial column headers and ignore
-  trailing junk; events with unparseable timestamps get a warning; regex-timeout handling covers
-  both header matches; fatal exceptions are no longer swallowed by per-block handlers.
-- **Parser diagnostics and API:** streaming consumers receive warnings through an
-  `IObserver<ParsingWarning>` channel; `ParseStreamAsync` reports progress and no longer closes the
-  caller's stream; `Parse` accepts a `CancellationToken`; per-call `ParseOptions` reach the event
-  handler.
-- **Dependencies:** SSH.NET 2026.0.0, System.Text.Json 11.0.0 (GA), Astro 7.4.12.
-- **Under the hood:** fewer hot-path allocations, structural logging, single-pass JSON parsing,
-  case-insensitive `schemaVersion`, English-only validation messages, the macOS bundle id changed
-  to `com.deliciousnesquik.firebirdtraceanalyzer`, and release builds run on the macOS 15 image.
+### Breaking changes
+
+- `ParseStreamAsync` no longer closes the caller's stream (#36). Code that relied on automatic
+  disposal must dispose the stream itself.
+- Per-call `ParseOptions` are now honored by the event handler (#32): setting
+  `ParsePerformanceTables = false` disables performance-table parsing. Previously the option was
+  ignored outside the DI route.
+- Missing required rule keys now fail fast at load with a clear message (#33) instead of producing
+  per-block "key not found" warnings during parsing.
+- Invalid `ParseOptions` values (non-positive `BatchSize`/`MaxBlockLines`, zero `RegexTimeout`)
+  throw at the parse entry point instead of producing empty parses with warning spam (#40).
+
+### New features
+
+- Added a Compact/Full toggle for the event list: compact single-line rows for every event family,
+  with aligned columns and the event duration shown.
+- Added derived durations computed at load (parse, store read, session recovery): process lifetime
+  (finish − init of the same process, when its attach was seen) and connection lifetime (detach −
+  attach, even when the pair spans different files), exposed as a sortable `Duration` field.
+- Added streaming diagnostics: warnings reach streaming consumers through `IObserver<ParsingWarning>`
+  (#34).
+- `ParseStreamAsync` reports progress (#35); `Parse` accepts a `CancellationToken` (#51).
+- Added a native macOS menu bar mirroring the full main menu, including dynamic report items.
+- Added toast notifications (success/warning/error, bottom-right corner) and background-task
+  notifications for loads, re-parses and report generation.
+- Added modal show/close animations.
+- Added a unified hotkey scheme (`Ctrl/Cmd+1..5` switch sections, `Esc` cancels, `,` opens
+  settings, `Ctrl+F` focuses search, `Ctrl+W`/`Shift+W` close tabs), documented on the new
+  Keyboard shortcuts page.
+
+### Improvements
+
+- Performance tables tolerate partial column headers (#38).
+- Events without a value for the sort field always sort last.
+- The misleading hand cursor was removed from non-clickable event-card fields.
+- Fewer hot-path allocations (#41); rules.json is parsed once instead of twice (#46); logging uses
+  NLog message templates (#49); the dead `performance_table_row` rule was removed (#47).
+
+### Bug fixes
+
+- Fixed the attachment cache to key entries by (database, attachment id): user, role and charset no
+  longer carry across databases when Firebird Classic reuses attachment numbers (#31).
+- Fixed dialogs opening on top of an already open modal, including from the native menu.
+- The settings parser-log cleanup button now clears parser.log instead of application.log.
+- Trailing junk after a performance table no longer creates phantom rows (#39).
+- Events with unparseable timestamps now emit a warning (#37).
+- Regex-timeout handling covers both block-header matches (#45).
+- Fatal exceptions are no longer converted into per-block warnings (#44).
+
+### Infrastructure
+
+- Test suite grew from 98 to 240 (118 parser + 122 app) (#53).
+- Release builds run on the macOS 15 runner image; the build guide and release notes are in English.
+- Dependencies: SSH.NET 2026.0.0, System.Text.Json 11.0.0 (GA), Astro 7.4.12.
+
+### Notes
+
+- The macOS bundle identifier changed to `com.deliciousnesquik.firebirdtraceanalyzer`: macOS may
+  treat the updated app as a new application and re-ask for permissions.
+- Parser validation messages are English-only (#48).
 
 ## 1.15.0 — August 28, 2026
 
