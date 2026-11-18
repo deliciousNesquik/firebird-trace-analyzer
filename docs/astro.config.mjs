@@ -12,8 +12,7 @@ export default defineConfig({
     starlight({
       title: 'Firebird Trace Analyzer Docs',
       logo: {
-        light: './src/assets/app-logo-light.svg',
-        dark: './src/assets/app-logo-dark.svg',
+        src: '../FirebirdTraceAnalyzer/Assets/app-logo.svg',
         alt: 'Firebird Trace Analyzer',
       },
       description:

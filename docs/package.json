@@ -8,7 +8,9 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "predev": "node scripts/sync-logo.mjs",
+    "prebuild": "node scripts/sync-logo.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.7",

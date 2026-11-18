@@ -16,3 +16,6 @@ CLAUDE.md.local
 
 # Локальный knowledge-граф graphify (см. https://github.com/Graphify-Labs/graphify)
 graphify-out/
+
+# favicon сайта - генерируется sync-logo.mjs из иконки приложения
+docs/public/favicon.svg
