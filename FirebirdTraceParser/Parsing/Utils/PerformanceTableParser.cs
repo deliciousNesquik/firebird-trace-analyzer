@@ -69,7 +69,6 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
     
     private static ColumnPositions DetectColumnPositions(string header)
     {
-        int tableIdx = header.IndexOf("Table", StringComparison.Ordinal);
         int naturalIdx = header.IndexOf("Natural", StringComparison.Ordinal);
         int indexIdx = header.IndexOf("Index", StringComparison.Ordinal);
         int updateIdx = header.IndexOf("Update", StringComparison.Ordinal);
@@ -78,7 +77,9 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
         int backoutIdx = header.IndexOf("Backout", StringComparison.Ordinal);
         int purgeIdx = header.IndexOf("Purge", StringComparison.Ordinal);
         int expungeIdx = header.IndexOf("Expunge", StringComparison.Ordinal);
-        
+
+        // Отсутствующая колонка (idx = -1) не фатальна: Slice даёт пустой срез, счётчик 0 -
+        // парсер толерантен к подмножеству колонок (issue #38). Мусорных границ нет.
         return new ColumnPositions(
             TableNameEnd: naturalIdx - 1,
             NaturalStart: naturalIdx, NaturalEnd: indexIdx - 1,
@@ -110,23 +111,30 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
             var purge = Slice(span, pos.PurgeStart, pos.PurgeEnd);
             var expunge = Slice(span, pos.ExpungeStart, pos.ExpungeEnd);
 
-            // Ни одной цифровой колонки - это не строка таблицы (мусор после неё, issue #39):
-            // сигнал "таблица кончилась".
-            if (natural.IsEmpty && index.IsEmpty && update.IsEmpty && insert.IsEmpty
-                && delete.IsEmpty && backout.IsEmpty && purge.IsEmpty && expunge.IsEmpty)
+            // Строка таблицы обязана содержать хотя бы одно распознанное число (у реальных
+            // строк это даже нули - "0" парсится). Ни одного числа - мусор после таблицы,
+            // сигнал "таблица кончилась" (issue #39).
+            if (!TryCount(natural, out var naturalCount)
+                & !TryCount(index, out var indexCount)
+                & !TryCount(update, out var updateCount)
+                & !TryCount(insert, out var insertCount)
+                & !TryCount(delete, out var deleteCount)
+                & !TryCount(backout, out var backoutCount)
+                & !TryCount(purge, out var purgeCount)
+                & !TryCount(expunge, out var expungeCount))
                 return null;
 
             return new PerformanceTableItem
             {
                 TableName = context.Intern(tableName.ToString()),
-                NaturalCount = ParseIntSafe(natural),
-                IndexCount = ParseIntSafe(index),
-                UpdateCount = ParseIntSafe(update),
-                InsertCount = ParseIntSafe(insert),
-                DeleteCount = ParseIntSafe(delete),
-                BackoutCount = ParseIntSafe(backout),
-                PurgeCount = ParseIntSafe(purge),
-                ExpungeCount = ParseIntSafe(expunge)
+                NaturalCount = naturalCount,
+                IndexCount = indexCount,
+                UpdateCount = updateCount,
+                InsertCount = insertCount,
+                DeleteCount = deleteCount,
+                BackoutCount = backoutCount,
+                PurgeCount = purgeCount,
+                ExpungeCount = expungeCount
             };
         }
         catch (Exception ex)
@@ -137,16 +145,13 @@ public sealed class PerformanceTableParser(ILogger logger) : IPerformanceTablePa
         }
     }
 
-    // Срез фиксированной колонки без аллокации (семантика идентична прежнему Substring)
+    // Срез фиксированной колонки без аллокации. Отсутствующая колонка (отрицательный start
+    // от IndexOf -1, issue #38) и выход за длину строки дают пустой срез, а не исключение.
     private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> line, int start, int end) =>
-        start >= line.Length ? ReadOnlySpan<char>.Empty : line.Slice(start, Math.Min(end, line.Length) - start);
+        start < 0 || start >= line.Length
+            ? ReadOnlySpan<char>.Empty
+            : line.Slice(start, Math.Max(0, Math.Min(end, line.Length) - start));
 
-    private static int ParseIntSafe(ReadOnlySpan<char> value)
-    {
-        value = value.Trim();
-        // TryParse вместо Parse: при сдвиге колонки не бросаем исключение и не теряем всю строку.
-        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result)
-            ? result
-            : 0;
-    }
+    private static bool TryCount(ReadOnlySpan<char> value, out int count) =>
+        int.TryParse(value.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out count);
 }
