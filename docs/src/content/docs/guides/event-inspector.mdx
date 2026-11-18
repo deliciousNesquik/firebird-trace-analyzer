@@ -1,0 +1,70 @@
+---
+title: Event Inspector
+description: Press Inspect on any event card to see the full lifecycle of its database connection - attach, everything that ran on it, and detach, in order.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Event Inspector is a diagnostic window that reconstructs the lifecycle of the database
+connection behind a selected event. Press **Inspect** on an event card and the window lists
+every event of that connection in time order, with the selected event highlighted.
+
+<Aside type="caution" title="Experimental">
+The feature is marked experimental: events are grouped into a connection lifecycle by shared
+attachment id and time. Connection boundaries can be imperfect if the trace lacks attach/detach
+records.
+</Aside>
+
+## Enabling
+
+<Steps>
+
+1. Open **Settings** (`Ctrl/Cmd+,`).
+2. Switch on **Event Inspector** — "Opens the diagnostic tool for events. Disabled by default."
+3. An **Inspect** button appears in the footer of every event card, compact variants included.
+
+</Steps>
+
+## Opening the chain
+
+Press **Inspect** on any event card (tooltip: "Open event inspector"). A separate window opens
+with the chain for that event; its title repeats the event type and timestamp, for example
+`Event Inspector — Statement Start @ 2026-11-18 10:00:00`.
+
+The chain is built at click time from the events loaded in the current session, filtered to the
+same trace session as the selected event. Reparse or load new files and the chains reflect the
+new data the next time you press Inspect.
+
+## What the chain contains
+
+One chain corresponds to one connection:
+
+- **Matching by attachment id.** All events with the same attachment id as the selected event
+  belong to the chain.
+- **Time boundaries.** The window spans from the nearest attach before the selected event to the
+  nearest detach after it, so the chain holds that connection's statements, procedure and trigger
+  calls, errors, and the attach/detach pair itself.
+- **Attachment id reuse is handled.** If the id was reused by a later connection, the chain stops
+  at the neighboring attach or detach instead of mixing two connections into one.
+- **Trace session bookends.** The nearest trace init before the connection and the nearest trace
+  fini after it are added to the chain.
+- **Session overview for session-level events.** Pressing Inspect on a trace init or trace fini
+  card shows the whole session instead: its attach/detach pairs plus the init/fini bookends.
+
+Events are ordered by time. The selected event is highlighted with an accent bar on the left,
+and the header shows a summary line such as "12 related event(s) in the lifecycle chain".
+
+## Reading the chain
+
+A typical chain reads: trace init, attach, statements and their procedures/triggers, errors,
+detach, trace fini. Use it to see what else ran on the same connection around a slow or failed
+statement — earlier errors, lock-prone statements, or the call depth around a procedure —
+without leaving the window.
+
+## Limitations
+
+- **Incomplete chains.** If the trace has no attach/detach records, the time window cannot be
+  bounded; the header shows a persistent warning: "If the trace lacks attach/detach records, the
+  chain may be incomplete."
+- **Not persisted.** The chain is a view over loaded events — it is not saved with the session
+  or exported with reports.
