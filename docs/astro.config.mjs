@@ -10,7 +10,7 @@ export default defineConfig({
   base: '/firebird-trace-analyzer',
   integrations: [
     starlight({
-      title: 'Firebird Trace Analyzer Docs',
+      title: 'Firebird Trace Analyzer',
       logo: {
         src: '../FirebirdTraceAnalyzer/Assets/app-logo.svg',
         alt: 'Firebird Trace Analyzer',
