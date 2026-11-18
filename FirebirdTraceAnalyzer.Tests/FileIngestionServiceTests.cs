@@ -86,7 +86,7 @@ public sealed class FileIngestionServiceTests : IDisposable
         }
 
         public ParsingResult<EventBase> ParseFile(string filePath, ParseOptions? options = null) => throw new NotImplementedException();
-        public ParsingResult<EventBase> Parse(TextReader reader, ParseOptions? options = null) => throw new NotImplementedException();
+        public ParsingResult<EventBase> Parse(TextReader reader, ParseOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<ParsingResult<EventBase>> ParseFileAsync(string filePath, IProgress<double>? progress = null, CancellationToken cancellationToken = default, ParseOptions? options = null) => throw new NotImplementedException();
     }
 }
