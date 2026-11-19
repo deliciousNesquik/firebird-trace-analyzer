@@ -15,17 +15,50 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
 export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
-Firebird's trace API is powerful, but its output is a firehose of flat text.
-**Firebird Trace Analyzer** turns those logs into something you can actually work with —
-streaming any-size trace file, rendering each event as a readable card, letting you
-filter, search and sort across millions of events, and exporting the result to
-**PDF / DOCX / XLSX / CSV**.
+<div class="fta-meta">
+  <a class="fta-version" href={`${base}/changes/whats-new/`}>v1.16.0</a>
+  <span>Windows / macOS / Linux</span>
+  <span>PolyForm Noncommercial</span>
+  <span>EN / RU</span>
+</div>
 
-<CardGrid stagger>
+<div class="fta-whatsnew">
+  <span class="fta-pill">v1.16.0</span>
+  <p>Compact/Full event-list layouts with durations, derived process and connection lifetimes,
+  a native macOS menu bar, toasts, and a unified hotkey scheme.
+  <a href={`${base}/changes/whats-new/`}>All release notes</a></p>
+</div>
+
+## Up and running in three steps
+
+<div class="fta-steps">
+  <div>
+    <span class="fta-stepnum">1</span>
+    <strong>Download</strong>
+    <p>Grab a self-contained build for your OS from GitHub Releases.</p>
+    <a href={`${base}/getting-started/install/`}>Install &amp; run</a>
+  </div>
+  <div>
+    <span class="fta-stepnum">2</span>
+    <strong>Open a trace file</strong>
+    <p>From disk, or straight off a server over SSH/SFTP.</p>
+    <a href={`${base}/guides/loading-logs/`}>Loading logs</a>
+  </div>
+  <div>
+    <span class="fta-stepnum">3</span>
+    <strong>Explore and export</strong>
+    <p>Read event cards, filter, then export PDF / DOCX / XLSX / CSV.</p>
+    <a href={`${base}/guides/reports/`}>Reports</a>
+  </div>
+</div>
+
+## What it does
+
+<CardGrid>
   <Card title="Load from anywhere" icon="download">
     Open trace files from disk, or pull them straight off a server over **SSH/SFTP** — with
     trust-on-first-use host-key verification and secure credential storage.
@@ -34,19 +67,45 @@ filter, search and sort across millions of events, and exporting the result to
     A streaming parser processes multi-million-event files off the UI thread, so the app
     stays responsive.
   </Card>
-  <Card title="Explore & filter" icon="magnifier">
-    Typed event cards, multi-select / range / text filters, stable sorting and full-text search.
+  <Card title="Explore & inspect" icon="magnifier">
+    Typed event cards with Compact/Full layouts, and an Event Inspector that rebuilds a
+    connection's whole lifecycle around any event.
+  </Card>
+  <Card title="Filter & search" icon="setting">
+    Multi-select, range and text filters, stable sorting and full-text search across
+    millions of events.
   </Card>
   <Card title="Report & export" icon="document">
-    A live report designer with grouping and aggregation, reusable templates and one-click export.
+    A live report designer with grouping and aggregation, reusable templates and one-click
+    export to PDF / DOCX / XLSX / CSV.
+  </Card>
+  <Card title="Diagnose & extend" icon="wrench">
+    Parser statistics with per-phase pipeline timings; sort and filter plugins through the
+    plugin SDK.
   </Card>
 </CardGrid>
 
-## Where to next
+## Documentation
 
-<CardGrid>
-  <LinkCard title="Overview" href={`${base}/getting-started/overview/`} description="What the app is and what it can do." />
-  <LinkCard title="Install & run" href={`${base}/getting-started/install/`} description="Download a release or build from source." />
-  <LinkCard title="Loading logs" href={`${base}/guides/loading-logs/`} description="Open trace files locally or over SSH — every button explained." />
-  <LinkCard title="Reports" href={`${base}/guides/reports/`} description="Design and export PDF / DOCX / XLSX / CSV reports." />
-</CardGrid>
+<div class="fta-docs">
+  <div>
+    <span class="fta-label">Start</span>
+    <a href={`${base}/getting-started/overview/`}>Overview</a>
+    <a href={`${base}/getting-started/install/`}>Install &amp; run</a>
+  </div>
+  <div>
+    <span class="fta-label">Working with logs</span>
+    <a href={`${base}/guides/loading-logs/`}>Loading logs</a>
+    <a href={`${base}/guides/reports/`}>Reports</a>
+  </div>
+  <div>
+    <span class="fta-label">Diagnostics</span>
+    <a href={`${base}/guides/parser-statistics/`}>Parser statistics</a>
+    <a href={`${base}/guides/event-inspector/`}>Event Inspector</a>
+  </div>
+  <div>
+    <span class="fta-label">Developers</span>
+    <a href={`${base}/sdk/overview/`}>SDK &amp; plugins</a>
+    <a href={`${base}/changes/whats-new/`}>Release notes</a>
+  </div>
+</div>

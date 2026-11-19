@@ -15,17 +15,50 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
 export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
-Трейс-API Firebird мощный, но его вывод — сплошной поток плоского текста.
-**Firebird Trace Analyzer** превращает эти логи в то, с чем реально можно работать: потоково
-читает трейс-файл любого размера, показывает каждое событие читаемой карточкой, даёт
-фильтровать, искать и сортировать по миллионам событий и выгружать результат в
-**PDF / DOCX / XLSX / CSV**.
+<div class="fta-meta">
+  <a class="fta-version" href={`${base}/ru/changes/whats-new/`}>v1.16.0</a>
+  <span>Windows / macOS / Linux</span>
+  <span>PolyForm Noncommercial</span>
+  <span>EN / RU</span>
+</div>
 
-<CardGrid stagger>
+<div class="fta-whatsnew">
+  <span class="fta-pill">v1.16.0</span>
+  <p>Компактный и полный режимы списка событий с длительностями, вычисляемые времена жизни
+  процесса и соединения как поле для сортировки, нативное меню macOS, тосты и единая схема
+  горячих клавиш. <a href={`${base}/ru/changes/whats-new/`}>Все заметки о релизах</a></p>
+</div>
+
+## Три шага до первого отчёта
+
+<div class="fta-steps">
+  <div>
+    <span class="fta-stepnum">1</span>
+    <strong>Скачайте</strong>
+    <p>Заберите самодостаточную сборку под свою ОС с GitHub Releases.</p>
+    <a href={`${base}/ru/getting-started/install/`}>Установка и запуск</a>
+  </div>
+  <div>
+    <span class="fta-stepnum">2</span>
+    <strong>Откройте трейс-файл</strong>
+    <p>С диска или прямо с сервера по SSH/SFTP.</p>
+    <a href={`${base}/ru/guides/loading-logs/`}>Загрузка логов</a>
+  </div>
+  <div>
+    <span class="fta-stepnum">3</span>
+    <strong>Изучите и выгрузите</strong>
+    <p>Читайте карточки событий, фильтруйте, экспортируйте в PDF / DOCX / XLSX / CSV.</p>
+    <a href={`${base}/ru/guides/reports/`}>Отчёты</a>
+  </div>
+</div>
+
+## Что он умеет
+
+<CardGrid>
   <Card title="Загрузка откуда угодно" icon="download">
     Открывайте трейс-файлы с диска или скачивайте прямо с сервера по **SSH/SFTP** — с проверкой
     ключа хоста по принципу «доверие при первом подключении» и безопасным хранением учётных данных.
@@ -34,20 +67,45 @@ export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
     Потоковый парсер обрабатывает файлы на миллионы событий вне UI-потока, поэтому приложение
     остаётся отзывчивым.
   </Card>
-  <Card title="Просмотр и фильтрация" icon="magnifier">
-    Типизированные карточки событий, фильтры (мультивыбор / диапазон / текст), стабильная
-    сортировка и полнотекстовый поиск.
+  <Card title="Просмотр и инспекция" icon="magnifier">
+    Типизированные карточки событий с компактным и полным режимами, Инспектор событий,
+    восстанавливающий весь жизненный цикл соединения вокруг любого события.
+  </Card>
+  <Card title="Фильтры и поиск" icon="setting">
+    Фильтры (мультивыбор / диапазон / текст), стабильная сортировка и полнотекстовый поиск
+    по миллионам событий.
   </Card>
   <Card title="Отчёты и экспорт" icon="document">
-    Живой конструктор отчётов с группировкой и агрегацией, переиспользуемые шаблоны и экспорт в один клик.
+    Живой конструктор отчётов с группировкой и агрегацией, переиспользуемые шаблоны и экспорт
+    в один клик в PDF / DOCX / XLSX / CSV.
+  </Card>
+  <Card title="Диагностика и расширение" icon="wrench">
+    Статистика парсера с таймингами по фазам конвейера; плагины сортировки и фильтрации
+    через SDK.
   </Card>
 </CardGrid>
 
-## Куда дальше
+## Документация
 
-<CardGrid>
-  <LinkCard title="Обзор" href={`${base}/ru/getting-started/overview/`} description="Что это за приложение и что оно умеет." />
-  <LinkCard title="Установка и запуск" href={`${base}/ru/getting-started/install/`} description="Скачать релиз или собрать из исходников." />
-  <LinkCard title="Загрузка логов" href={`${base}/ru/guides/loading-logs/`} description="Открытие трейс-файлов локально или по SSH — каждая кнопка разобрана." />
-  <LinkCard title="Отчёты" href={`${base}/ru/guides/reports/`} description="Проектирование и экспорт отчётов PDF / DOCX / XLSX / CSV." />
-</CardGrid>
+<div class="fta-docs">
+  <div>
+    <span class="fta-label">Начало</span>
+    <a href={`${base}/ru/getting-started/overview/`}>Обзор</a>
+    <a href={`${base}/ru/getting-started/install/`}>Установка и запуск</a>
+  </div>
+  <div>
+    <span class="fta-label">Работа с логами</span>
+    <a href={`${base}/ru/guides/loading-logs/`}>Загрузка логов</a>
+    <a href={`${base}/ru/guides/reports/`}>Отчёты</a>
+  </div>
+  <div>
+    <span class="fta-label">Диагностика</span>
+    <a href={`${base}/ru/guides/parser-statistics/`}>Статистика парсера</a>
+    <a href={`${base}/ru/guides/event-inspector/`}>Инспектор событий</a>
+  </div>
+  <div>
+    <span class="fta-label">Разработчику</span>
+    <a href={`${base}/ru/sdk/overview/`}>SDK и плагины</a>
+    <a href={`${base}/ru/changes/whats-new/`}>Заметки о релизах</a>
+  </div>
+</div>
