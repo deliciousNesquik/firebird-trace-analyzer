@@ -26,32 +26,25 @@ export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
   <span>EN / RU</span>
 </div>
 
-<div class="fta-whatsnew">
-  <span class="fta-pill">v1.16.0</span>
-  <p>Compact/Full event-list layouts with durations, derived process and connection lifetimes,
-  a native macOS menu bar, toasts, and a unified hotkey scheme.
-  <a href={`${base}/changes/whats-new/`}>All release notes</a></p>
-</div>
-
-## Up and running in three steps
+## Three steps to your first report
 
 <div class="fta-steps">
   <div>
     <span class="fta-stepnum">1</span>
     <strong>Download</strong>
-    <p>Grab a self-contained build for your OS from GitHub Releases.</p>
+    <p>Get a self-contained build for your OS from GitHub Releases.</p>
     <a href={`${base}/getting-started/install/`}>Install &amp; run</a>
   </div>
   <div>
     <span class="fta-stepnum">2</span>
     <strong>Open a trace file</strong>
-    <p>From disk, or straight off a server over SSH/SFTP.</p>
+    <p>From disk, or from a server over SSH/SFTP.</p>
     <a href={`${base}/guides/loading-logs/`}>Loading logs</a>
   </div>
   <div>
     <span class="fta-stepnum">3</span>
     <strong>Explore and export</strong>
-    <p>Read event cards, filter, then export PDF / DOCX / XLSX / CSV.</p>
+    <p>Read event cards, filter, then export to PDF / DOCX / XLSX / CSV.</p>
     <a href={`${base}/guides/reports/`}>Reports</a>
   </div>
 </div>
@@ -59,29 +52,27 @@ export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
 ## What it does
 
 <CardGrid>
-  <Card title="Load from anywhere" icon="download">
-    Open trace files from disk, or pull them straight off a server over **SSH/SFTP** — with
-    trust-on-first-use host-key verification and secure credential storage.
+  <Card title="Open from disk or over SSH" icon="download">
+    Open files from disk, or download them from a server over SSH/SFTP. Host key verification
+    is trust-on-first-use; credentials are stored in the OS credential store.
   </Card>
-  <Card title="Built for big logs" icon="rocket">
-    A streaming parser processes multi-million-event files off the UI thread, so the app
-    stays responsive.
+  <Card title="Streaming parser" icon="rocket">
+    The parser handles multi-million-event files in a streaming pass, off the UI thread;
+    the interface stays responsive.
   </Card>
-  <Card title="Explore & inspect" icon="magnifier">
-    Typed event cards with Compact/Full layouts, and an Event Inspector that rebuilds a
-    connection's whole lifecycle around any event.
+  <Card title="Typed event cards" icon="magnifier">
+    Each event type has its own card, in Compact or Full list layouts. Select an event and
+    the Event Inspector reconstructs the full lifecycle of its connection.
   </Card>
-  <Card title="Filter & search" icon="setting">
-    Multi-select, range and text filters, stable sorting and full-text search across
-    millions of events.
+  <Card title="Filtering and search" icon="list-format">
+    Multi-select, range and text filters, stable sorting, full-text search.
   </Card>
-  <Card title="Report & export" icon="document">
-    A live report designer with grouping and aggregation, reusable templates and one-click
-    export to PDF / DOCX / XLSX / CSV.
+  <Card title="Report designer" icon="document">
+    Design reports with grouping and aggregation, save them as templates, export to
+    PDF / DOCX / XLSX / CSV.
   </Card>
-  <Card title="Diagnose & extend" icon="wrench">
-    Parser statistics with per-phase pipeline timings; sort and filter plugins through the
-    plugin SDK.
+  <Card title="Statistics and plugins" icon="analytics">
+    Parser statistics with per-phase pipeline timings; sort and filter plugins through the SDK.
   </Card>
 </CardGrid>
 
@@ -106,6 +97,6 @@ export const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
   <div>
     <span class="fta-label">Developers</span>
     <a href={`${base}/sdk/overview/`}>SDK &amp; plugins</a>
-    <a href={`${base}/changes/whats-new/`}>Release notes</a>
+    <a href={`${base}/changes/whats-new/`}>What's new</a>
   </div>
 </div>
