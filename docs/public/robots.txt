@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://deliciousnesquik.github.io/firebird-trace-analyzer/sitemap-index.xml

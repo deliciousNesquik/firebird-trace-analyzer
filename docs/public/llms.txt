@@ -1,0 +1,37 @@
+# Firebird Trace Analyzer
+
+Cross-platform open-source desktop application (Windows / macOS / Linux; .NET 10 + Avalonia)
+for reading, exploring and reporting on **Firebird 5.x trace & audit logs** produced by the
+`fbtrace` utility. Parses logs into typed events, renders millions of rows responsively,
+and exports polished reports. Licensed PolyForm Noncommercial 1.0.0.
+
+Key capabilities: load logs from local files or over SSH/SFTP; filter, search and sort
+events; optional local SQLite event store with deduplication and a read-only SQL console;
+live report designer exporting PDF / DOCX / XLSX / CSV; sort & filter plugin SDK; English
+and Russian localization; light/dark themes.
+
+## Documentation
+
+- Overview: https://deliciousnesquik.github.io/firebird-trace-analyzer/getting-started/overview/
+- Install & run: https://deliciousnesquik.github.io/firebird-trace-analyzer/getting-started/install/
+- Loading logs (local files and SSH): https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/loading-logs/
+- Exploring & filtering: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/exploring/
+- Event inspector: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/event-inspector/
+- Parser statistics: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/parser-statistics/
+- Event store (SQLite): https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/event-store/
+- Reports: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/reports/
+- Plugins: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/plugins/
+- Keyboard shortcuts: https://deliciousnesquik.github.io/firebird-trace-analyzer/guides/keyboard-shortcuts/
+- What's new: https://deliciousnesquik.github.io/firebird-trace-analyzer/changes/whats-new/
+
+## Plugin SDK
+
+- SDK overview: https://deliciousnesquik.github.io/firebird-trace-analyzer/sdk/overview/
+- Event model: https://deliciousnesquik.github.io/firebird-trace-analyzer/sdk/event-model/
+- Sort plugins: https://deliciousnesquik.github.io/firebird-trace-analyzer/sdk/sort-plugins/
+- Filter plugins: https://deliciousnesquik.github.io/firebird-trace-analyzer/sdk/filter-plugins/
+- Building & loading: https://deliciousnesquik.github.io/firebird-trace-analyzer/sdk/building-and-loading/
+
+## Source code
+
+- Repository: https://github.com/deliciousNesquik/firebird-trace-analyzer
