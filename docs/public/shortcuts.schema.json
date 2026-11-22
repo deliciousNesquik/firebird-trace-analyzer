@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deliciousnesquik.github.io/firebird-trace-analyzer/shortcuts.schema.json",
+  "title": "Firebird Trace Analyzer — keyboard shortcut overrides",
+  "description": "Overrides for keyboard shortcuts. Stored as %AppData%/FirebirdTraceAnalyzer/shortcuts.json. Only overrides are stored: a missing entry means the default applies; a null value means the action is explicitly disabled. Actions are 'App.*'/'Search.*' (core), 'Report.Run:<templateId>' (reports). Gesture format: modifiers and key joined with '+', e.g. 'Primary+Shift+O'. Primary resolves to Ctrl on Windows/Linux and Cmd on macOS. Recognized modifier tokens: Primary, Ctrl, Shift, Alt (also accepted: Meta/Cmd/Win, normalized to Primary). Key is an Avalonia Key enum name (O, D1, Escape, OemComma, F5, ...). The file is applied at application start; deleting the file resets everything to defaults.",
+  "type": "object",
+  "required": ["version", "shortcuts"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "shortcuts": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "null", "description": "Explicitly disable this action's shortcut." },
+          {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z][A-Za-z0-9]*(\\s*\\+\\s*[A-Za-z0-9]*)*\\s*$",
+            "description": "Gesture: Primary|Ctrl|Shift|Alt (+ ...) + Key (Avalonia Key enum name), e.g. 'Primary+O', 'Primary+Shift+R', 'Ctrl+OemComma', 'Primary+F5'."
+          }
+        ]
+      }
+    }
+  }
+}
