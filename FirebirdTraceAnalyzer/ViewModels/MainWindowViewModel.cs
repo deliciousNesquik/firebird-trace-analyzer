@@ -26,6 +26,7 @@ using FirebirdTraceAnalyzer.Services.EventProperties;
 using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using FirebirdTraceAnalyzer.Services.Plugins;
+using FirebirdTraceAnalyzer.Services.Shortcuts;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
 using FirebirdTraceParser.Models.Events;
@@ -253,7 +254,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IReportTemplateService reportTemplateService,
         IReportGenerationService reportGenerationService,
         IFileIngestionService ingestion,
-        IToastService toasts)
+        IToastService toasts,
+        IShortcutRegistry? shortcutRegistry = null)
     {
         Logger.Info("Event(s) list(s) are clear");
         VisibleEvents.Clear();
@@ -288,6 +290,11 @@ public partial class MainWindowViewModel : ViewModelBase
         _reportGenerationService = reportGenerationService ?? throw new ArgumentNullException(nameof(reportGenerationService));
         _ingestion = ingestion ?? throw new ArgumentNullException(nameof(ingestion));
         _toasts = toasts ?? throw new ArgumentNullException(nameof(toasts));
+
+        // Динамические действия «запустить отчёт» для реестра горячих клавиш. Регистрируем
+        // сразу после создания коллекций (BuiltInReports/CustomReports — инициализаторы свойств):
+        // отчеты появляются/исчезают — источник сам уведомляет реестр.
+        shortcutRegistry?.AddSource(new ReportShortcutSource(BuiltInReports, CustomReports));
 
 
         // Инициализация ViewModels

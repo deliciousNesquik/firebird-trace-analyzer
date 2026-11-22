@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,6 +8,7 @@ using FirebirdTraceAnalyzer.Interfaces.Window;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Services;
+using FirebirdTraceAnalyzer.Services.Shortcuts;
 using NLog;
 
 namespace FirebirdTraceAnalyzer.ViewModels;
@@ -26,6 +28,8 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private readonly ILocalizationService _localizationService;
     private readonly IFileDialogService? _fileDialogService;
     private readonly IToastService? _toasts;
+    private readonly IShortcutRegistry? _shortcutRegistry;
+    private readonly ShortcutFileService? _shortcutFile;
 
     #region General
 
@@ -123,7 +127,9 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         IThemeService themeService,
         ILocalizationService localizationService,
         IFileDialogService fileDialogService,
-        IToastService? toasts = null)
+        IToastService? toasts = null,
+        IShortcutRegistry? shortcutRegistry = null,
+        ShortcutFileService? shortcutFile = null)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _windowProvider = windowProvider ?? throw new ArgumentNullException(nameof(windowProvider));
@@ -131,10 +137,13 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
         _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
         _toasts = toasts;
+        _shortcutRegistry = shortcutRegistry;
+        _shortcutFile = shortcutFile;
 
         AvailableLanguages = _localizationService.AvailableLanguages;
 
         LoadFrom(_settingsService.App, _settingsService.Ui);
+        RebuildShortcuts();
     }
 
     #region Commands
@@ -401,6 +410,281 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private void Cancel()
     {
         CloseRequested?.Invoke(this, false);
+    }
+
+    #endregion
+
+    #region Shortcuts
+
+    /// <summary>Строки страницы горячих клавиш: заголовки категорий + строки действий.</summary>
+    [ObservableProperty]
+    private System.Collections.ObjectModel.ObservableCollection<object> _shortcutEntries = [];
+
+    /// <summary>Секция скрыта, когда реестр недоступен (designer-режим).</summary>
+    public bool HasShortcutsSection => _shortcutRegistry is not null;
+
+    /// <summary>Строка, находящаяся в режиме записи сочетания (или null).</summary>
+    private ShortcutRowViewModel? RecordingRow() =>
+        ShortcutEntries.OfType<ShortcutRowViewModel>().FirstOrDefault(r => r.IsRecording);
+
+    /// <summary>Пересобирает список: категории в фиксированном порядке, действия — по имени.</summary>
+    private void RebuildShortcuts()
+    {
+        ShortcutEntries.Clear();
+
+        if (_shortcutRegistry is null)
+            return;
+
+        var categoryOrder = new[]
+        {
+            ShortcutCatalog.CategoryFiles,
+            ShortcutCatalog.CategoryLayout,
+            ShortcutCatalog.CategorySearch,
+            ShortcutCatalog.CategoryApp,
+            ShortcutCatalog.CategoryReports,
+        };
+
+        foreach (var category in categoryOrder)
+        {
+            var actions = _shortcutRegistry.Actions
+                .Where(a => a.CategoryLocKey == category)
+                .OrderBy(a => a.DisplayName, StringComparer.CurrentCulture)
+                .ToList();
+
+            if (actions.Count == 0)
+                continue;
+
+            ShortcutEntries.Add(new ShortcutHeaderViewModel(Loc.Tr(category)));
+
+            foreach (var action in actions)
+                ShortcutEntries.Add(CreateRow(action));
+        }
+    }
+
+    private ShortcutRowViewModel CreateRow(ShortcutAction action) =>
+        new(action, GestureDisplayOf(action.Id));
+
+    /// <summary>Платформозависимый текст жеста («Shift+Cmd+O» / «Ctrl+Shift+O») или «—».</summary>
+    private string GestureDisplayOf(string actionId)
+    {
+        if (_shortcutRegistry?.ResolveSpec(actionId) is not { } spec)
+            return Loc.Tr("Shortcuts.None");
+
+        // «p» — платформенный формат: ⌘⇧O на macOS, Ctrl+Shift+O на Win/Linux (как в меню).
+        return GestureParser.ToKeyGesture(spec, _shortcutRegistry.Platform)
+                           ?.ToString("p", System.Globalization.CultureInfo.InvariantCulture)
+               ?? Loc.Tr("Shortcuts.None");
+    }
+
+    [RelayCommand]
+    private void BeginRecord(ShortcutRowViewModel? row)
+    {
+        if (row is null || !row.IsRebindable)
+            return;
+
+        CancelRecord(); // одновременно записывается не более одного сочетания
+
+        // На время записи снимаем функциональные биндинги: иначе нажатие жеста, занятого
+        // другим действием, ВЫПОЛНИЛО БЫ это действие (KeyBinding'и окна проходят раньше
+        // routed KeyDown, нативные ускорители macOS — на уровне ОС), и перехват не сработал.
+        Shortcut.SetSuspended(true);
+        row.IsRecording = true;
+    }
+
+    [RelayCommand]
+    private void CancelRecord()
+    {
+        Shortcut.SetSuspended(false);
+
+        foreach (var r in ShortcutEntries.OfType<ShortcutRowViewModel>())
+        {
+            r.IsRecording = false;
+            r.PendingDisplay = null;
+            r.PendingSpec = null;
+            r.HintText = null;
+            r.HasConflict = false;
+            r.ConflictTitle = null;
+        }
+    }
+
+    /// <summary>
+    /// Перехват клавиш во время записи. Вызывается из code-behind по туннелирующему KeyDown
+    /// (чтобы получать ВСЕ клавиши до TextBox'ов). Возвращает true — клавиша обработана.
+    /// </summary>
+    public bool HandleRecordKey(Key key, KeyModifiers keyModifiers)
+    {
+        var row = RecordingRow();
+
+        if (row is null)
+            return false;
+
+        // Голые модификаторы: нажимаются, но не записываются.
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftShift or Key.RightShift
+            or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin)
+            return true;
+
+        if (key == Key.Escape && keyModifiers == KeyModifiers.None)
+        {
+            CancelRecord();
+            return true;
+        }
+
+        if (key == Key.Enter && keyModifiers == KeyModifiers.None)
+        {
+            ConfirmRecord();
+            return true;
+        }
+
+        // Логическая запись: на платформе Ctrl и есть Primary (Windows/Linux), Meta — на macOS.
+        // Так записанное на одной машине сочетание портабельно в shortcuts.json на другую.
+        var isMac = _shortcutRegistry?.Platform == ShortcutPlatform.MacOS;
+
+        var logical = LogicalModifiers.None;
+        if ((keyModifiers & KeyModifiers.Meta) != 0) logical |= LogicalModifiers.Primary;
+        if ((keyModifiers & KeyModifiers.Control) != 0)
+            logical |= isMac ? LogicalModifiers.Control : LogicalModifiers.Primary;
+        if ((keyModifiers & KeyModifiers.Shift) != 0) logical |= LogicalModifiers.Shift;
+        if ((keyModifiers & KeyModifiers.Alt) != 0) logical |= LogicalModifiers.Alt;
+
+        var spec = GestureParser.Normalize(new GestureSpec(key, logical));
+
+        // Голая клавиша перехватывает печать — разрешаем только функциональные F1..F24.
+        var isFunctionKey = key is >= Key.F1 and <= Key.F24;
+        if (spec.Modifiers == LogicalModifiers.None && !isFunctionKey)
+        {
+            row.HintText = Loc.Tr("Shortcuts.NeedModifier");
+            return true;
+        }
+
+        row.PendingSpec = spec;
+        row.PendingDisplay = GestureParser.ToKeyGesture(spec, _shortcutRegistry!.Platform)?.ToString();
+        row.HintText = null;
+
+        // Превентивная конфлюкт-детекция: показываем, чей это жест. Применение — по Enter/«Занять».
+        var conflict = _shortcutRegistry.FindConflicting(spec.ToString(), row.ActionId);
+        row.HasConflict = conflict is not null;
+        row.ConflictTitle = conflict?.DisplayName;
+
+        return true;
+    }
+
+    [RelayCommand]
+    private void ConfirmRecord()
+    {
+        var row = RecordingRow();
+
+        if (row is null)
+            return;
+
+        if (row.PendingSpec is null)
+        {
+            CancelRecord();
+            return;
+        }
+
+        var conflict = _shortcutRegistry!.FindConflicting(row.PendingSpec.ToString(), row.ActionId);
+
+        if (conflict is not null)
+        {
+            // Жест занят — ждём явного решения пользователя («Занять» / Esc).
+            row.HasConflict = true;
+            row.ConflictTitle = conflict.DisplayName;
+            return;
+        }
+
+        ApplyPending(row);
+    }
+
+    [RelayCommand]
+    private void TakeOverConflict()
+    {
+        var row = RecordingRow();
+
+        if (row?.PendingSpec is null)
+            return;
+
+        var conflict = _shortcutRegistry!.FindConflicting(row.PendingSpec.ToString(), row.ActionId);
+
+        if (conflict is not null && !_shortcutRegistry.SetOverride(conflict.Id, null))
+        {
+            // Снять прежнего владельца не вышло (системное действие, IsRebindable=false):
+            // применять нельзя — получились бы два живых биндинга на один жест.
+            row.HintText = Loc.Tr("Shortcuts.SystemLocked");
+            return;
+        }
+
+        ApplyPending(row);
+    }
+
+    private void ApplyPending(ShortcutRowViewModel row)
+    {
+        // Rebindable защищает и саму цель записи — но проверяем результат явно: тихий отказ
+        // здесь означал бы дублирующий биндинг.
+        if (!_shortcutRegistry!.SetOverride(row.ActionId, row.PendingSpec?.ToString()))
+        {
+            row.HintText = Loc.Tr("Shortcuts.SystemLocked");
+            return;
+        }
+
+        _shortcutFile?.Save(_shortcutRegistry.Overrides); // применяется мгновенно: applier уже обновил меню по Changed
+        ExitRecording(row);
+        RefreshGestureDisplays();
+    }
+
+    [RelayCommand]
+    private void ResetRow(ShortcutRowViewModel? row)
+    {
+        if (row is null)
+            return;
+
+        _shortcutRegistry?.ClearOverride(row.ActionId);
+        _shortcutFile?.Save(_shortcutRegistry!.Overrides);
+        RefreshGestureDisplays();
+    }
+
+    [RelayCommand]
+    private void DisableRow(ShortcutRowViewModel? row)
+    {
+        if (row is null)
+            return;
+
+        _shortcutRegistry?.SetOverride(row.ActionId, null);
+        _shortcutFile?.Save(_shortcutRegistry!.Overrides);
+        RefreshGestureDisplays();
+    }
+
+    [RelayCommand]
+    private void ResetAllShortcuts()
+    {
+        if (_shortcutRegistry is null)
+            return;
+
+        // Сброс всех клавиш = удаление файла: отсутствие shortcuts.json — валидное «всё по дефолту».
+        _shortcutFile?.ResetFile();
+        _shortcutRegistry.ResetAll();
+        RefreshGestureDisplays();
+    }
+
+    private void RefreshGestureDisplays()
+    {
+        foreach (var r in ShortcutEntries.OfType<ShortcutRowViewModel>())
+        {
+            r.GestureDisplay = GestureDisplayOf(r.ActionId);
+            ExitRecording(r);
+        }
+
+        // Если записи уже не было — no-op.
+        Shortcut.SetSuspended(false);
+    }
+
+    private static void ExitRecording(ShortcutRowViewModel row)
+    {
+        row.IsRecording = false;
+        row.PendingDisplay = null;
+        row.PendingSpec = null;
+        row.HintText = null;
+        row.HasConflict = false;
+        row.ConflictTitle = null;
     }
 
     #endregion

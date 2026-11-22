@@ -43,7 +43,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
@@ -534,8 +534,126 @@
             </StackPanel>
         </ScrollViewer>
 
+        <!-- Keyboard shortcuts: строки собираются из ShortcutEntries (заголовки категорий + действия).
+             Запись сочетания перехватывается туннелирующим KeyDown в code-behind окна, логика — в VM. -->
+        <ScrollViewer Grid.Row="2" MaxHeight="260" HorizontalScrollBarVisibility="Disabled"
+                      IsVisible="{Binding HasShortcutsSection}">
+            <StackPanel Margin="20,12,20,12" Spacing="6">
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Shortcuts}" />
+                <TextBlock Text="{loc:Tr Settings.Shortcuts.Desc}"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                <ItemsControl ItemsSource="{Binding ShortcutEntries}">
+                    <ItemsControl.DataTemplates>
+                        <DataTemplate DataType="vm:ShortcutHeaderViewModel">
+                            <TextBlock Text="{Binding Title}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,10,0,2"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </DataTemplate>
+
+                        <DataTemplate DataType="vm:ShortcutRowViewModel">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,2">
+
+                                <!-- Заголовок действия -->
+                                <TextBlock Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Title}" />
+
+                                <!-- Конфликт-баннер: жест занят, ждём «Занять» или Esc -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding HasConflict}">
+                                    <TextBlock VerticalAlignment="Center" FontSize="11" MaxWidth="230"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource WarningTextBrush}"
+                                               Text="{loc:Tr Settings.Shortcuts.ConflictWith}" />
+                                    <TextBlock VerticalAlignment="Center" FontSize="11" MaxWidth="160"
+                                               TextWrapping="Wrap"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource WarningTextBrush}"
+                                               Text="{Binding ConflictTitle}" />
+                                    <Button Classes="focused" Height="30"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).TakeOverConflictCommand}">
+                                        <TextBlock Text="{loc:Tr Settings.Shortcuts.TakeOver}" />
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Режим записи: превью сочетания / подсказка -->
+                                <Border Grid.Column="1" VerticalAlignment="Center"
+                                        Padding="10,4" CornerRadius="4" BorderThickness="1"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        IsVisible="{Binding IsRecording}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock FontSize="12" Text="{Binding PendingDisplay}"
+                                                   IsVisible="{Binding PendingDisplay, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock FontSize="12" Text="{loc:Tr Settings.Shortcuts.RecordingHint}"
+                                                   IsVisible="{Binding PendingDisplay, Converter={x:Static ObjectConverters.IsNull}}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        <TextBlock FontSize="11" Text="{Binding HintText}"
+                                                   IsVisible="{Binding HintText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                   Foreground="{DynamicResource WarningTextBrush}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Обычное состояние: текущий жест -->
+                                <TextBlock Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Text="{Binding GestureDisplay}"
+                                           IsVisible="{Binding !IsRecording}" />
+
+                                <!-- Сброс на дефолт -->
+                                <Button Grid.Column="2" Width="36" Height="30" Classes="normal"
+                                        ToolTip.Tip="{loc:Tr Settings.Shortcuts.ResetTip}"
+                                        Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).ResetRowCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding !IsRecording}">
+                                    <Svg Width="16" Height="16" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                </Button>
+
+                                <!-- Осознанно отключить действие -->
+                                <Button Grid.Column="3" Width="36" Height="30" Classes="normal"
+                                        ToolTip.Tip="{loc:Tr Settings.Shortcuts.DisableTip}"
+                                        Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).DisableRowCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding !IsRecording}">
+                                    <Svg Width="16" Height="16" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                </Button>
+
+                                <!-- Записать сочетание -->
+                                <Button Grid.Column="4" Height="30" Classes="normal"
+                                        ToolTip.Tip="{loc:Tr Settings.Shortcuts.RecordTip}"
+                                        Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).BeginRecordCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding !IsRecording}">
+                                    <TextBlock Text="{loc:Tr Settings.Shortcuts.Record}" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.DataTemplates>
+                </ItemsControl>
+
+                <Button Classes="danger"
+                        HorizontalAlignment="Left"
+                        Margin="0,8,0,0"
+                        ToolTip.Tip="{loc:Tr Settings.Shortcuts.ResetAllTip}"
+                        Command="{Binding ResetAllShortcutsCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <Svg Width="16" Height="16" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        <TextBlock Text="{loc:Tr Settings.Shortcuts.ResetAll}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
         <!-- Footer -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"

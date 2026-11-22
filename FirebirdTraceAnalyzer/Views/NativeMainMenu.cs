@@ -3,8 +3,10 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
+using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
+using FirebirdTraceAnalyzer.Services.Shortcuts;
 using FirebirdTraceAnalyzer.ViewModels;
 
 namespace FirebirdTraceAnalyzer.Views;
@@ -15,7 +17,8 @@ namespace FirebirdTraceAnalyzer.Views;
 /// <para>
 /// Каноничный путь Avalonia (см. NativeMenu.NeedsUpdate, PR AvaloniaUI/Avalonia#3762): меню назначается
 /// РОВНО ОДИН раз (<see cref="NativeMenu.SetMenu"/>), а динамические пункты обновляются в обработчике
-/// события <see cref="NativeMenu.NeedsUpdate"/> — оно вызывается экспортёром прямо перед показом меню.
+/// события <see cref="NativeMenu.NeedsUpdate"/> — оно вызывается экспортёром прямо перед показом меню
+/// (и перед нажатием хоткея — это гарантированная точка синхронизации жестов при перепривязке).
 /// Повторный <c>SetMenu</c> на macOS падает («The menu being updated does not match»), а мутация
 /// <c>Items</c> ВНЕ <c>NeedsUpdate</c> рассинхронивает экспортёр и делает меню инертным — поэтому оба
 /// пути не используются. На Windows/Linux SetMenu — no-op (там работает in-window меню).
@@ -25,47 +28,69 @@ namespace FirebirdTraceAnalyzer.Views;
 /// быть подменю. Поэтому Settings уходит в меню приложения (первый пункт = app-menu, ⌘,), а Plugins и
 /// Parser Stats — в подменю Tools.
 /// </para>
+/// <para>
+/// Жесты пунктов берутся из реестра горячих клавиш (<see cref="IShortcutRegistry"/>), а не хардкодятся:
+/// при перепривязке пользователем свойство Gesture отслеженных пунктов обновляется напрямую
+/// (смена свойства существующего пункта — не мутация Items, экспортёру не мешает), а полная
+/// пересборка внутри NeedsUpdate подхватывает жесты отчётов.
+/// </para>
 /// </summary>
 internal sealed class NativeMainMenu
 {
     private readonly Window _window;
     private readonly MainWindowViewModel _vm;
+    private readonly IShortcutRegistry? _registry;
+
+    // Отслеженные пункты с жестами: (пункт, id действия). Обновляются при Changed реестра.
+    private readonly List<(NativeMenuItem Item, string ActionId)> _gestureItems = [];
+    private readonly List<(NativeMenuItem Item, string ActionId)> _reportGestureItems = [];
 
     private NativeMenu _quickReportsMenu = null!;
     private NativeMenu _customReportsMenu = null!;
     private NativeMenuItem _customReportsItem = null!;
 
-    private NativeMainMenu(Window window, MainWindowViewModel vm)
+    private NativeMainMenu(Window window, MainWindowViewModel vm, IShortcutRegistry? registry)
     {
         _window = window;
         _vm = vm;
+        _registry = registry;
+
+        if (registry is not null)
+        {
+            registry.Changed += (_, _) => RefreshGestures();
+            // На время записи сочетания снимаем и нативные ускорители (macOS: ⌘-ускоритель
+            // срабатывает на уровне ОС до любого перехвата — задавить его может только
+            // пустой Gesture на самом пункте).
+            Shortcut.SuspensionChanged += (_, _) => RefreshGestures();
+        }
     }
 
-    public static void Attach(Window window, MainWindowViewModel vm)
+    public static void Attach(Window window, MainWindowViewModel vm, IShortcutRegistry? registry)
     {
-        var owner = new NativeMainMenu(window, vm);
+        var owner = new NativeMainMenu(window, vm, registry);
         NativeMenu.SetMenu(window, owner.Build()); // единственный SetMenu окна; динамика — через NeedsUpdate
     }
 
     // Пункт Settings/Preferences задаётся ДЕКЛАРАТИВНО в App.axaml (NativeMenu на уровне Application) —
     // так он попадает в системное меню приложения (About/Quit) с правильным таймингом.
+    // Его жест (⌘,) принадлежит действию App.OpenSettings с IsRebindable=false.
 
     private NativeMenu Build() => new()
     {
         Items =
         {
             Submenu("NativeMenu.Open",
-                Item("NativeMenu.Open.Local", _vm.OpenLocalFileCommand, Key.O, KeyModifiers.Meta),
-                Item("NativeMenu.Open.Remote", _vm.OpenRemoteFileCommand, Key.O, KeyModifiers.Meta | KeyModifiers.Shift),
-                Item("NativeMenu.Open.Cancel", _vm.CancelLoadingCommand, Key.Escape, KeyModifiers.Meta)),
+                Item("NativeMenu.Open.Local", _vm.OpenLocalFileCommand, "App.OpenLocalFile"),
+                Item("NativeMenu.Open.Remote", _vm.OpenRemoteFileCommand, "App.OpenRemoteFile"),
+                Item("NativeMenu.Open.Cancel", _vm.CancelLoadingCommand, "App.CancelLoading")),
 
             Submenu("NativeMenu.Edit",
                 Submenu("NativeMenu.Edit.Reparse",
-                    Item("NativeMenu.Common.AllFiles", _vm.ReparseAllFilesCommand, Key.R, KeyModifiers.Meta),
-                    Item("NativeMenu.Common.SelectedFiles", _vm.ReparseSelectedFilesCommand, Key.R, KeyModifiers.Meta | KeyModifiers.Shift)),
+                    Item("NativeMenu.Common.AllFiles", _vm.ReparseAllFilesCommand, "App.ReparseAllFiles"),
+                    Item("NativeMenu.Common.SelectedFiles", _vm.ReparseSelectedFilesCommand, "App.ReparseSelectedFiles")),
                 Submenu("NativeMenu.Edit.Close",
-                    Item("NativeMenu.Common.AllFiles", _vm.CloseAllFilesCommand, Key.W, KeyModifiers.Meta | KeyModifiers.Shift),
-                    Item("NativeMenu.Common.SelectedFiles", _vm.CloseSelectedFilesCommand, Key.W, KeyModifiers.Meta))),
+                    Item("NativeMenu.Common.AllFiles", _vm.CloseAllFilesCommand, "App.CloseAllFiles"),
+                    Item("NativeMenu.Common.SelectedFiles", _vm.CloseSelectedFilesCommand, "App.CloseSelectedFiles"))),
 
             ReportsMenu(),
             WindowMenu(),
@@ -97,6 +122,24 @@ internal sealed class NativeMainMenu
         };
     }
 
+    private NativeMenuItem WindowMenu() => new()
+    {
+        Header = Loc.Tr("NativeMenu.Window"),
+        Menu = new NativeMenu
+        {
+            Items =
+            {
+                CheckItem("NativeMenu.Window.Files", _vm.SwitchVisibleTraceFilesSectionCommand, nameof(_vm.IsTraceFilesSectionVisible), "App.ToggleFilesSection"),
+                CheckItem("NativeMenu.Window.Search", _vm.SwitchVisibleSearchSectionCommand, nameof(_vm.IsSearchSectionVisible), "App.ToggleSearchSection"),
+                CheckItem("NativeMenu.Window.Events", _vm.SwitchEventsSectionVisibleCommand, nameof(_vm.IsEventsSectionVisible), "App.ToggleEventsSection"),
+                CheckItem("NativeMenu.Window.Statistics", _vm.SwitchStatisticsSectionVisibleCommand, nameof(_vm.IsStatisticsSectionVisible), "App.ToggleStatisticsSection"),
+                CheckItem("NativeMenu.Window.Logs", _vm.SwitchLogsSectionVisibleCommand, nameof(_vm.IsLogsSectionVisible), "App.ToggleLogsSection"),
+                new NativeMenuItemSeparator(),
+                Item("NativeMenu.Window.Reset", _vm.GoToFactorySettingsSectionCommand, "App.ResetLayout"),
+            }
+        }
+    };
+
     private NativeMenuItem ReportsMenu()
     {
         _quickReportsMenu = new NativeMenu();
@@ -127,48 +170,68 @@ internal sealed class NativeMainMenu
 
     private void RefreshReports()
     {
+        // ОБА списка отчётов заполняются из ОДНОГО трака отслеженных жестов: очищаем один раз
+        // ПЕРЕД обоими заполнениями. Clear() внутри FillReports затирал записи built-in отчётов
+        // при заполнении custom — жесты built-in переставали обновляться при перепривязке.
+        _reportGestureItems.Clear();
         FillReports(_quickReportsMenu, _vm.BuiltInReports);
         FillReports(_customReportsMenu, _vm.CustomReports);
         _customReportsItem.IsVisible = _vm.CustomReports.Count > 0;
     }
 
-    private void FillReports(NativeMenu menu, ObservableCollection<ReportTemplate> reports)
+    private void FillReports(NativeMenu menu, IEnumerable<ReportTemplate> reports)
     {
         menu.Items.Clear();
+
         foreach (var template in reports)
-            menu.Items.Add(new NativeMenuItem
+        {
+            var item = new NativeMenuItem
             {
                 Header = template.Name,
                 Command = _vm.GenerateQuickReportCommand,
                 CommandParameter = template.Id
-            });
+            };
+
+            BindGesture(item, ReportShortcutSource.ActionIdFor(template.Id), _reportGestureItems);
+            menu.Items.Add(item);
+        }
     }
 
-    private NativeMenuItem WindowMenu() => new()
+    private void RefreshGestures()
     {
-        Header = Loc.Tr("NativeMenu.Window"),
-        Menu = new NativeMenu
-        {
-            Items =
-            {
-                CheckItem("NativeMenu.Window.Files", _vm.SwitchVisibleTraceFilesSectionCommand, nameof(_vm.IsTraceFilesSectionVisible), Key.D1),
-                CheckItem("NativeMenu.Window.Search", _vm.SwitchVisibleSearchSectionCommand, nameof(_vm.IsSearchSectionVisible), Key.D2),
-                CheckItem("NativeMenu.Window.Events", _vm.SwitchEventsSectionVisibleCommand, nameof(_vm.IsEventsSectionVisible), Key.D3),
-                CheckItem("NativeMenu.Window.Statistics", _vm.SwitchStatisticsSectionVisibleCommand, nameof(_vm.IsStatisticsSectionVisible), Key.D4),
-                CheckItem("NativeMenu.Window.Logs", _vm.SwitchLogsSectionVisibleCommand, nameof(_vm.IsLogsSectionVisible), Key.D5),
-                new NativeMenuItemSeparator(),
-                Item("NativeMenu.Window.Reset", _vm.GoToFactorySettingsSectionCommand, Key.D0, KeyModifiers.Meta),
-            }
-        }
-    };
+        // Прямая смена свойства Gesture существующего пункта — не мутация Items, экспортёру
+        // не мешает; полную пересборку (жесты отчётов при изменившемся наборе) делает
+        // NeedsUpdate перед следующим показом меню / нажатием хоткея.
+        RefreshList(_gestureItems);
+        RefreshList(_reportGestureItems);
+    }
 
-    // --- Хелперы построения -------------------------------------------------------------------
+    private void RefreshList(List<(NativeMenuItem Item, string ActionId)> items)
+    {
+        if (_registry is null)
+            return;
 
-    private static NativeMenuItem Item(string key, ICommand? command, Key? gestureKey = null, KeyModifiers modifiers = KeyModifiers.None)
+        // Режим записи: ускорители сняты (жест вернётся при выходе из записи через RefreshGestures).
+        foreach (var (item, actionId) in items)
+            item.Gesture = Shortcut.IsSuspended ? null : _registry.Resolve(actionId);
+    }
+
+    private void BindGesture(NativeMenuItem item, string actionId, List<(NativeMenuItem, string)> list)
+    {
+        if (_registry is null)
+            return;
+
+        item.Gesture = _registry.Resolve(actionId);
+        list.Add((item, actionId));
+    }
+
+    private NativeMenuItem Item(string key, ICommand? command, string? actionId = null)
     {
         var item = new NativeMenuItem { Header = Loc.Tr(key), Command = command };
-        if (gestureKey is { } k)
-            item.Gesture = new KeyGesture(k, modifiers);
+
+        if (actionId is not null)
+            BindGesture(item, actionId, _gestureItems);
+
         return item;
     }
 
@@ -180,15 +243,16 @@ internal sealed class NativeMainMenu
         return new NativeMenuItem { Header = Loc.Tr(key), Menu = menu };
     }
 
-    private NativeMenuItem CheckItem(string key, ICommand command, string boolProperty, Key gestureKey)
+    private NativeMenuItem CheckItem(string key, ICommand command, string boolProperty, string actionId)
     {
         var item = new NativeMenuItem
         {
             Header = Loc.Tr(key),
             Command = command,
             ToggleType = MenuItemToggleType.CheckBox,
-            Gesture = new KeyGesture(gestureKey, KeyModifiers.Meta)
         };
+
+        BindGesture(item, actionId, _gestureItems);
         item.Bind(NativeMenuItem.IsCheckedProperty, new Binding(boolProperty) { Source = _vm, Mode = BindingMode.OneWay });
         return item;
     }

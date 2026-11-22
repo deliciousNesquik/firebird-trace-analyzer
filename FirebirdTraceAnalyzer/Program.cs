@@ -25,6 +25,7 @@ using FirebirdTraceAnalyzer.Services.Plugins;
 using FirebirdTraceAnalyzer.Services.Reports;
 using FirebirdTraceAnalyzer.Services.Reports.Exporters;
 using FirebirdTraceAnalyzer.Services.Searching;
+using FirebirdTraceAnalyzer.Services.Shortcuts;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.ViewModels;
 using FirebirdTraceParser.Infrastructure.DependencyInjection;
@@ -117,6 +118,19 @@ internal sealed class Program
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+
+        // Реестр горячих клавиш + файл оверрайдов shortcuts.json. РЕЕСТР ОБЯЗАН БЫТЬ ЗАГРУЖЕН
+        // ДО ПОСТРОЕНИЯ MainWindow: attached property Shortcut.Action сеет жесты в пункты меню
+        // при построении контролов (та же дисциплина порядка, что у EnsureRulesFile).
+        var shortcutRegistry = new ShortcutRegistry();
+        var shortcutFile = new ShortcutFileService();
+        var shortcutData = shortcutFile.Load();
+        shortcutRegistry.LoadOverrides(shortcutData.Overrides);
+        foreach (var warning in shortcutData.Warnings)
+            logger.Warn("Shortcuts: {Warning}", warning);
+        Shortcut.Initialize(shortcutRegistry);
+        services.AddSingleton<IShortcutRegistry>(shortcutRegistry);
+        services.AddSingleton(shortcutFile);
 
         // Реестр видимых фоновых задач (мини-панель «идёт фоновая работа»).
         services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();

@@ -51,16 +51,19 @@ public partial class MainWindow : Window
         if (!_nativeMenuAttached && DataContext is MainWindowViewModel vm)
         {
             _nativeMenuAttached = true;
-            NativeMainMenu.Attach(this, vm);
+            NativeMainMenu.Attach(this, vm, App.Services?.GetService<IShortcutRegistry>());
         }
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        // Ctrl+F / Cmd+F — фокус в поле поиска (при необходимости раскрываем секцию Search).
-        // Не пункт меню, поэтому обрабатываем здесь; фокус — через Dispatcher, чтобы поле успело
-        // появиться в дереве, если секция была скрыта.
-        if (e.Key == Key.F && e.KeyModifiers is KeyModifiers.Control or KeyModifiers.Meta)
+        // Primary+F (Ctrl+F / ⌘F) — фокус в поле поиска (при необходимости раскрываем секцию
+        // Search). Не пункт меню, поэтому жест берём из реестра горячих клавиш и сравниваем
+        // через Matches; фокус — через Dispatcher, чтобы поле успело появиться в дереве,
+        // если секция была скрыта.
+        var focusGesture = App.Services?.GetService<IShortcutRegistry>()?.Resolve("Search.Focus");
+
+        if (focusGesture is not null && focusGesture.Matches(e))
         {
             if (DataContext is MainWindowViewModel { IsSearchSectionVisible: false } vm)
                 vm.IsSearchSectionVisible = true;
