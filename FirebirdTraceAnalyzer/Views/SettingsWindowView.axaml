@@ -43,7 +43,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto,Auto" Background="{DynamicResource AppBackgroundBrush}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- Header -->
         <Border Grid.Row="0"
@@ -531,21 +531,20 @@
                     </StackPanel>
                 </Grid>
 
-            </StackPanel>
-        </ScrollViewer>
-
-        <!-- Keyboard shortcuts: строки собираются из ShortcutEntries (заголовки категорий + действия).
-             Запись сочетания перехватывается туннелирующим KeyDown в code-behind окна, логика — в VM. -->
-        <ScrollViewer Grid.Row="2" MaxHeight="260" HorizontalScrollBarVisibility="Disabled"
-                      IsVisible="{Binding HasShortcutsSection}">
-            <StackPanel Margin="20,12,20,12" Spacing="6">
-                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Shortcuts}" />
+                <!-- Keyboard shortcuts: строки собираются из ShortcutEntries (заголовки категорий +
+                     действия). Запись сочетания перехватывается туннелирующим KeyDown в code-behind
+                     окна, логика — в VM. Секция в общем потоке прокрутки, отдельного скролла нет. -->
+                <Separator Margin="0,6,0,16" />
+                <TextBlock Classes="sectionHeader" Text="{loc:Tr Settings.Section.Shortcuts}"
+                           IsVisible="{Binding HasShortcutsSection}" />
                 <TextBlock Text="{loc:Tr Settings.Shortcuts.Desc}"
+                           IsVisible="{Binding HasShortcutsSection}"
                            FontSize="11"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <ItemsControl ItemsSource="{Binding ShortcutEntries}">
+                <ItemsControl ItemsSource="{Binding ShortcutEntries}"
+                              IsVisible="{Binding HasShortcutsSection}">
                     <ItemsControl.DataTemplates>
                         <DataTemplate DataType="vm:ShortcutHeaderViewModel">
                             <TextBlock Text="{Binding Title}"
@@ -649,11 +648,12 @@
                         <TextBlock Text="{loc:Tr Settings.Shortcuts.ResetAll}" />
                     </StackPanel>
                 </Button>
+
             </StackPanel>
         </ScrollViewer>
 
         <!-- Footer -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="2"
                 Background="{DynamicResource SurfaceBrush}"
                 Padding="20"
                 BorderBrush="{DynamicResource BorderBrush}"
