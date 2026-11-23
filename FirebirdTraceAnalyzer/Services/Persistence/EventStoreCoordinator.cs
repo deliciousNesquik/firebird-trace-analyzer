@@ -52,7 +52,7 @@ public sealed class EventStoreCoordinator : IEventStoreCoordinator
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "EventStore: ContainsFile failed for {Hash}", fileHash);
+            Logger.Warn(ex, "EventStore: ContainsFile failed for {Hash}", fileHash);
             return false; // при сбое проверки просто парсим как обычно
         }
     }
@@ -109,7 +109,7 @@ public sealed class EventStoreCoordinator : IEventStoreCoordinator
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "EventStore: ListFiles failed");
+            Logger.Warn(ex, "EventStore: ListFiles failed");
             return [];
         }
     }

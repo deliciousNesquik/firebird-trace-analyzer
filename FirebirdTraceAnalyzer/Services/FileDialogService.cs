@@ -53,7 +53,7 @@ public class FileDialogService : IFileDialogService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error opening file selection dialog.");
+            Logger.Warn(ex, "Error opening file selection dialog.");
             return [];
         }
     }
@@ -85,7 +85,7 @@ public class FileDialogService : IFileDialogService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error opening save file dialog.");
+            Logger.Warn(ex, "Error opening save file dialog.");
             return null;
         }
     }
@@ -117,7 +117,7 @@ public class FileDialogService : IFileDialogService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error opening file selection dialog.");
+            Logger.Warn(ex, "Error opening file selection dialog.");
             return null;
         }
     }
@@ -151,7 +151,7 @@ public class FileDialogService : IFileDialogService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error opening plugin package dialog.");
+            Logger.Warn(ex, "Error opening plugin package dialog.");
             return null;
         }
     }
@@ -205,7 +205,7 @@ public class FileDialogService : IFileDialogService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Failed to open file in storage: {filePath}");
+                Logger.Warn(ex, "Failed to open file in storage: {FilePath}", filePath);
                 return Task.FromResult(false);
             }
         }

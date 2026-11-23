@@ -90,7 +90,7 @@ public class RemoteFileService : IRemoteFileService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error fetching files from {Directory}", remoteDirectory);
+                Logger.Warn(ex, "Error fetching files from {Directory}", remoteDirectory);
                 throw new InvalidOperationException($"Failed to fetch files: {ex.Message}", ex);
             }
         }, cancellationToken);
@@ -192,7 +192,7 @@ public class RemoteFileService : IRemoteFileService
                     throw new OperationCanceledException(cancellationToken);
                 }
 
-                Logger.Error(ex, "Error downloading file: {FileName}", fileInfo.FileName);
+                Logger.Warn(ex, "Error downloading file: {FileName}", fileInfo.FileName);
                 throw new InvalidOperationException($"Failed to download {fileInfo.FileName}: {ex.Message}", ex);
             }
             finally
@@ -219,7 +219,7 @@ public class RemoteFileService : IRemoteFileService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error deleting file: {Path}", remotePath);
+                Logger.Warn(ex, "Error deleting file: {Path}", remotePath);
                 throw new InvalidOperationException($"Failed to delete {remotePath}: {ex.Message}", ex);
             }
         }, cancellationToken);

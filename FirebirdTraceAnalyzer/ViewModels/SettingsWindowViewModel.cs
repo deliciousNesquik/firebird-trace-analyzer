@@ -307,7 +307,17 @@ public partial class SettingsWindowViewModel : ViewModelBase, IDialogViewModel
     private Task OpenParserLogFolderAsync() => RevealFileAsync(LogConfiguration.ResolveParserLogFile(ParserLogPath));
 
     [RelayCommand]
-    private void ClearAppLogs() => ClearLogs(LogConfiguration.ResolveAppLogFile(AppLogPath), "application");
+    private void ClearAppLogs()
+    {
+        ClearLogs(LogConfiguration.ResolveAppLogFile(AppLogPath), "application");
+
+        // internal.log — часть диагностики приложения: чистится вместе с ним (отдельной
+        // кнопки нет). Статус-сообщение уже выставлено первой зачисткой, поэтому добавку
+        // фиксируем только в лог.
+        var internalDeleted = LogConfiguration.ClearLogs(LogConfiguration.DefaultInternalLogFile);
+        if (internalDeleted > 0)
+            Logger.Info("Cleared {Count} internal log file(s)", internalDeleted);
+    }
 
     [RelayCommand]
     private void ClearParserLogs() => ClearLogs(LogConfiguration.ResolveParserLogFile(ParserLogPath), "parser");

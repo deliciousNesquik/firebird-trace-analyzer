@@ -29,6 +29,12 @@ public static class LogConfiguration
     /// <summary>Путь к логу парсера по умолчанию.</summary>
     public static string DefaultParserLogFile => Path.Combine(DefaultLogDirectory, "parser.log");
 
+    /// <summary>
+    /// Внутренний лог NLog (не настраивается пользователем). Зачищается вместе с логом
+    /// приложения — см. ClearAppLogs.
+    /// </summary>
+    public static string DefaultInternalLogFile => Path.Combine(DefaultLogDirectory, "internal.log");
+
     /// <summary>Эффективный путь к логу приложения (настройка или значение по умолчанию).</summary>
     public static string ResolveAppLogFile(string? configured) =>
         Expand(string.IsNullOrWhiteSpace(configured) ? DefaultAppLogFile : configured);
@@ -52,7 +58,7 @@ public static class LogConfiguration
         try
         {
             Directory.CreateDirectory(DefaultLogDirectory);
-            InternalLogger.LogFile = Path.Combine(DefaultLogDirectory, "internal.log");
+            InternalLogger.LogFile = DefaultInternalLogFile;
         }
         catch
         {
@@ -110,6 +116,9 @@ public static class LogConfiguration
 
         var baseName = Path.GetFileNameWithoutExtension(path);
         var deleted = 0;
+
+        // ВАЖНО: держим в списке и internal.log (InternalLogger.LogFile задаётся рядом с GDC-путями,
+        // см. Apply) — иначе кнопка «очистить логи» его никогда не удаляла.
 
         // Сам файл + архивы вида application*.log в той же папке.
         foreach (var file in Directory.EnumerateFiles(directory, baseName + "*"))

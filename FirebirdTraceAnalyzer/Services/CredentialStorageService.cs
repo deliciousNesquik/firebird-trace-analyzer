@@ -112,7 +112,7 @@ public class CredentialStorageService : ICredentialStorageService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error saving password");
+                Logger.Warn(ex, "Error saving password");
                 throw;
             }
         });
@@ -135,7 +135,7 @@ public class CredentialStorageService : ICredentialStorageService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error retrieving password");
+                Logger.Warn(ex, "Error retrieving password");
                 return null;
             }
         });
@@ -166,7 +166,7 @@ public class CredentialStorageService : ICredentialStorageService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error deleting password");
+                Logger.Warn(ex, "Error deleting password");
                 throw;
             }
         });

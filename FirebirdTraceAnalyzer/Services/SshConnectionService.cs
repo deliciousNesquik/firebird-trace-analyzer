@@ -101,13 +101,13 @@ public class SshConnectionService : ISshConnectionService
         }
         catch (SshAuthenticationException ex)
         {
-            Logger.Error(ex, "Authentication failed");
+            Logger.Warn(ex, "Authentication failed");
             Disconnect();
             throw new InvalidOperationException("Authentication failed. Check credentials.", ex);
         }
         catch (SshConnectionException ex)
         {
-            Logger.Error(ex, "Connection failed");
+            Logger.Warn(ex, "Connection failed");
             Disconnect();
             throw new InvalidOperationException($"Connection failed: {ex.Message}", ex);
         }
@@ -126,7 +126,7 @@ public class SshConnectionService : ISshConnectionService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unexpected error during connection");
+            Logger.Warn(ex, "Unexpected error during connection");
             Disconnect();
             throw new InvalidOperationException($"Connection error: {ex.Message}", ex);
         }
