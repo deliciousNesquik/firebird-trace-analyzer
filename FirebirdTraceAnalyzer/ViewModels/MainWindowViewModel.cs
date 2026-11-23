@@ -1949,9 +1949,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     File.Delete(path);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    /* ignore */
+                    // Пользователь просил удалить файл после обработки: если это не
+                    // удалось, он останется на диске — молча оставлять нельзя.
+                    Logger.Warn(ex, "Failed to delete source file after processing: {Path}", path);
                 }
             }
 

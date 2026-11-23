@@ -229,8 +229,10 @@ public class SshConnectionService : ISshConnectionService
 
                 return true;
             }
-            catch (Renci.SshNet.Common.SftpPermissionDeniedException)
+            catch (Renci.SshNet.Common.SftpPermissionDeniedException ex)
             {
+                // Файл молча выпадает из списка — без записи пользователь не поймёт, почему.
+                Logger.Debug(ex, "SFTP permission denied for {Path} — excluded from the file list", remotePath);
                 return false;
             }
             catch (Exception ex)

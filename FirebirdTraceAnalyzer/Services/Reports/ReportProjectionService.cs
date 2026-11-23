@@ -1,4 +1,5 @@
 using System.Globalization;
+using NLog;
 using FirebirdTraceAnalyzer.Enums.Reports;
 using FirebirdTraceAnalyzer.Interfaces.EventProperties;
 using FirebirdTraceAnalyzer.Interfaces.Reports;
@@ -15,6 +16,10 @@ namespace FirebirdTraceAnalyzer.Services.Reports;
 /// </summary>
 public sealed class ReportProjectionService : IReportProjectionService
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    // Типы значений, для которых уже предупреждали о неприводимости/несравнимости.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _warnedProjectionTypes = new(StringComparer.Ordinal);
+
     // Разделитель частей составного ключа группировки (маловероятен в данных).
     private const char KeySeparator = '\u001f';
 
@@ -282,9 +287,13 @@ public sealed class ReportProjectionService : IReportProjectionService
                 if (takeMin ? cmp < 0 : cmp > 0)
                     best = value;
             }
-            catch
+            catch (Exception ex)
             {
-                // несравнимые типы внутри одного поля — игнорируем
+                // Несравнимые типы внутри одного поля: значение выпадает из min/max,
+                // предупреждаем один раз на тип, чтобы отчёт не «молча врал».
+                if (_warnedProjectionTypes.TryAdd(value.GetType().Name, 0))
+                    Logger.Warn(ex, "Report value {Value} ({Type}) is not comparable; excluded from min/max",
+                        value, value.GetType().Name);
             }
         }
 
@@ -300,8 +309,13 @@ public sealed class ReportProjectionService : IReportProjectionService
         {
             return Convert.ToDouble(value, CultureInfo.InvariantCulture);
         }
-        catch
+        catch (Exception ex)
         {
+            // Значение учитывается в агрегате как 0 — молча это показывает нули в
+            // отчёте без объяснения. Предупреждаем один раз на тип значения.
+            if (_warnedProjectionTypes.TryAdd(value.GetType().Name, 0))
+                Logger.Warn(ex, "Report value {Value} ({Type}) is not convertible to double; counted as 0 in aggregates",
+                    value, value.GetType().Name);
             return 0d;
         }
     }

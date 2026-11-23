@@ -1,4 +1,5 @@
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Models.Results;
 
 namespace FirebirdTraceAnalyzer.Interfaces;
 
@@ -9,7 +10,13 @@ namespace FirebirdTraceAnalyzer.Interfaces;
 /// <param name="StartTrace">The start timestamp of the trace.</param>
 /// <param name="EndTrace">The end timestamp of the trace.</param>
 /// <param name="ParseMs">The parsing duration in milliseconds.</param>
-public sealed record ParsedFile(IReadOnlyList<EventBase> Events, DateTime StartTrace, DateTime EndTrace, long ParseMs);
+/// <param name="Warnings">Parser warnings: skipped blocks and per-line errors (the app log summarizes them; details live in parser.log).</param>
+public sealed record ParsedFile(
+    IReadOnlyList<EventBase> Events,
+    DateTime StartTrace,
+    DateTime EndTrace,
+    long ParseMs,
+    IReadOnlyList<ParsingWarning> Warnings);
 
 /// <summary>
 /// Defines methods for file ingestion services, including computing file hashes and parsing trace files asynchronously.

@@ -13,6 +13,8 @@ namespace FirebirdTraceAnalyzer.Services;
 /// </summary>
 public static class LogConfiguration
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     public const string AppLogGdcKey = "appLogFile";
     public const string ParserLogGdcKey = "parserLogFile";
 
@@ -60,9 +62,12 @@ public static class LogConfiguration
             Directory.CreateDirectory(DefaultLogDirectory);
             InternalLogger.LogFile = DefaultInternalLogFile;
         }
-        catch
+        catch (Exception ex)
         {
-            // Не критично — внутренний лог NLog не обязателен.
+            // Папки может не быть, но Warn нужен: при недоступной кастомной папке
+            // файловые таргеты молча перестанут писать, и без этой записи причина
+            // «пустого лога» нигде не видна.
+            Logger.Warn(ex, "Failed to create log directory {Dir}", DefaultLogDirectory);
         }
     }
 
@@ -128,9 +133,11 @@ public static class LogConfiguration
                 File.Delete(file);
                 deleted++;
             }
-            catch
+            catch (Exception ex)
             {
-                // файл может быть временно занят — пропускаем
+                // файл может быть временно занят — пропускаем, но фиксируем:
+                // StatusMessage покажет только число удалённых
+                Logger.Warn(ex, "Failed to delete log file {File}", file);
             }
         }
 

@@ -328,6 +328,9 @@ public class ReportGenerationService : IReportGenerationService
     ///     (возможно JsonElement после десериализации) к типу значения. Возвращает null,
     ///     если граница не задана или её не удалось привести (тогда она не ограничивает).
     /// </summary>
+    // Дедупликация предупреждений о неприводимых границах: одно сообщение на комбинацию типов.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _warnedBoundConversions = new(StringComparer.Ordinal);
+
     private static int? CompareToBound(IComparable actual, object? bound)
     {
         var boundText = bound?.ToString();
@@ -342,8 +345,15 @@ public class ReportGenerationService : IReportGenerationService
 
             return actual.CompareTo(converted);
         }
-        catch
+        catch (Exception ex)
         {
+            // Молча вернуть null = диапазон фильтра перестаёт ограничивать выборку,
+            // и отчёт с фильтром выглядит как отчёт без фильтра. Предупреждаем один
+            // раз на комбинацию типов — в цикле по событиям это не спам.
+            var signature = $"{actual.GetType().Name}|{boundText}";
+            if (_warnedBoundConversions.TryAdd(signature, 0))
+                Logger.Warn(ex, "Report bound value '{Bound}' is not convertible to {Type}; range filter ignored for this pair",
+                    boundText, actual.GetType().Name);
             return null;
         }
     }
