@@ -777,7 +777,6 @@
   "Settings.Shortcuts.NeedModifier": "Добавьте модификатор (Ctrl/Alt/Shift) — «голые» буквы оставлены для ввода текста",
   "Settings.Shortcuts.ConflictWith": "Уже назначено:",
   "Settings.Shortcuts.TakeOver": "Занять",
-  "Settings.Shortcuts.None": "—",
   "Shortcuts.Category.Files": "Файлы",
   "Shortcuts.Category.Layout": "Макет",
   "Shortcuts.Category.Search": "Поиск",
@@ -798,5 +797,6 @@
   "Shortcuts.Action.ResetLayout": "Сбросить макет",
   "Shortcuts.Action.FocusSearch": "Фокус в поле поиска",
   "Shortcuts.Action.OpenSettings": "Открыть настройки",
-  "Shortcuts.SystemLocked": "Системное сочетание — занять его нельзя"
+  "Shortcuts.SystemLocked": "Системное сочетание — занять его нельзя",
+  "Shortcuts.None": "—"
 }
