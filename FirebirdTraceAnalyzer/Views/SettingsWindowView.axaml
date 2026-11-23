@@ -574,8 +574,8 @@
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource WarningTextBrush}"
                                                Text="{Binding ConflictTitle}" />
-                                    <Button Classes="focused" Height="30"
-                                            VerticalAlignment="Center"
+                                    <Button Classes="focused" Height="40" MinWidth="76"
+                                            VerticalContentAlignment="Center"
                                             Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).TakeOverConflictCommand}">
                                         <TextBlock Text="{loc:Tr Settings.Shortcuts.TakeOver}" />
                                     </Button>
@@ -607,26 +607,27 @@
                                            Text="{Binding GestureDisplay}"
                                            IsVisible="{Binding !IsRecording}" />
 
-                                <!-- Сброс на дефолт -->
-                                <Button Grid.Column="2" Width="36" Height="30" Classes="normal"
+                                <!-- Сброс на дефолт (иконки — ThemeIconFill: класс внутри SVG-файла) -->
+                                <Button Grid.Column="2" Width="40" Height="40" Classes="normal"
                                         ToolTip.Tip="{loc:Tr Settings.Shortcuts.ResetTip}"
                                         Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).ResetRowCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding !IsRecording}">
-                                    <Svg Width="16" Height="16" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                    <Svg Width="18" Height="18" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFill}" />
                                 </Button>
 
                                 <!-- Осознанно отключить действие -->
-                                <Button Grid.Column="3" Width="36" Height="30" Classes="normal"
+                                <Button Grid.Column="3" Width="40" Height="40" Classes="normal"
                                         ToolTip.Tip="{loc:Tr Settings.Shortcuts.DisableTip}"
                                         Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).DisableRowCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding !IsRecording}">
-                                    <Svg Width="16" Height="16" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconStroke}" />
+                                    <Svg Width="18" Height="18" Path="{DynamicResource ClearIcon}" Css="{DynamicResource ThemeIconFill}" />
                                 </Button>
 
                                 <!-- Записать сочетание -->
-                                <Button Grid.Column="4" Height="30" Classes="normal"
+                                <Button Grid.Column="4" Height="40" MinWidth="76" Classes="normal"
+                                        VerticalContentAlignment="Center"
                                         ToolTip.Tip="{loc:Tr Settings.Shortcuts.RecordTip}"
                                         Command="{Binding $parent[ItemsControl].((vm:SettingsWindowViewModel)DataContext).BeginRecordCommand}"
                                         CommandParameter="{Binding}"

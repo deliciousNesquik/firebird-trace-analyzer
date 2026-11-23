@@ -1,13 +1,16 @@
 using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
+using Avalonia.Controls.Platform;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Localization;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Shortcuts;
 using FirebirdTraceAnalyzer.ViewModels;
+using NLog;
 
 namespace FirebirdTraceAnalyzer.Views;
 
@@ -37,6 +40,14 @@ namespace FirebirdTraceAnalyzer.Views;
 /// </summary>
 internal sealed class NativeMainMenu
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    // Avalonia НЕ реагирует на смену NativeMenuItem.Gesture после экспорта (OnPropertyChanged
+    // обрабатывает только Menu/Command) — новый ускоритель попадает в ОС только при полном
+    // реэкспорте через внутренний QueueReset(). Повторный SetNativeMenu не используем: он даёт
+    // «The menu being updated does not match» при неожиданном вызове (см. AGENTS.md).
+    private static MethodInfo? _queueReset;
+
     private readonly Window _window;
     private readonly MainWindowViewModel _vm;
     private readonly IShortcutRegistry? _registry;
@@ -204,6 +215,37 @@ internal sealed class NativeMainMenu
         // NeedsUpdate перед следующим показом меню / нажатием хоткея.
         RefreshList(_gestureItems);
         RefreshList(_reportGestureItems);
+
+        RequestMenuReexport();
+    }
+
+    /// <summary>
+    /// Принудительный реэкспорт нативного меню: иначе смена Gesture у уже экспортированных
+    /// пунктов доезжает до macOS только после открытия какого-нибудь меню, и записанное
+    /// сочетание «не срабатывает» — в ОС остаётся зарегистрированным старый ускоритель.
+    /// </summary>
+    private void RequestMenuReexport()
+    {
+        if (_registry is null)
+            return;
+
+        try
+        {
+            if (_window.PlatformImpl?.TryGetFeature(typeof(ITopLevelNativeMenuExporter))
+                is not ITopLevelNativeMenuExporter exporter)
+                return;
+
+            _queueReset ??= exporter.GetType().GetMethod("QueueReset",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            _queueReset?.Invoke(exporter, null);
+        }
+        catch (Exception ex)
+        {
+            // Деградация мягкая: новый жест применится при следующем открытии меню
+            // (NeedsUpdate + пересборка), функциональность не теряется.
+            Logger.Warn(ex, "Failed to queue native menu re-export after gesture change");
+        }
     }
 
     private void RefreshList(List<(NativeMenuItem Item, string ActionId)> items)
@@ -221,7 +263,7 @@ internal sealed class NativeMainMenu
         if (_registry is null)
             return;
 
-        item.Gesture = _registry.Resolve(actionId);
+        item.Gesture = Shortcut.IsSuspended ? null : _registry.Resolve(actionId);
         list.Add((item, actionId));
     }
 
