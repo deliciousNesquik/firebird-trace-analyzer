@@ -31,6 +31,8 @@ using FirebirdTraceAnalyzer.ViewModels;
 using FirebirdTraceParser.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using NLog;
 
 namespace FirebirdTraceAnalyzer;
@@ -56,8 +58,14 @@ internal sealed class Program
         // Глобальные страховочные обработчики: фоновые падения (пул потоков, незамеченные Task)
         // не доходят до try вокруг UI-цикла и иначе ушли бы без единой записи в лог.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
             logger.Fatal(e.ExceptionObject as Exception,
                 "Unhandled exception (IsTerminating={Terminating})", e.IsTerminating);
+
+            // При IsTerminating=true finally в Main не выполнится: без Flush() Fatal останется
+            // в async-очереди таргета и умрёт вместе с процессом — crash-report без главной строки.
+            LogManager.Flush();
+        };
 
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
@@ -67,6 +75,19 @@ internal sealed class Program
 
         try
         {
+            // Стартовый баннер — первая строка багрепорта: версия, платформа и где лежат логи.
+            // Версия приходит из MinVer (по git-тегу), пути — уже разрешённые ApplyFromSettingsFile.
+            var informationalVersion = Assembly.GetEntryAssembly()?
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
+
+            logger.Info(
+                "Firebird Trace Analyzer {Version} on {OS} ({Arch}); app log: {AppLog}; parser log: {ParserLog}",
+                informationalVersion,
+                RuntimeInformation.OSDescription,
+                RuntimeInformation.ProcessArchitecture,
+                GlobalDiagnosticsContext.Get(LogConfiguration.AppLogGdcKey),
+                GlobalDiagnosticsContext.Get(LogConfiguration.ParserLogGdcKey));
+
             logger.Info("Initializing the application");
 
             BuildAvaloniaApp()
