@@ -645,7 +645,9 @@
                         ToolTip.Tip="{loc:Tr Settings.Shortcuts.ResetAllTip}"
                         Command="{Binding ResetAllShortcutsCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <Svg Width="16" Height="16" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFill}" />
+                        <!-- На красной (danger) кнопке иконка всегда белая — ThemeIconFillOnlyWhite
+                             перекрашивает .ThemeIconFill из SVG-файла в белый во всех темах -->
+                        <Svg Width="16" Height="16" Path="{DynamicResource ResetIcon}" Css="{DynamicResource ThemeIconFillOnlyWhite}" />
                         <TextBlock Text="{loc:Tr Settings.Shortcuts.ResetAll}" />
                     </StackPanel>
                 </Button>
