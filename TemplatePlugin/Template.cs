@@ -13,7 +13,11 @@ using FirebirdTraceParser.Models.Events;
 
 namespace TemplatePlugin;
 
-/// <summary>Пример плагина сортировки. Требует public-класс без параметров в конструкторе.</summary>
+/// <summary>
+/// Пример плагина сортировки. Требует public-класс без параметров в конструкторе.
+/// Показывает ОБА способа задать порядок: компаратор (полный контроль) и KeySelector
+/// (ключ — простое значение; быстрее и проще, направление учитывает сервис).
+/// </summary>
 public class TemplateSortPlugin : ISortPlugin
 {
     public string Id => "template_sort_plugin";
@@ -24,6 +28,7 @@ public class TemplateSortPlugin : ISortPlugin
     /// <summary>Варианты сортировки плагина: SortDescriptor(id, displayName, comparer, isDefault, category, displayOrder).</summary>
     public IEnumerable<SortDescriptor> GetSorts()
     {
+        // Способ 1: компаратор — произвольная логика сравнения пары событий (см. метод ниже).
         yield return new SortDescriptor(
             "template_sort_execute_time",
             "Execute time (Plugin)",
@@ -31,6 +36,27 @@ public class TemplateSortPlugin : ISortPlugin
             false,
             "Analytics",
             2);
+
+        // Способ 2: KeySelector — когда порядок выражается ОДНИМ простым значением (число/строка/дата).
+        // Ключ извлекается ОДИН раз на событие (decorate-sort-undecorate), а не на каждом из
+        // O(N·logN) сравнений. Сервис сортировки при этом сам:
+        //   - применяет флаг descending (компаратор плагина НЕ вызывается);
+        //   - сохраняет стабильность при равных ключах;
+        //   - события с null-ключом ставит в КОНЕЦ списка, направление это не переворачивает
+        //     (здесь null = «событие не StatementFinish — не участвует в порядке»).
+        // Сравнение ключей: однотипные IComparable — естественный CompareTo;
+        // разнотипные — по ToString() (ordinal). Компаратор в конструкторе обязателен, но пока
+        // задан KeySelector — не вызывается; передаём рабочую заглушку на тот же ключ.
+        yield return new SortDescriptor(
+            "template_sort_logical_reads",
+            "Logical reads (Plugin)",
+            CompareByLogicalReads,
+            false,
+            "Analytics",
+            3)
+        {
+            KeySelector = e => e is StatementFinishEvent s ? s.Performance.ReadCount : (object?)null,
+        };
     }
 
     /// <summary>
@@ -44,6 +70,17 @@ public class TemplateSortPlugin : ISortPlugin
             e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
 
         var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+
+        return descending ? -result : result;
+    }
+
+    /// <summary>Тот же контракт для «Logical reads» — fallback-компаратор сортировки с KeySelector.</summary>
+    private static int CompareByLogicalReads(EventBase a, EventBase b, bool descending)
+    {
+        static int Reads(EventBase e) =>
+            e is StatementFinishEvent s ? s.Performance.ReadCount : -1;
+
+        var result = Reads(a).CompareTo(Reads(b));
 
         return descending ? -result : result;
     }

@@ -131,6 +131,21 @@ public class SlowestFirstSortPlugin : ISortPlugin
             isDefault: false,
             category: "Analytics",
             displayOrder: 2);
+
+        // Тот же порядок через ОДИН ключ: ключ извлекается один раз на событие вместо вызова
+        // компаратора на каждом сравнении. Сервис сам применяет descending, стабильность и
+        // nulls-last; компаратор в конструкторе — обязательный fallback, при заданном
+        // KeySelector он НЕ вызывается.
+        yield return new SortDescriptor(
+            "acme.sort.reads",
+            "Logical reads",
+            CompareByReads,
+            isDefault: false,
+            category: "Analytics",
+            displayOrder: 3)
+        {
+            KeySelector = e => e is StatementFinishEvent s ? s.Performance.ReadCount : (object?)null,
+        };
     }
 
     private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
@@ -139,6 +154,16 @@ public class SlowestFirstSortPlugin : ISortPlugin
             e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
 
         var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+        return descending ? -result : result;
+    }
+
+    // Обязательный fallback для сортировки с KeySelector; используется, только если убрать селектор.
+    private static int CompareByReads(EventBase a, EventBase b, bool descending)
+    {
+        static int Reads(EventBase e) =>
+            e is StatementFinishEvent s ? s.Performance.ReadCount : -1;
+
+        var result = Reads(a).CompareTo(Reads(b));
         return descending ? -result : result;
     }
 }

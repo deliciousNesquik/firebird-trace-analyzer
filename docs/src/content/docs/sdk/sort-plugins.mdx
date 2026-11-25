@@ -130,6 +130,21 @@ public class SlowestFirstSortPlugin : ISortPlugin
             isDefault: false,
             category: "Analytics",
             displayOrder: 2);
+
+        // Same ordering idea, expressed through a single key: the key is extracted once per
+        // event instead of a comparer call per comparison. The service handles descending,
+        // stability, and nulls-last on its own; the comparer argument is a required fallback
+        // that is NOT invoked while KeySelector is set.
+        yield return new SortDescriptor(
+            "acme.sort.reads",
+            "Logical reads",
+            CompareByReads,
+            isDefault: false,
+            category: "Analytics",
+            displayOrder: 3)
+        {
+            KeySelector = e => e is StatementFinishEvent s ? s.Performance.ReadCount : (object?)null,
+        };
     }
 
     private static int CompareByExecuteTime(EventBase a, EventBase b, bool descending)
@@ -138,6 +153,16 @@ public class SlowestFirstSortPlugin : ISortPlugin
             e is StatementFinishEvent s ? s.Performance.ExecuteMs : -1;
 
         var result = ExecuteMs(a).CompareTo(ExecuteMs(b));
+        return descending ? -result : result;
+    }
+
+    // Required fallback for the KeySelector sort; only used if the key selector is removed.
+    private static int CompareByReads(EventBase a, EventBase b, bool descending)
+    {
+        static int Reads(EventBase e) =>
+            e is StatementFinishEvent s ? s.Performance.ReadCount : -1;
+
+        var result = Reads(a).CompareTo(Reads(b));
         return descending ? -result : result;
     }
 }
