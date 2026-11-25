@@ -11,7 +11,8 @@ public interface IParseTelemetry
     void RecordDownload(string name, long ms, long bytes);
 
     /// <summary>Тайминг получения событий: парсинг (<paramref name="fromCache"/> = false) или чтение из стора.</summary>
-    void RecordProduce(string name, long ms, long eventCount, long sizeBytes, ParseSource source, bool fromCache);
+    /// <param name="skippedBlocks">Пропущенные блоки парсинга (Severity ≥ Warning); 0 для чтения из кэша.</param>
+    void RecordProduce(string name, long ms, long eventCount, long sizeBytes, ParseSource source, bool fromCache, int skippedBlocks);
 
     /// <summary>Добавляет тайминг записи в хранилище (может вызываться из фоновой очереди).</summary>
     void AddStoreWrite(string name, long ms);

@@ -21,6 +21,7 @@ public partial class ParserStatisticsViewModel : ViewModelBase, IDialogViewModel
     public ObservableCollection<FileParseMetric> Files { get; } = [];
 
     [ObservableProperty] private int _fileCount;
+    [ObservableProperty] private int _totalSkipped;
     [ObservableProperty] private long _totalEvents;
     [ObservableProperty] private string _totalSizeText = "—";
     [ObservableProperty] private string _downloadText = "—";
@@ -53,6 +54,8 @@ public partial class ParserStatisticsViewModel : ViewModelBase, IDialogViewModel
 
         FileCount = items.Count;
         TotalEvents = items.Sum(m => m.EventCount);
+        // Кэш-файлы входят с 0 — их пропуски неизвестны, а не равны нулю (см. GLOSSARY.md).
+        TotalSkipped = items.Sum(m => m.SkippedBlocks);
 
         var totalBytes = items.Sum(m => m.SizeBytes);
         var totalDownload = items.Sum(m => m.DownloadMs);

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace FirebirdTraceAnalyzer.Services.Diagnostics;
 
 /// <summary>Как события файла попали в приложение (для колонки «источник» в статистике).</summary>
@@ -33,6 +35,15 @@ public sealed class FileParseMetric
 
     /// <summary>События взяты из хранилища (кэш переоткрытия), а не распарсены.</summary>
     public bool FromCache { get; set; }
+
+    /// <summary>
+    /// Пропущенные блоки (ParsingWarning с Severity ≥ Warning) при парсинге. Для файлов из кэша
+    /// значение неизвестно (предупреждения не персистятся) — отображается как «—», в суммы не входит.
+    /// </summary>
+    public int SkippedBlocks { get; set; }
+
+    /// <summary>Текст ячейки «Пропущено» в dev-таблице: «—» для кэша, число для живого парсинга.</summary>
+    public string SkippedDisplay => FromCache ? "—" : SkippedBlocks.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>Короткая метка источника для таблицы (dev-инструмент, не локализуется).</summary>
     public string SourceShort => Source switch

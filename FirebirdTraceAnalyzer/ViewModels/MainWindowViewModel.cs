@@ -30,6 +30,7 @@ using FirebirdTraceAnalyzer.Services.Shortcuts;
 using FirebirdTraceAnalyzer.Services.Sorting;
 using FirebirdTraceAnalyzer.Views;
 using FirebirdTraceParser.Models.Events;
+using FirebirdTraceParser.Models.Results;
 using FirebirdTraceParser.Parsing.Engine;
 using FirebirdTraceParser.Parsing.PostProcessing;
 using NLog;
@@ -1367,7 +1368,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ingestSw.Stop();
         _durationsDirty = true;
 
-        Telemetry?.RecordProduce(fileInfo.Name, parsed.ParseMs, events.Count, fileInfo.Length, source, fromCache: false);
+        // Пропущенные блоки (Severity ≥ Warning) — термин и семантика в GLOSSARY.md.
+        var skippedBlocks = parsed.Warnings.Count(w => w.Severity >= WarningSeverity.Warning);
+        Telemetry?.RecordProduce(fileInfo.Name, parsed.ParseMs, events.Count, fileInfo.Length, source, fromCache: false, skippedBlocks);
         Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
 
         Logger.Info(
@@ -1430,7 +1433,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ingestSw.Stop();
         _durationsDirty = true;
 
-        Telemetry?.RecordProduce(fileInfo.Name, readSw.ElapsedMilliseconds, events.Count, fileInfo.Length, ParseSource.StoreCache, fromCache: true);
+        // Кэш-файл: предупреждения не персистятся, счётчик неизвестен — 0 (в таблице покажется «—»).
+        Telemetry?.RecordProduce(fileInfo.Name, readSw.ElapsedMilliseconds, events.Count, fileInfo.Length, ParseSource.StoreCache, fromCache: true, skippedBlocks: 0);
         Telemetry?.AddUi(fileInfo.Name, ingestSw.ElapsedMilliseconds);
 
         var startTrace = events.Count > 0 ? events[0].Timestamp : DateTime.MinValue;

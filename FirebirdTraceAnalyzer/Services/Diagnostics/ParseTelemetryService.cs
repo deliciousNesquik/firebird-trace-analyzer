@@ -35,7 +35,7 @@ public sealed class ParseTelemetryService : IParseTelemetry
         }
     }
 
-    public void RecordProduce(string name, long ms, long eventCount, long sizeBytes, ParseSource source, bool fromCache)
+    public void RecordProduce(string name, long ms, long eventCount, long sizeBytes, ParseSource source, bool fromCache, int skippedBlocks)
     {
         lock (_sync)
         {
@@ -45,6 +45,7 @@ public sealed class ParseTelemetryService : IParseTelemetry
             if (sizeBytes > 0) m.SizeBytes = sizeBytes;
             m.Source = source;
             m.FromCache = fromCache;
+            m.SkippedBlocks = skippedBlocks;
         }
     }
 
@@ -92,6 +93,7 @@ public sealed class ParseTelemetryService : IParseTelemetry
         ProduceMs = m.ProduceMs,
         StoreWriteMs = m.StoreWriteMs,
         UiMs = m.UiMs,
-        FromCache = m.FromCache
+        FromCache = m.FromCache,
+        SkippedBlocks = m.SkippedBlocks
     };
 }
