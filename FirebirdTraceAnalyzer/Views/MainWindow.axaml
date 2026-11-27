@@ -13,6 +13,8 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/app-logo.ico"
         Title="Firebird Trace Analyzer"
+        Width="1000"
+        Height="700"
         MinWidth="1000"
         MinHeight="500">
 
