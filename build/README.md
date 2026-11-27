@@ -57,6 +57,22 @@ FirebirdTraceAnalyzer.app/
 `icon.icns` is generated from `FirebirdTraceAnalyzer/Assets/app-logo.svg` (rasterized via
 `sips`, fallback: `app-logo.ico`).
 
+## Release notes sync
+
+`sync-release-notes.py` copies release notes from the docs site into GitHub Releases: each
+`## <version> — <date>` section of `docs/src/content/docs/changes/whats-new.mdx` (EN — the
+source of truth; the RU mirror stays site-only) becomes the body of the release with the
+matching tag. The heading itself is not copied — the release title already carries the tag.
+Releases without a matching section are left alone (`v1.0.0-alpha`).
+
+```bash
+python3 build/sync-release-notes.py --dry-run   # show diffs
+python3 build/sync-release-notes.py             # PATCH the changed ones
+```
+
+Run it after editing `whats-new.mdx` and pushing — GitHub does not do this automatically.
+Token resolution: `--token` > `GITHUB_TOKEN` env > `~/.config/github-token` > `gh auth token`.
+
 ## Build caveats
 
 - The signature is ad-hoc `codesign`. That is enough to run on the build machine: without a
