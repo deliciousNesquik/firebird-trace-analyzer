@@ -91,6 +91,15 @@
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <!-- Кнопка действия (например, «открыть лог»): видна только когда задан ActionLabel. -->
+                            <Button Classes="normal"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,4,0,0"
+                                    Padding="10,4"
+                                    FontSize="11"
+                                    Content="{Binding ActionLabel}"
+                                    Command="{Binding ActionCommand}"
+                                    IsVisible="{Binding ActionLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         </StackPanel>
 
                         <!-- Крестик закрытия (для всех типов; успех закроется и сам). -->

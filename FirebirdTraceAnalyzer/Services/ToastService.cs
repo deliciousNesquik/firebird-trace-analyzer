@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using FirebirdTraceAnalyzer.Interfaces;
 using FirebirdTraceAnalyzer.Models;
 
@@ -28,10 +29,12 @@ public sealed partial class ToastService : ObservableObject, IToastService
     public ToastService() => Items = new ReadOnlyObservableCollection<ToastItem>(_items);
 
     public void Success(string title, string? message = null) => Show(ToastType.Success, title, message);
-    public void Warning(string title, string? message = null) => Show(ToastType.Warning, title, message);
+    public void Warning(string title, string? message = null, string? actionLabel = null, Action? action = null)
+        => Show(ToastType.Warning, title, message, actionLabel, action);
     public void Error(string title, string? message = null) => Show(ToastType.Error, title, message);
 
-    public void Show(ToastType type, string title, string? message = null)
+    public void Show(ToastType type, string title, string? message = null,
+        string? actionLabel = null, Action? action = null)
     {
         OnUi(() =>
         {
@@ -41,8 +44,20 @@ public sealed partial class ToastService : ObservableObject, IToastService
                 Type = type,
                 Title = title,
                 Message = message,
+                ActionLabel = actionLabel,
                 IsShown = false, // стартовое скрытое состояние — анимация въезда сыграет на след. кадре
             };
+
+            if (actionLabel is not null)
+            {
+                // Действие кнопки: выполнить колбэк и закрыть тост (успех действия показывают
+                // тосты/статус-бар сами, второй тост поверх не нужен).
+                item.ActionCommand = new RelayCommand(() =>
+                {
+                    action?.Invoke();
+                    Dismiss(item);
+                });
+            }
 
             _items.Add(item);
             HasAny = true;

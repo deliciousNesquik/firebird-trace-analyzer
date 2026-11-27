@@ -23,6 +23,7 @@ using FirebirdTraceAnalyzer.Models;
 using FirebirdTraceAnalyzer.Models.Reports;
 using FirebirdTraceAnalyzer.Services.Diagnostics;
 using FirebirdTraceAnalyzer.Services.EventProperties;
+using FirebirdTraceAnalyzer.Services;
 using FirebirdTraceAnalyzer.Services.Persistence;
 using FirebirdTraceAnalyzer.Interfaces.Plugins;
 using FirebirdTraceAnalyzer.Services.Plugins;
@@ -1275,6 +1276,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var addedCount = 0;
         var duplicateCount = 0;
+        var skippedInBatch = 0;
         LoadProgress = 0;
 
         try
@@ -1315,6 +1317,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     : await ParseFileAsync(fileInfo, fileHash, cancellationToken);
 
                 var cardName = traceModel.FileName;
+                skippedInBatch += traceModel.SkippedBlocks ?? 0;
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     var sw = Stopwatch.StartNew();
@@ -1342,8 +1345,40 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var addStatus = BuildFileAddingStatusMessage(addedCount, duplicateCount);
         StatusMessage = addStatus;
-        if (addedCount > 0)
-            _toasts?.Success(addStatus); // тост только когда реально что-то загрузили
+        ShowLoadFeedbackToast(addedCount, skippedInBatch, addStatus);
+    }
+
+    /// <summary>
+    /// Единый фидбек «файлы загружены»: зелёный тост успеха, а при пропущенных блоках парсинга —
+    /// warning-тост ВМЕСТО него (советник: warning заменяет, а не дополняет success), с кнопкой
+    /// «открыть лог» для деталей. Кэш-файлы в сумму не попадают (SkippedBlocks = null).
+    /// </summary>
+    private void ShowLoadFeedbackToast(int addedCount, int skippedTotal, string successStatus)
+    {
+        if (addedCount <= 0)
+            return;
+
+        if (skippedTotal > 0)
+        {
+            _toasts?.Warning(
+                Loc.Tr("Toast.Main.ParseWarnings"),
+                string.Format(Loc.Tr("Toast.Main.ParseWarnings.Hint"), skippedTotal),
+                Loc.Tr("Toast.Main.OpenLog"),
+                OpenAppLog);
+            Logger.Warn(
+                "Load finished with skipped blocks: {Skipped} block(s) across {Added} file(s)",
+                skippedTotal, addedCount);
+        }
+        else
+        {
+            _toasts?.Success(successStatus);
+        }
+    }
+
+    /// <summary>Открывает текущий app-лог в нативном редакторе (кнопка warning-тоста).</summary>
+    private void OpenAppLog()
+    {
+        _ = _fileDialogService.OpenInTextEditorAsync(LogConfiguration.CurrentAppLogFile);
     }
 
     /// <summary>Парсит один файл</summary>
@@ -1385,7 +1420,8 @@ public partial class MainWindowViewModel : ViewModelBase
             parsed.StartTrace,
             parsed.EndTrace,
             events.Count,
-            fileHash);
+            fileHash,
+            skippedBlocks);
 
         // Хранилище: ставим запись в фоновую очередь (за флагом StorageMode) и сразу идём дальше —
         // диск не на критическом пути парсинга/отображения. WriteFile заменяет данные по хэшу (reparse ок).
@@ -1673,14 +1709,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 settings.DeleteAfterProcessingFromServer,
                 cts.Token);
 
-            var processedCount = await ProcessDownloadedFilesAsync(
+            var (processedCount, skippedTotal) = await ProcessDownloadedFilesAsync(
                 downloadedPaths,
                 deleteLocalFilesAfterProcessing,
                 cts.Token);
 
             var msg = string.Format(Loc.Tr("Status.Main.SuccessfullyProcessedRemote"), processedCount);
             StatusMessage = msg;
-            _toasts?.Success(msg);
+            ShowLoadFeedbackToast(processedCount, skippedTotal, msg);
             Logger.Info("Remote files processed: {Count}", processedCount);
         }
         catch (OperationCanceledException)
@@ -1879,12 +1915,13 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Последовательная обработка: все файлы уже скачаны, парсим их по списку.
     /// Возвращает число реально добавленных (не-дубликатных) файлов.
     /// </summary>
-    private async Task<int> ProcessDownloadedFilesAsync(
+    private async Task<(int Added, int Skipped)> ProcessDownloadedFilesAsync(
         IReadOnlyList<string> downloadedPaths,
         bool deleteAfterProcessing,
         CancellationToken cancellationToken)
     {
         var addedCount = 0;
+        var skippedTotal = 0;
 
         try
         {
@@ -1894,8 +1931,12 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (await ProcessSingleDownloadedFileAsync(path, deleteAfterProcessing, cancellationToken))
+                var addedModel = await ProcessSingleDownloadedFileAsync(path, deleteAfterProcessing, cancellationToken);
+                if (addedModel is not null)
+                {
                     addedCount++;
+                    skippedTotal += addedModel.SkippedBlocks ?? 0;
+                }
             }
         }
         finally
@@ -1915,15 +1956,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessedRemoteFiles"), addedCount);
 
-        return addedCount;
+        return (addedCount, skippedTotal);
     }
 
     /// <summary>
     /// Обрабатывает один скачанный файл: проверка существования, хэш, отсев дубликатов, парсинг,
-    /// добавление карточки файла и (опционально) удаление локального файла. Возвращает
-    /// <c>true</c>, если файл действительно добавлен (не пропущен и не дубликат).
+    /// добавление карточки файла и (опционально) удаление локального файла. Возвращает модель
+    /// добавленного файла или <c>null</c>, если файл пропущен (не найден / дубликат).
     /// </summary>
-    private async Task<bool> ProcessSingleDownloadedFileAsync(
+    private async Task<TraceFileInfoModel?> ProcessSingleDownloadedFileAsync(
         string path,
         bool deleteAfterProcessing,
         CancellationToken cancellationToken)
@@ -1935,7 +1976,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!fileInfo.Exists)
         {
             Logger.Warn("Downloaded file not found: {Path}", path);
-            return false;
+            return null;
         }
 
         StatusMessage = string.Format(Loc.Tr("Status.Main.ProcessingFile"), fileInfo.Name);
@@ -1961,7 +2002,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
             }
 
-            return false;
+            return null;
         }
 
         var traceModel = await ParseFileAsync(fileInfo, fileHash, cancellationToken, ParseSource.RemoteParse);
@@ -1988,7 +2029,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
 
-        return true;
+        return traceModel;
     }
 
     #endregion
@@ -2024,6 +2065,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var allCards = FileCards.ToList();
             StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingAllStart"), allCards.Count);
 
+            var skippedInBatch = 0;
             for (var i = 0; i < allCards.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -2031,12 +2073,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 var card = allCards[i];
                 StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingProgress"), i + 1, allCards.Count, card.FileInfo.FileName);
 
-                await ReparseTraceFileAsync(card, cancellationToken);
+                skippedInBatch += await ReparseTraceFileAsync(card, cancellationToken) ?? 0;
             }
 
             var msg = string.Format(Loc.Tr("Status.Main.AllFilesReprocessed"), allCards.Count);
             StatusMessage = msg;
-            _toasts?.Success(msg);
+            ShowLoadFeedbackToast(allCards.Count, skippedInBatch, msg);
             Logger.Info("Reprocessing completed: {Count} files", allCards.Count);
         }
         catch (OperationCanceledException)
@@ -2084,6 +2126,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var selectedCards = SelectedFileCards.ToList();
             StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingSelectedStart"), selectedCards.Count);
 
+            var skippedInBatch = 0;
             for (var i = 0; i < selectedCards.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -2091,12 +2134,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 var card = selectedCards[i];
                 StatusMessage = string.Format(Loc.Tr("Status.Main.ReprocessingProgress"), i + 1, selectedCards.Count, card.FileInfo.FileName);
 
-                await ReparseTraceFileAsync(card, cancellationToken);
+                skippedInBatch += await ReparseTraceFileAsync(card, cancellationToken) ?? 0;
             }
 
             var msg = string.Format(Loc.Tr("Status.Main.SelectedFilesReprocessed"), selectedCards.Count);
             StatusMessage = msg;
-            _toasts?.Success(msg);
+            ShowLoadFeedbackToast(selectedCards.Count, skippedInBatch, msg);
             Logger.Info("Selected files reprocessed: {Count}", selectedCards.Count);
         }
         catch (OperationCanceledException)
@@ -2122,7 +2165,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private async Task ReparseTraceFileAsync(FileCardViewModel card,
+    private async Task<int?> ReparseTraceFileAsync(FileCardViewModel card,
         CancellationToken cancellationToken = default)
     {
         try
@@ -2135,7 +2178,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 StatusMessage = msg;
                 _toasts?.Warning(msg);
                 Logger.Warn("File not found for reparse: {Path}", card.FileInfo.FilePath);
-                return;
+                return null;
             }
 
             // reparse: не удаляем из стора — ParseFileAsync тут же перезапишет файл (иначе гонка «удаление после записи»).
@@ -2146,6 +2189,8 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() => card.FileInfo = updatedModel);
 
             Logger.Info("File reparsed: {FileName}", card.FileInfo.FileName);
+            // Возвращаем счётчик пропусков свежего разбора: вызывающий поток агрегирует его для тоста.
+            return updatedModel.SkippedBlocks;
         }
         catch (OperationCanceledException)
         {
@@ -2157,6 +2202,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var msg = string.Format(Loc.Tr("Status.Main.ReparseError"), card.FileInfo.FileName, ex.Message);
             StatusMessage = msg;
             _toasts?.Error(msg);
+            return null;
         }
     }
 

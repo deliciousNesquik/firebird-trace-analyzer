@@ -214,4 +214,55 @@ public class FileDialogService : IFileDialogService
             return Task.FromException<bool>(exception);
         }
     }
+
+    /// <summary>
+    /// Открывает текстовый файл в нативном редакторе по умолчанию: Windows — ассоциированное
+    /// приложение (.log обычно блокнот), macOS — текстовый редактор по умолчанию (open -t,
+    /// НЕ Preview/Console), Linux — xdg-open.
+    /// </summary>
+    public Task<bool> OpenInTextEditorAsync(string filePath)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                Logger.Warn("Path does not exist or is invalid: {FilePath}", filePath);
+                return Task.FromResult(false);
+            }
+
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Windows: shell-запуск файла — откроется ассоциированный редактор.
+                    Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // macOS: -t — текстовый редактор по умолчанию; без -t .log может уйти в Console.
+                    Process.Start("open", $"-t \"{filePath}\"");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Process.Start("xdg-open", $"\"{filePath}\"");
+                }
+                else
+                {
+                    Logger.Warn("Unsupported OS platform for opening text editor.");
+                    return Task.FromResult(false);
+                }
+
+                return Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to open file in text editor: {FilePath}", filePath);
+                return Task.FromResult(false);
+            }
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<bool>(exception);
+        }
+    }
 }

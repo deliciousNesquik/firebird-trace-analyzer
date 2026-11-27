@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace FirebirdTraceAnalyzer.Models;
@@ -20,6 +21,18 @@ public sealed partial class ToastItem : ObservableObject
 
     /// <summary>Необязательная вторая строка с деталями.</summary>
     public string? Message { get; init; }
+
+    /// <summary>
+    /// Подпись кнопки действия (null = кнопки нет). Команда в <see cref="ActionCommand"/>
+    /// выполняет <see cref="Action"/> и закрывает тост.
+    /// </summary>
+    public string? ActionLabel { get; init; }
+
+    /// <summary>Действие кнопки (например, «открыть лог»); null допустим.</summary>
+    public Action? Action { get; init; }
+
+    /// <summary>Команда кнопки действия; создаёт сервис при показе тоста (set — сразу после создания item'а).</summary>
+    public ICommand? ActionCommand { get; set; }
 
     /// <summary>Показан ли тост (управляет въездом/выездом через стили). Меняет только сервис на UI-потоке.</summary>
     [ObservableProperty] private bool _isShown;

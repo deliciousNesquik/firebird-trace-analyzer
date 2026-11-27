@@ -10,6 +10,10 @@
 /// <param name="EndTrace">Timestamp of the last event in the file.</param>
 /// <param name="EventCount">Number of events parsed from the file.</param>
 /// <param name="FileHash">Content hash used to identify the file.</param>
+/// <param name="SkippedBlocks">
+/// Blocks the parser could not turn into events (warning severity and above), or null when
+/// unknown — files restored from the local store have no warning data (see GLOSSARY.md).
+/// </param>
 public sealed record TraceFileInfoModel(
     string FileName,
     string FilePath,
@@ -17,4 +21,5 @@ public sealed record TraceFileInfoModel(
     DateTime StartTrace,
     DateTime EndTrace,
     long EventCount,
-    string FileHash);
+    string FileHash,
+    int? SkippedBlocks = null);

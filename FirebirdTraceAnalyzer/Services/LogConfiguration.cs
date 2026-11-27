@@ -46,6 +46,19 @@ public static class LogConfiguration
         Expand(string.IsNullOrWhiteSpace(configured) ? DefaultParserLogFile : configured);
 
     /// <summary>
+    /// Текущий эффективный путь app-лога: значение из GDC (прописано <see cref="Apply"/>),
+    /// а до первого Apply — значение по умолчанию. Для «открыть лог» из UI.
+    /// </summary>
+    public static string CurrentAppLogFile
+    {
+        get
+        {
+            var fromGdc = GlobalDiagnosticsContext.Get(AppLogGdcKey);
+            return string.IsNullOrWhiteSpace(fromGdc) ? DefaultAppLogFile : fromGdc;
+        }
+    }
+
+    /// <summary>
     /// Прописывает пути логов в NLog. Вызывать до начала логирования (со значениями по умолчанию),
     /// и повторно после загрузки настроек (с пользовательскими путями) — File-таргеты подхватят
     /// новый путь на следующей записи.

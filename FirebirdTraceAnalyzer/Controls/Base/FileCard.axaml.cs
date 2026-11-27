@@ -21,6 +21,10 @@ public class FileCard : TemplatedControl
     public static readonly StyledProperty<long> EventCountProperty =
         AvaloniaProperty.Register<FileCard, long>(nameof(EventCount), 0);
 
+    /// <summary>Пропущенные блоки парсинга (Severity ≥ Warning); null = неизвестно (кэш из хранилища).</summary>
+    public static readonly StyledProperty<int?> SkippedBlocksProperty =
+        AvaloniaProperty.Register<FileCard, int?>(nameof(SkippedBlocks));
+
     public static readonly StyledProperty<ICommand?> RemoveFileCommandProperty =
         AvaloniaProperty.Register<FileCard, ICommand?>(nameof(RemoveFileCommand));
     
@@ -55,6 +59,13 @@ public class FileCard : TemplatedControl
     {
         get => GetValue(EventCountProperty);
         set => SetValue(EventCountProperty, value);
+    }
+
+    /// <summary>Пропущенные блоки парсинга; null/0 — бейдж не показывается.</summary>
+    public int? SkippedBlocks
+    {
+        get => GetValue(SkippedBlocksProperty);
+        set => SetValue(SkippedBlocksProperty, value);
     }
 
     public ICommand? RemoveFileCommand

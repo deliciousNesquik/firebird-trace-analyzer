@@ -21,6 +21,14 @@ public interface IFileDialogService
     Task<bool> RevealInFileManagerAsync(string filePath);
 
     /// <summary>
+    /// Open a text file with the OS-native default text editor (Notepad on Windows,
+    /// the default text editor via <c>open -t</c> on macOS, <c>xdg-open</c> on Linux).
+    /// </summary>
+    /// <param name="filePath">Absolute path to the file to open.</param>
+    /// <returns>True if the launch succeeded, false otherwise.</returns>
+    Task<bool> OpenInTextEditorAsync(string filePath);
+
+    /// <summary>
     /// Show a file picker dialog to select a JSON file to save.
     /// </summary>
     /// <param name="suggestedName">The suggested name for the JSON file.</param>

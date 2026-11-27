@@ -20,14 +20,15 @@ public interface IToastService : INotifyPropertyChanged
     /// <summary>Показать тост успеха (авто-скрытие через несколько секунд).</summary>
     void Success(string title, string? message = null);
 
-    /// <summary>Показать предупреждение (висит до закрытия).</summary>
-    void Warning(string title, string? message = null);
+    /// <summary>Показать предупреждение (висит до закрытия). Опционально — кнопка действия
+    /// (например, «открыть лог»): подпись и колбэк; по нажатию выполняется и тост закрывается.</summary>
+    void Warning(string title, string? message = null, string? actionLabel = null, Action? action = null);
 
     /// <summary>Показать ошибку (висит до закрытия).</summary>
     void Error(string title, string? message = null);
 
-    /// <summary>Показать тост произвольного типа.</summary>
-    void Show(ToastType type, string title, string? message = null);
+    /// <summary>Показать тост произвольного типа. Опциональная кнопка действия — как у <see cref="Warning"/>.</summary>
+    void Show(ToastType type, string title, string? message = null, string? actionLabel = null, Action? action = null);
 
     /// <summary>Закрыть конкретный тост (с анимацией выезда).</summary>
     void Dismiss(ToastItem item);

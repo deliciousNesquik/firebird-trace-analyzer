@@ -129,8 +129,21 @@
                                            FontSize="10"
                                            FontWeight="Bold"/>
 
-                                <TextBlock Text="{Binding EventCount, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:N0}'}"
-                                           FontSize="12" />
+                                <!-- Счётчик событий + жёлтый бейдж пропущенных блоков (правее числа).
+                                     Виден только когда есть пропуски; тултип объясняет, что делать. -->
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Bottom">
+                                    <TextBlock Text="{Binding EventCount, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}{0:N0}'}"
+                                               FontSize="12" />
+
+                                    <TextBlock Text="{Binding SkippedBlocks, RelativeSource={RelativeSource TemplatedParent}, StringFormat='{}-{0:N0}'}"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource WarningTextBrush}"
+                                               ToolTip.Tip="{loc:Tr FileCard.SkippedTooltip}"
+                                               IsVisible="{Binding SkippedBlocks, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static converters:CountToVisibilityConverter.Instance}}" />
+                                </StackPanel>
 
                             </StackPanel>
                         </Grid>
