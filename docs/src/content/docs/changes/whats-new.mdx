@@ -6,6 +6,41 @@ description: Release notes for Firebird Trace Analyzer — every version, newest
 Release notes, newest first. Versions follow the project's git tags; minor releases are described in
 detail, patch releases summarized.
 
+## 1.17.0 — November 27, 2026
+
+This release makes keyboard shortcuts configurable and makes silent data loss visible: parser
+warnings and skipped-block counts now surface in the UI and logs. The test suite grew to 294
+(118 parser + 176 app), all green.
+
+### New features
+
+- Configurable keyboard shortcuts: a new **Keyboard shortcuts** page in Settings lets you rebind
+  any action — record a combination, take over conflicts, disable an action, reset one or all.
+  Changes apply immediately (including the native macOS menu bar) and persist as an overrides-only
+  `shortcuts.json`, validated by a published JSON schema for hand editing. Report templates can
+  get run-shortcuts. The Settings shortcut itself (`Ctrl+,` / `⌘,`) is locked.
+- The Parser Statistics dialog (developer mode) gained a **Skipped** column per file and a session
+  total: blocks the parser could not turn into events (warning severity and above). Files reloaded
+  from the local store show `—` (unknown) rather than zero, since warnings are not persisted yet.
+
+### Improvements
+
+- Parse warnings are no longer dropped: opening a partially parsed file now writes a summary line
+  (event count, warning count, error-severity count) to the application log; per-line details
+  remain in parser.log.
+- Log levels were re-reviewed against a single criterion (a user-initiated operation that
+  completed with visible feedback is not an Error); the startup banner logs the app version, OS
+  and log-file paths; the log is flushed on an unhandled exception.
+- Previously silent catch blocks (log-directory setup, report value projections, SSH file
+  listings, source-file cleanup) now log warnings.
+
+### Documentation
+
+- The plugin template and the SDK docs demonstrate the `SortDescriptor.KeySelector` fast path
+  (key extracted once per event); the plugin README troubleshooting now quotes the actual log
+  messages.
+- The Keyboard shortcuts page documents the customization flow and the overrides file format.
+
 ## 1.16.0 — November 18, 2026
 
 This release combines parser correctness fixes from a full code review with interface
