@@ -1,0 +1,85 @@
+---
+title: Reporting bugs
+description: Where Firebird Trace Analyzer keeps its logs, what personal data they contain, and how to sanitize a log file before attaching it to an issue.
+---
+
+A good bug report usually includes a log excerpt. This page shows where the logs live, what they
+contain, and how to share them without leaking more than you intended.
+
+## Where the logs are
+
+| File | What it records |
+| --- | --- |
+| `application.log` | Everything the app does: opening files, sorting, reports, settings, warnings and errors. |
+| `parser.log` | Parse diagnostics from the engine: per-line warnings with line numbers and short generic messages. |
+| `internal.log` | NLog's own diagnostics. Rarely needed — include it only when asked. |
+
+| OS | Folder |
+| --- | --- |
+| Windows | `%AppData%\FirebirdTraceAnalyzer\logs` |
+| macOS | `~/Library/Application Support/FirebirdTraceAnalyzer/logs` |
+| Linux | `~/.config/FirebirdTraceAnalyzer/logs` |
+
+Rotated archives (`*.log.gz`) live in the same folder — one per day, up to 30, each capped at
+10 MB before compression. The exact paths are printed at the top of `application.log` on every
+start (the version banner) and can be changed in the app settings.
+
+## What can identify you
+
+Logs are written with diagnostics in mind, and they intentionally contain:
+
+- **File and folder paths** — which trace files you opened and where the app stores its data. On
+  Windows and macOS these paths include your local username.
+- **SSH connection details** — when you open a file over SSH, the connection line reads
+  `Connecting to <host>:<port> as <username>`.
+
+What is **not** logged: SQL statement text, table names, database contents. Parse warnings
+reference line numbers with generic messages — not the underlying trace content.
+
+## How to share a log safely
+
+**Best: an excerpt.** Find the error (search for `|ERROR|` or `|WARN|`), and share the ~50 lines
+around it. Full files are rarely needed.
+
+**Or sanitize the whole file.** The one-liners below replace SSH hosts, usernames, IP addresses
+and your home directory with placeholders:
+
+```bash
+# macOS / Linux
+sed -E \
+  -e 's/Connecting to [^ ]+ as [^ ]+/Connecting to [HOST] as [USER]/g' \
+  -e "s|$HOME|[HOME]|g" \
+  -e 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[IP]/g' \
+  application.log > application.sanitized.log
+```
+
+```powershell
+# Windows PowerShell
+(Get-Content "$env:APPDATA\FirebirdTraceAnalyzer\logs\application.log") `
+  -replace 'Connecting to \S+ as \S+', 'Connecting to [HOST] as [USER]' `
+  -replace [regex]::Escape($env:USERPROFILE), '[HOME]' `
+  -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '[IP]' |
+  Set-Content application.sanitized.log
+```
+
+## Example
+
+Before — one line of an SSH connection and a path with a username:
+
+```text
+2026-11-27 10:14:03.5513|INFO|SshConnectionService|Connecting to db.corp.example.com:22 as jdoe
+2026-11-27 10:14:11.2210|INFO|FileIngestionService|Parsed /Users/jdoe/trace/prod-2711.log: 1240 event(s)
+```
+
+After sanitizing — same diagnostic value, nothing personal left:
+
+```text
+2026-11-27 10:14:03.5513|INFO|SshConnectionService|Connecting to [IP]:22 as [USER]
+2026-11-27 10:14:11.2210|INFO|FileIngestionService|Parsed [HOME]/trace/prod-2711.log: 1240 event(s)
+```
+
+## What to attach
+
+1. The sanitized `application.log` excerpt around the problem.
+2. `parser.log` if the issue is about parsing (missing or skipped events).
+3. The app version (shown in the startup banner and in **Settings**).
